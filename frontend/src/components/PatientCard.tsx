@@ -5,8 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ageFromBirthDate } from "@/lib/age";
-import { useLanguage } from "@/lib/i18n-hooks";
-import { initials, pickName } from "@/lib/names";
+import { useDirection, useLanguage } from "@/lib/i18n-hooks";
+import { initials, pickName, textDirection } from "@/lib/names";
 import { cn } from "@/lib/utils";
 
 export interface PatientCardPatient {
@@ -38,6 +38,7 @@ export interface PatientCardProps {
 export function PatientCard({ patient, actions, compact = false, className }: PatientCardProps) {
   const { t } = useTranslation();
   const language = useLanguage();
+  const uiDirection = useDirection();
   const name = pickName({ ar: patient.nameAr, en: patient.nameEn }, language);
   const otherName = language === "ar" ? patient.nameEn : patient.nameAr;
   const age = patient.birthDate ? ageFromBirthDate(patient.birthDate) : null;
@@ -60,11 +61,15 @@ export function PatientCard({ patient, actions, compact = false, className }: Pa
           <AvatarFallback className="text-base">{initials(name) || <UserRound className="size-5" />}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base leading-snug font-semibold text-fg">{name}</h3>
+          <NameLine text={name} uiDirection={uiDirection} className="text-base leading-snug font-semibold text-fg" />
           {otherName && otherName !== name ? (
-            <p className="truncate text-sm text-muted" lang={language === "ar" ? "en" : "ar"}>
-              {otherName}
-            </p>
+            <NameLine
+              as="p"
+              text={otherName}
+              uiDirection={uiDirection}
+              lang={language === "ar" ? "en" : "ar"}
+              className="text-sm text-muted"
+            />
           ) : null}
           <dl className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
             <div className="flex items-center gap-1">
@@ -131,5 +136,33 @@ export function PatientCard({ patient, actions, compact = false, className }: Pa
         {patient.incomplete ? <Badge variant="warning">{t("patient.incompleteFile")}</Badge> : null}
       </div>
     </article>
+  );
+}
+
+/**
+ * One line of a person's name, truncated with an ellipsis. Names may be in either script
+ * whatever the UI language (the other-language name, or a fallback when one is missing), so
+ * the line takes the direction of its own text: a long name is then cut at its END
+ * ("Fatima Osman Moh…"), never its beginning. When that direction is the opposite of the UI's,
+ * the line's `end` edge is the UI's start edge, so `text-end` keeps it aligned with the card.
+ */
+function NameLine({
+  as: Tag = "h3",
+  text,
+  uiDirection,
+  lang,
+  className,
+}: {
+  as?: "h3" | "p";
+  text: string;
+  uiDirection: "rtl" | "ltr";
+  lang?: string;
+  className?: string;
+}) {
+  const dir = textDirection(text, uiDirection);
+  return (
+    <Tag dir={dir} lang={lang} className={cn("truncate", dir === uiDirection ? "text-start" : "text-end", className)}>
+      {text}
+    </Tag>
   );
 }

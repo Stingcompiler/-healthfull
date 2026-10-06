@@ -43,6 +43,29 @@ describe("PatientCard", () => {
     expect(screen.getByText("Fatima Osman")).toBeInTheDocument();
   });
 
+  it("gives each name line its own direction so long names truncate at their end", async () => {
+    await i18n.changeLanguage("ar");
+    const { rerender } = render(<PatientCard patient={base} />);
+    // Arabic UI: the Arabic name follows the UI, the English one is LTR aligned to the UI's start (its end).
+    expect(screen.getByRole("heading", { name: "فاطمة عثمان" })).toHaveAttribute("dir", "rtl");
+    expect(screen.getByRole("heading", { name: "فاطمة عثمان" })).toHaveClass("truncate", "text-start");
+    expect(screen.getByText("Fatima Osman")).toHaveAttribute("dir", "ltr");
+    expect(screen.getByText("Fatima Osman")).toHaveClass("truncate", "text-end");
+
+    await i18n.changeLanguage("en");
+    rerender(<PatientCard patient={base} />);
+    expect(screen.getByRole("heading", { name: "Fatima Osman" })).toHaveAttribute("dir", "ltr");
+    expect(screen.getByRole("heading", { name: "Fatima Osman" })).toHaveClass("text-start");
+    expect(screen.getByText("فاطمة عثمان")).toHaveAttribute("dir", "rtl");
+    expect(screen.getByText("فاطمة عثمان")).toHaveClass("text-end");
+
+    // Only an Arabic name on file (emergency registration): the English UI shows it RTL, aligned to its start.
+    rerender(<PatientCard patient={{ ...base, nameAr: "مولود — طوارئ", nameEn: null }} />);
+    const heading = screen.getByRole("heading", { name: "مولود — طوارئ" });
+    expect(heading).toHaveAttribute("dir", "rtl");
+    expect(heading).toHaveClass("text-end");
+  });
+
   it("uses Arabic plural forms for age", async () => {
     await i18n.changeLanguage("ar");
     const { rerender } = render(<PatientCard patient={{ ...base, ageYears: 2 }} />);

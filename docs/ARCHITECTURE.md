@@ -32,7 +32,7 @@ Makefile                 the only entry point for common commands
 | Target | Does |
 |---|---|
 | `make setup` | `uv sync` in backend, `pnpm install` in frontend and e2e, create dev DB |
-| `make dev` | backend on `$BACKEND_PORT` (default 8000) + frontend on `$FRONTEND_PORT` (default 5173) |
+| `make dev` | backend on `$BACKEND_PORT` + frontend on `$FRONTEND_PORT`; when unset, `scripts/ports.sh` derives them per worktree (section 3) |
 | `make test` | backend pytest (incl. Hypothesis) + frontend vitest |
 | `make lint` | ruff check + ruff format --check + eslint + prettier check |
 | `make typecheck` | mypy (strict on domain/) + tsc --noEmit |
@@ -47,7 +47,7 @@ Several checkouts (git worktrees) may run at once. Never hardcode DB names or po
 
 - DB connection from env: `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `DB_NAME` (default `hospital_dev`). Local dev uses the Homebrew Postgres 16 socket (no password).
 - Test DB name is `test_hospital_<h>` and e2e DB is `e2e_hospital_<h>` where `<h>` = first 8 hex chars of sha1 of the absolute repo root path. Computed in settings and in e2e config. This isolates worktrees automatically.
-- Ports: `BACKEND_PORT` and `FRONTEND_PORT` env vars. The e2e runner derives free ports from `<h>` (20000 + int(h,16) % 20000, and +1) unless set.
+- Ports: `BACKEND_PORT` and `FRONTEND_PORT` env vars. When unset, `scripts/ports.sh` derives them from `<h>` (20000 + int(h,16) % 20000, and +1) for both `make dev` and `make e2e`; the e2e runner steps past busy ports (+2) so it can run beside `make dev`.
 
 ## 4. Backend conventions
 

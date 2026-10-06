@@ -15,6 +15,22 @@ export function pickName(name: BilingualName, language: Language): string {
   return primary === "" ? fallback : primary;
 }
 
+// Letters of right-to-left scripts: Hebrew, Arabic, Syriac, Thaana, NKo, Samaritan, Mandaic,
+// Arabic Extended and the Arabic presentation forms.
+const RTL_LETTER = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/u;
+
+/**
+ * Base direction of a piece of text, from its first letter (the first-strong rule that
+ * dir="auto" uses, limited to letters). Text with no letter follows `fallback`.
+ */
+export function textDirection(text: string, fallback: "rtl" | "ltr" = "ltr"): "rtl" | "ltr" {
+  for (const char of text) {
+    if (RTL_LETTER.test(char)) return "rtl";
+    if (/\p{L}/u.test(char)) return "ltr";
+  }
+  return fallback;
+}
+
 /** Initials for avatars: first letters of the first two words. */
 export function initials(name: string): string {
   // Only words that contain a letter count ("مولود — طوارئ" -> "مط").
