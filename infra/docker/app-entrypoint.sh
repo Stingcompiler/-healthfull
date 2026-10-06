@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Entrypoint of the app image.
+#   serve            wait for the database, optionally migrate, run gunicorn (default)
+#   migrate [args]   wait for the database, run `manage.py migrate --noinput [args]`
+#   manage ARGS      run any management command (e.g. manage createsuperuser)
+#   anything else    exec as-is (e.g. bash)
+set -euo pipefail
+
+wait_for_db() {
+  python - <<'PY'
+import os, sys, time
+
+import psycopg
+
+timeout = float(os.environ.get("DB_WAIT_SECONDS", "90"))
+deadline = time.monotonic() + timeout
+dbname = os.environ.get("DB_NAME", "hospital")
+while True:
+    try:
+        # Host, port, user and password come from the standard PG* environment variables.
+        psycopg.connect(dbname=dbname, connect_timeout=3).close()
+        break
+    except psycopg.OperationalError as exc:
+        if time.monotonic() > deadline:
+            print(f"app-entrypoint: database not reachable after {timeout:.0f}s: {exc}", file=sys.stderr)
+            sys.exit(1)
+        time.sleep(2)
+PY
+}
+
+is_true() {
+  case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')" in
+    1 | true | yes | on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+cmd="${1:-serve}"
+case "$cmd" in
+  serve)
+    wait_for_db
+    if is_true "${MIGRATE_ON_START:-false}"; then
+      echo "app-entrypoint: MIGRATE_ON_START is set; applying migrations"
+      python manage.py migrate --noinput
+    fi
+    # Workers, threads, timeouts and logging come from backend/gunicorn.conf.py
+    # (WEB_CONCURRENCY, GUNICORN_THREADS, GUNICORN_TIMEOUT). Only container specifics here:
+    # the app is reachable solely from Caddy on the private Docker network, so forwarded
+    # headers from any peer on that network are trusted.
+    if [[ -f /app/gunicorn.conf.py ]]; then set -- --config /app/gunicorn.conf.py; else set --; fi
+    exec gunicorn config.wsgi:application "$@" \
+      --bind 0.0.0.0:8000 \
+      --forwarded-allow-ips "${FORWARDED_ALLOW_IPS:-*}" \
+      --worker-tmp-dir /dev/shm \
+      --max-requests "${GUNICORN_MAX_REQUESTS:-1000}" \
+      --max-requests-jitter 100
+    ;;
+  migrate)
+    shift
+    wait_for_db
+    exec python manage.py migrate --noinput "$@"
+    ;;
+  manage)
+    shift
+    exec python manage.py "$@"
+    ;;
+  *)
+    exec "$@"
+    ;;
+esac

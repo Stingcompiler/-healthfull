@@ -1,0 +1,39 @@
+{
+  "groups": {
+    "overview": "Overview",
+    "frontDesk": "Front desk",
+    "clinical": "Clinical",
+    "finance": "Finance",
+    "services": "Service departments",
+    "insights": "Insights",
+    "administration": "Administration"
+  },
+  "items": {
+    "dashboard": "Dashboard",
+    "patients": "Patients",
+    "queue": "Queue",
+    "appointments": "Appointments",
+    "clinic": "Clinic",
+    "cashier": "Cashier",
+    "claims": "Insurance claims",
+    "pharmacy": "Pharmacy",
+    "lab": "Laboratory",
+    "nursing": "Nursing",
+    "reports": "Reports",
+    "admin": "Administration",
+    "adminUsers": "Users",
+    "adminRoles": "Roles & permissions",
+    "adminCatalog": "Service catalog",
+    "adminPriceLists": "Price lists",
+    "adminPayers": "Payers",
+    "adminSettings": "Center settings",
+    "adminImports": "Imports",
+    "adminSystem": "System status",
+    "design": "Design system"
+  },
+  "shell": {
+    "menu": "Menu",
+    "more": "More",
+    "home": "Home"
+  }
+}

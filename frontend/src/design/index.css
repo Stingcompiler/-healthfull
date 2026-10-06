@@ -1,0 +1,198 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./tokens.css";
+
+/*
+ * Tailwind v4 theme. The default color palette is removed on purpose:
+ * only the semantic tokens below exist, so a raw palette class such as
+ * `bg-red-500` simply does not compile into anything.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+@theme inline {
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-subtle: var(--subtle);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-muted: var(--fg-muted);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-card-border: var(--card-border);
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-fg: var(--secondary-fg);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-success: var(--success);
+  --color-success-contrast: var(--success-contrast);
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-contrast: var(--warning-contrast);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger);
+  --color-danger-contrast: var(--danger-contrast);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-border: var(--danger-border);
+  --color-info: var(--info);
+  --color-info-contrast: var(--info-contrast);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --color-info-border: var(--info-border);
+
+  --color-state-requested: var(--state-requested);
+  --color-state-requested-bg: var(--state-requested-bg);
+  --color-state-requested-fg: var(--state-requested-fg);
+  --color-state-invoiced: var(--state-invoiced);
+  --color-state-invoiced-bg: var(--state-invoiced-bg);
+  --color-state-invoiced-fg: var(--state-invoiced-fg);
+  --color-state-paid: var(--state-paid);
+  --color-state-paid-bg: var(--state-paid-bg);
+  --color-state-paid-fg: var(--state-paid-fg);
+  --color-state-performed: var(--state-performed);
+  --color-state-performed-bg: var(--state-performed-bg);
+  --color-state-performed-fg: var(--state-performed-fg);
+  --color-state-cancelled: var(--state-cancelled);
+  --color-state-cancelled-bg: var(--state-cancelled-bg);
+  --color-state-cancelled-fg: var(--state-cancelled-fg);
+  --color-state-pending: var(--state-pending);
+  --color-state-pending-bg: var(--state-pending-bg);
+  --color-state-pending-fg: var(--state-pending-fg);
+
+  --color-overlay: var(--overlay);
+
+  --radius-card: var(--card-radius);
+  --radius-control: var(--control-radius);
+
+  --shadow-card: var(--elevation-card);
+  --shadow-raised: var(--elevation-raised);
+  --shadow-overlay: var(--elevation-overlay);
+
+  --font-sans: var(--font-ui);
+}
+
+@layer base {
+  :root {
+    --font-latin: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-arabic: "IBM Plex Sans Arabic", "Inter Variable", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+    --font-ui: var(--font-arabic);
+  }
+  :root:lang(en) {
+    --font-ui: var(--font-latin);
+  }
+
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+    min-height: 100dvh;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  :root:lang(ar) body {
+    /* Plex Arabic reads better with slightly more line height. */
+    line-height: 1.6;
+    font-feature-settings: normal;
+  }
+
+  ::selection {
+    background-color: var(--primary-soft);
+    color: var(--fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--fg-muted);
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Cards: soft shadow in light/warm, hairline border in dark (via tokens). */
+  .card-surface {
+    background-color: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--elevation-card);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Numbers that must not be reordered by bidi (file numbers, phones, money). */
+@utility ltr-nums {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

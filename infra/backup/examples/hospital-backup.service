@@ -1,0 +1,19 @@
+# Nightly backup via systemd (alternative to the sidecar loop; use one, see crontab.example).
+# Install: cp hospital-backup.{service,timer} /etc/systemd/system/
+#          systemctl daemon-reload && systemctl enable --now hospital-backup.timer
+# Check:   systemctl list-timers hospital-backup.timer ; journalctl -u hospital-backup
+[Unit]
+Description=hospital-sys nightly database backup
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/hospital-sys/infra
+ExecStart=/usr/bin/docker compose --env-file ../.env run --rm -T backup /opt/backup/backup-nightly.sh
+# Exit 3 = dump ok but a pgBackRest repo failed (e.g. cloud offline): not a unit failure.
+SuccessExitStatus=3
+TimeoutStartSec=4h
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

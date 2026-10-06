@@ -1,0 +1,11 @@
+[Unit]
+Description=Run hospital-sys backup nightly at 02:30
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+# Run at boot if the server was off at 02:30 (power cuts).
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

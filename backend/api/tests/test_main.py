@@ -1,0 +1,146 @@
+"""The assembled API: routes, operation ids, auth defaults, OpenAPI shape, JSON 404s."""
+
+from __future__ import annotations
+
+import json
+import re
+from typing import Any
+
+import pytest
+from django.http import HttpRequest
+from django.test import Client, RequestFactory
+
+from api.main import API_VERSION
+from api.middleware import _resolved_user_id
+from apps.core.management.commands.export_openapi import render_schema
+
+OPERATION_ID = re.compile(
+    r"^(auth|core|ops|patients|visits|catalog|clinical|orders|billing|"
+    r"payments|pharmacy|lab|claims|reports|imports|portal)_[a-z]+(_[a-z0-9]+)*$"
+)
+
+
+@pytest.fixture(scope="module")
+def schema() -> dict[str, Any]:
+    # Exactly what export_openapi writes (JSON round-trip turns status codes into strings).
+    return dict(json.loads(render_schema()))
+
+
+def _operations(schema: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
+    return [
+        (path, method, op) for path, item in schema["paths"].items() for method, op in item.items()
+    ]
+
+
+def test_expected_routes_exist(schema: dict[str, Any]) -> None:
+    assert set(schema["paths"]) == {
+        "/api/auth/csrf",
+        "/api/auth/login",
+        "/api/auth/logout",
+        "/api/auth/me",
+        "/api/auth/me/preferences",
+        "/api/auth/change-password",
+        "/api/ops/health",
+    }
+    assert schema["info"]["title"] == "Hospital System API"
+    assert schema["info"]["version"] == API_VERSION
+
+
+def test_operation_ids_are_stable_and_unique(schema: dict[str, Any]) -> None:
+    ids = [op["operationId"] for _, _, op in _operations(schema)]
+    assert len(ids) == len(set(ids))
+    for op_id in ids:
+        assert OPERATION_ID.match(op_id), op_id
+    assert sorted(ids) == sorted(
+        [
+            "auth_get_csrf",
+            "auth_login",
+            "auth_logout",
+            "auth_get_me",
+            "auth_update_preferences",
+            "auth_change_password",
+            "ops_get_health",
+        ]
+    )
+
+
+def test_only_whitelisted_operations_are_public(schema: dict[str, Any]) -> None:
+    public = {op["operationId"] for _, _, op in _operations(schema) if not op.get("security")}
+    assert public == {"auth_get_csrf", "auth_login", "auth_logout", "ops_get_health"}
+
+
+def test_error_responses_reference_error_schema(schema: dict[str, Any]) -> None:
+    login = schema["paths"]["/api/auth/login"]["post"]["responses"]
+    for status in ("401", "403", "422", "423"):
+        ref = login[status]["content"]["application/json"]["schema"]["$ref"]
+        assert ref.endswith("/ErrorOut")
+    error_schema = schema["components"]["schemas"]["ErrorOut"]
+    assert set(error_schema["required"]) == {"code", "message", "details"}
+
+
+def test_me_out_shape(schema: dict[str, Any]) -> None:
+    me = schema["components"]["schemas"]["MeOut"]
+    assert set(me["required"]) == {
+        "id",
+        "username",
+        "full_name_ar",
+        "full_name_en",
+        "roles",
+        "permissions",
+        "language",
+        "theme",
+        "must_change_password",
+    }
+    assert me["properties"]["language"]["enum"] == ["ar", "en"]
+    assert me["properties"]["theme"]["enum"] == ["light", "dark", "warm"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("path", ["/api/", "/api/nope", "/api/auth/unknown", "/api/ops/health/x"])
+def test_unknown_api_paths_return_json_404(path: str) -> None:
+    response = Client().get(path)
+    assert response.status_code == 404
+    assert response.json() == {"code": "NOT_FOUND", "message": "Not found", "details": {}}
+
+
+@pytest.mark.django_db
+def test_admin_is_mounted() -> None:
+    response = Client().get("/admin/")
+    assert response.status_code == 302
+    assert response["Location"].startswith("/admin/login/")
+
+
+def test_resolved_user_id_never_evaluates_lazy_user() -> None:
+    from django.utils.functional import SimpleLazyObject
+
+    request: HttpRequest = RequestFactory().get("/")
+    request.user = SimpleLazyObject(lambda: pytest.fail("must not evaluate"))  # type: ignore[assignment]
+    assert _resolved_user_id(request) is None
+
+
+def test_resolved_user_id_reads_concrete_user() -> None:
+    class FakeUser:
+        is_authenticated = True
+        pk = 42
+
+    request = RequestFactory().get("/")
+    request.user = FakeUser()  # type: ignore[assignment]
+    assert _resolved_user_id(request) == 42
+    request.user = type("Anon", (), {"is_authenticated": False, "pk": None})()
+    assert _resolved_user_id(request) is None
+
+
+@pytest.mark.django_db
+def test_api_docs_use_bundled_assets_only(settings: Any) -> None:
+    if not settings.API_DOCS_ENABLED:  # pragma: no cover - production-like environment
+        pytest.skip("API docs disabled")
+    response = Client().get("/api/docs")
+    assert response.status_code == 200
+    html = response.content.decode()
+    assets = re.findall(r'(?:src|href)="([^"]+)"', html)
+    assert assets
+    assert all(a.startswith("/static/") for a in assets), assets
+    assert "cdn" not in html.lower()
+    schema = Client().get("/api/openapi.json")
+    assert schema.status_code == 200
+    assert schema.json()["info"]["title"] == "Hospital System API"

@@ -1,0 +1,214 @@
+{
+  "appName": "Medical Center System",
+  "appShortName": "Medical Center",
+  "appTagline": "From registration to shift close",
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "clear": "Clear",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "retry": "Try again",
+    "submit": "Submit",
+    "continue": "Continue",
+    "apply": "Apply",
+    "reset": "Reset",
+    "print": "Print",
+    "export": "Export",
+    "view": "View",
+    "details": "Details",
+    "more": "More",
+    "moreActions": "More actions",
+    "goHome": "Back to home",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "dismiss": "Dismiss",
+    "copy": "Copy",
+    "reload": "Reload page"
+  },
+  "loading": "Loading…",
+  "saving": "Saving…",
+  "optional": "Optional",
+  "required": "Required",
+  "status": {
+    "requested": "Requested",
+    "invoiced": "Invoiced",
+    "paid": "Paid",
+    "performed": "Performed",
+    "cancelled": "Cancelled",
+    "pending_verification": "Pending verification",
+    "confirmed": "Confirmed",
+    "rejected": "Rejected"
+  },
+  "statusHint": {
+    "requested": "Ordered, not yet invoiced",
+    "invoiced": "On an approved invoice, awaiting payment",
+    "paid": "Patient share collected, ready to perform",
+    "performed": "Service delivered",
+    "cancelled": "Cancelled with a recorded reason",
+    "pending_verification": "Transfer not yet verified; not counted as collected",
+    "confirmed": "Verified by an authorized user",
+    "rejected": "Rejected after review"
+  },
+  "theme": {
+    "label": "Theme",
+    "change": "Change theme",
+    "light": "Light",
+    "dark": "Dark",
+    "warm": "Warm"
+  },
+  "language": {
+    "label": "Language",
+    "ar": "العربية",
+    "en": "English",
+    "switchTo": "Switch to {{language}}"
+  },
+  "user": {
+    "menu": "User menu",
+    "signedInAs": "Signed in as",
+    "changePassword": "Change password",
+    "logout": "Log out",
+    "designSystem": "Design system",
+    "roles": "Roles"
+  },
+  "roles": {
+    "receptionist": "Receptionist",
+    "doctor": "Doctor",
+    "cashier": "Cashier",
+    "cashier_supervisor": "Cashier supervisor",
+    "pharmacist": "Pharmacist",
+    "lab_tech": "Lab technician",
+    "lab_supervisor": "Lab supervisor",
+    "nurse": "Nurse",
+    "accountant": "Accountant",
+    "manager": "Manager",
+    "admin": "System administrator"
+  },
+  "sex": {
+    "male": "Male",
+    "female": "Female"
+  },
+  "patient": {
+    "fileNo": "File no.",
+    "age": "Age",
+    "sex": "Sex",
+    "phone": "Phone",
+    "allergies": "Allergies",
+    "allergyAlert": "Allergy alert",
+    "noKnownAllergies": "No known allergies",
+    "allergiesUnknown": "Allergies not recorded",
+    "coverage": "Coverage",
+    "cash": "Self-pay",
+    "incompleteFile": "Incomplete emergency file",
+    "years_one": "{{count}} year",
+    "years_other": "{{count}} years",
+    "months_one": "{{count}} month",
+    "months_other": "{{count}} months"
+  },
+  "serviceLine": {
+    "qty": "Qty",
+    "quantity": "Qty: {{count}}",
+    "unitPrice": "Unit price",
+    "total": "Total",
+    "patientShare": "Patient share",
+    "payerShare": "Payer share",
+    "authorized": "Perform-first authorized",
+    "orderedBy": "Ordered by {{name}}"
+  },
+  "table": {
+    "rowsPerPage": "Rows per page",
+    "pageOf": "Page {{page}} of {{pages}}",
+    "range": "{{from}}–{{to}} of {{total}}",
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "sortBy": "Sort by {{column}}",
+    "sortedAsc": "Sorted ascending",
+    "sortedDesc": "Sorted descending",
+    "actions": "Actions",
+    "rowActions": "Row actions",
+    "noResultsTitle": "No results",
+    "noResultsDescription": "Try different search words or filters.",
+    "loading": "Loading data…"
+  },
+  "validation": {
+    "required": "This field is required",
+    "minLength": "Must be at least {{min}} characters",
+    "maxLength": "Must be at most {{max}} characters",
+    "invalid": "Invalid value",
+    "number": "Enter a valid number",
+    "phone": "Invalid phone number; enter 10 digits starting with 0",
+    "passwordsMismatch": "Passwords do not match",
+    "passwordSameAsOld": "The new password must differ from the current one",
+    "passwordNumeric": "The password cannot be only numbers",
+    "selectOption": "Choose an option",
+    "mustAccept": "You must confirm to continue"
+  },
+  "reason": {
+    "title": "Reason",
+    "description": "This action is recorded in the audit log with your name and time.",
+    "code": "Reason",
+    "codePlaceholder": "Choose a reason",
+    "note": "Additional details",
+    "notePlaceholder": "Write a short explanation",
+    "submit": "Confirm with reason"
+  },
+  "confirm": {
+    "title": "Are you sure?",
+    "description": "This action cannot be undone."
+  },
+  "search": {
+    "placeholder": "Search…",
+    "globalPlaceholder": "Search pages…",
+    "open": "Open quick search",
+    "commandPlaceholder": "Type a page name…",
+    "noResults": "No matching results",
+    "pages": "Pages",
+    "clear": "Clear search"
+  },
+  "underConstruction": {
+    "title": "Module under construction",
+    "description": "This module is planned and will be available in an upcoming phase.",
+    "action": "Back to dashboard"
+  },
+  "notFound": {
+    "code": "404",
+    "title": "Page not found",
+    "description": "The link may have changed or the page was removed. Check the address or go back home."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "This page could not be displayed. Try again; if it keeps happening, contact the system administrator."
+  },
+  "kpi": {
+    "trendUp": "Up {{value}}",
+    "trendDown": "Down {{value}}",
+    "trendFlat": "No change",
+    "comparedToYesterday": "vs. yesterday"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "mainNavigation": "Main navigation",
+    "mobileNavigation": "Quick navigation",
+    "loading": "Loading",
+    "dismissAlert": "Dismiss alert"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "openSearch": "Quick search"
+  },
+  "toast": {
+    "saved": "Saved",
+    "preferencesFailed": "Could not save preferences to the server; they apply on this device only."
+  }
+}

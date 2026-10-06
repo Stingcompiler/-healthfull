@@ -1,0 +1,136 @@
+[project]
+name = "hospital-backend"
+version = "0.1.0"
+description = "Medical center management system backend (Django + django-ninja)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "django>=5.2,<5.3",
+    "django-ninja>=1.4",
+    "django-stubs-ext>=5.2,<5.3",
+    "psycopg[binary]>=3.2",
+    "django-pghistory>=3.5",
+    "django-pgtrigger>=4.13",
+    "pydantic>=2.9",
+    "structlog>=24.4",
+    "gunicorn>=23.0",
+    "openpyxl>=3.1",
+    "whitenoise>=6.7",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.112",
+    "factory-boy>=3.3",
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "django-stubs[compatible-mypy]>=5.2,<5.3",
+]
+
+[tool.uv]
+package = false
+
+# --- ruff ---------------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["**/migrations/*.py"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",  # pycodestyle, pyflakes
+    "I",            # isort
+    "B",            # bugbear
+    "UP",           # pyupgrade
+    "DJ",           # django
+    "S",            # bandit (security)
+    "C4",           # comprehensions
+    "SIM",          # simplify
+    "DTZ",          # naive datetimes
+    "T20",          # print statements
+    "PIE",
+    "RET",
+    "PT",           # pytest style
+    "RUF",
+]
+ignore = [
+    "RUF001", "RUF002", "RUF003",  # Arabic text is intentional, not confusable
+    "RUF012",                      # Django Meta/admin class attributes
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106", "S311", "DTZ"]
+"conftest.py" = ["S101", "S105", "S106"]
+"**/management/commands/*.py" = ["T20"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "apps", "config", "domain"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# --- mypy ---------------------------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.12"
+files = ["domain", "api", "apps", "config", "conftest.py", "manage.py"]
+exclude = ["/migrations/"]
+plugins = ["mypy_django_plugin.main"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+strict_equality = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+# The domain package is held to mypy --strict (ARCHITECTURE 1, STACK).
+[[tool.mypy.overrides]]
+module = ["domain", "domain.*"]
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+warn_return_any = true
+no_implicit_reexport = true
+extra_checks = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = ["*.tests.*", "conftest"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+module = ["pghistory", "pghistory.*", "pgtrigger", "pgtrigger.*", "factory", "factory.*"]
+ignore_missing_imports = true
+
+# --- pytest -------------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+testpaths = ["domain", "api", "apps", "config"]
+addopts = ["--strict-markers", "-ra"]
+filterwarnings = [
+    "error::RuntimeWarning",
+    "error:Returning tuple:DeprecationWarning",
+    "ignore:No directory at:UserWarning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["domain", "api", "apps", "config"]
+omit = ["*/migrations/*", "*/tests/*", "config/wsgi.py", "config/asgi.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload"]

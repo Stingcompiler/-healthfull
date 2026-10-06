@@ -1,0 +1,39 @@
+{
+  "groups": {
+    "overview": "نظرة عامة",
+    "frontDesk": "الاستقبال",
+    "clinical": "السريري",
+    "finance": "المالية",
+    "services": "الأقسام المنفذة",
+    "insights": "التقارير",
+    "administration": "الإدارة"
+  },
+  "items": {
+    "dashboard": "لوحة المتابعة",
+    "patients": "المرضى",
+    "queue": "الطابور",
+    "appointments": "المواعيد",
+    "clinic": "العيادة",
+    "cashier": "الخزينة",
+    "claims": "مطالبات التأمين",
+    "pharmacy": "الصيدلية",
+    "lab": "المعمل",
+    "nursing": "التمريض",
+    "reports": "التقارير",
+    "admin": "الإدارة",
+    "adminUsers": "المستخدمون",
+    "adminRoles": "الأدوار والصلاحيات",
+    "adminCatalog": "كتالوج الخدمات",
+    "adminPriceLists": "قوائم الأسعار",
+    "adminPayers": "جهات التغطية",
+    "adminSettings": "إعدادات المركز",
+    "adminImports": "الاستيراد",
+    "adminSystem": "حالة النظام",
+    "design": "دليل التصميم"
+  },
+  "shell": {
+    "menu": "القائمة",
+    "more": "المزيد",
+    "home": "الرئيسية"
+  }
+}

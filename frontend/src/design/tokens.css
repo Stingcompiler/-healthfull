@@ -1,0 +1,265 @@
+/*
+ * Design tokens. The ONLY place raw colors may appear in the frontend.
+ * Components use the semantic Tailwind utilities generated from these
+ * variables in ./index.css (bg-surface, text-fg, border-border, ...).
+ *
+ * Themes switch via <html data-theme="light|dark|warm">.
+ * Brand values for --primary, --bg, --surface and --fg are fixed by
+ * docs/ARCHITECTURE.md section 5.1. Every text/background pair below is
+ * checked for WCAG AA by src/design/contrast.test.ts, so a change here that
+ * breaks contrast fails `pnpm test`.
+ *
+ * Token families
+ *   surfaces      --bg --surface --surface-raised --subtle
+ *   text          --fg --fg-muted
+ *   lines         --border --border-strong --card-border --ring
+ *   brand         --primary(-fg|-hover|-strong|-soft)
+ *   neutral fills --secondary(-fg|-hover) --accent(-fg)
+ *   status        --{success,warning,danger,info}: solid, -contrast (text on
+ *                 solid), -bg (soft fill), -fg (text on soft fill or surface),
+ *                 -border
+ *   service line  --state-{requested,invoiced,paid,performed,cancelled,pending}
+ *                 solid (dots/borders), -bg, -fg
+ *   elevation     --elevation-card --elevation-raised --elevation-overlay --overlay
+ *   shape         --card-radius --control-radius
+ */
+
+:root {
+  --card-radius: 12px;
+  --control-radius: 8px;
+}
+
+/* ---------------------------------------------------------------- light */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --subtle: #f1f5f9;
+
+  --fg: #0f172a;
+  --fg-muted: #475569;
+
+  --border: #e2e8f0;
+  --border-strong: #7b8799;
+  --card-border: #e8edf3;
+  --ring: #0d9488;
+
+  --primary: #0d9488;
+  --primary-fg: #0b1e1c;
+  --primary-hover: #12a597;
+  --primary-strong: #0f766e;
+  --primary-soft: #e6f7f4;
+
+  --secondary: #f1f5f9;
+  --secondary-fg: #0f172a;
+  --secondary-hover: #e2e8f0;
+  --accent: #eef2f6;
+  --accent-fg: #0f172a;
+
+  --success: #047857;
+  --success-contrast: #ffffff;
+  --success-bg: #ecfdf5;
+  --success-fg: #065f46;
+  --success-border: #a7f3d0;
+
+  --warning: #b45309;
+  --warning-contrast: #ffffff;
+  --warning-bg: #fffbeb;
+  --warning-fg: #92400e;
+  --warning-border: #fcd34d;
+
+  --danger: #e11d48;
+  --danger-contrast: #ffffff;
+  --danger-bg: #fff1f2;
+  --danger-fg: #9f1239;
+  --danger-border: #fecdd3;
+
+  --info: #0369a1;
+  --info-contrast: #ffffff;
+  --info-bg: #f0f9ff;
+  --info-fg: #075985;
+  --info-border: #bae6fd;
+
+  --state-requested: #64748b;
+  --state-requested-bg: #f1f5f9;
+  --state-requested-fg: #334155;
+  --state-invoiced: #2563eb;
+  --state-invoiced-bg: #dbeafe;
+  --state-invoiced-fg: #1e40af;
+  --state-paid: #22c55e;
+  --state-paid-bg: #dcfce7;
+  --state-paid-fg: #166534;
+  --state-performed: #166534;
+  --state-performed-bg: #166534;
+  --state-performed-fg: #f0fdf4;
+  --state-cancelled: #e11d48;
+  --state-cancelled-bg: #ffe4e6;
+  --state-cancelled-fg: #9f1239;
+  --state-pending: #d97706;
+  --state-pending-bg: #fef3c7;
+  --state-pending-fg: #92400e;
+
+  --overlay: rgb(15 23 42 / 0.45);
+  --elevation-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
+  --elevation-raised: 0 2px 4px rgb(15 23 42 / 0.05), 0 12px 32px -8px rgb(15 23 42 / 0.16);
+  --elevation-overlay: 0 24px 64px -12px rgb(15 23 42 / 0.28);
+}
+
+/* ----------------------------------------------------------------- dark */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0b1220;
+  --surface: #111a2e;
+  --surface-raised: #16213a;
+  --subtle: #18233a;
+
+  --fg: #e2e8f0;
+  --fg-muted: #9aa8bc;
+
+  --border: #233049;
+  --border-strong: #6b7a93;
+  --card-border: #1f2b44;
+  --ring: #2dd4bf;
+
+  --primary: #2dd4bf;
+  --primary-fg: #042f2e;
+  --primary-hover: #5eead4;
+  --primary-strong: #5eead4;
+  --primary-soft: #0f3333;
+
+  --secondary: #1e293b;
+  --secondary-fg: #e2e8f0;
+  --secondary-hover: #273449;
+  --accent: #1b2740;
+  --accent-fg: #e2e8f0;
+
+  --success: #34d399;
+  --success-contrast: #022c22;
+  --success-bg: #06281f;
+  --success-fg: #6ee7b7;
+  --success-border: #0e4d3a;
+
+  --warning: #fbbf24;
+  --warning-contrast: #2a1503;
+  --warning-bg: #2b1d06;
+  --warning-fg: #fcd34d;
+  --warning-border: #5c3d0b;
+
+  --danger: #fb7185;
+  --danger-contrast: #3b0412;
+  --danger-bg: #330a17;
+  --danger-fg: #fda4af;
+  --danger-border: #6b1730;
+
+  --info: #38bdf8;
+  --info-contrast: #062337;
+  --info-bg: #07263b;
+  --info-fg: #7dd3fc;
+  --info-border: #0c4a6e;
+
+  --state-requested: #94a3b8;
+  --state-requested-bg: #1e293b;
+  --state-requested-fg: #cbd5e1;
+  --state-invoiced: #60a5fa;
+  --state-invoiced-bg: #172554;
+  --state-invoiced-fg: #bfdbfe;
+  --state-paid: #4ade80;
+  --state-paid-bg: #0b2e1a;
+  --state-paid-fg: #bbf7d0;
+  --state-performed: #16a34a;
+  --state-performed-bg: #15803d;
+  --state-performed-fg: #ffffff;
+  --state-cancelled: #fb7185;
+  --state-cancelled-bg: #3f0b1b;
+  --state-cancelled-fg: #fecdd3;
+  --state-pending: #fbbf24;
+  --state-pending-bg: #3a2306;
+  --state-pending-fg: #fde68a;
+
+  --overlay: rgb(2 6 23 / 0.7);
+  --elevation-card: none;
+  --elevation-raised: 0 0 0 1px rgb(255 255 255 / 0.04), 0 12px 32px -8px rgb(0 0 0 / 0.5);
+  --elevation-overlay: 0 0 0 1px rgb(255 255 255 / 0.05), 0 24px 64px -12px rgb(0 0 0 / 0.6);
+}
+
+/* ----------------------------------------------------------------- warm */
+[data-theme="warm"] {
+  color-scheme: light;
+
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --subtle: #f3efe9;
+
+  --fg: #1c1917;
+  --fg-muted: #57534e;
+
+  --border: #e9e3da;
+  --border-strong: #8a8178;
+  --card-border: #efe9e1;
+  --ring: #4f46e5;
+
+  --primary: #4f46e5;
+  --primary-fg: #ffffff;
+  --primary-hover: #4338ca;
+  --primary-strong: #4338ca;
+  --primary-soft: #eef0fd;
+
+  --secondary: #f3efe9;
+  --secondary-fg: #1c1917;
+  --secondary-hover: #e9e3da;
+  --accent: #f5f1eb;
+  --accent-fg: #1c1917;
+
+  --success: #047857;
+  --success-contrast: #ffffff;
+  --success-bg: #effaf4;
+  --success-fg: #065f46;
+  --success-border: #b5ead0;
+
+  --warning: #b45309;
+  --warning-contrast: #ffffff;
+  --warning-bg: #fef8e7;
+  --warning-fg: #8a3c0c;
+  --warning-border: #f5d48a;
+
+  --danger: #e11d48;
+  --danger-contrast: #ffffff;
+  --danger-bg: #fdf0f1;
+  --danger-fg: #9f1239;
+  --danger-border: #f8c9d0;
+
+  --info: #0369a1;
+  --info-contrast: #ffffff;
+  --info-bg: #eff7fc;
+  --info-fg: #075985;
+  --info-border: #c0e2f5;
+
+  --state-requested: #78716c;
+  --state-requested-bg: #f2efeb;
+  --state-requested-fg: #44403c;
+  --state-invoiced: #2563eb;
+  --state-invoiced-bg: #dfe9fd;
+  --state-invoiced-fg: #1e40af;
+  --state-paid: #22c55e;
+  --state-paid-bg: #dff7e6;
+  --state-paid-fg: #166534;
+  --state-performed: #166534;
+  --state-performed-bg: #166534;
+  --state-performed-fg: #f0fdf4;
+  --state-cancelled: #e11d48;
+  --state-cancelled-bg: #fde4e7;
+  --state-cancelled-fg: #9f1239;
+  --state-pending: #d97706;
+  --state-pending-bg: #fdf1cd;
+  --state-pending-fg: #8a3c0c;
+
+  --overlay: rgb(28 25 23 / 0.45);
+  --elevation-card: 0 1px 2px rgb(28 25 23 / 0.04), 0 4px 16px -4px rgb(68 52 34 / 0.09);
+  --elevation-raised: 0 2px 4px rgb(28 25 23 / 0.05), 0 12px 32px -8px rgb(68 52 34 / 0.18);
+  --elevation-overlay: 0 24px 64px -12px rgb(68 52 34 / 0.3);
+}

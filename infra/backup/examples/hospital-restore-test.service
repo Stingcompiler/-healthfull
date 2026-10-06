@@ -1,0 +1,14 @@
+# Monthly automated restore test via systemd (alternative to the sidecar loop).
+# Install: cp hospital-restore-test.{service,timer} /etc/systemd/system/
+#          systemctl daemon-reload && systemctl enable --now hospital-restore-test.timer
+[Unit]
+Description=hospital-sys restore test (latest dump into a scratch database)
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/hospital-sys/infra
+ExecStart=/usr/bin/docker compose --env-file ../.env run --rm -T backup /opt/backup/restore-test.sh
+TimeoutStartSec=4h
+Nice=10

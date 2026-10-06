@@ -1,0 +1,17 @@
+# hospital-sys backups from the host's cron instead of the backup sidecar.
+# Use ONE scheduler: if you install these, stop the sidecar's loop with
+#   BACKUP_SCHEDULER=off in .env (the backup container then idles) and `docker compose up -d backup`.
+#
+# Install as root:  crontab -e   (or copy to /etc/cron.d/hospital-backup with a user column)
+# Times are the host's local time (set it with: timedatectl set-timezone Africa/Khartoum).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Nightly verified dump (+ pgBackRest when enabled), 02:30 every day.
+30 2 * * *  cd /opt/hospital-sys/infra && docker compose --env-file ../.env run --rm -T backup /opt/backup/backup-nightly.sh >>/var/log/hospital-backup.log 2>&1
+
+# Restore test, 04:00 on the 1st of every month.
+0 4 1 * *   cd /opt/hospital-sys/infra && docker compose --env-file ../.env run --rm -T backup /opt/backup/restore-test.sh >>/var/log/hospital-backup.log 2>&1
+
+# Optional: copy the newest dump to a USB disk mounted at /mnt/usb-backup, 03:30 daily.
+# 30 3 * * *  rsync -a --delete /srv/hospital/backups/dumps/ /mnt/usb-backup/hospital-dumps/ >>/var/log/hospital-backup.log 2>&1

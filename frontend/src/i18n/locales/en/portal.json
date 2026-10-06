@@ -1,0 +1,23 @@
+{
+  "brand": "Patient portal",
+  "login": {
+    "title": "Access your file",
+    "subtitle": "Use your file number, phone number, and the verification code printed on your receipt.",
+    "fileNo": "File number",
+    "phone": "Phone number",
+    "code": "Verification code",
+    "codeHint": "A 6-digit code printed on your receipt",
+    "codeInvalid": "Enter the 6-digit code",
+    "submit": "Continue",
+    "comingSoonTitle": "The portal is being prepared",
+    "comingSoon": "The patient portal will be available soon. For any questions, please ask at reception."
+  },
+  "features": {
+    "title": "What you will find here",
+    "results": "Approved lab results",
+    "appointments": "Your appointments and new bookings",
+    "receipts": "Invoices and receipts, with verification"
+  },
+  "privacy": "Your data stays on the center's server and is not shared with anyone.",
+  "staffLink": "Staff sign-in"
+}
