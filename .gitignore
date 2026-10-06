@@ -1,0 +1,39 @@
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# unrelated material kept locally only
+سيرفر/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+htmlcov/
+.coverage
+backend/media/
+backend/staticfiles/
+
+# Node
+node_modules/
+frontend/dist/
+.vite/
+*.tsbuildinfo
+
+# Tests / artifacts
+e2e/test-results/
+e2e/playwright-report/
+e2e/.auth/
+artifacts/screens/*.png
+!artifacts/screens/.gitkeep
+
+# Env
+.env
+.env.*
+!.env.example
