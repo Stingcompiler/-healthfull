@@ -78,7 +78,7 @@ describe("AuthGuard", () => {
 
   function expectNoRenderLoop() {
     const messages = consoleError.mock.calls.map((args) => args.map(String).join(" "));
-    expect(messages.filter((m) => /Maximum update depth/.test(m))).toEqual([]);
+    expect(messages.filter((m) => m.includes("Maximum update depth"))).toEqual([]);
   }
 
   it("sends a user whose session ended to /login once, with a way back", async () => {
@@ -109,7 +109,7 @@ describe("AuthGuard", () => {
     await settle();
 
     expect(router.state.location.pathname).toBe("/login");
-    const redirect = (router.state.location.search as { redirect?: string }).redirect;
+    const redirect = router.state.location.search.redirect;
     expect(redirect === undefined || redirect === "/patients").toBe(true);
     expect(router.state.location.href.match(/login/g)).toHaveLength(1);
     expectNoRenderLoop();

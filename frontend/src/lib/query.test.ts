@@ -27,7 +27,7 @@ async function failingQuery(status: number, code: string) {
   const client = createQueryClient();
   client.setQueryData(authKeys.me, ME);
   await expect(
-    client.fetchQuery({ queryKey: ["probe"], queryFn: failWith(status, code), retry: false }),
+    client.query({ queryKey: ["probe"], queryFn: failWith(status, code), retry: false }),
   ).rejects.toBeInstanceOf(ApiError);
   return client;
 }

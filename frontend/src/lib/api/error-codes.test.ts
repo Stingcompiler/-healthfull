@@ -72,9 +72,7 @@ describe.skipIf(!hasBackend)("backend error codes", () => {
     ["en", en.errors],
     ["ar", ar.errors],
   ] as const)("all have %s text in the errors namespace", (_lang, messages) => {
-    const missing = [...codes]
-      .filter(([code]) => !(code in messages))
-      .map(([code, file]) => `${code} (${file})`);
+    const missing = [...codes].filter(([code]) => !(code in messages)).map(([code, file]) => `${code} (${file})`);
     expect(missing, "add these to src/i18n/locales/{ar,en}/errors.json").toEqual([]);
   });
 });
