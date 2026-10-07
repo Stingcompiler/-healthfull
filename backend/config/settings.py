@@ -228,7 +228,11 @@ STORAGES = {
             "django.contrib.staticfiles.storage.StaticFilesStorage"
             if DEBUG
             else "whitenoise.storage.CompressedManifestStaticFilesStorage"
-        )
+        ),
+        # Static assets are public. Without explicit modes, FileSystemStorage would reuse the
+        # restrictive upload modes above, and collectstatic (run as root at image build) would
+        # leave STATIC_ROOT unreadable to the non-root app user.
+        "OPTIONS": {"file_permissions_mode": 0o644, "directory_permissions_mode": 0o755},
     },
 }
 # STATIC_ROOT only exists after collectstatic (Docker build); in dev/test that is expected.
