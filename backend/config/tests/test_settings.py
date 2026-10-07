@@ -83,7 +83,30 @@ def test_test_database_name_is_derived_from_repo_root() -> None:
     digest = hashlib.sha1(str(repo_root).encode()).hexdigest()[:8]  # noqa: S324
     assert digest == settings.REPO_HASH
     test_db: Any = settings.DATABASES["default"]["TEST"]
-    assert test_db["NAME"] == f"test_hospital_{digest}"
+    expected = os.environ.get("TEST_DB_NAME") or f"test_hospital_{digest}"
+    assert test_db["NAME"] == expected
+
+
+def test_test_database_name_defaults_to_repo_hash_without_override() -> None:
+    code = "import json, config.settings as s; print(json.dumps([s.TEST_DB_NAME, s.REPO_HASH]))"
+    result = _run_settings({}, code)
+    assert result.returncode == 0, result.stderr
+    name, repo_hash = json.loads(result.stdout)
+    assert name == f"test_hospital_{repo_hash}"
+
+
+def test_test_database_name_env_override() -> None:
+    code = "import json, config.settings as s; print(json.dumps(s.DATABASES['default']['TEST']))"
+    result = _run_settings({"TEST_DB_NAME": "test_hospital_agent1"}, code)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["NAME"] == "test_hospital_agent1"
+
+
+@pytest.mark.parametrize("bad", ["hospital_dev", "e2e_hospital_x", "prod"])
+def test_test_database_name_override_must_start_with_test(bad: str) -> None:
+    result = _run_settings({"TEST_DB_NAME": bad}, "import config.settings")
+    assert result.returncode != 0
+    assert "TEST_DB_NAME must start with 'test_'" in result.stderr
 
 
 def test_core_settings() -> None:
@@ -102,7 +125,11 @@ def test_core_settings() -> None:
 
 
 def _run_settings(env: dict[str, str], code: str) -> subprocess.CompletedProcess[str]:
-    clean = {k: v for k, v in os.environ.items() if not k.startswith(("DJANGO_", "DB_", "LOG_"))}
+    clean = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith(("DJANGO_", "DB_", "LOG_", "TEST_DB_"))
+    }
     clean.pop("DEBUG", None)
     clean.pop("SECRET_KEY", None)
     clean.update(env)

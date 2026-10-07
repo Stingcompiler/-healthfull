@@ -97,6 +97,12 @@ TEMPLATES = [
 # --- Database --------------------------------------------------------------------------
 # Empty HOST/PORT/USER/PASSWORD let libpq use its defaults (local Unix socket, OS user).
 
+# Parallel checkouts get distinct test DBs from REPO_HASH; parallel agents in ONE checkout
+# set TEST_DB_NAME. pytest drops this database, so only "test_*" names are accepted.
+TEST_DB_NAME = env_str("TEST_DB_NAME", "") or f"test_hospital_{REPO_HASH}"
+if not TEST_DB_NAME.startswith("test_"):
+    raise ImproperlyConfigured("TEST_DB_NAME must start with 'test_' (pytest drops it).")
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -107,7 +113,7 @@ DATABASES = {
         "PORT": env_str("PGPORT", ""),
         "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 0),
         "CONN_HEALTH_CHECKS": True,
-        "TEST": {"NAME": f"test_hospital_{REPO_HASH}"},
+        "TEST": {"NAME": TEST_DB_NAME},
     }
 }
 

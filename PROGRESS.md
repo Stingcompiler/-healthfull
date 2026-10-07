@@ -4,7 +4,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 | Phase | Status | Notes |
 |---|---|---|
-| 0. Foundation | integrated, exit gate pending | `make check` and `make e2e` green locally; Docker exit gate (`docker compose up` shows a working login) not run: no Docker on the build machine, first run is the CI `docker` job |
+| 0. Foundation | done (merged PR #1); Docker run pending in CI | `make check` and `make e2e` green locally; Docker exit gate (`docker compose up` shows a working login) not run: no Docker on the build machine, first run is the CI `docker` job |
 | 1. Domain core + schema | not started | |
 | 2. Patients and visits | not started | |
 | 3. Doctor and orders | not started | |
@@ -50,4 +50,4 @@ Source of truth for build status. Update at the end of every task. Phases from `
   Infra: flock locks, backup catch-up, media readable by the backup user, partial (not failed)
   backups on media errors, atomic restore swap, crash-safe `update.sh`, non-root Caddy with health
   check, `BIND_IP`, migrations check in `make check` and CI.
-
+- 2026-10-07: Phase 0 review found 50 issues, all fixed (ADR 0005). make check green (backend 436, frontend 394 tests); make e2e 482 passed. Added TEST_DB_NAME override (must start with test_) for parallel agents. Next: Phase 1 via workflow-drafts/phase1.js on branch feat/1-domain-core.
