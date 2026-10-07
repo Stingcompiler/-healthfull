@@ -118,9 +118,25 @@ def test_core_settings() -> None:
     assert settings.SESSION_SAVE_EVERY_REQUEST is True
     assert settings.CSRF_COOKIE_HTTPONLY is False
     assert settings.SESSION_COOKIE_HTTPONLY is True
-    assert "apps.core" in settings.INSTALLED_APPS
-    assert "apps.ops" in settings.INSTALLED_APPS
-    assert "apps.billing" not in settings.INSTALLED_APPS  # stubs only until Phase 1
+    for app in (
+        "core",
+        "patients",
+        "visits",
+        "catalog",
+        "clinical",
+        "orders",
+        "billing",
+        "payments",
+        "ledger",
+        "pharmacy",
+        "lab",
+        "claims",
+        "reports",
+        "portal",
+        "imports",
+        "ops",
+    ):  # every app of ARCHITECTURE 4.1 is installed from Phase 1
+        assert f"apps.{app}" in settings.INSTALLED_APPS
     assert settings.PGHISTORY_APPEND_ONLY is True
 
 

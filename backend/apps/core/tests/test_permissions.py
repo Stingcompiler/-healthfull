@@ -46,7 +46,102 @@ def test_core_codes_are_registered() -> None:
 
 
 def test_doctors_hold_no_core_permissions_by_default() -> None:
-    assert all("doctor" not in p.default_roles for p in PERMISSIONS.values())
+    core_codes = [p for code, p in PERMISSIONS.items() if code.split(".")[0] in {"core", "ops"}]
+    assert core_codes
+    assert all("doctor" not in p.default_roles for p in core_codes)
+
+
+#: Apps whose codes move money or reveal billing (FEATURES 3.8: doctors never see prices).
+BILLING_APPS = {"billing", "payments", "claims", "ledger"}
+BILLING_CODES = {"catalog.view_prices", "catalog.manage_prices", "patients.view_balance"}
+
+
+def test_doctors_hold_no_billing_permissions_by_default() -> None:
+    billing = [
+        p
+        for code, p in PERMISSIONS.items()
+        if code.split(".")[0] in BILLING_APPS or code in BILLING_CODES
+    ]
+    assert len(billing) > 20
+    assert [p.code for p in billing if "doctor" in p.default_roles] == []
+
+
+def test_every_app_registers_permissions_and_admin_holds_all() -> None:
+    apps_with_codes = {code.split(".")[0] for code in PERMISSIONS}
+    assert apps_with_codes >= {
+        "core",
+        "ops",
+        "patients",
+        "visits",
+        "catalog",
+        "clinical",
+        "orders",
+        "billing",
+        "payments",
+        "ledger",
+        "pharmacy",
+        "lab",
+        "claims",
+        "reports",
+        "portal",
+        "imports",
+    }
+    assert [code for code, p in PERMISSIONS.items() if "admin" not in p.default_roles] == []
+
+
+@pytest.mark.parametrize(
+    ("role", "allowed", "denied"),
+    [
+        (
+            "cashier",
+            {"billing.approve_invoice", "payments.take_payment", "payments.close_shift"},
+            {"payments.confirm_transfer", "payments.approve_refund", "lab.approve_results"},
+        ),
+        (
+            "cashier_supervisor",
+            {
+                "payments.confirm_transfer",
+                "payments.approve_refund",
+                "billing.approve_credit_note",
+                "billing.override_discount_limit",
+                "payments.override_duplicate",
+                "orders.authorize_perform_first",
+            },
+            {"lab.approve_results", "clinical.write_note"},
+        ),
+        (
+            "pharmacist",
+            {"pharmacy.dispense", "pharmacy.receive_goods", "pharmacy.count_stock"},
+            {"billing.approve_invoice", "pharmacy.approve_adjustment"},
+        ),
+        ("lab_tech", {"lab.enter_results", "lab.receive_sample"}, {"lab.approve_results"}),
+        ("lab_supervisor", {"lab.approve_results", "lab.amend_results"}, {"payments.view"}),
+        (
+            "nurse",
+            {"clinical.record_vitals", "orders.perform_procedure"},
+            {"billing.view", "clinical.write_note"},
+        ),
+        (
+            "accountant",
+            {"claims.manage", "payments.confirm_transfer", "reports.financial"},
+            {"pharmacy.dispense"},
+        ),
+        (
+            "manager",
+            {"reports.dashboard", "payments.review_shift", "core.manage_settings"},
+            {"payments.take_payment"},
+        ),
+        (
+            "receptionist",
+            {"patients.create", "visits.create", "visits.view_queue"},
+            {"billing.approve_invoice", "clinical.view"},
+        ),
+    ],
+)
+def test_default_role_matrix_follows_flow(role: str, allowed: set[str], denied: set[str]) -> None:
+    holds = {code for code, p in PERMISSIONS.items() if role in p.default_roles}
+    assert allowed <= holds
+    assert not (denied & holds)
 
 
 def test_registry_is_read_only() -> None:
@@ -66,13 +161,13 @@ def test_as_dict() -> None:
 @pytest.mark.usefixtures("isolated_registry")
 def test_register_and_reregister_identically() -> None:
     first = register_permission(
-        "billing.approve_invoice", label_ar="اعتماد", label_en="Approve", default_roles=["cashier"]
+        "sandbox.approve_thing", label_ar="اعتماد", label_en="Approve", default_roles=["cashier"]
     )
     again = register_permission(
-        "billing.approve_invoice", label_ar="اعتماد", label_en="Approve", default_roles={"cashier"}
+        "sandbox.approve_thing", label_ar="اعتماد", label_en="Approve", default_roles={"cashier"}
     )
     assert first == again
-    assert is_registered("billing.approve_invoice")
+    assert is_registered("sandbox.approve_thing")
 
 
 @pytest.mark.usefixtures("isolated_registry")

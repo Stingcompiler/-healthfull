@@ -154,3 +154,21 @@ register_permission(
     label_en="View system and backup status",
     default_roles={roles.ADMIN, roles.MANAGER},
 )
+register_permission(
+    "core.manage_departments",
+    label_ar="إدارة الأقسام والغرف والأطباء",
+    label_en="Manage departments, rooms and doctors",
+    default_roles={roles.ADMIN},
+)
+register_permission(
+    "core.manage_reason_codes",
+    label_ar="إدارة قوائم الأسباب",
+    label_en="Manage reason lists",
+    default_roles={roles.ADMIN, roles.MANAGER},
+)
+register_permission(
+    "core.manage_print_templates",
+    label_ar="إدارة قوالب الطباعة",
+    label_en="Manage print templates",
+    default_roles={roles.ADMIN},
+)

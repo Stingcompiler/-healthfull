@@ -9,6 +9,7 @@ import pytest
 from django.utils import timezone
 
 from apps.core.models import AuthEvent, AuthEventKind, Policy, User
+from apps.core.permissions import PERMISSIONS
 from conftest import TEST_PASSWORD, ApiClient
 
 pytestmark = pytest.mark.django_db
@@ -81,15 +82,8 @@ def test_login_success_returns_me_and_starts_session(api_client: ApiClient, make
         "full_name_ar": "سارة",
         "full_name_en": "Sara",
         "roles": ["admin"],
-        "permissions": sorted(
-            [
-                "core.manage_roles",
-                "core.manage_settings",
-                "core.manage_users",
-                "core.view_audit",
-                "ops.view_status",
-            ]
-        ),
+        # The admin role holds every registered code by default (ARCHITECTURE 4.10).
+        "permissions": sorted(PERMISSIONS),
         "language": "en",
         "theme": "dark",
         "must_change_password": False,
@@ -289,7 +283,13 @@ def test_me_for_doctor_has_no_admin_permissions(api_client: ApiClient, make_user
     api_client.login("doc")
     body = api_client.get("/api/auth/me").json()
     assert body["roles"] == ["doctor"]
-    assert body["permissions"] == []
+    permissions = set(body["permissions"])
+    assert {"clinical.view", "clinical.write_note", "orders.create"} <= permissions
+    assert not {
+        code
+        for code in permissions
+        if code.split(".")[0] in {"core", "ops", "billing", "payments", "claims", "ledger"}
+    }
 
 
 def test_me_for_superuser_lists_every_permission(api_client: ApiClient, make_user: Any) -> None:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ipaddress
 import math
+from collections.abc import Iterable
 from datetime import date, datetime, timedelta
 from typing import Any
 
@@ -27,7 +28,9 @@ from apps.core.models import (
     AuthEvent,
     AuthEventKind,
     LoginThrottle,
+    Notification,
     Policy,
+    ReasonCode,
     Sequence,
     ThrottleScope,
     User,
@@ -509,3 +512,74 @@ def next_number(code: str, *, on: date | None = None) -> str:
     seq.last_value += 1
     seq.save(update_fields=["last_value"])
     return format_document_number(code, year, seq.last_value)
+
+
+# --- Shared helpers for the money and order services -------------------------------------
+#
+# Used by ``apps.orders``, ``apps.billing``, ``apps.payments`` and ``apps.ledger`` services:
+# permission checks that are business rules (approvals and overrides, invariant 4), reason
+# codes from the configurable lists, and in-app notifications (FEATURES 0.13).
+
+
+def holds_permission(user: User, code: str) -> bool:
+    """Whether ``user`` holds permission ``code`` (roles, overrides, superuser)."""
+    return code in effective_permissions(user)
+
+
+def require_permission(user: User, code: str) -> None:
+    """Raise ``PermissionRequired`` (HTTP 403 ``PERMISSION_DENIED``) unless ``user`` holds it.
+
+    Routers check the permission of the action itself; services call this for permissions
+    that are part of the business rule (who may approve, confirm, override).
+    """
+    from api.errors import PermissionRequired
+
+    if not holds_permission(user, code):
+        raise PermissionRequired(code)
+
+
+def resolve_reason(reason: ReasonCode | str | None, category: str, note: str = "") -> ReasonCode:
+    """Return the active ``ReasonCode`` of ``category`` given as an instance or its code.
+
+    Raises:
+        DomainError: ``REASON_REQUIRED`` when no reason is given or the code needs a note and
+            ``note`` is blank; ``REASON_INVALID`` when the code is unknown, inactive or of
+            another category.
+    """
+    if reason is None or reason == "":
+        raise DomainError("REASON_REQUIRED", "A reason is required for this action")
+    if isinstance(reason, ReasonCode):
+        found: ReasonCode | None = reason
+    else:
+        found = ReasonCode.objects.filter(category=category, code=str(reason)).first()
+    if found is None or found.category != category or not found.active:
+        raise DomainError(
+            "REASON_INVALID",
+            "Unknown or inactive reason for this action",
+            category=category,
+            reason=str(getattr(found, "code", reason)),
+        )
+    if found.requires_note and not note.strip():
+        raise DomainError(
+            "REASON_REQUIRED", "This reason needs an explanation", reason=found.code, note=True
+        )
+    return found
+
+
+def notify_users(users: Iterable[User], kind: str, **payload: Any) -> int:
+    """Create one in-app notification of ``kind`` per distinct active user; returns the count."""
+    rows = []
+    seen: set[int] = set()
+    for user in users:
+        if user.pk in seen or not user.is_active:
+            continue
+        seen.add(user.pk)
+        rows.append(Notification(user=user, kind=kind[:60], payload=payload))
+    Notification.objects.bulk_create(rows)
+    return len(rows)
+
+
+def notify_roles(role_codes: list[str], kind: str, **payload: Any) -> int:
+    """Notify every active user holding one of ``role_codes`` (e.g. managers, FLOW step 9)."""
+    users = User.objects.filter(is_active=True, roles__code__in=role_codes).distinct()
+    return notify_users(users, kind, **payload)

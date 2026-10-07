@@ -14,6 +14,24 @@ from api.main import API_VERSION
 from api.middleware import _resolved_user_id
 from apps.core.management.commands.export_openapi import render_schema
 
+#: Module routers that carry only ``GET /ping`` in Phase 1 (ARCHITECTURE 4.11 order).
+PING_MODULES = (
+    "core",
+    "patients",
+    "visits",
+    "catalog",
+    "clinical",
+    "orders",
+    "billing",
+    "payments",
+    "pharmacy",
+    "lab",
+    "claims",
+    "reports",
+    "imports",
+    "portal",
+)
+
 OPERATION_ID = re.compile(
     r"^(auth|core|ops|patients|visits|catalog|clinical|orders|billing|"
     r"payments|pharmacy|lab|claims|reports|imports|portal)_[a-z]+(_[a-z0-9]+)*$"
@@ -41,6 +59,7 @@ def test_expected_routes_exist(schema: dict[str, Any]) -> None:
         "/api/auth/me/preferences",
         "/api/auth/change-password",
         "/api/ops/health",
+        *(f"/api/{module}/ping" for module in PING_MODULES),
     }
     assert schema["info"]["title"] == "Hospital System API"
     assert schema["info"]["version"] == API_VERSION
@@ -60,8 +79,16 @@ def test_operation_ids_are_stable_and_unique(schema: dict[str, Any]) -> None:
             "auth_update_preferences",
             "auth_change_password",
             "ops_get_health",
+            *(f"{module}_get_ping" for module in PING_MODULES),
         ]
     )
+
+
+def test_every_operation_is_tagged_with_its_module(schema: dict[str, Any]) -> None:
+    for path, _, op in _operations(schema):
+        module = path.split("/")[2]
+        assert op["tags"] == [module], (path, op["tags"])
+        assert op["operationId"].startswith(f"{module}_"), op["operationId"]
 
 
 def test_only_whitelisted_operations_are_public(schema: dict[str, Any]) -> None:

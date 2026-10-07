@@ -320,11 +320,33 @@ class Sequence(models.Model):
 # --- Reference data --------------------------------------------------------------------
 
 
+class ReasonCategory(models.TextChoices):
+    """What a reason code explains. Seeded by migration ``0007_seed_reason_codes``."""
+
+    LINE_CANCEL = "line_cancel", "Service line cancellation"
+    VISIT_CANCEL = "visit_cancel", "Visit cancellation"
+    DISCOUNT = "discount", "Discount or exemption"
+    REFUND = "refund", "Refund"
+    CREDIT_NOTE = "credit_note", "Credit note"
+    STOCK_ADJUST = "stock_adjust", "Stock adjustment"
+    VARIANCE = "variance", "Shift cash variance"
+    OVERRIDE = "override", "Supervisor override"
+    WRITEOFF = "writeoff", "Payer rejection: rebill or write off"
+    PERFORM_FIRST = "perform_first", "Perform-first authorization"
+    TRANSFER_REJECT = "transfer_reject", "Bank transfer rejection"
+    RESULT_AMEND = "result_amend", "Lab result amendment"
+    SAMPLE_REJECT = "sample_reject", "Lab sample rejection"
+
+
 @pghistory.track(*_full_history())
 class ReasonCode(models.Model):
-    """Configurable reasons for cancellations, discounts, refunds, overrides (FEATURES 13.5)."""
+    """Configurable reasons for cancellations, discounts, refunds, overrides (FEATURES 13.5).
 
-    category = models.CharField(max_length=40, db_index=True)
+    Invariant 4: every cancellation, discount, refund, transfer confirmation/rejection and
+    override stores a ``ReasonCode`` of the matching category plus free text.
+    """
+
+    category = models.CharField(max_length=40, choices=ReasonCategory.choices, db_index=True)
     code = models.CharField(max_length=40)
     label_ar = models.CharField(max_length=200)
     label_en = models.CharField(max_length=200)
@@ -334,8 +356,13 @@ class ReasonCode(models.Model):
 
     class Meta:
         ordering: ClassVar[list[str]] = ["category", "sort_order", "code"]
+        verbose_name = "reason code"
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(fields=["category", "code"], name="core_reasoncode_unique"),
+            models.CheckConstraint(
+                condition=models.Q(category__in=ReasonCategory.values),
+                name="core_reasoncode_category_valid",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -378,13 +405,22 @@ class Room(models.Model):
 class DoctorProfile(models.Model):
     """Clinical profile of a user who sees patients.
 
-    ``consultation_service`` (FK to ``catalog.Service``) is added in Phase 1 with the catalog.
+    ``consultation_service`` is the catalog service billed as the consultation fee line that
+    a new visit with this doctor creates automatically (FEATURES 2.2).
     """
 
     user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="doctor_profile")
     department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="doctors")
     specialty_ar = models.CharField(max_length=150, blank=True)
     specialty_en = models.CharField(max_length=150, blank=True)
+    consultation_service = models.ForeignKey(
+        "catalog.Service",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="consultation_doctors",
+        help_text="Consultation fee service (kind 'consultation') for visits with this doctor.",
+    )
     active = models.BooleanField(default=True)
 
     class Meta:

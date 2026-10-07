@@ -112,7 +112,14 @@ def test_seed_creates_the_contract_dataset(settings: Any) -> None:
     assert center.name_ar
     assert center.name_en
     assert Policy.objects.count() == 1
-    assert effective_permissions(User.objects.get(username="doctor")) == frozenset()
+    doctor_perms = effective_permissions(User.objects.get(username="doctor"))
+    # Clinical work, never billing or administration (ARCHITECTURE 4.10, FEATURES 3.8).
+    assert {"clinical.write_note", "orders.create"} <= doctor_perms
+    assert not {
+        code
+        for code in doctor_perms
+        if code.split(".")[0] in {"core", "billing", "payments", "claims", "ledger"}
+    }
 
 
 @pytest.mark.django_db

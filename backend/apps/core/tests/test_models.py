@@ -215,20 +215,23 @@ def test_reference_models(make_user: Any) -> None:
         user=make_user("drx", full_name_en="X"), department=dept, specialty_en="GP"
     )
     reason = ReasonCode.objects.create(
-        category="cancellation", code="PATIENT_REFUSED", label_ar="رفض المريض", label_en="Refused"
+        category="line_cancel", code="TEST_REASON", label_ar="سبب", label_en="Reason"
     )
     assert str(dept) == "General"
     assert str(room) == "Room 1"
     assert str(doctor) == "Dr. X"
-    assert str(reason) == "cancellation/PATIENT_REFUSED"
+    assert str(reason) == "line_cancel/TEST_REASON"
     assert dept.rooms.get() == room
     assert dept.doctors.get() == doctor
     with pytest.raises(IntegrityError), transaction.atomic():
         ReasonCode.objects.create(
-            category="cancellation", code="PATIENT_REFUSED", label_ar="x", label_en="x"
+            category="line_cancel", code="TEST_REASON", label_ar="x", label_en="x"
         )
     # Same code in another category is fine.
-    ReasonCode.objects.create(category="refund", code="PATIENT_REFUSED", label_ar="x", label_en="x")
+    ReasonCode.objects.create(category="refund", code="TEST_REASON", label_ar="x", label_en="x")
+    # Categories are a closed set (ReasonCategory).
+    with pytest.raises(IntegrityError), transaction.atomic():
+        ReasonCode.objects.create(category="cancellation", code="X", label_ar="x", label_en="x")
 
 
 def test_notification(make_user: Any) -> None:
