@@ -4,18 +4,17 @@ import { useTranslation } from "react-i18next";
 import { Brand } from "@/components/BrandMark";
 import { ArrowBack } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export function NotFoundPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t("notFound.title"));
   const router = useRouter();
   const canGoBack = useCanGoBack();
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
       <header className="px-4 py-3 md:px-6">
-        <Link
-          to="/"
-          className="inline-flex rounded-control focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
-        >
+        <Link to="/" className="inline-flex rounded-control focus-ring">
           <Brand />
         </Link>
       </header>

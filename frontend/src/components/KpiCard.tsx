@@ -25,6 +25,11 @@ export interface KpiCardProps {
   loading?: boolean;
   /** Accent for the icon tile. */
   tone?: "primary" | "success" | "warning" | "danger" | "info";
+  /**
+   * Element of the label. Default "h2" (cards directly under the page's h1); use "h3"/"h4"
+   * inside a titled section, or "p" when the card is not part of the outline.
+   */
+  headingLevel?: "h2" | "h3" | "h4" | "p";
   className?: string;
 }
 
@@ -44,6 +49,7 @@ export function KpiCard({
   hint,
   loading = false,
   tone = "primary",
+  headingLevel: Heading = "h2",
   className,
 }: KpiCardProps) {
   const { t } = useTranslation();
@@ -53,7 +59,7 @@ export function KpiCard({
       className={cn("card-surface @container flex min-w-0 flex-col gap-3 p-4 md:p-5", className)}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 text-sm font-medium text-muted">{label}</h3>
+        <Heading className="min-w-0 text-sm font-medium text-muted">{label}</Heading>
         {icon ? (
           <div
             className={cn(
@@ -91,13 +97,9 @@ function TrendPill({ trend }: { trend: KpiTrend }) {
   const { direction, value, upIsGood = true } = trend;
   const good = direction === "flat" ? null : (direction === "up") === upIsGood;
   const Icon = direction === "up" ? TrendingUp : direction === "down" ? TrendingDown : Minus;
-  const valueText = typeof value === "string" ? value : "";
-  const srText =
-    direction === "up"
-      ? t("kpi.trendUp", { value: valueText })
-      : direction === "down"
-        ? t("kpi.trendDown", { value: valueText })
-        : t("kpi.trendFlat");
+  // Only the direction word is screen-reader-only; the value itself stays exposed, so any
+  // ReactNode (MoneyText, a formatted number) is read after it: "Up 12%".
+  const srText = direction === "up" ? t("kpi.trendUp") : direction === "down" ? t("kpi.trendDown") : t("kpi.trendFlat");
   return (
     <span
       className={cn(
@@ -108,8 +110,8 @@ function TrendPill({ trend }: { trend: KpiTrend }) {
       )}
     >
       <Icon className="size-3.5" aria-hidden="true" />
-      <span className="sr-only">{srText}</span>
-      {value !== undefined ? <span aria-hidden="true">{value}</span> : null}
+      <span className="sr-only">{srText} </span>
+      {value !== undefined ? <span>{value}</span> : null}
     </span>
   );
 }

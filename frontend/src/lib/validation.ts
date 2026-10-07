@@ -10,7 +10,7 @@ import { z } from "zod";
  * that are already on screen.
  *
  *   z.string().min(1, vmsg("validation.required"))
- *   z.string().min(8, vmsg("validation.minLength", { min: 8 }))
+ *   z.string().min(8, vmsg("validation.minLength", { count: 8 }))
  *
  * Keys without a namespace prefix are in `common`; others use "ns:key".
  */
@@ -69,11 +69,11 @@ export function configureZodMessages(): void {
           if (issue.origin === "string") {
             return Number(issue.minimum) <= 1
               ? vmsg("validation.required")
-              : vmsg("validation.minLength", { min: Number(issue.minimum) });
+              : vmsg("validation.minLength", { count: Number(issue.minimum) });
           }
           return vmsg("validation.invalid");
         case "too_big":
-          if (issue.origin === "string") return vmsg("validation.maxLength", { max: Number(issue.maximum) });
+          if (issue.origin === "string") return vmsg("validation.maxLength", { count: Number(issue.maximum) });
           return vmsg("validation.invalid");
         case "invalid_value":
           return vmsg("validation.selectOption");

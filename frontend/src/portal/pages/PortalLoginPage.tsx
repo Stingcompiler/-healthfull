@@ -9,6 +9,7 @@ import { AlertCard } from "@/components/AlertCard";
 import { Form, TextField } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { phoneSchema, vmsg } from "@/lib/validation";
+import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 const schema = z.object({
   fileNo: z.string().trim().min(1, vmsg("validation.required")),
@@ -27,6 +28,7 @@ type Values = z.infer<typeof schema>;
  */
 export function PortalLoginPage() {
   const { t } = useTranslation("portal");
+  useDocumentTitle(t("login.title"));
   const [submitted, setSubmitted] = useState(false);
   const form = useForm<Values>({
     resolver: zodResolver(schema),

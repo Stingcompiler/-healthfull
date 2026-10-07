@@ -5,9 +5,11 @@ import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useTranslateError } from "@/lib/api/translate-error";
+import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export function RouteErrorPage({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation();
+  useDocumentTitle(t("errorBoundary.title"));
   const router = useRouter();
   const translateError = useTranslateError();
   return (

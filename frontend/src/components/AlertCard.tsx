@@ -57,7 +57,7 @@ export function AlertCard({
       <div className={cn("mt-0.5 shrink-0 [&_svg]:size-5", v.iconClass)} aria-hidden="true">
         {icon ?? <Icon />}
       </div>
-      <div className={cn("min-w-0 flex-1", onDismiss && "pe-6")}>
+      <div className={cn("min-w-0 flex-1", onDismiss && "pe-8 md:pe-6")}>
         <div className="text-sm leading-6 font-semibold">{title}</div>
         {children ? <div className="mt-0.5 text-sm leading-6 opacity-95">{children}</div> : null}
         {action ? <div className="mt-3 flex flex-wrap gap-2">{action}</div> : null}
@@ -66,7 +66,7 @@ export function AlertCard({
         <button
           type="button"
           onClick={onDismiss}
-          className="absolute end-2 top-2 inline-flex size-8 items-center justify-center rounded-control transition-colors hover:bg-surface/60 focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
+          className="absolute end-1 top-1 inline-flex size-11 items-center justify-center rounded-control focus-ring transition-colors hover:bg-surface/60 md:end-2 md:top-2 md:size-8"
         >
           <X className="size-4" aria-hidden="true" />
           <span className="sr-only">{t("a11y.dismissAlert")}</span>

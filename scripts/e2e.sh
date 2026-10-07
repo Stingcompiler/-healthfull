@@ -9,7 +9,9 @@
 #
 # Environment:
 #   E2E_GREP            passed to Playwright as --grep
-#   E2E_DB_NAME         e2e database (default e2e_hospital_<hash>; must start with "e2e_")
+#   E2E_DB_NAME         e2e database (default e2e_hospital_<hash>). It is DROPPED and recreated,
+#                       so it must be e2e_hospital_<this worktree's hash>, unless
+#   E2E_ALLOW_FOREIGN_DB=1  allows another e2e_hospital_* name (e.g. a CI-specific one)
 #   E2E_BACKEND_PORT    force ports (must be free); otherwise scripts/ports.sh decides
 #   E2E_FRONTEND_PORT   (BACKEND_PORT/FRONTEND_PORT are honored) and busy ports are skipped
 #   PGHOST PGPORT PGUSER PGPASSWORD   PostgreSQL connection (libpq defaults: local socket)
@@ -41,7 +43,12 @@ pg_isready -q -d postgres 2>/dev/null || die "PostgreSQL is not reachable (PGHOS
 # ------------------------------------------------------------------ identity: hash, DB, ports
 HASH="$("$SCRIPTS/repo-hash.sh")"
 DB="${E2E_DB_NAME:-e2e_hospital_${HASH}}"
-[[ "$DB" =~ ^e2e_[a-z0-9_]{1,59}$ ]] || die "E2E_DB_NAME must match ^e2e_[a-z0-9_]+\$ (got '$DB')"
+# This database is dropped WITH (FORCE): never let it name anything but an e2e database, and by
+# default only this worktree's own (another worktree's run would be killed mid-test).
+[[ "$DB" =~ ^e2e_hospital_[a-z0-9_]{1,50}$ ]] || die "E2E_DB_NAME must match ^e2e_hospital_[a-z0-9_]+\$ (got '$DB')"
+if [[ "$DB" != "e2e_hospital_${HASH}" && "${E2E_ALLOW_FOREIGN_DB:-0}" != "1" ]]; then
+  die "E2E_DB_NAME=$DB is not this worktree's e2e database (e2e_hospital_${HASH}); set E2E_ALLOW_FOREIGN_DB=1 to use it anyway"
+fi
 
 port_busy() {
   # Something accepts connections on 127.0.0.1:$1 (bash /dev/tcp; works on macOS bash 3.2).
@@ -73,6 +80,8 @@ else
 fi
 export BACKEND_PORT FRONTEND_PORT
 export DB_NAME="$DB"
+# e2e/env.ts reads E2E_DB_NAME (never DB_NAME, which a dev shell may point at hospital_dev).
+export E2E_DB_NAME="$DB"
 # seed_e2e refuses to run without DEBUG; this database is throwaway by construction.
 export DJANGO_DEBUG=1
 

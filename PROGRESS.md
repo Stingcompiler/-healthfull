@@ -36,3 +36,18 @@ Source of truth for build status. Update at the end of every task. Phases from `
   ADRs 0002-0004, nav permission contract test, phone tab bar short labels, patient name truncation in mixed
   scripts. Results: `make check` green (backend 370 tests, frontend 335 tests, lint, typecheck, API drift);
   `make e2e` see the latest run in this log entry's PR.
+- 2026-10-07: Phase 0 review fixes (design, backend, infra lenses). Backend: one credential check for
+  API, Django admin and `authenticate()` (lockout, per-address throttle 429, unknown usernames lock
+  like real ones, audit via login/logout signals, admin refuses pending password changes, audited
+  unlock action), change-password counts toward lockout, strict `money()` parsing, password
+  validators see full names and local words, server-side request ids, JSON 404/CSRF/DoesNotExist/
+  ValidationError/IntegrityError mapping, `next_number` requires a transaction, `seed_e2e` guarded
+  by DB name with a separate break-glass superuser, nullable language/theme ("never chose"),
+  `manage.py maintenance` (sessions, throttles). Frontend: solid focus outlines, visible menu
+  highlight, full-strength control borders, 44px phone targets, 16px phone inputs, accessible
+  DataTable row opening (table and cards) with container-width switching, wrapping patient names,
+  tablet rail toggle, adaptive tab bar, per-page titles, bidi formatter, Arabic plural/labels fixes.
+  Infra: flock locks, backup catch-up, media readable by the backup user, partial (not failed)
+  backups on media errors, atomic restore swap, crash-safe `update.sh`, non-root Caddy with health
+  check, `BIND_IP`, migrations check in `make check` and CI.
+

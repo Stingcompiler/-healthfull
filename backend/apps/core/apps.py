@@ -11,4 +11,4 @@ class CoreConfig(AppConfig):
 
     def ready(self) -> None:
         # Register permission codes and system checks.
-        from apps.core import checks, permissions  # noqa: F401
+        from apps.core import checks, permissions, signals  # noqa: F401

@@ -43,14 +43,16 @@ describe("PatientCard", () => {
     expect(screen.getByText("Fatima Osman")).toBeInTheDocument();
   });
 
-  it("gives each name line its own direction so long names truncate at their end", async () => {
+  it("gives each name line its own direction and never truncates it", async () => {
     await i18n.changeLanguage("ar");
     const { rerender } = render(<PatientCard patient={base} />);
     // Arabic UI: the Arabic name follows the UI, the English one is LTR aligned to the UI's start (its end).
     expect(screen.getByRole("heading", { name: "فاطمة عثمان" })).toHaveAttribute("dir", "rtl");
-    expect(screen.getByRole("heading", { name: "فاطمة عثمان" })).toHaveClass("truncate", "text-start");
+    expect(screen.getByRole("heading", { name: "فاطمة عثمان" })).toHaveClass("break-words", "text-start");
+    expect(screen.getByRole("heading", { name: "فاطمة عثمان" })).not.toHaveClass("truncate");
     expect(screen.getByText("Fatima Osman")).toHaveAttribute("dir", "ltr");
-    expect(screen.getByText("Fatima Osman")).toHaveClass("truncate", "text-end");
+    expect(screen.getByText("Fatima Osman")).toHaveClass("break-words", "text-end");
+    expect(screen.getByText("Fatima Osman")).not.toHaveClass("truncate");
 
     await i18n.changeLanguage("en");
     rerender(<PatientCard patient={base} />);
@@ -64,6 +66,16 @@ describe("PatientCard", () => {
     const heading = screen.getByRole("heading", { name: "مولود — طوارئ" });
     expect(heading).toHaveAttribute("dir", "rtl");
     expect(heading).toHaveClass("text-end");
+  });
+
+  it("shows a four-part name in full", async () => {
+    await i18n.changeLanguage("ar");
+    const fourPart = "فاطمة عثمان محمد الحسن";
+    render(<PatientCard patient={{ ...base, nameAr: fourPart, nameEn: "Fatima Osman Mohamed Alhassan" }} />);
+    const heading = screen.getByRole("heading", { name: fourPart });
+    expect(heading).toHaveTextContent(fourPart);
+    expect(heading.className).not.toMatch(/truncate|line-clamp|text-ellipsis/);
+    expect(screen.getByText("Fatima Osman Mohamed Alhassan").className).not.toMatch(/truncate|line-clamp/);
   });
 
   it("uses Arabic plural forms for age", async () => {

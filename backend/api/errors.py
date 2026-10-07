@@ -7,7 +7,9 @@
 | ``AuthenticationError``           | 401    | ``NOT_AUTHENTICATED``        |
 | ``PermissionDenied`` / authz      | 403    | ``PERMISSION_DENIED``        |
 | CSRF failure                      | 403    | ``CSRF_FAILED``              |
-| ``Http404``                       | 404    | ``NOT_FOUND``                |
+| ``Http404`` / ``Model.DoesNotExist`` | 404 | ``NOT_FOUND``                |
+| Django ``ValidationError``        | 422    | ``VALIDATION_ERROR``         |
+| ``IntegrityError``                | 409    | ``CONFLICT``                 |
 | ``ApiError``                      | any    | the error's own code         |
 | anything else                     | 500    | ``INTERNAL_ERROR``           |
 
@@ -20,7 +22,9 @@ from collections.abc import Callable
 from typing import Any
 
 import structlog
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from ninja import NinjaAPI
 from ninja.errors import AuthenticationError, AuthorizationError, HttpError, Throttled
@@ -34,6 +38,7 @@ logger = structlog.get_logger(__name__)
 DOMAIN_ERROR_STATUS: dict[str, int] = {
     "INVALID_CREDENTIALS": 401,
     "ACCOUNT_LOCKED": 423,
+    "RATE_LIMITED": 429,
 }
 
 _STATUS_CODES: dict[int, str] = {
@@ -137,8 +142,25 @@ def install_exception_handlers(api: NinjaAPI) -> None:
             details["permission"] = exc.permission
         return respond(request, 403, "PERMISSION_DENIED", "Permission denied", details)
 
-    def on_not_found(request: HttpRequest, exc: Http404) -> HttpResponse:
+    def on_not_found(request: HttpRequest, exc: Http404 | ObjectDoesNotExist) -> HttpResponse:
         return respond(request, 404, "NOT_FOUND", "Not found")
+
+    def on_django_validation_error(
+        request: HttpRequest, exc: DjangoValidationError
+    ) -> HttpResponse:
+        # full_clean() / Model.clean(): field -> messages, or __all__ for non-field errors.
+        if hasattr(exc, "error_dict"):
+            fields = {field: [str(m) for m in msgs] for field, msgs in exc.message_dict.items()}
+        else:
+            fields = {"__all__": [str(m) for m in exc.messages]}
+        return respond(
+            request, 422, "VALIDATION_ERROR", "Request validation failed", {"fields": fields}
+        )
+
+    def on_integrity_error(request: HttpRequest, exc: IntegrityError) -> HttpResponse:
+        # The constraint text can name tables and values; log it, never return it.
+        logger.warning("api.integrity_error", path=request.path, error=str(exc))
+        return respond(request, 409, "CONFLICT", "The change conflicts with existing data")
 
     def on_throttled(request: HttpRequest, exc: Throttled) -> HttpResponse:
         return respond(request, 429, "RATE_LIMITED", "Too many requests", {"wait": exc.wait})
@@ -164,6 +186,9 @@ def install_exception_handlers(api: NinjaAPI) -> None:
         (Throttled, on_throttled),
         (PermissionDenied, on_permission_denied),
         (Http404, on_not_found),
+        (ObjectDoesNotExist, on_not_found),
+        (DjangoValidationError, on_django_validation_error),
+        (IntegrityError, on_integrity_error),
     ]
     for exc_class, handler in handlers:
         api.add_exception_handler(exc_class, handler)

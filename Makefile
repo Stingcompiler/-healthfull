@@ -80,6 +80,9 @@ lint: lint-backend lint-frontend lint-shell ## ruff check + ruff format --check 
 lint-backend:
 	cd "$(BACKEND)" && $(UV) run ruff check .
 	cd "$(BACKEND)" && $(UV) run ruff format --check .
+	@# A model change committed without its migration would reach production as schema drift
+	@# (and without the pgtrigger/pghistory protections that migrations install).
+	cd "$(BACKEND)" && $(UV) run python manage.py makemigrations --check --dry-run
 
 lint-frontend:
 	cd "$(FRONTEND)" && $(PNPM) lint
@@ -118,7 +121,7 @@ seed: migrate ## Load the demo dataset into the dev DB (seed_demo when present, 
 		echo "seed: running seed_demo"; $(MANAGE) seed_demo; \
 	else \
 		echo "seed: seed_demo not available yet; running seed_e2e (users, center profile, policy)"; \
-		$(MANAGE) seed_e2e; \
+		ALLOW_SEED_E2E=1 $(MANAGE) seed_e2e; \
 	fi
 
 check: ## lint + typecheck + test + api drift. Must be green before any commit to main

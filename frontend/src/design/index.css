@@ -177,6 +177,28 @@
   }
 }
 
+/*
+ * Keyboard focus indicator: a solid 2px outline in --ring (>= 3:1 against every surface,
+ * checked in contrast.test.ts). Outlines, unlike box-shadow rings, also survive Windows
+ * high-contrast (forced colors). Never replace them with a translucent ring.
+ *   focus-ring        outside the element (default; the global :focus-visible rule is the same)
+ *   focus-ring-inset  inside the edge, for controls in scroll containers or packed lists
+ *                     (nav links, tab bars, table headers) where an outside ring is clipped
+ */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+}
+
 @utility tabular {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";

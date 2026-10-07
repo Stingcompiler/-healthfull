@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Any
 
 import pytest
 from hypothesis import assume, example, given
@@ -112,7 +113,8 @@ def test_money_from_decimal_equals_q(x: Decimal) -> None:
 
 @given(any_decimals)
 def test_money_from_string_round_trips(x: Decimal) -> None:
-    assert money(str(x)) == q(x)
+    # Plain positional notation only: exponent strings are rejected (see below).
+    assert money(format(x, "f")) == q(x)
 
 
 @given(st.integers(min_value=-(10**12), max_value=10**12))
@@ -128,7 +130,34 @@ def test_money_rejects_floats_bools_and_other_types(bad: object) -> None:
         money(bad)  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize("bad", ["", "abc", "1,5", "1,000.00", "12..5", "NaN", "inf", "--1"])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "",
+        "abc",
+        "1,5",
+        "1,000.00",
+        "12..5",
+        "NaN",
+        "inf",
+        "--1",
+        # PEP 515 underscores and exponents are valid for Decimal() but never for money.
+        "1_5",
+        "1_000.00",
+        "1e3",
+        "1E+3",
+        "2.5e-1",
+        " 1 000",
+        "1 000",
+        ".5",
+        "5.",
+        "+-1",
+        "0x10",
+        # Arabic thousands separator and Arabic-Indic digit mixed with a comma.
+        "١٬٠٠٠",
+        "١,٥",
+    ],
+)
 def test_money_rejects_malformed_strings(bad: str) -> None:
     with pytest.raises(DomainError) as exc:
         money(bad)
@@ -137,6 +166,20 @@ def test_money_rejects_malformed_strings(bad: str) -> None:
 
 def test_money_strips_whitespace() -> None:
     assert money("  10000.5 ") == Decimal("10000.50")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("١٢٣", "123.00"),  # Arabic-Indic digits (U+0660..U+0669)
+        ("١٢٫٥", "12.50"),  # Arabic decimal separator (U+066B)
+        ("۱۲.۵", "12.50"),  # Extended Arabic-Indic digits (U+06F0..U+06F9)
+        ("-١٠", "-10.00"),
+        ("+7", "7.00"),
+    ],
+)
+def test_money_normalises_arabic_digits(text: str, expected: str) -> None:
+    assert money(text) == Decimal(expected)
 
 
 # --- is_money / sum_money -------------------------------------------------------------
@@ -269,10 +312,28 @@ def test_allocate_negative_total_mirrors_positive(total: Decimal, ws: list[Decim
     assert allocate(-total, ws) == [q(-p) for p in allocate(total, ws)]
 
 
-@given(amounts, weights)
-def test_allocate_is_deterministic(total: Decimal, ws: list[Decimal]) -> None:
+@given(amounts, weights, st.randoms(use_true_random=False))
+def test_allocate_is_permutation_equivariant_within_a_cent(
+    total: Decimal, ws: list[Decimal], rnd: Any
+) -> None:
+    """Reordering the weights reorders the parts; only tie-break cents may move."""
     assume(sum(ws) > 0)
-    assert allocate(total, ws) == allocate(total, list(ws))
+    order = list(range(len(ws)))
+    rnd.shuffle(order)
+    base = allocate(total, ws)
+    shuffled = allocate(total, [ws[i] for i in order])
+    assert sum(shuffled, ZERO) == total
+    for position, original_index in enumerate(order):
+        assert abs(shuffled[position] - base[original_index]) <= CENT
+
+
+def test_allocate_tie_break_is_by_position() -> None:
+    # Three equal shares of 1.00: the leftover cent goes to the first position.
+    assert allocate(Decimal("1.00"), [1, 1, 1]) == [
+        Decimal("0.34"),
+        Decimal("0.33"),
+        Decimal("0.33"),
+    ]
 
 
 @given(amounts, st.integers(min_value=1, max_value=50))

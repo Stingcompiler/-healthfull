@@ -1,14 +1,16 @@
 /**
  * Controllable window.matchMedia for jsdom (which has none).
  * Supports `(min-width: Npx)` and `(max-width: Npx)` queries against a
- * simulated viewport width, plus `prefers-color-scheme` (always light).
+ * simulated viewport width, plus `prefers-color-scheme: dark` (setPrefersDark, default light).
  */
 type Listener = (event: MediaQueryListEvent) => void;
 
 let viewportWidth = 1280;
+let prefersDark = false;
 const lists = new Set<{ query: string; listeners: Set<Listener>; last: boolean }>();
 
 function evaluate(query: string): boolean {
+  if (/prefers-color-scheme:\s*dark/.test(query)) return prefersDark;
   let matches = true;
   let matchedAny = false;
   for (const m of query.matchAll(/\((min|max)-width:\s*(\d+(?:\.\d+)?)(px|rem|em)\)/g)) {
@@ -18,6 +20,12 @@ function evaluate(query: string): boolean {
   }
   if (!matchedAny) return false;
   return matches;
+}
+
+/** Simulated OS color scheme for `(prefers-color-scheme: dark)` queries. */
+export function setPrefersDark(value: boolean): void {
+  prefersDark = value;
+  setViewportWidth(viewportWidth);
 }
 
 export function setViewportWidth(width: number): void {

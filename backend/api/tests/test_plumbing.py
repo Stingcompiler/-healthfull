@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -43,6 +44,19 @@ def _body(response: Any, status: int) -> dict[str, Any]:
         ("/test-api/teapot", 418, "HTTP_ERROR", {}),
         ("/test-api/conflict", 409, "CONFLICT", {}),
         ("/test-api/throttled", 429, "RATE_LIMITED", {"wait": 5}),
+        ("/test-api/does-not-exist", 404, "NOT_FOUND", {}),
+        (
+            "/test-api/model-invalid",
+            422,
+            "VALIDATION_ERROR",
+            {"fields": {"code": ["Unknown role code 'x'."]}},
+        ),
+        (
+            "/test-api/plain-invalid",
+            422,
+            "VALIDATION_ERROR",
+            {"fields": {"__all__": ["Something is off."]}},
+        ),
         ("/test-api/boom", 500, "INTERNAL_ERROR", {}),
         ("/test-api/whoami", 401, "NOT_AUTHENTICATED", {}),
     ],
@@ -55,10 +69,36 @@ def test_exceptions_map_to_uniform_errors(
     assert body["details"] == details
 
 
+def test_integrity_error_is_a_conflict_without_db_details(api_client: ApiClient) -> None:
+    body = _body(api_client.post("/test-api/duplicate"), 409)
+    assert body["code"] == "CONFLICT"
+    assert "DUP" not in body["message"]
+    assert "core_department" not in body["message"]
+
+
+def test_unknown_api_path_post_without_csrf_is_json_404(api_client: ApiClient) -> None:
+    body = _body(api_client.post("/api/nope", {"x": 1}, csrf=False), 404)
+    assert body["code"] == "NOT_FOUND"
+
+
+def test_csrf_failure_outside_ninja_is_json_under_api(rf: Any) -> None:
+    from api.views import csrf_failure
+
+    response = csrf_failure(rf.post("/api/anything"), reason="no token")
+    assert response.status_code == 403
+    assert response["Content-Type"].startswith("application/json")
+    assert json.loads(response.content)["code"] == "CSRF_FAILED"
+    html = csrf_failure(rf.post("/admin/login/"), reason="no token")
+    assert html.status_code == 403
+    assert html["Content-Type"].startswith("text/html")
+
+
 def test_internal_errors_do_not_leak_details(api_client: ApiClient) -> None:
     body = _body(api_client.get("/test-api/boom"), 500)
     assert "secret" not in body["message"]
     body = _body(api_client.get("/test-api/not-found"), 404)
+    assert "secret" not in body["message"]
+    body = _body(api_client.get("/test-api/does-not-exist"), 404)
     assert "secret" not in body["message"]
 
 

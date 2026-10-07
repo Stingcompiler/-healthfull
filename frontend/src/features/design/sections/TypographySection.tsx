@@ -26,7 +26,10 @@ export function TypographySection() {
         </Demo>
         <Demo label={t("typography.mixed")}>
           <Card>
-            <p className="text-sm leading-7 text-fg">{t("typography.mixedSample")}</p>
+            {/* IDs inside translated text are isolated with the `bidi` formatter (src/i18n). */}
+            <p className="text-sm leading-7 text-fg">
+              {t("typography.mixedSample", { fileNo: "2026-00412", phone: "0912345678", reference: "BNK-77821" })}
+            </p>
           </Card>
         </Demo>
       </div>

@@ -5,15 +5,15 @@
  *    pre-bundle dependencies and, when it finds new ones (the lazily loaded
  *    /design chunk), reload the page. Doing that here keeps the reload out of
  *    the specs, where it would look like a flaky render.
- * 2. Logs the e2e admin in through the API and saves the session to
- *    .auth/admin.json for specs that need a logged-in page (ADMIN_STATE).
+ * 2. Logs the e2e admin and pharmacist in through the API and saves their sessions to
+ *    .auth/{admin,pharmacist}.json for specs that need a logged-in page.
  */
 import { mkdirSync } from "node:fs";
 
 import { chromium, request, type FullConfig } from "@playwright/test";
 
 import { AUTH_DIR, BASE_URL } from "./env";
-import { ADMIN_STATE } from "./fixtures/state";
+import { ADMIN_STATE, PHARMACIST_STATE } from "./fixtures/state";
 import { apiLogin } from "./helpers/auth";
 
 const WARM_PATHS = ["/login", "/portal", "/", "/design", "/administration/users"];
@@ -37,12 +37,17 @@ async function warmUp(): Promise<void> {
 
 export default async function globalSetup(_config: FullConfig): Promise<void> {
   mkdirSync(AUTH_DIR, { recursive: true });
-  const api = await request.newContext({ baseURL: BASE_URL });
-  try {
-    await apiLogin(api, "admin");
-    await api.storageState({ path: ADMIN_STATE });
-  } finally {
-    await api.dispose();
+  for (const [who, file] of [
+    ["admin", ADMIN_STATE],
+    ["pharmacist", PHARMACIST_STATE],
+  ] as const) {
+    const api = await request.newContext({ baseURL: BASE_URL });
+    try {
+      await apiLogin(api, who);
+      await api.storageState({ path: file });
+    } finally {
+      await api.dispose();
+    }
   }
   await warmUp();
 }

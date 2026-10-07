@@ -66,8 +66,8 @@ export function ThemeSwitcher({ variant = "menu", className }: ThemeSwitcherProp
                 setTheme(value);
               }}
               className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium text-muted transition-colors",
-                "hover:bg-accent hover:text-fg focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none",
+                "inline-flex h-11 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium text-muted transition-colors md:h-8",
+                "focus-ring hover:bg-accent hover:text-fg",
                 selected && "bg-primary-soft text-primary-strong hover:bg-primary-soft hover:text-primary-strong",
               )}
             >

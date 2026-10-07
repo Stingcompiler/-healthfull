@@ -32,8 +32,37 @@ describe("textDirection", () => {
 });
 
 describe("initials", () => {
+  const ZWNJ = "\u200C";
+
   it("takes the first letter of the first two words that contain letters", () => {
-    expect(initials("مولود — طوارئ")).toBe("مط");
+    expect(initials("مولود — طوارئ")).toBe(`م${ZWNJ}ط`);
     expect(initials("fatima osman mohamed")).toBe("FO");
+  });
+
+  it("skips the Arabic definite article", () => {
+    // Not "ما" (the word "what").
+    expect(initials("مدير النظام")).toBe(`م${ZWNJ}ن`);
+    expect(initials("الحسن البشير")).toBe(`ح${ZWNJ}ب`);
+    expect(initials("محمد الطيب")).toBe(`م${ZWNJ}ط`);
+    // Short words keep their first letter (ال is not an article in a 3-letter word).
+    expect(initials("آل بيت")).toBe(`آ${ZWNJ}ب`);
+  });
+
+  it("treats عبد and أبو compounds as one name", () => {
+    expect(initials("عبد الرحمن محمد")).toBe(`ع${ZWNJ}م`);
+    expect(initials("أبو بكر عثمان")).toBe(`أ${ZWNJ}ع`);
+    expect(initials("عبدالله يوسف")).toBe(`ع${ZWNJ}ي`);
+  });
+
+  it("skips titles", () => {
+    expect(initials("د. أحمد الطيب")).toBe(`أ${ZWNJ}ط`);
+    expect(initials("Dr. Ahmed Altayeb")).toBe("AA");
+  });
+
+  it("keeps Arabic initials apart but joins Latin ones", () => {
+    expect(initials("فاطمة عثمان").includes(ZWNJ)).toBe(true);
+    expect(initials("Fatima Osman")).toBe("FO");
+    expect(initials("سارة")).toBe("س");
+    expect(initials("")).toBe("");
   });
 });

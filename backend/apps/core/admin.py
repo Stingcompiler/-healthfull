@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.contrib import admin
+from django import forms
+from django.contrib import admin, messages
+from django.contrib.admin import helpers
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.db.models import QuerySet
 from django.http import HttpRequest
+from django.template.response import TemplateResponse
 
 from apps.core.models import (
     AuthEvent,
@@ -30,9 +34,18 @@ class UserRoleInline(admin.TabularInline[UserRole, User]):
     readonly_fields = ("created_at",)
 
 
+class UnlockReasonForm(forms.Form):
+    reason = forms.CharField(
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Why these accounts are being unlocked (kept in the login audit).",
+    )
+
+
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     inlines = (UserRoleInline,)
+    actions = ("unlock_accounts",)
     list_display = (
         "username",
         "full_name_ar",
@@ -45,7 +58,8 @@ class UserAdmin(DjangoUserAdmin):
     )
     list_filter = ("is_active", "is_staff", "is_superuser", "user_roles__role", "language")
     search_fields = ("username", "full_name_ar", "full_name_en", "phone", "email")
-    readonly_fields = ("last_login", "date_joined", "failed_login_count")
+    # Lock fields change only through login bookkeeping or the audited unlock action.
+    readonly_fields = ("last_login", "date_joined", "failed_login_count", "locked_until")
     fieldsets = (
         *(DjangoUserAdmin.fieldsets or ()),
         (
@@ -68,6 +82,34 @@ class UserAdmin(DjangoUserAdmin):
         *(DjangoUserAdmin.add_fieldsets or ()),
         ("Hospital profile", {"fields": ("full_name_ar", "full_name_en", "phone")}),
     )
+
+    @admin.action(
+        description="Unlock selected accounts (asks for a reason)", permissions=("change",)
+    )
+    def unlock_accounts(
+        self, request: HttpRequest, queryset: QuerySet[User]
+    ) -> TemplateResponse | None:
+        from apps.core import services
+
+        form = UnlockReasonForm(request.POST if "apply" in request.POST else None)
+        if form.is_valid():
+            count = services.unlock_accounts(
+                request, list(queryset), reason=form.cleaned_data["reason"]
+            )
+            self.message_user(request, f"Unlocked {count} account(s).", messages.SUCCESS)
+            return None
+        return TemplateResponse(
+            request,
+            "admin/core/user/unlock_accounts.html",
+            {
+                **self.admin_site.each_context(request),
+                "title": "Unlock accounts",
+                "opts": self.model._meta,
+                "form": form,
+                "users": queryset,
+                "action_checkbox_name": helpers.ACTION_CHECKBOX_NAME,
+            },
+        )
 
 
 class RolePermissionInline(admin.TabularInline[RolePermission, Role]):

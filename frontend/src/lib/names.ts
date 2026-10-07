@@ -31,16 +31,43 @@ export function textDirection(text: string, fallback: "rtl" | "ltr" = "ltr"): "r
   return fallback;
 }
 
-/** Initials for avatars: first letters of the first two words. */
+const ARABIC_LETTER = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/u;
+/** Zero-width non-joiner: keeps two Arabic initials as separate letters ("م‌ن", not "من"). */
+const ZWNJ = "\u200C";
+/** First words that form one name with the word after them (عبد الله, أبو بكر). */
+const COMPOUND_PREFIXES = new Set(["عبد", "ابو", "أبو", "abd", "abu"]);
+
+/** A title or abbreviation ("د.", "Dr.", "أ."), never an initial. */
+function isTitle(word: string): boolean {
+  return word.endsWith(".") && Array.from(word).length <= 5;
+}
+
+/** First letter of a name word, skipping the Arabic definite article (الحسن -> ح). */
+function initialOf(word: string): string {
+  const letters = Array.from(word);
+  if (letters.length > 3 && letters[0] === "ا" && letters[1] === "ل") return letters[2] ?? "";
+  return letters[0] ?? "";
+}
+
+/**
+ * Initials for avatars: the first letters of the first two name words. Titles are skipped,
+ * compound names (عبد الرحمن) count as one word, the Arabic article "ال" is dropped (otherwise
+ * "مدير النظام" gives "ما", the word "what"), and Arabic initials are kept apart with a ZWNJ
+ * so they read as two letters instead of joining into a word.
+ */
 export function initials(name: string): string {
-  // Only words that contain a letter count ("مولود — طوارئ" -> "مط").
+  // Only words that contain a letter count ("مولود — طوارئ" -> "م‌ط").
   const words = name
     .trim()
     .split(/\s+/)
-    .filter((w) => /\p{L}/u.test(w));
-  return words
-    .slice(0, 2)
-    .map((w) => Array.from(w)[0] ?? "")
-    .join("")
-    .toUpperCase();
+    .filter((w) => /\p{L}/u.test(w))
+    .filter((w) => !isTitle(w));
+  const parts: string[] = [];
+  for (let i = 0; i < words.length && parts.length < 2; i += 1) {
+    const word = words[i] ?? "";
+    parts.push(initialOf(word));
+    if (COMPOUND_PREFIXES.has(word.toLowerCase()) && i + 1 < words.length) i += 1;
+  }
+  const arabic = parts.length > 0 && parts.every((p) => ARABIC_LETTER.test(p));
+  return parts.join(arabic ? ZWNJ : "").toUpperCase();
 }

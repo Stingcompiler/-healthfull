@@ -56,6 +56,8 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check .
       - run: uv run ruff format --check .
+      - name: No missing migrations
+        run: uv run python manage.py makemigrations --check --dry-run
       - run: uv run mypy
       - run: uv run pytest
 
@@ -197,7 +199,9 @@ jobs:
           path: |
             e2e/playwright-report/
             e2e/test-results/
+            e2e/.logs/
           if-no-files-found: ignore
+          include-hidden-files: true
           retention-days: 14
 
   agent:

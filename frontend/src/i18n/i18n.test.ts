@@ -24,7 +24,8 @@ function baseKeys(keys: Iterable<string>): Set<string> {
 }
 
 function placeholders(text: string): string[] {
-  return [...text.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1] ?? "").sort();
+  // "{{name}}" and "{{name, format}}" (e.g. the bidi formatter) both name the variable "name".
+  return [...text.matchAll(/\{\{\s*(\w+)\s*(?:,[^}]*)?\}\}/g)].map((m) => m[1] ?? "").sort();
 }
 
 describe("i18n resources", () => {
@@ -91,5 +92,15 @@ describe("i18n resources", () => {
         expect(hasArabic || allowed.test(value), `ar:${ns}:${key} = "${value}"`).toBe(true);
       }
     });
+  });
+});
+
+describe("bidi formatter", () => {
+  it("isolates IDs inside translated text so their characters keep their order", async () => {
+    const { default: i18n, FSI, PDI } = await import("./index");
+    const t = i18n.getFixedT("ar", "design");
+    const text = t("typography.mixedSample", { fileNo: "2026-00412", phone: "0912345678", reference: "BNK-77821" });
+    expect(text).toContain(`${FSI}2026-00412${PDI}`);
+    expect(text).toContain(`${FSI}BNK-77821${PDI}`);
   });
 });

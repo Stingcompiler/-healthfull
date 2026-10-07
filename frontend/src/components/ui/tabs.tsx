@@ -27,7 +27,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
       className={cn(
         "inline-flex h-full flex-1 items-center justify-center gap-1.5 rounded-[6px] px-3 text-sm font-medium whitespace-nowrap",
         "transition-[color,background-color,box-shadow] hover:text-fg",
-        "focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none",
+        "focus-ring-inset",
         "disabled:pointer-events-none disabled:opacity-50",
         "data-[state=active]:bg-surface data-[state=active]:text-fg data-[state=active]:shadow-card",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -39,13 +39,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
 }
 
 function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>) {
-  return (
-    <TabsPrimitive.Content
-      data-slot="tabs-content"
-      className={cn("flex-1 outline-none focus-visible:ring-3 focus-visible:ring-ring/35", className)}
-      {...props}
-    />
-  );
+  return <TabsPrimitive.Content data-slot="tabs-content" className={cn("flex-1 focus-ring", className)} {...props} />;
 }
 
 export { Tabs, TabsContent, TabsList, TabsTrigger };

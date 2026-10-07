@@ -118,4 +118,129 @@ describe("DataTable", () => {
     await user.click(await screen.findByRole("menuitem", { name: "View" }));
     expect(onSelect).toHaveBeenCalledTimes(1);
   });
+
+  it("opens a row from the keyboard in table mode", async () => {
+    setViewportWidth(1280);
+    const onRowClick = vi.fn();
+    const user = userEvent.setup();
+    await renderWithProviders(
+      <DataTable
+        caption="Lines"
+        columns={columns}
+        data={rows.slice(0, 2)}
+        onRowClick={onRowClick}
+        rowLabel={(r) => `Open ${r.name}`}
+      />,
+    );
+    const open = screen.getByRole("button", { name: "Open Patient 01" });
+    open.focus();
+    await user.keyboard("{Enter}");
+    expect(onRowClick).toHaveBeenCalledWith(rows[0]);
+    await user.keyboard(" ");
+    expect(onRowClick).toHaveBeenCalledTimes(2);
+    // Tab reaches the next row's open control.
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Open Patient 02" })).toHaveFocus();
+    // A mouse click anywhere on the row still opens it, once.
+    await user.click(screen.getByText("200.00"));
+    expect(onRowClick).toHaveBeenLastCalledWith(rows[1]);
+    expect(onRowClick).toHaveBeenCalledTimes(3);
+  });
+
+  it("opens a row in card mode too (default card), by click and keyboard", async () => {
+    setViewportWidth(375);
+    const onRowClick = vi.fn();
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    await renderWithProviders(
+      <DataTable
+        caption="Lines"
+        columns={columns}
+        data={rows.slice(0, 1)}
+        onRowClick={onRowClick}
+        rowLabel={(r) => `Open ${r.name}`}
+        rowActions={() => [{ label: "View", onSelect }]}
+      />,
+    );
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    const open = screen.getByRole("button", { name: "Open Patient 01" });
+    await user.click(open);
+    expect(onRowClick).toHaveBeenCalledWith(rows[0]);
+    open.focus();
+    await user.keyboard("{Enter}");
+    expect(onRowClick).toHaveBeenCalledTimes(2);
+    // The actions menu stays usable above the open overlay and does not open the row.
+    await user.click(screen.getByRole("button", { name: "Row actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "View" }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onRowClick).toHaveBeenCalledTimes(2);
+  });
+
+  it("passes the open callback to custom card renderers", async () => {
+    setViewportWidth(375);
+    const onRowClick = vi.fn();
+    const user = userEvent.setup();
+    await renderWithProviders(
+      <DataTable
+        caption="Lines"
+        columns={columns}
+        data={rows.slice(0, 1)}
+        onRowClick={onRowClick}
+        renderCard={(row, { open }) => (
+          <button type="button" onClick={open}>
+            {row.name}
+          </button>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Patient 01" }));
+    expect(onRowClick).toHaveBeenCalledWith(rows[0]);
+  });
+
+  it("switches to cards when its container is too narrow for the columns", async () => {
+    setViewportWidth(1280);
+    const observers: { cb: ResizeObserverCallback; el: Element }[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        cb: ResizeObserverCallback;
+        constructor(cb: ResizeObserverCallback) {
+          this.cb = cb;
+        }
+        observe(el: Element) {
+          observers.push({ cb: this.cb, el });
+        }
+        unobserve() {
+          return undefined;
+        }
+        disconnect() {
+          return undefined;
+        }
+      },
+    );
+    const resize = (width: number) => {
+      act(() => {
+        for (const { cb, el } of observers) {
+          cb([{ target: el, contentRect: { width } } as unknown as ResizeObserverEntry], {} as ResizeObserver);
+        }
+      });
+    };
+    try {
+      const wide: ColumnDef<Row>[] = Array.from({ length: 7 }, (_, i) => ({
+        id: `c${String(i)}`,
+        accessorFn: (r: Row) => r.name,
+        header: `Col ${String(i)}`,
+        meta: { label: `Col ${String(i)}` },
+      }));
+      await renderWithProviders(<DataTable caption="Lines" columns={wide} data={rows} />);
+      resize(960);
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      // Beside the tablet rail: ~648px is not enough for seven columns.
+      resize(648);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(screen.getByRole("list", { name: "Lines" })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

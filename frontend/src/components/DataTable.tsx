@@ -11,7 +11,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatNumber } from "@/lib/format";
+import { useElementWidth } from "@/lib/hooks/use-element-width";
 import { useBreakpoint } from "@/lib/hooks/use-media-query";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,20 @@ export interface DataTableRowAction {
   separated?: boolean;
 }
 
+export interface DataTableCardContext<TData> {
+  /** The row actions menu (or null). Keep it above the open overlay: it already is. */
+  actions: ReactNode;
+  row: Row<TData>;
+  /**
+   * Opens the row (calls onRowClick); undefined without onRowClick. Wrap the card title in
+   * `<DataTableOpenButton onOpen={open} label=...>` so the whole card opens by click, touch
+   * and keyboard.
+   */
+  open?: () => void;
+  /** Accessible name for opening this row (from rowLabel). */
+  openLabel?: string;
+}
+
 export interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
   data: readonly TData[];
@@ -62,20 +77,69 @@ export interface DataTableProps<TData> {
   /** Accessible name of the table (visually hidden caption). */
   caption: string;
   loading?: boolean;
-  /** Card renderer for phones (< md). Receives the row actions menu. */
-  renderCard?: (row: TData, context: { actions: ReactNode; row: Row<TData> }) => ReactNode;
+  /** Card renderer for the card list. Receives the row actions menu and the open callback. */
+  renderCard?: (row: TData, context: DataTableCardContext<TData>) => ReactNode;
   rowActions?: (row: TData) => DataTableRowAction[];
+  /**
+   * Opens a row (details page). The first column becomes a real button (keyboard and screen
+   * reader operable) stretched over the row or card, so keep that column's cell free of other
+   * interactive elements.
+   */
   onRowClick?: (row: TData) => void;
+  /** Accessible name of the open button, e.g. row => `Open ${row.name}`. Default: cell text. */
+  rowLabel?: (row: TData) => string;
   emptyState?: ReactNode;
   initialSorting?: SortingState;
   pageSize?: number;
   pageSizeOptions?: readonly number[];
-  /** "auto" = table at >= md, cards below. */
+  /**
+   * "auto" = cards below the md viewport breakpoint AND whenever the space actually available
+   * to the table (its container) is narrower than `minTableWidth`, e.g. beside the tablet rail.
+   */
   mode?: "auto" | "table" | "cards";
+  /** Narrowest container width (px) that shows the table in auto mode. Default from columns. */
+  minTableWidth?: number;
   className?: string;
 }
 
 const alignClass = { start: "text-start", end: "text-end", center: "text-center" } as const;
+
+/** Rough width each column needs before the table stops fitting (auto mode default). */
+const COLUMN_MIN_WIDTH = 112;
+const ACTIONS_COLUMN_WIDTH = 56;
+
+/**
+ * The open control of a row or card: a real button whose ::after covers the nearest
+ * positioned ancestor (the row/card), so a click anywhere opens it while keyboard and
+ * screen reader users get one named control.
+ */
+export function DataTableOpenButton({
+  onOpen,
+  label,
+  children,
+  className,
+}: {
+  onOpen: () => void;
+  label?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={label}
+      data-slot="data-table-open"
+      className={cn(
+        "min-w-0 cursor-pointer rounded-[4px] text-start",
+        "focus-ring-inset after:absolute after:inset-0 after:content-[''] focus-visible:after:rounded-[inherit]",
+        className,
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function DataTable<TData>({
   columns,
@@ -91,11 +155,17 @@ export function DataTable<TData>({
   pageSize = 10,
   pageSizeOptions = [10, 25, 50],
   mode = "auto",
+  minTableWidth,
+  rowLabel,
   className,
 }: DataTableProps<TData>) {
   const { t } = useTranslation();
+  const containerRef = useRef<HTMLDivElement>(null);
   const isWide = useBreakpoint("md");
-  const showCards = mode === "cards" || (mode === "auto" && !isWide);
+  const containerWidth = useElementWidth(containerRef);
+  const neededWidth = minTableWidth ?? columns.length * COLUMN_MIN_WIDTH + (rowActions ? ACTIONS_COLUMN_WIDTH : 0);
+  const tableFits = isWide && (containerWidth === null || containerWidth >= neededWidth);
+  const showCards = mode === "cards" || (mode === "auto" && !tableFits);
 
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
@@ -122,13 +192,24 @@ export function DataTable<TData>({
 
   const actionsFor = (row: Row<TData>): ReactNode =>
     rowActions ? <RowActionsMenu actions={rowActions(row.original)} /> : null;
+  const openFor = (row: Row<TData>): (() => void) | undefined =>
+    onRowClick
+      ? () => {
+          onRowClick(row.original);
+        }
+      : undefined;
 
   const empty = emptyState ?? (
     <EmptyState bare size="compact" title={t("table.noResultsTitle")} description={t("table.noResultsDescription")} />
   );
 
   return (
-    <div data-slot="data-table" className={cn("flex min-w-0 flex-col gap-3", className)}>
+    <div
+      ref={containerRef}
+      data-slot="data-table"
+      data-mode={showCards ? "cards" : "table"}
+      className={cn("flex min-w-0 flex-col gap-3", className)}
+    >
       {showCards ? (
         <div
           data-slot="data-table-cards"
@@ -148,15 +229,20 @@ export function DataTable<TData>({
           ) : isEmpty ? (
             <div className="card-surface">{empty}</div>
           ) : (
-            rows.map((row) => (
-              <div key={row.id} role="listitem" className="min-w-0">
-                {renderCard ? (
-                  renderCard(row.original, { actions: actionsFor(row), row })
-                ) : (
-                  <DefaultCard row={row} actions={actionsFor(row)} />
-                )}
-              </div>
-            ))
+            rows.map((row) => {
+              const open = openFor(row);
+              const openLabel = rowLabel?.(row.original);
+              return (
+                // relative: the open button's overlay covers exactly this card.
+                <div key={row.id} role="listitem" className="relative min-w-0">
+                  {renderCard ? (
+                    renderCard(row.original, { actions: actionsFor(row), row, open, openLabel })
+                  ) : (
+                    <DefaultCard row={row} actions={actionsFor(row)} open={open} openLabel={openLabel} />
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       ) : (
@@ -182,7 +268,7 @@ export function DataTable<TData>({
                             type="button"
                             onClick={header.column.getToggleSortingHandler()}
                             className={cn(
-                              "-mx-1.5 inline-flex items-center gap-1 rounded-[6px] px-1.5 py-1 hover:bg-accent hover:text-fg focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none",
+                              "-mx-1.5 inline-flex items-center gap-1 rounded-[6px] px-1.5 py-1 focus-ring-inset hover:bg-accent hover:text-fg",
                               sorted && "text-fg",
                             )}
                             aria-label={t("table.sortBy", { column: label })}
@@ -203,7 +289,8 @@ export function DataTable<TData>({
                     );
                   })}
                   {hasActions ? (
-                    <TableHead className="w-12 text-end">
+                    // Sticky at the inline end: row actions stay reachable when the table scrolls.
+                    <TableHead className="sticky end-0 z-[1] w-12 bg-subtle text-end">
                       <span className="sr-only">{t("table.actions")}</span>
                     </TableHead>
                   ) : null}
@@ -232,39 +319,53 @@ export function DataTable<TData>({
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-clickable={onRowClick ? true : undefined}
-                    onClick={
-                      onRowClick
-                        ? () => {
-                            onRowClick(row.original);
-                          }
-                        : undefined
-                    }
-                    className={cn(onRowClick && "cursor-pointer")}
-                  >
-                    {row.getVisibleCells().map((cell) => {
-                      const meta = cell.column.columnDef.meta;
-                      return (
-                        <TableCell key={cell.id} className={cn(alignClass[meta?.align ?? "start"], meta?.className)}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                rows.map((row) => {
+                  const open = openFor(row);
+                  return (
+                    <TableRow
+                      key={row.id}
+                      data-clickable={open ? true : undefined}
+                      // Mouse convenience only; the first cell holds the real (keyboard) control.
+                      onClick={open}
+                      className={cn(open && "cursor-pointer")}
+                    >
+                      {row.getVisibleCells().map((cell, index) => {
+                        const meta = cell.column.columnDef.meta;
+                        const content = flexRender(cell.column.columnDef.cell, cell.getContext());
+                        return (
+                          <TableCell key={cell.id} className={cn(alignClass[meta?.align ?? "start"], meta?.className)}>
+                            {open && index === 0 ? (
+                              <button
+                                type="button"
+                                data-slot="data-table-open"
+                                aria-label={rowLabel?.(row.original)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  open();
+                                }}
+                                className="cursor-pointer rounded-[4px] text-start font-medium text-fg underline-offset-4 focus-ring hover:underline"
+                              >
+                                {content}
+                              </button>
+                            ) : (
+                              content
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                      {hasActions ? (
+                        <TableCell
+                          className="sticky end-0 z-[1] bg-surface text-end"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          {actionsFor(row)}
                         </TableCell>
-                      );
-                    })}
-                    {hasActions ? (
-                      <TableCell
-                        className="text-end"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                      >
-                        {actionsFor(row)}
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))
+                      ) : null}
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -319,16 +420,34 @@ function RowActionsMenu({ actions }: { actions: DataTableRowAction[] }) {
   );
 }
 
-function DefaultCard<TData>({ row, actions }: { row: Row<TData>; actions: ReactNode }) {
+function DefaultCard<TData>({
+  row,
+  actions,
+  open,
+  openLabel,
+}: {
+  row: Row<TData>;
+  actions: ReactNode;
+  open?: () => void;
+  openLabel?: string;
+}) {
   const cells = row.getVisibleCells().filter((cell) => !cell.column.columnDef.meta?.hideInCard);
   const [first, ...rest] = cells;
+  const title = first ? flexRender(first.column.columnDef.cell, first.getContext()) : null;
   return (
-    <div className="card-surface flex flex-col gap-3 p-4">
+    <div className={cn("card-surface flex flex-col gap-3 p-4", open && "transition-colors hover:border-primary/40")}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 font-semibold text-fg">
-          {first ? flexRender(first.column.columnDef.cell, first.getContext()) : null}
+          {open ? (
+            <DataTableOpenButton onOpen={open} label={openLabel}>
+              {title}
+            </DataTableOpenButton>
+          ) : (
+            title
+          )}
         </div>
-        {actions}
+        {/* Above the open overlay so the menu stays clickable. */}
+        {actions ? <div className="relative z-[1] shrink-0">{actions}</div> : null}
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
         {rest.map((cell) => (

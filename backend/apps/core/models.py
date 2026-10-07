@@ -22,6 +22,7 @@ from django.utils import timezone
 from apps.core.roles import ROLE_CODES
 from domain.errors import DomainError
 from domain.lockout import LockState, is_locked
+from domain.throttle import WindowState
 
 
 def _full_history() -> list[pghistory.RowEvent]:
@@ -73,8 +74,10 @@ class User(AbstractUser):
     full_name_ar = models.CharField(max_length=150, blank=True)
     full_name_en = models.CharField(max_length=150, blank=True)
     phone = models.CharField(max_length=30, blank=True)
-    language = models.CharField(max_length=2, choices=Language.choices, default=Language.AR)
-    theme = models.CharField(max_length=10, choices=Theme.choices, default=Theme.LIGHT)
+    # "" = the user never chose (MeOut sends null): the client keeps the device's choice
+    # (pre-login pick, then prefers-color-scheme) and saves it at first login (ARCHITECTURE 5.1).
+    language = models.CharField(max_length=2, choices=Language.choices, blank=True, default="")
+    theme = models.CharField(max_length=10, choices=Theme.choices, blank=True, default="")
     must_change_password = models.BooleanField(
         default=True, help_text="Forces a password change at next login (FEATURES 0.1)."
     )
@@ -421,6 +424,8 @@ class AuthEventKind(models.TextChoices):
     LOGOUT = "logout", "Logout"
     PASSWORD_CHANGED = "password_changed", "Password changed"
     PASSWORD_CHANGE_FAILED = "password_change_failed", "Password change rejected"
+    LOGIN_THROTTLED = "login_throttled", "Login refused: too many failures from this address"
+    ACCOUNT_UNLOCKED = "account_unlocked", "Account unlocked by an administrator"
 
 
 class AuthEvent(models.Model):
@@ -449,3 +454,48 @@ class AuthEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} {self.username} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class ThrottleScope(models.TextChoices):
+    IP = "ip", "Failed logins per client address"
+    USERNAME = "username", "Failed logins for a username that does not exist"
+
+
+class LoginThrottle(models.Model):
+    """Login abuse counters that are not stored on a ``User`` row (FEATURES 14.4).
+
+    * ``scope=ip``: failed logins per client address in a fixed window
+      (``domain.throttle``); over the limit, logins from that address get 429.
+    * ``scope=username``: the lockout state (``domain.lockout``) of a username that has no
+      account, so unknown and existing usernames lock the same way and the 423 response
+      cannot be used to find out which usernames exist.
+
+    Rows are bookkeeping, not audit (that is ``AuthEvent``); expired rows are removed by
+    ``manage.py maintenance``.
+    """
+
+    scope = models.CharField(max_length=10, choices=ThrottleScope.choices)
+    key = models.CharField(max_length=150)
+    count = models.PositiveIntegerField(default=0)
+    window_started_at = models.DateTimeField(null=True, blank=True)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(fields=["scope", "key"], name="core_loginthrottle_unique"),
+        ]
+        indexes: ClassVar[list[models.Index]] = [
+            models.Index(fields=["updated_at"], name="core_throttle_updated_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.scope}:{self.key}={self.count}"
+
+    @property
+    def window_state(self) -> WindowState:
+        return WindowState(count=self.count, window_started_at=self.window_started_at)
+
+    @property
+    def lock_state(self) -> LockState:
+        return LockState(failed_count=self.count, locked_until=self.locked_until)

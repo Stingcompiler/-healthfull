@@ -15,6 +15,11 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && pgbackrest version
 
+# The backup sidecar archives uploaded files from the app's media volume (owner 10001, mode
+# 0750): the postgres user reads them as a member of the app's group, never as root.
+RUN groupadd --system --gid 10001 hospital \
+ && usermod -aG hospital postgres
+
 COPY --chmod=0755 infra/backup/lib.sh infra/backup/backup-nightly.sh infra/backup/restore-test.sh \
      infra/backup/restore-dump.sh infra/backup/scheduler.sh infra/backup/render-pgbackrest-conf.sh \
      /opt/backup/

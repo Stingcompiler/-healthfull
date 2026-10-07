@@ -24,7 +24,7 @@ export function AdminIndexPage() {
             <li key={s.id}>
               <Link
                 to={s.to}
-                className="card-surface group flex h-full items-start gap-4 p-4 transition-colors hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none md:p-5"
+                className="card-surface group flex h-full items-start gap-4 p-4 focus-ring transition-colors hover:border-primary/40 md:p-5"
               >
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary-strong">
                   <Icon className="size-5" aria-hidden="true" />

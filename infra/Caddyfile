@@ -28,6 +28,20 @@
 	}
 }
 
+# Internal health listener, never published (compose healthcheck and infra/update.sh):
+#   /index.html          the SPA build is in place
+#   /api/ops/health      Caddy reaches the app
+http://127.0.0.1:8081 {
+	bind 127.0.0.1
+	handle /api/ops/health {
+		reverse_proxy {$APP_UPSTREAM:app:8000}
+	}
+	handle {
+		root * /srv
+		file_server
+	}
+}
+
 {$CADDY_SITE_ADDRESS::80} {
 	import security_headers
 	encode zstd gzip

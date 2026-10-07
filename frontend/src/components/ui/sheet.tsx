@@ -73,7 +73,7 @@ function SheetContent({
           <SheetPrimitive.Close
             className={cn(
               "absolute end-3 top-3 inline-flex size-8 items-center justify-center rounded-control text-muted",
-              "transition-colors hover:bg-accent hover:text-fg focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none",
+              "focus-ring transition-colors hover:bg-accent hover:text-fg",
               "[&_svg]:size-4",
             )}
           >

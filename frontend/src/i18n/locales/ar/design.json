@@ -53,7 +53,7 @@
     "muted": "نص ثانوي للملاحظات والتوضيحات القصيرة.",
     "numbers": "أرقام جدولية",
     "mixed": "نص مختلط",
-    "mixedSample": "رقم الملف 2026-00412 وهاتف 0912345678 ومرجع BNK-77821"
+    "mixedSample": "رقم الملف {{fileNo, bidi}} وهاتف {{phone, bidi}} ومرجع {{reference, bidi}}"
   },
   "buttons": {
     "primary": "أساسي",

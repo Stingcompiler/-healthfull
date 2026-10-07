@@ -40,10 +40,8 @@ RUN DJANGO_DEBUG=0 \
 # ---------------------------------------------------------------------------- runtime
 FROM python:${PYTHON_VERSION}-slim-${DEBIAN_RELEASE} AS app
 
-ARG APP_VERSION=0.0.0-dev
-LABEL org.opencontainers.image.title="hospital-sys app" \
-      org.opencontainers.image.description="Medical center management system: Django API" \
-      org.opencontainers.image.version="${APP_VERSION}"
+# APP_VERSION is declared at the end: build args reach every later RUN, so declaring it here
+# would rebuild the apt/fonts layer (hundreds of MB to download at every clinic) each release.
 
 # WeasyPrint (PDF invoices, results, claims) needs Pango; fonts cover Arabic and Latin so
 # printed documents never depend on the internet.
@@ -64,6 +62,11 @@ RUN groupadd --system --gid 10001 hospital \
 # a read-only root filesystem (compose): only /tmp (tmpfs) and the media volume are writable.
 COPY --from=build /app /app
 COPY --chmod=0755 infra/docker/app-entrypoint.sh /usr/local/bin/app-entrypoint
+
+ARG APP_VERSION=0.0.0-dev
+LABEL org.opencontainers.image.title="hospital-sys app" \
+      org.opencontainers.image.description="Medical center management system: Django API" \
+      org.opencontainers.image.version="${APP_VERSION}"
 
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \

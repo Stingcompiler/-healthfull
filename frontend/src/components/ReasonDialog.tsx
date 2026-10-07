@@ -58,7 +58,7 @@ function schemaFor(noteRequired: boolean) {
           .string()
           .trim()
           .min(1, vmsg("validation.required"))
-          .min(NOTE_MIN, vmsg("validation.minLength", { min: NOTE_MIN }))
+          .min(NOTE_MIN, vmsg("validation.minLength", { count: NOTE_MIN }))
           .max(NOTE_MAX)
       : z.string().trim().max(NOTE_MAX),
   });

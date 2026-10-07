@@ -56,7 +56,8 @@ export function PatientCard({ patient, actions, compact = false, className }: Pa
       data-slot="patient-card"
       className={cn("card-surface flex min-w-0 flex-col", compact ? "gap-3 p-3 md:p-4" : "gap-4 p-4 md:p-5", className)}
     >
-      <div className="flex min-w-0 items-start gap-3">
+      {/* Wraps on phones: the actions take their own row instead of squeezing the name. */}
+      <div className="flex min-w-0 flex-wrap items-start gap-3 sm:flex-nowrap">
         <Avatar className={compact ? "size-10" : "size-12"}>
           <AvatarFallback className="text-base">{initials(name) || <UserRound className="size-5" />}</AvatarFallback>
         </Avatar>
@@ -101,7 +102,9 @@ export function PatientCard({ patient, actions, compact = false, className }: Pa
             ) : null}
           </dl>
         </div>
-        {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
+        {actions ? (
+          <div className="flex shrink-0 items-center gap-1 max-sm:basis-full max-sm:justify-end">{actions}</div>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -140,11 +143,12 @@ export function PatientCard({ patient, actions, compact = false, className }: Pa
 }
 
 /**
- * One line of a person's name, truncated with an ellipsis. Names may be in either script
- * whatever the UI language (the other-language name, or a fallback when one is missing), so
- * the line takes the direction of its own text: a long name is then cut at its END
- * ("Fatima Osman Moh…"), never its beginning. When that direction is the opposite of the UI's,
- * the line's `end` edge is the UI's start edge, so `text-end` keeps it aligned with the card.
+ * A person's full name. Never truncated: Sudanese names have four parts and the cut-off part
+ * (grandfather or family name) is often what tells two similar patients apart, so a long name
+ * wraps onto more lines instead. Names may be in either script whatever the UI language (the
+ * other-language name, or a fallback when one is missing), so the line takes the direction of
+ * its own text. When that direction is the opposite of the UI's, the line's `end` edge is the
+ * UI's start edge, so `text-end` keeps it aligned with the card.
  */
 function NameLine({
   as: Tag = "h3",
@@ -161,7 +165,11 @@ function NameLine({
 }) {
   const dir = textDirection(text, uiDirection);
   return (
-    <Tag dir={dir} lang={lang} className={cn("truncate", dir === uiDirection ? "text-start" : "text-end", className)}>
+    <Tag
+      dir={dir}
+      lang={lang}
+      className={cn("text-pretty break-words", dir === uiDirection ? "text-start" : "text-end", className)}
+    >
       {text}
     </Tag>
   );

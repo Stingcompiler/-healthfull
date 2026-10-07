@@ -13,6 +13,7 @@ Every function here is property-tested in ``domain/tests/test_money.py``.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Sequence
 from decimal import ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation, localcontext
 
@@ -45,6 +46,20 @@ _PRECISION = 60
 
 type MoneyInput = Decimal | int | str
 
+#: ASCII-only: ``[0-9]`` and re.ASCII, because a bare ``\d`` matches any Unicode digit.
+_MONEY_TEXT = re.compile(r"[+-]?[0-9]+(?:\.[0-9]+)?", re.ASCII)
+
+#: Arabic-Indic (U+0660..) and extended Arabic-Indic (U+06F0..) digits are accepted and
+#: normalised, since Sudanese users type both; so is the Arabic decimal separator U+066B.
+#: The Arabic thousands separator U+066C is not mapped, so it is rejected like ",".
+_ARABIC_DIGITS = str.maketrans(
+    {
+        **{chr(0x0660 + i): str(i) for i in range(10)},
+        **{chr(0x06F0 + i): str(i) for i in range(10)},
+        "\u066b": ".",
+    }
+)
+
 
 def _invalid(value: object, reason: str) -> DomainError:
     return DomainError("INVALID_AMOUNT", f"Invalid money amount {value!r}: {reason}")
@@ -76,7 +91,8 @@ def money(value: MoneyInput) -> Decimal:
 
     Raises:
         TypeError: for floats, bools or any other type.
-        DomainError: ``INVALID_AMOUNT`` for unparseable strings and NaN/infinity.
+        DomainError: ``INVALID_AMOUNT`` for strings that are not plain positional decimals
+            (separators, underscores, exponents, NaN/infinity) and for non-finite Decimals.
     """
     if isinstance(value, bool) or not isinstance(value, Decimal | int | str):
         raise TypeError(f"money() does not accept {type(value).__name__}")
@@ -84,11 +100,15 @@ def money(value: MoneyInput) -> Decimal:
         return q(value)
     if isinstance(value, int):
         return q(Decimal(value))
-    # No thousands-separator handling on purpose: "1,5" must never silently become 15.
-    text = value.strip()
+    text = value.strip().translate(_ARABIC_DIGITS)
+    # Strict positional notation only. Decimal() alone would also accept "1_5" (PEP 515
+    # underscores, giving 15), "1e3", "NaN" and ".5"; separators are refused on purpose so
+    # "1,5" or "1 000" can never silently become another amount.
+    if not _MONEY_TEXT.fullmatch(text):
+        raise _invalid(value, "expected digits with an optional sign and decimal point")
     try:
         parsed = Decimal(text)
-    except InvalidOperation as exc:
+    except InvalidOperation as exc:  # pragma: no cover - the pattern admits only valid input
         raise _invalid(value, "not a number") from exc
     return q(parsed)
 

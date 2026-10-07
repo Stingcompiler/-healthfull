@@ -101,7 +101,7 @@ export function PasswordField<T extends FieldValues>({
                 autoComplete={autoComplete}
                 autoFocus={autoFocus}
                 disabled={disabled}
-                className="pe-11"
+                className="pe-12 md:pe-11"
                 {...field}
                 value={field.value ?? ""}
               />
@@ -112,7 +112,7 @@ export function PasswordField<T extends FieldValues>({
                 setVisible((v) => !v);
               }}
               aria-pressed={visible}
-              className="absolute inset-y-0 end-0 flex w-10 items-center justify-center rounded-e-control text-muted hover:text-fg focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
+              className="absolute inset-y-0 end-0 flex w-11 items-center justify-center rounded-e-control text-muted focus-ring hover:text-fg md:w-10"
             >
               {visible ? (
                 <EyeOff className="size-4" aria-hidden="true" />

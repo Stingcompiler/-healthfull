@@ -29,12 +29,14 @@ export function CardsSection() {
     <Section id="cards" title={t("sections.cards")} description={t("descriptions.cards")}>
       <Demo label={t("cards.kpi")} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
+          headingLevel="h4"
           label={t("cards.kpiVisits")}
           value={n(148)}
           icon={<Users />}
           trend={{ direction: "up", value: "12%" }}
         />
         <KpiCard
+          headingLevel="h4"
           label={t("cards.kpiCollected")}
           value={<MoneyText value="2450000.00" />}
           icon={<Banknote />}
@@ -42,6 +44,7 @@ export function CardsSection() {
           trend={{ direction: "flat" }}
         />
         <KpiCard
+          headingLevel="h4"
           label={t("cards.kpiPending")}
           value={n(7)}
           icon={<Activity />}
@@ -50,13 +53,14 @@ export function CardsSection() {
           hint={t("cards.kpiOlderThan", { count: 2 })}
         />
         <KpiCard
+          headingLevel="h4"
           label={t("cards.kpiWait")}
           value={t("cards.kpiWaitValue", { count: 18 })}
           icon={<Clock3 />}
           tone="info"
           trend={{ direction: "down", value: "4%", upIsGood: false }}
         />
-        <KpiCard label={t("cards.kpiLoading")} value={null} icon={<Users />} loading />
+        <KpiCard headingLevel="h4" label={t("cards.kpiLoading")} value={null} icon={<Users />} loading />
       </Demo>
 
       <Demo label={t("cards.patient")} className="grid grid-cols-1 gap-4 lg:grid-cols-2">

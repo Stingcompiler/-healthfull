@@ -3,6 +3,8 @@
 #   serve            wait for the database, optionally migrate, run gunicorn (default)
 #   migrate [args]   wait for the database, run `manage.py migrate --noinput [args]`
 #   manage ARGS      run any management command (e.g. manage createsuperuser)
+#   maintenance-loop run `manage.py maintenance` now and then every MAINTENANCE_INTERVAL_SECONDS
+#                    [86400] (the compose `maintenance` service)
 #   anything else    exec as-is (e.g. bash)
 set -euo pipefail
 
@@ -63,6 +65,17 @@ case "$cmd" in
   manage)
     shift
     exec python manage.py "$@"
+    ;;
+  maintenance-loop)
+    wait_for_db
+    interval="${MAINTENANCE_INTERVAL_SECONDS:-86400}"
+    case "$interval" in '' | *[!0-9]*) echo "app-entrypoint: bad MAINTENANCE_INTERVAL_SECONDS" >&2; exit 2 ;; esac
+    while true; do
+      python manage.py maintenance || echo "app-entrypoint: maintenance failed; retrying next cycle" >&2
+      # Background sleep + wait: a stop signal ends the loop at once.
+      sleep "$interval" &
+      wait $!
+    done
     ;;
   *)
     exec "$@"

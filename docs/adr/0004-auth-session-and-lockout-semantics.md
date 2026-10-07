@@ -1,6 +1,7 @@
 # 0004: Sign-in, lockout and session semantics
 
-Date: 2026-10-06. Status: accepted.
+Date: 2026-10-06. Status: accepted; amended by 0005 (unknown usernames lock, per-address limit,
+break-glass account).
 
 ## Context
 FEATURES 0.1 and 14.4 ask for username/password login, forced password change on first login and a

@@ -37,6 +37,43 @@ def _fast_password_hashing(settings: Any) -> None:
     settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 
+def ensure_reference_seed() -> None:
+    """Re-create what migration 0002 seeds (roles, CenterProfile, Policy) if missing.
+
+    Transactional tests end with a TRUNCATE of every table, which also removes rows that
+    migrations inserted. Inserts only: rows that exist are left alone, so this writes no
+    history events when nothing is missing.
+    """
+    from apps.core.models import CenterProfile, Policy, Role
+    from apps.core.roles import ROLES
+
+    for role in ROLES:
+        Role.objects.get_or_create(
+            code=role.code, defaults={"name_ar": role.name_ar, "name_en": role.name_en}
+        )
+    CenterProfile.load()
+    Policy.load()
+
+
+@pytest.fixture(scope="session")
+def django_db_setup(django_db_setup: None, django_db_blocker: Any) -> None:
+    """Standard setup, then restore the migration seed (a reused DB may have been flushed)."""
+    with django_db_blocker.unblock():
+        ensure_reference_seed()
+
+
+@pytest.fixture(autouse=True)
+def _reseed_for_transactional_tests(request: pytest.FixtureRequest) -> None:
+    """Each transactional test starts with the migration seed, even after an earlier flush."""
+    marker = request.node.get_closest_marker("django_db")
+    transactional = marker is not None and bool(
+        marker.kwargs.get("transaction", marker.args[0] if marker.args else False)
+    )
+    if transactional or "transactional_db" in request.fixturenames:
+        request.getfixturevalue("transactional_db")
+        ensure_reference_seed()
+
+
 class ApiClient:
     """Django test client that enforces CSRF like a browser and speaks JSON."""
 

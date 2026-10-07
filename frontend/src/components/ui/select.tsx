@@ -30,8 +30,8 @@ function SelectTrigger({
       data-size={size}
       className={cn(
         controlClasses,
-        "flex items-center justify-between gap-2 px-3 text-sm whitespace-nowrap data-[placeholder]:text-muted",
-        "data-[size=default]:h-10 data-[size=sm]:h-8",
+        "flex items-center justify-between gap-2 px-3 whitespace-nowrap data-[placeholder]:text-muted",
+        "data-[size=default]:h-11 data-[size=sm]:h-11 md:data-[size=default]:h-10 md:data-[size=sm]:h-8",
         "*:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
@@ -98,8 +98,11 @@ function SelectItem({ className, children, ...props }: React.ComponentProps<type
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-2 rounded-[6px] py-2 ps-2 pe-8 text-sm outline-hidden select-none",
-        "focus:bg-accent focus:text-accent-fg data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex w-full cursor-default items-center gap-2 rounded-[6px] py-2 ps-3 pe-8 text-sm outline-hidden select-none",
+        // Keyboard highlight: tinted fill + strong text + a solid start-edge bar (>= 3:1).
+        "focus:bg-primary-soft focus:text-primary-strong",
+        "before:pointer-events-none before:absolute before:inset-y-1 before:start-0.5 before:w-[3px] before:rounded-full before:content-[''] focus:before:bg-ring",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}

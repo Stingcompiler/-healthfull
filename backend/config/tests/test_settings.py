@@ -188,6 +188,18 @@ def test_dev_defaults() -> None:
     }
 
 
+def test_generic_env_names_are_ignored() -> None:
+    """Playwright's DEBUG=pw:api (and other tools' generic names) must not reach Django."""
+    code = "import json, config.settings as s; print(json.dumps([s.DEBUG, s.SECRET_KEY]))"
+    result = _run_settings(
+        {"DJANGO_DEBUG": "1", "DEBUG": "pw:api", "SECRET_KEY": "from-some-other-tool"}, code
+    )
+    assert result.returncode == 0, result.stderr
+    debug, secret = json.loads(result.stdout.strip().splitlines()[-1])
+    assert debug is True
+    assert secret != "from-some-other-tool"
+
+
 def test_invalid_log_format_is_rejected() -> None:
     result = _run_settings({"LOG_FORMAT": "xml"}, "import config.settings")
     assert result.returncode != 0

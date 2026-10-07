@@ -26,7 +26,7 @@ import { Demo, Section } from "../Section";
 const DEPARTMENTS = ["internal", "pediatrics", "obgyn", "dental"] as const;
 
 const schema = z.object({
-  fullName: requiredString.pipe(z.string().min(5, vmsg("validation.minLength", { min: 5 }))),
+  fullName: requiredString.pipe(z.string().min(5, vmsg("validation.minLength", { count: 5 }))),
   phone: phoneSchema,
   sex: z.enum(["male", "female"], vmsg("validation.selectOption")),
   department: z.enum(DEPARTMENTS, vmsg("validation.selectOption")),

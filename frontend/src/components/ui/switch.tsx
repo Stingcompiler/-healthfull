@@ -13,9 +13,10 @@ function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimi
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        "peer inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-transparent p-0.5 shadow-xs transition-colors outline-none",
-        "focus-visible:ring-3 focus-visible:ring-ring/35 disabled:cursor-not-allowed disabled:opacity-55",
-        "data-[state=checked]:bg-primary data-[state=unchecked]:bg-border-strong/55",
+        "peer inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-transparent p-0.5 shadow-xs transition-colors",
+        "focus-ring disabled:cursor-not-allowed disabled:opacity-55",
+        // Off track at full --border-strong: >= 3:1 against the surface and the white thumb.
+        "data-[state=checked]:bg-primary data-[state=unchecked]:bg-border-strong",
         className,
       )}
       {...props}

@@ -15,7 +15,7 @@ export interface paths {
         put?: never;
         /**
          * Change own password
-         * @description 409 PASSWORD_INVALID with details.reason = old_password_incorrect | password_unchanged | password_rejected (then details.messages lists why).
+         * @description 409 PASSWORD_INVALID with details.reason = old_password_incorrect | password_unchanged | password_rejected (then details.messages lists why). Wrong current passwords count toward the login lockout: the one that locks the account ends the session and returns 423 ACCOUNT_LOCKED, as does any attempt while the account is locked.
          */
         post: operations["auth_change_password"];
         delete?: never;
@@ -52,7 +52,7 @@ export interface paths {
         put?: never;
         /**
          * Log in with username and password
-         * @description 401 INVALID_CREDENTIALS on a wrong username/password. The 5th consecutive failure locks the account for 15 minutes; while locked every attempt returns 423 ACCOUNT_LOCKED with details.locked_until and details.retry_after_seconds. A successful login rotates the session and the csrftoken cookie.
+         * @description 401 INVALID_CREDENTIALS on a wrong username/password. The 5th consecutive failure for a username (existing or not) locks it for 15 minutes; while locked every attempt returns 423 ACCOUNT_LOCKED with details.locked_until and details.retry_after_seconds. Too many failures from one client address return 429 RATE_LIMITED with details.retry_after_seconds. A successful login rotates the session and the csrftoken cookie.
          */
         post: operations["auth_login"];
         delete?: never;
@@ -203,9 +203,9 @@ export interface components {
             id: number;
             /**
              * Language
-             * @enum {string}
+             * @description null = never chosen: the client keeps the device's language
              */
-            language: "ar" | "en";
+            language: ("ar" | "en") | null;
             /** Must Change Password */
             must_change_password: boolean;
             /**
@@ -220,9 +220,9 @@ export interface components {
             roles: string[];
             /**
              * Theme
-             * @enum {string}
+             * @description null = never chosen: the client follows prefers-color-scheme
              */
-            theme: "light" | "dark" | "warm";
+            theme: ("light" | "dark" | "warm") | null;
             /** Username */
             username: string;
         };
@@ -291,6 +291,15 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Locked */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -369,6 +378,15 @@ export interface operations {
             };
             /** @description Locked */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -67,7 +67,7 @@ export function DesignSystemPage() {
               <li key={id}>
                 <a
                   href={`#${id}`}
-                  className="inline-flex h-8 items-center rounded-full border border-border bg-surface px-3 text-xs font-medium whitespace-nowrap text-muted transition-colors hover:border-primary/40 hover:text-fg focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
+                  className="inline-flex h-8 items-center rounded-full border border-border bg-surface px-3 text-xs font-medium whitespace-nowrap text-muted focus-ring transition-colors hover:border-primary/40 hover:text-fg"
                 >
                   {t(`sections.${id}`)}
                 </a>

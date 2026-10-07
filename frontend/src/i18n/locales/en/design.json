@@ -53,7 +53,7 @@
     "muted": "Secondary text for notes and short hints.",
     "numbers": "Tabular numbers",
     "mixed": "Mixed text",
-    "mixedSample": "File 2026-00412, phone 0912345678, reference BNK-77821"
+    "mixedSample": "File {{fileNo, bidi}}, phone {{phone, bidi}}, reference {{reference, bidi}}"
   },
   "buttons": {
     "primary": "Primary",

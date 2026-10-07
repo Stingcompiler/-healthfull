@@ -114,6 +114,13 @@ leftover="$(sql postgres "SELECT count(*) FROM pg_database WHERE datname LIKE 'r
 assert_eq "$leftover" "0" "scratch database dropped"
 pass "restore test restores the newest dump, counts rows, logs JSON and drops the scratch DB"
 
+# A scratch database left by a killed run is dropped by the next restore test.
+sql postgres "CREATE DATABASE \"restore_test_20200101000000_1\""
+"$BK/restore-test.sh" 2>"$WORK/r0.err" || { cat "$WORK/r0.err" >&2; fail "restore-test after a crash"; }
+leftover="$(sql postgres "SELECT count(*) FROM pg_database WHERE datname LIKE 'restore_test_%'")"
+assert_eq "$leftover" "0" "leftover scratch database dropped"
+pass "restore test drops scratch databases left by a killed run"
+
 # ---------------------------------------------------------------- 4. restore test failure modes
 cp "$dump1" "$WORK/tampered.dump"
 printf '%s  tampered.dump\n' "0000000000000000000000000000000000000000000000000000000000000000" >"$WORK/tampered.dump.sha256"
@@ -139,12 +146,50 @@ if DB_NAME="infra_test_missing_$ID" "$BK/backup-nightly.sh" >/dev/null 2>&1; the
 fi
 assert_json_field "$BACKUP_DIR/status/backup-runs.jsonl" -1 status failed
 assert_json_contains "$BACKUP_DIR/status/backup-runs.jsonl" -1 error "cannot connect"
-mkdir "$BACKUP_DIR/.backup.lock" && printf '%s\n' "$$" >"$BACKUP_DIR/.backup.lock/pid"
+# A live holder (another container, another process) blocks the run, and the refusal is recorded.
+hold_lock() {
+  perl -MFcntl=:flock -e 'open(my $f, ">>", $ARGV[0]) or die; flock($f, LOCK_EX) or die;
+    open(my $r, ">", $ARGV[1]) or die; close $r; sleep 60' "$1" "$WORK/held" &
+  holder=$!
+  for _ in $(seq 1 50); do [[ -f "$WORK/held" ]] && return 0; sleep 0.1; done
+  fail "could not take the test lock"
+}
+hold_lock "$BACKUP_DIR/.backup.flock"
 if DB_NAME="$SRC" "$BK/backup-nightly.sh" >/dev/null 2>"$WORK/lock.err"; then fail "lock must block"; fi
-grep -q "another run holds" "$WORK/lock.err" || fail "lock message"
-printf '999999\n' >"$BACKUP_DIR/.backup.lock/pid" # dead pid: stale lock is reclaimed
-DB_NAME="$SRC" "$BK/backup-nightly.sh" --no-prune >/dev/null 2>&1 || fail "stale lock must be reclaimed"
-pass "failed backups are recorded; concurrent runs are blocked; stale locks are reclaimed"
+grep -q "another backup run holds" "$WORK/lock.err" || fail "lock message"
+assert_json_field "$BACKUP_DIR/status/backup-runs.jsonl" -1 status failed
+assert_json_contains "$BACKUP_DIR/status/backup-runs.jsonl" -1 error "another backup run holds"
+kill "$holder" && wait "$holder" 2>/dev/null || true
+rm -f "$WORK/held"
+# The holder died: the kernel released the lock. A lock file that names a dead or recycled
+# PID (even this run's own PID, as in a fresh container) must never block.
+printf 'pid=%s host=%s since=x\n' "$$" "$(hostname)" >"$BACKUP_DIR/.backup.flock"
+printf 'half a dump' >"$BACKUP_DIR/dumps/.$SRC-20200101T000000Z.dump.partial"
+DB_NAME="$SRC" "$BK/backup-nightly.sh" --no-prune >/dev/null 2>"$WORK/relock.err" || {
+  cat "$WORK/relock.err" >&2
+  fail "a lock left by a dead process must not block"
+}
+assert_eq "$(find "$BACKUP_DIR/dumps" -name '.*.partial' | wc -l | tr -d ' ')" "0" "leftover partial removed"
+pass "failed and refused backups are recorded; a live lock blocks; dead holders never do; partials cleaned"
+
+# ---------------------------------------------------------------- 5b. media failure keeps the dump
+mkdir -p "$WORK/media-locked/private" && printf 'x' >"$WORK/media-locked/private/f"
+chmod 000 "$WORK/media-locked/private"
+set +e
+partial_out="$(DB_NAME="$SRC" MEDIA_DIR="$WORK/media-locked" "$BK/backup-nightly.sh" --no-prune 2>"$WORK/media.err")"
+partial_rc=$?
+set -e
+chmod 755 "$WORK/media-locked/private"
+if [[ "$(id -u)" -eq 0 ]]; then
+  echo "skip - media permission failure (root can read anything)"
+else
+  assert_eq "$partial_rc" "3" "media failure exits 3 (partial)"
+  assert_file "$partial_out"
+  assert_match "$partial_out" "\\.dump\$" "dump path still printed"
+  assert_json_field "$BACKUP_DIR/status/backup-runs.jsonl" -1 status partial
+  assert_json_contains "$BACKUP_DIR/status/backup-runs.jsonl" -1 error "media archive failed"
+  pass "an unreadable media directory gives status partial, exit 3, and keeps the verified dump"
+fi
 
 # ---------------------------------------------------------------- 6. restore-dump swaps safely
 sql postgres "CREATE DATABASE \"$TGT\""

@@ -48,6 +48,20 @@ iso_now() {
   date -u +%Y-%m-%dT%H:%M:%SZ
 }
 
+iso_to_epoch() {
+  # iso_to_epoch 2026-10-07T00:30:00Z -> seconds since the epoch (GNU date, then BSD date).
+  date -u -d "$1" +%s 2>/dev/null || date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$1" +%s 2>/dev/null
+}
+
+last_success() {
+  # last_success FILE TYPE STATUS_REGEX -> finished_at (ISO UTC) of the newest matching
+  # status line, or nothing. The status files are ours: one compact JSON object per line.
+  local file="$1" type="$2" statuses="$3" line
+  [[ -f "$file" ]] || return 0
+  line="$(grep -E "\"type\":\"$type\"" "$file" | grep -E "\"status\":\"($statuses)\"" | tail -n 1 || true)"
+  printf '%s' "$line" | sed -nE 's/.*"finished_at":"([0-9TZ:-]+)".*/\1/p'
+}
+
 sha256_of() {
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$1" | awk '{print $1}'
@@ -92,25 +106,31 @@ append_json_line() {
   chmod 0644 "$file" 2>/dev/null || true
 }
 
-# Exclusive lock via an atomic mkdir; a lock left by a dead process is reclaimed.
+# Exclusive, non-blocking lock held until this shell exits: flock(2) on file descriptor 9.
+# The kernel drops the lock when the holder dies (crash, OOM, SIGKILL, power cut), so there
+# is no stale-lock guessing; it also works across containers that share the bind mount,
+# where PIDs from different PID namespaces would collide. Uses flock(1) (util-linux, in every
+# Debian image) or, on hosts without it (macOS), perl locking the same inherited descriptor.
+# Returns 1 when another process holds the lock.
 acquire_lock() {
-  local lockdir="$1" pid
-  if mkdir "$lockdir" 2>/dev/null; then
-    printf '%s\n' "$$" >"$lockdir/pid"
-    return 0
+  local file="$1"
+  exec 9>>"$file" || return 1
+  if command -v flock >/dev/null 2>&1; then
+    flock -n 9 || return 1
+  else
+    perl -MFcntl=:flock -e 'open(my $fh, ">&=", 9) or exit 2; flock($fh, LOCK_EX | LOCK_NB) or exit 1' ||
+      return 1
   fi
-  pid="$(cat "$lockdir/pid" 2>/dev/null || true)"
-  if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
-    die "another run holds $lockdir (pid $pid)"
-  fi
-  log "reclaiming stale lock $lockdir (pid ${pid:-unknown})"
-  rm -rf "$lockdir"
-  mkdir "$lockdir" 2>/dev/null || die "could not take lock $lockdir"
-  printf '%s\n' "$$" >"$lockdir/pid"
+  # Diagnostics only (who holds it); the lock itself is the flock, not this text.
+  printf 'pid=%s host=%s since=%s\n' "$$" "$(hostname)" "$(iso_now)" >"$file" 2>/dev/null || true
+}
+
+lock_holder() {
+  cat "$1" 2>/dev/null | head -n 1 || true
 }
 
 release_lock() {
-  [[ -n "${1:-}" ]] && rm -rf "$1"
+  exec 9>&- 2>/dev/null || true
 }
 
 # psql wrapper: no .psqlrc, never prompt for a password, stop on error, unaligned tuples only.

@@ -1,8 +1,11 @@
 """Request correlation and audit context.
 
-``RequestIdMiddleware`` (first in the stack) assigns every request an id, binds it to the
-structlog context, echoes it in the ``X-Request-ID`` response header and writes one access
-log line per request.
+``RequestIdMiddleware`` (first in the stack) assigns every request a server-generated id,
+binds it to the structlog context, returns it in the ``X-Request-ID`` response header and
+writes one access log line per request. The id ends up in immutable audit rows
+(``AuthEvent.request_id``, pghistory context), so a client can never choose it: a
+well-formed incoming ``X-Request-ID`` is kept only as ``client_request_id`` (logs and
+pghistory metadata, clearly labelled as client-supplied).
 
 ``ApiMethodNotAllowedMiddleware`` turns ninja's plain-text 405 into the JSON error shape.
 
@@ -34,11 +37,9 @@ _WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 GetResponse = Callable[[HttpRequest], HttpResponseBase]
 
 
-def _request_id_from(request: HttpRequest) -> str:
+def _client_request_id_from(request: HttpRequest) -> str | None:
     incoming = request.headers.get(REQUEST_ID_HEADER, "")
-    if _VALID_INCOMING_ID.match(incoming):
-        return incoming
-    return uuid.uuid4().hex
+    return incoming if _VALID_INCOMING_ID.match(incoming) else None
 
 
 def _resolved_user_id(request: HttpRequest) -> int | None:
@@ -59,10 +60,14 @@ class RequestIdMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponseBase:
-        request_id = _request_id_from(request)
+        request_id = uuid.uuid4().hex
+        client_request_id = _client_request_id_from(request)
         request.request_id = request_id  # type: ignore[attr-defined]
+        request.client_request_id = client_request_id  # type: ignore[attr-defined]
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)
+        if client_request_id:
+            structlog.contextvars.bind_contextvars(client_request_id=client_request_id)
         started = time.perf_counter()
         try:
             response = self.get_response(request)
@@ -118,10 +123,14 @@ class AuditContextMiddleware:
         user = getattr(request, "user", None)
         user_id = user.pk if user is not None and user.is_authenticated else None
         structlog.contextvars.bind_contextvars(user_id=user_id)
-        with pghistory.context(
-            user=user_id,
-            request_id=getattr(request, "request_id", None),
-            method=request.method,
-            url=request.path,
-        ):
+        context: dict[str, object] = {
+            "user": user_id,
+            "request_id": getattr(request, "request_id", None),
+            "method": request.method,
+            "url": request.path,
+        }
+        client_request_id = getattr(request, "client_request_id", None)
+        if client_request_id:
+            context["client_request_id"] = client_request_id
+        with pghistory.context(**context):
             return self.get_response(request)

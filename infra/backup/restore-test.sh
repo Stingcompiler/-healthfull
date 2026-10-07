@@ -100,6 +100,7 @@ on_exit() {
     [[ $code -eq 0 ]] && code=1
   fi
   rm -f "$ERR_FILE"
+  release_lock
   exit "$code"
 }
 trap on_exit EXIT
@@ -109,6 +110,21 @@ fail() {
   ERROR="$*"
   exit 1
 }
+
+# ---------------------------------------------------------------- one at a time, then tidy up
+# The lock is per backup directory (one per server in production). Holding it means no other
+# restore test of ours is running, so scratch databases from a killed run (SIGKILL, power cut:
+# the EXIT trap never ran) are leftovers: drop them, they are full copies of production data.
+acquire_lock "$BACKUP_DIR/.restore-test.flock" ||
+  fail "another restore test holds $BACKUP_DIR/.restore-test.flock ($(lock_holder "$BACKUP_DIR/.restore-test.flock"))"
+for stale in $(psql_q "$MAINT_DB" -c "SELECT datname FROM pg_database WHERE datname ~ '^restore_test_[0-9]{14}_[0-9]+\$'" 2>/dev/null || true); do
+  # Without FORCE: a database something is still connected to is left alone.
+  if psql_q "$MAINT_DB" -c "DROP DATABASE IF EXISTS \"$stale\"" >/dev/null 2>&1; then
+    log "dropped leftover scratch database $stale"
+  else
+    log "WARNING: leftover scratch database $stale is in use; not dropped"
+  fi
+done
 
 # ---------------------------------------------------------------- choose and verify the dump
 if [[ -z "$DUMP" ]]; then

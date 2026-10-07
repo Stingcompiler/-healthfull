@@ -67,4 +67,23 @@ if BACKUP_TIME=24:00 "$BK/scheduler.sh" 2>/dev/null; then fail "invalid time mus
 if RESTORE_TEST_DAY=31 "$BK/scheduler.sh" 2>/dev/null; then fail "day 31 must be refused"; fi
 pass "scheduler picks the next slot and validates its settings"
 
+# ---------------------------------------------------------------- scheduler catch-up
+CU="$(mktemp -d "${TMPDIR:-/tmp}/scheduler-catchup.XXXXXX")"
+mkdir -p "$CU/status"
+due() { BACKUP_DIR="$CU" "$BK/scheduler.sh" --due "$@"; }
+NOW="$(date -u -d 2026-10-07T08:00:00Z +%s 2>/dev/null || date -j -u -f %Y-%m-%dT%H:%M:%SZ 2026-10-07T08:00:00Z +%s)"
+assert_eq "$(due "$NOW" 7 2026-10)" "backup restore" "no history: both jobs are due"
+printf '%s\n' '{"version":1,"type":"backup","status":"ok","started_at":"2026-10-06T00:30:00Z","finished_at":"2026-10-06T00:31:00Z"}' >"$CU/status/backup-runs.jsonl"
+assert_eq "$(due "$NOW" 7 2026-10)" "backup restore" "last backup 31h ago is missed"
+printf '%s\n' '{"version":1,"type":"backup","status":"failed","started_at":"2026-10-07T00:30:00Z","finished_at":"2026-10-07T00:30:05Z"}' >>"$CU/status/backup-runs.jsonl"
+assert_eq "$(due "$NOW" 7 2026-10)" "backup restore" "a failed run does not count"
+printf '%s\n' '{"version":1,"type":"backup","status":"partial","started_at":"2026-10-07T00:30:00Z","finished_at":"2026-10-07T00:32:00Z"}' >>"$CU/status/backup-runs.jsonl"
+printf '%s\n' '{"version":1,"type":"restore_test","status":"ok","started_at":"2026-10-01T02:00:00Z","finished_at":"2026-10-01T02:03:00Z"}' >"$CU/status/restore-tests.jsonl"
+assert_eq "$(due "$NOW" 7 2026-10)" "none" "recent partial backup and this month's restore test"
+assert_eq "$(due "$NOW" 7 2026-11)" "restore" "new month: restore test due once its day has come"
+assert_eq "$(RESTORE_TEST_DAY=15 due "$NOW" 7 2026-11)" "none" "not before RESTORE_TEST_DAY"
+assert_eq "$(RESTORE_TEST_DAY=0 BACKUP_CATCHUP_HOURS=0 due "$((NOW + 999999))" 28 2027-01)" "none" "catch-up can be disabled"
+rm -rf "$CU"
+pass "scheduler catches up a missed backup and a missed monthly restore test"
+
 summary

@@ -50,6 +50,13 @@ export const USERS = {
   admin: { username: "admin", role: "admin", fullNameAr: "مدير النظام", fullNameEn: "System Admin" },
 } as const satisfies Record<string, E2EUser>;
 
+/**
+ * Break-glass superuser seeded apart from the role users (`root`, no role, every registered
+ * permission through is_superuser). The `admin` user above is a normal user holding the admin
+ * role, so specs exercise that role's real permissions. Use root only to test the superuser.
+ */
+export const SUPERUSER = { username: "root", fullNameAr: "حساب الطوارئ", fullNameEn: "Break-glass superuser" } as const;
+
 /** Seed user key, e.g. "cashier". `login(page, "cashier")`. */
 export type UserKey = keyof typeof USERS;
 

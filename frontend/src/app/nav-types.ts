@@ -28,6 +28,8 @@ export interface NavItem {
   exact?: boolean;
   /** Reachable from quick search but not listed in the sidebar. */
   hidden?: boolean;
+  /** The icon has a reading direction (a numbered list, an arrow): mirror it in RTL. */
+  flipInRtl?: boolean;
 }
 
 /** Display order of groups in the sidebar. */

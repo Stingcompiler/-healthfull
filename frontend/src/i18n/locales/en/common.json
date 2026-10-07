@@ -78,7 +78,8 @@
     "changePassword": "Change password",
     "logout": "Log out",
     "designSystem": "Design system",
-    "roles": "Roles"
+    "roles": "Roles",
+    "menuFor": "User menu: {{name}}"
   },
   "roles": {
     "receptionist": "Receptionist",
@@ -143,8 +144,10 @@
   },
   "validation": {
     "required": "This field is required",
-    "minLength": "Must be at least {{min}} characters",
-    "maxLength": "Must be at most {{max}} characters",
+    "minLength_one": "Must be at least {{count}} character",
+    "minLength_other": "Must be at least {{count}} characters",
+    "maxLength_one": "Must be at most {{count}} character",
+    "maxLength_other": "Must be at most {{count}} characters",
     "invalid": "Invalid value",
     "number": "Enter a valid number",
     "phone": "Invalid phone number; enter 10 digits starting with 0",
@@ -191,8 +194,8 @@
     "description": "This page could not be displayed. Try again; if it keeps happening, contact the system administrator."
   },
   "kpi": {
-    "trendUp": "Up {{value}}",
-    "trendDown": "Down {{value}}",
+    "trendUp": "Up",
+    "trendDown": "Down",
     "trendFlat": "No change",
     "comparedToYesterday": "vs. yesterday"
   },

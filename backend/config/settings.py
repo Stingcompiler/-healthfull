@@ -30,24 +30,24 @@ REPO_HASH = hashlib.sha1(str(REPO_ROOT).encode("utf-8"), usedforsecurity=False).
 
 # --- Core ------------------------------------------------------------------------------
 
-DEBUG = env_bool("DJANGO_DEBUG", env_bool("DEBUG", True))
+# Only the DJANGO_-prefixed names are read. Generic names such as DEBUG are used by other
+# tools (Playwright's DEBUG=pw:api, for one) and must never reconfigure the backend.
+DEBUG = env_bool("DJANGO_DEBUG", True)
 
 _DEV_SECRET_KEY = "dev-insecure-secret-key-do-not-use-in-production"  # noqa: S105
-SECRET_KEY = env_str("DJANGO_SECRET_KEY", env_str("SECRET_KEY", ""))
+SECRET_KEY = env_str("DJANGO_SECRET_KEY", "")
 if not SECRET_KEY:
     if not DEBUG:
         raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is off")
     SECRET_KEY = _DEV_SECRET_KEY
 
-ALLOWED_HOSTS = env_list(
-    "DJANGO_ALLOWED_HOSTS",
-    env_list("ALLOWED_HOSTS", ["localhost", "127.0.0.1", "[::1]"]),
-)
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["localhost", "127.0.0.1", "[::1]"])
 
 APP_VERSION = env_str("APP_VERSION", "0.1.0-dev")
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    # django.contrib.admin with the project's admin site (same login rules as the API).
+    "apps.core.admin_config.HospitalAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -117,15 +117,30 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "core.User"
 
+# Every login path (API, Django admin, authenticate()) shares the lockout, throttle and
+# audit in apps.core.services.authenticate_credentials.
+AUTHENTICATION_BACKENDS = ["apps.core.auth_backends.LockoutBackend"]
+
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        # This User keeps names in full_name_ar/full_name_en (first/last_name stay empty).
+        "OPTIONS": {
+            "user_attributes": ("username", "full_name_en", "full_name_ar", "email", "phone")
+        },
+    },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {"min_length": 8},
     },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "apps.core.validators.LocalWordsPasswordValidator"},
 ]
+
+#: Failed logins allowed per client address per window before logins answer 429.
+LOGIN_IP_MAX_FAILURES = env_int("LOGIN_IP_MAX_FAILURES", 30)
+LOGIN_IP_WINDOW_SECONDS = env_int("LOGIN_IP_WINDOW_SECONDS", 15 * 60)
 
 # Idle timeout: the cookie age is refreshed on every request, so a session dies after
 # SESSION_COOKIE_AGE of inactivity. Login narrows it to Policy.session_idle_minutes.
@@ -147,9 +162,9 @@ CSRF_USE_SESSIONS = False
 
 _frontend_port = env_str("FRONTEND_PORT", "5173")
 _dev_origins = [f"http://localhost:{_frontend_port}", f"http://127.0.0.1:{_frontend_port}"]
-CSRF_TRUSTED_ORIGINS = env_list(
-    "DJANGO_CSRF_TRUSTED_ORIGINS", env_list("CSRF_TRUSTED_ORIGINS", _dev_origins)
-)
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", _dev_origins)
+# JSON {code, message, details} for /api/ paths, Django's page elsewhere (admin).
+CSRF_FAILURE_VIEW = "api.views.csrf_failure"
 
 # --- HTTP security headers ------------------------------------------------------------
 
@@ -179,6 +194,10 @@ STATIC_URL = "/static/"
 STATIC_ROOT = Path(env_str("STATIC_ROOT", str(BASE_DIR / "staticfiles")))
 MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(env_str("MEDIA_ROOT", str(BASE_DIR / "media")))
+# Uploads (patient documents, logos) are not world-readable. The backup sidecar reads them as
+# a member of the app's group (infra/docker/db.Dockerfile), so group read is required.
+FILE_UPLOAD_PERMISSIONS = 0o640
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {

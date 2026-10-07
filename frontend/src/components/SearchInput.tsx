@@ -83,7 +83,7 @@ export function SearchInput({
         className="ps-9 pe-9 [&::-webkit-search-cancel-button]:hidden"
         {...props}
       />
-      <div className="absolute inset-y-0 end-0 flex items-center pe-1.5">
+      <div className="absolute inset-y-0 end-0 flex items-center pe-0.5 md:pe-1.5">
         {loading ? (
           <Loader2 className="me-1.5 size-4 animate-spin text-muted" aria-label={t("a11y.loading")} />
         ) : value ? (
@@ -93,7 +93,7 @@ export function SearchInput({
               change("");
               inputRef.current?.focus();
             }}
-            className="inline-flex size-7 items-center justify-center rounded-[6px] text-muted hover:bg-accent hover:text-fg focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
+            className="inline-flex size-10 items-center justify-center rounded-[6px] text-muted focus-ring hover:bg-accent hover:text-fg md:size-7"
           >
             <X className="size-4" aria-hidden="true" />
             <span className="sr-only">{t("search.clear")}</span>

@@ -19,6 +19,7 @@ setup() {
   export FAKE_STATE="$WORK/case/state"
   export ENV_FILE="$WORK/case/.env"
   export UPDATE_LOG_DIR="$WORK/case/logs"
+  export UPDATE_STATE_DIR="$WORK/case/state-dir"
   printf 'IMAGE_REGISTRY=hospital-sys\nAPP_IMAGE_TAG=v1.0.0\nBACKUP_HOST_DIR=%s\nPOSTGRES_PASSWORD=x\n' \
     "$WORK/case/backups" >"$ENV_FILE"
   echo "v1.0.0" >"$FAKE_STATE/running"
@@ -34,7 +35,7 @@ run_update() {
 }
 
 calls() { cat "$FAKE_STATE/calls.log"; }
-called() { grep -q -- "$1" "$FAKE_STATE/calls.log"; }
+called() { grep -qs -- "$1" "$FAKE_STATE/calls.log"; }
 line_of() { grep -n -- "$1" "$FAKE_STATE/calls.log" | head -n 1 | cut -d: -f1 || true; }
 env_tag() { grep '^APP_IMAGE_TAG=' "$ENV_FILE" | cut -d= -f2; }
 last_status() { _json_get "$WORK/case/backups/status/update-runs.jsonl" -1 status; }
@@ -170,6 +171,51 @@ assert_eq "$code" "2" "invalid tag is a usage error"
 [[ -f "$FAKE_STATE/calls.log" ]] && show_and_fail "no docker call on usage error"
 pass "invalid tag rejected before any docker call"
 
-[[ ! -d "$(cd "$HERE/.." && pwd -P)/.update.lock" ]] || fail "lock released"
+# ---------------------------------------------------------------- partial pre-update backup
+setup
+export FAKE_PENDING=1 FAKE_BACKUP_EXIT=3
+run_update
+[[ $CODE -eq 0 ]] || show_and_fail "a partial backup (verified dump) must not block the update"
+grep -q "PARTIAL" "$WORK/case/out.log" || show_and_fail "partial backup warning missing"
+assert_eq "$(env_tag)" "v2.0.0" "updated"
+pass "partial pre-update backup (dump ok, media failed): update continues with a warning"
+
+# ---------------------------------------------------------------- crash safety
+setup
+chmod 600 "$ENV_FILE"
+run_update
+[[ $CODE -eq 0 ]] || show_and_fail "expected success"
+assert_eq "$(stat -c %a "$ENV_FILE" 2>/dev/null || stat -f %Lp "$ENV_FILE")" "600" ".env keeps its mode"
+[[ -z "$(find "$(dirname "$ENV_FILE")" -maxdepth 1 -name '.env.update.*')" ]] || show_and_fail "temp env file left"
+grep -q '^POSTGRES_PASSWORD=x$' "$ENV_FILE" || show_and_fail "other settings kept"
+[[ ! -f "$UPDATE_STATE_DIR/.update.state" ]] || show_and_fail "state file removed after success"
+pass ".env is replaced atomically with its mode kept; no state left after success"
+
+setup
+mkdir -p "$UPDATE_STATE_DIR"
+printf 'target=v2.0.0\nfrom=v1.0.0\nstep=5/7 swap app and web to v2.0.0\nmigrated=1\nswapped=1\ndump=/backups/dumps/x.dump\n' \
+  >"$UPDATE_STATE_DIR/.update.state"
+# A lock file naming a dead process (as after a power cut) must not block either.
+printf 'pid=999999 host=gone since=x\n' >"$UPDATE_STATE_DIR/.update.flock"
+run_update
+[[ $CODE -eq 0 ]] || show_and_fail "rerun after an interrupted update must work"
+grep -q "previous update to v2.0.0 was interrupted during '5/7 swap" "$WORK/case/out.log" ||
+  show_and_fail "interrupted update not reported"
+[[ ! -f "$UPDATE_STATE_DIR/.update.state" ]] || show_and_fail "state cleared once finished"
+pass "an interrupted update is detected and finished by the next run; stale lock files never block"
+
+setup
+mkdir -p "$UPDATE_STATE_DIR"
+perl -MFcntl=:flock -e 'open(my $f, ">>", $ARGV[0]) or die; flock($f, LOCK_EX) or die;
+  open(my $r, ">", $ARGV[1]) or die; close $r; sleep 30' "$UPDATE_STATE_DIR/.update.flock" "$WORK/held" &
+holder=$!
+for _ in $(seq 1 50); do [[ -f "$WORK/held" ]] && break; sleep 0.1; done
+run_update
+kill "$holder" 2>/dev/null; wait "$holder" 2>/dev/null || true
+rm -f "$WORK/held"
+assert_eq "$CODE" "1" "a running update blocks a second one"
+grep -q "another update is running" "$WORK/case/out.log" || show_and_fail "lock message"
+called "compose pull" && show_and_fail "blocked run must not touch anything"
+pass "a live update holds the lock; a second run refuses"
 
 summary

@@ -8,6 +8,7 @@ export const nav: NavItem[] = [
     to: "/queue",
     labelKey: "queue",
     icon: ListOrdered,
+    flipInRtl: true,
     group: "frontDesk",
     order: 25,
     permission: "visits.view_queue",

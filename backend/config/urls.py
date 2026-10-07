@@ -4,17 +4,20 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import HttpRequest, JsonResponse
 from django.urls import path, re_path
+from django.views.decorators.csrf import csrf_exempt
 from django.views.static import serve
 
 from api.errors import error_body
 from api.main import api
 
-admin.site.site_header = "Hospital System administration"
-admin.site.site_title = "Hospital System admin"
 
-
+@csrf_exempt
 def api_not_found(request: HttpRequest, rest: str = "") -> JsonResponse:
-    """JSON 404 for unknown paths under /api/ (instead of Django's HTML page)."""
+    """JSON 404 for unknown paths under /api/ (instead of Django's HTML page).
+
+    CSRF-exempt: it changes nothing and must answer every method with the JSON error
+    shape, not Django's HTML CSRF failure page.
+    """
     return JsonResponse(error_body("NOT_FOUND", "Not found"), status=404)
 
 

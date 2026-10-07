@@ -33,6 +33,17 @@ void i18n.use(initReactI18next).init({
   react: { useSuspense: false },
 });
 
+/**
+ * `{{value, bidi}}`: wraps an interpolated value in First Strong Isolate ... Pop Directional
+ * Isolate (U+2068 ... U+2069). Use it for every ID, number or code placed inside translated
+ * text: without it, "رقم الملف {{fileNo}}" shows the file number 2026-00412 as 00412-2026,
+ * because after Arabic letters the digits take the Arabic direction and "-" is neutral.
+ * (Components that render IDs on their own use <bdi> instead.)
+ */
+export const FSI = "\u2068";
+export const PDI = "\u2069";
+i18n.services.formatter?.add("bidi", (value: unknown) => `${FSI}${String(value)}${PDI}`);
+
 i18n.on("languageChanged", (lng) => {
   if (isLanguage(lng) && typeof document !== "undefined") applyLanguageToDocument(lng);
 });

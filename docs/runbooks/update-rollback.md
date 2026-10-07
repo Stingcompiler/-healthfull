@@ -37,8 +37,10 @@ migrations were applied **and** you passed `--restore-db-on-failure`. Logs: `inf
 Online: nothing to do, `update.sh` pulls. Offline (USB), prepared on a connected machine:
 
 ```bash
-docker pull <registry>/app:v1.4.0 && docker pull <registry>/web:v1.4.0
-docker save <registry>/app:v1.4.0 <registry>/web:v1.4.0 | gzip > hospital-sys-v1.4.0.tar.gz
+docker pull <registry>/app:v1.4.0 && docker pull <registry>/web:v1.4.0 && docker pull <registry>/db:16
+# The db/backup image is included so a fresh offline server (disaster recovery) never needs
+# to pull or build it.
+docker save <registry>/app:v1.4.0 <registry>/web:v1.4.0 <registry>/db:16 | gzip > hospital-sys-v1.4.0.tar.gz
 ```
 
 ## Run — التنفيذ
@@ -55,6 +57,16 @@ infra/update.sh --tag v1.4.0 --image-archive /media/usb/hospital-sys-v1.4.0.tar.
 `--restore-db-on-failure` is the recommended default: the app is stopped from the backup until the
 end, so a restore loses nothing. Leave it out only if you would rather inspect a failed migration
 first.
+
+**Power cut during an update.** `.env` is replaced atomically, so it is never half-written, and the
+update lock is a kernel lock that dies with the process (nothing to delete by hand). The script
+keeps `infra/.update.state` (target tag, step, whether migrations ran or containers were swapped).
+Simply run the same `infra/update.sh --tag ...` again: it prints what the interrupted run left
+behind and finishes the job (or rolls back) from the last committed tag in `.env`.
+
+A pre-update backup with status `partial` (database dump verified, media archive failed) does not
+stop the update; it is logged as a warning. Fix the media problem afterwards (backup-restore.md).
+After the swap the script checks the app and the web container (SPA served, proxy reaches the app).
 
 ## After — بعد التحديث
 

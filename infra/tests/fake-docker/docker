@@ -44,6 +44,11 @@ case "$sub" in
       *"app manage migrate --check"*) [[ "${FAKE_PENDING:-0}" == "1" ]] && exit 1; exit 0 ;;
       *"app migrate"*) exit "${FAKE_MIGRATE_EXIT:-0}" ;;
       *"backup-nightly.sh"*)
+        if [[ "${FAKE_BACKUP_EXIT:-0}" == "3" ]]; then
+          echo "2026-10-06T00:00:00Z [backup] WARNING: media archive failed" >&2
+          echo "/backups/dumps/hospital-20261006T000000Z-pre-update.dump"
+          exit 3
+        fi
         [[ "${FAKE_BACKUP_EXIT:-0}" != "0" ]] && { echo "pg_dump: error" >&2; exit "$FAKE_BACKUP_EXIT"; }
         echo "2026-10-06T00:00:00Z [backup] dump ok" >&2
         echo "/backups/dumps/hospital-20261006T000000Z-pre-update.dump"

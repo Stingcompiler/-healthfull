@@ -32,6 +32,19 @@ sudo ufw allow from 192.168.1.20 to any port 22 proto tcp
 sudo ufw enable
 ```
 
+**Firewall and Docker.** ufw does **not** protect ports published by Docker containers: Docker
+writes its own iptables rules, which run before ufw's. The web container's ports would answer on
+every interface, including a 4G/WAN link added later for cloud backups. Therefore set
+`BIND_IP` in `.env` to the server's LAN address (step 6), e.g. `BIND_IP=192.168.1.10`, so the
+system is published on the LAN interface only. Check after `up -d`:
+
+```bash
+sudo ss -ltnp | grep -E ':(80|443) '        # must show 192.168.1.10:80 / :443, not 0.0.0.0
+```
+
+For a stricter setup add rules to the `DOCKER-USER` chain (or use `ufw-docker`), e.g. allow only
+`192.168.1.0/24` to the published ports.
+
 Static IP: edit `/etc/netplan/*.yaml` (example `192.168.1.10/24`, gateway and DNS = router), then
 `sudo netplan apply`. Name: add `hospital.lan -> 192.168.1.10` in the router's DNS/DHCP settings, or
 in each workstation's hosts file.
@@ -71,7 +84,8 @@ nano .env
 
 Set at least: `POSTGRES_PASSWORD`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`
 (names/IPs typed in the browser plus `localhost,127.0.0.1`), `DJANGO_CSRF_TRUSTED_ORIGINS`
-(the same, with `http://` or `https://`), `APP_IMAGE_TAG` (the release you install).
+(the same, with `http://` or `https://`), `APP_IMAGE_TAG` (the release you install), and
+`BIND_IP` = the server's LAN address (see "Firewall and Docker" in step 2).
 Print `.env` and keep it in the clinic safe: without it, backups of secrets are lost.
 
 ## 6. Images and first start — الصور والتشغيل الأول
@@ -88,13 +102,17 @@ Start and check:
 
 ```bash
 infra/compose.sh up -d
-infra/compose.sh ps                                      # db healthy, app healthy, web and backup up
-curl -s http://127.0.0.1/api/ops/health                  # {"status": "ok", "db": "ok", ...}
+infra/compose.sh ps                                      # db, app, web healthy; backup, maintenance up
+curl -s http://192.168.1.10/api/ops/health               # BIND_IP: {"status": "ok", "db": "ok", ...}
 infra/compose.sh run --rm app manage createsuperuser     # first system admin
 ```
 
 Open `http://hospital.lan` from a workstation and log in. With `MIGRATE_ON_START=true` the first
 start creates the schema; later schema changes only go through `infra/update.sh`.
+
+The `maintenance` service (app image) runs `manage.py maintenance` at start and then daily: it
+deletes expired sessions and stale login-throttle rows, which would otherwise pile up in the
+database and in every backup. Run it by hand with `infra/compose.sh run --rm app manage maintenance`.
 
 ## 7. Prove the backups work — تأكيد النسخ الاحتياطي
 
@@ -128,7 +146,7 @@ returns, the BIOS setting powers the server on and `restart: unless-stopped` bri
    `DJANGO_CSRF_TRUSTED_ORIGINS=https://hospital.lan,https://192.168.1.10`.
 2. `infra/compose.sh up -d web app`
 3. Export the clinic root certificate and install it on every workstation and tablet:
-   `infra/compose.sh cp web:/data/caddy/pki/authorities/local/root.crt ./hospital-root-ca.crt`
+   `infra/compose.sh cp web:/var/lib/caddy/data/caddy/pki/authorities/local/root.crt ./hospital-root-ca.crt`
    - Windows: double-click, Install Certificate, Local Machine, "Trusted Root Certification Authorities".
    - Android: Settings, Security, Encryption & credentials, Install a certificate, CA certificate.
 4. Browse to `https://hospital.lan`. The root lasts 10 years; Caddy renews the server certificate

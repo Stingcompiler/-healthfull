@@ -125,7 +125,9 @@ def test_login_records_ip_user_agent_and_request_id(api_client: ApiClient, make_
     event = AuthEvent.objects.get(user=user)
     assert event.ip_address == "127.0.0.1"
     assert event.user_agent == "pytest-agent"
-    assert event.request_id == "req-12345678"
+    # The audited id is the server's, never the client-supplied one.
+    assert event.request_id == response["X-Request-ID"]
+    assert event.request_id != "req-12345678"
     assert event.username == "ua"
 
 
@@ -346,15 +348,19 @@ def test_logout_requires_csrf(api_client: ApiClient, make_user: Any) -> None:
 @pytest.mark.parametrize(
     ("payload", "language", "theme"),
     [
-        ({"language": "en"}, "en", "light"),
-        ({"theme": "warm"}, "ar", "warm"),
+        ({"language": "en"}, "en", None),
+        ({"theme": "warm"}, None, "warm"),
         ({"language": "en", "theme": "dark"}, "en", "dark"),
-        ({}, "ar", "light"),
-        ({"language": None, "theme": None}, "ar", "light"),
+        ({}, None, None),
+        ({"language": None, "theme": None}, None, None),
     ],
 )
 def test_preferences_are_persisted(
-    api_client: ApiClient, make_user: Any, payload: dict[str, Any], language: str, theme: str
+    api_client: ApiClient,
+    make_user: Any,
+    payload: dict[str, Any],
+    language: str | None,
+    theme: str | None,
 ) -> None:
     user = make_user("prefs")
     api_client.login("prefs")
@@ -363,7 +369,7 @@ def test_preferences_are_persisted(
     body = response.json()
     assert (body["language"], body["theme"]) == (language, theme)
     user.refresh_from_db()
-    assert (user.language, user.theme) == (language, theme)
+    assert (user.language or None, user.theme or None) == (language, theme)
 
 
 @pytest.mark.parametrize("payload", [{"language": "fr"}, {"theme": "blue"}, {"theme": 3}])
@@ -449,7 +455,10 @@ def test_change_password_rejections(
     user.refresh_from_db()
     assert user.check_password(TEST_PASSWORD)
     failed = AuthEvent.objects.filter(user=user, kind=AuthEventKind.PASSWORD_CHANGE_FAILED).get()
-    assert failed.details == {"reason": reason}
+    expected: dict[str, Any] = {"reason": reason}
+    if reason == "old_password_incorrect":
+        expected["failed_count"] = 1  # counts toward the login lockout
+    assert failed.details == expected
 
 
 def test_change_password_messages_follow_user_language(
@@ -484,11 +493,14 @@ def test_change_password_validation(api_client: ApiClient, make_user: Any) -> No
 # --- Correlation and audit context ------------------------------------------------------
 
 
-def test_responses_carry_request_id(api_client: ApiClient) -> None:
+def test_responses_carry_a_server_generated_request_id(api_client: ApiClient) -> None:
     generated = api_client.get("/api/ops/health")["X-Request-ID"]
     assert len(generated) == 32
-    echoed = api_client.get("/api/ops/health", headers={"X-Request-ID": "abc-123-XYZ"})
-    assert echoed["X-Request-ID"] == "abc-123-XYZ"
+    # A client cannot pick (or replay) the id that goes into the audit trail.
+    supplied = api_client.get("/api/ops/health", headers={"X-Request-ID": "abc-123-XYZ"})
+    assert supplied["X-Request-ID"] != "abc-123-XYZ"
+    assert len(supplied["X-Request-ID"]) == 32
+    assert supplied["X-Request-ID"] != generated
     rejected = api_client.get("/api/ops/health", headers={"X-Request-ID": "bad id!"})
     assert rejected["X-Request-ID"] != "bad id!"
 
@@ -507,7 +519,8 @@ def test_writes_are_audited_with_user_and_request_id(api_client: ApiClient, make
     assert event.pgh_context is not None
     metadata = event.pgh_context.metadata
     assert metadata["user"] == user.pk
-    assert metadata["request_id"] == "audit-req-0001"
+    assert metadata["request_id"] == response["X-Request-ID"]
+    assert metadata["client_request_id"] == "audit-req-0001"
     assert metadata["url"] == "/api/auth/me/preferences"
     assert metadata["method"] == "PATCH"
 
@@ -526,3 +539,235 @@ def test_client_ip_honours_forwarded_for_only_when_trusted(settings: Any) -> Non
     assert client_ip(request) == "203.0.113.9"
     assert client_ip(RequestFactory().get("/", REMOTE_ADDR="10.0.0.2")) == "10.0.0.2"
     assert client_ip(RequestFactory().get("/", REMOTE_ADDR="")) is None
+
+
+def test_client_ip_ignores_forwarded_values_that_are_not_addresses(settings: Any) -> None:
+    from django.test import RequestFactory
+
+    from apps.core.services import client_ip
+
+    settings.TRUST_X_FORWARDED_FOR = True
+    forged = RequestFactory().get("/", REMOTE_ADDR="10.0.0.1", HTTP_X_FORWARDED_FOR="not-an-ip")
+    assert client_ip(forged) == "10.0.0.1"
+    v6 = RequestFactory().get("/", REMOTE_ADDR="10.0.0.1", HTTP_X_FORWARDED_FOR="2001:DB8::1")
+    assert client_ip(v6) == "2001:db8::1"
+    assert client_ip(RequestFactory().get("/", REMOTE_ADDR="garbage")) is None
+
+
+def test_forged_forwarded_for_cannot_break_failure_bookkeeping(
+    api_client: ApiClient, make_user: Any, settings: Any
+) -> None:
+    settings.TRUST_X_FORWARDED_FOR = True
+    user = make_user("xff")
+    response = api_client.post(
+        "/api/auth/login",
+        {"username": "xff", "password": "wrong-wrong"},
+        headers={"X-Forwarded-For": "not-an-ip"},
+    )
+    _assert_error(response, 401, "INVALID_CREDENTIALS")
+    user.refresh_from_db()
+    assert user.failed_login_count == 1
+    assert AuthEvent.objects.get(user=user).ip_address == "127.0.0.1"
+
+
+def test_audit_write_failure_keeps_the_failure_count(
+    api_client: ApiClient, make_user: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from django.db import DatabaseError
+
+    user = make_user("auditfail")
+
+    def broken_create(*args: Any, **kwargs: Any) -> Any:
+        raise DatabaseError("audit table unavailable")
+
+    monkeypatch.setattr(AuthEvent.objects, "create", broken_create)
+    _assert_error(api_client.login("auditfail", "wrong-wrong"), 401, "INVALID_CREDENTIALS")
+    user.refresh_from_db()
+    assert user.failed_login_count == 1
+
+
+# --- Unknown usernames and per-address throttling ----------------------------------------
+
+
+def test_unknown_username_locks_exactly_like_an_existing_one(
+    api_client: ApiClient, make_user: Any
+) -> None:
+    """No 401/423 oracle: both kinds of username answer the same sequence."""
+    make_user("realname")
+    answers: dict[str, list[tuple[int, str]]] = {}
+    for name in ("realname", "nobody-here"):
+        seq = []
+        for i in range(7):
+            body = api_client.login(name, f"wrong-{i}")
+            seq.append((body.status_code, body.json()["code"]))
+        answers[name] = seq
+    expected = [(401, "INVALID_CREDENTIALS")] * 5 + [(423, "ACCOUNT_LOCKED")] * 2
+    assert answers["realname"] == expected
+    assert answers["nobody-here"] == expected
+    locked = AuthEvent.objects.filter(username="nobody-here", kind=AuthEventKind.ACCOUNT_LOCKED)
+    assert locked.count() == 1
+    assert locked.get().user is None
+
+
+def test_unknown_username_lock_expires(api_client: ApiClient) -> None:
+    from apps.core.models import LoginThrottle, ThrottleScope
+
+    LoginThrottle.objects.create(
+        scope=ThrottleScope.USERNAME,
+        key="phantom",
+        count=5,
+        locked_until=timezone.now() - timedelta(seconds=1),
+    )
+    _assert_error(api_client.login("phantom", "x"), 401, "INVALID_CREDENTIALS")
+    row = LoginThrottle.objects.get(scope=ThrottleScope.USERNAME, key="phantom")
+    assert (row.count, row.locked_until) == (1, None)
+
+
+def test_too_many_failures_from_one_address_are_rate_limited(
+    api_client: ApiClient, make_user: Any, settings: Any
+) -> None:
+    settings.LOGIN_IP_MAX_FAILURES = 4
+    make_user("sprayed1")
+    make_user("sprayed2")
+    # Password spraying: a few tries per account never locks any one account...
+    for name in ("sprayed1", "sprayed2", "sprayed1", "ghost-user"):
+        _assert_error(api_client.login(name, "Summer-2026"), 401, "INVALID_CREDENTIALS")
+    # ...but the address runs out of budget, and is refused before any password check.
+    body = _assert_error(api_client.login("sprayed2"), 429, "RATE_LIMITED")
+    assert 0 < body["details"]["retry_after_seconds"] <= settings.LOGIN_IP_WINDOW_SECONDS
+    assert User.objects.get(username="sprayed2").failed_login_count == 1
+    assert AuthEvent.objects.filter(kind=AuthEventKind.LOGIN_THROTTLED).count() == 1
+
+
+def test_successful_logins_do_not_use_the_address_budget(
+    api_client: ApiClient, make_user: Any, settings: Any
+) -> None:
+    settings.LOGIN_IP_MAX_FAILURES = 2
+    make_user("often")
+    for _ in range(5):
+        assert api_client.login("often").status_code == 200
+
+
+def test_address_budget_recovers_after_the_window(
+    api_client: ApiClient, make_user: Any, settings: Any
+) -> None:
+    from apps.core.models import LoginThrottle, ThrottleScope
+
+    settings.LOGIN_IP_MAX_FAILURES = 1
+    make_user("patient")
+    LoginThrottle.objects.create(
+        scope=ThrottleScope.IP,
+        key="127.0.0.1",
+        count=1,
+        window_started_at=timezone.now() - timedelta(seconds=settings.LOGIN_IP_WINDOW_SECONDS),
+    )
+    assert api_client.login("patient").status_code == 200
+
+
+# --- Change password: lockout and policy -------------------------------------------------
+
+
+def test_wrong_current_passwords_lock_the_account_and_end_the_session(
+    api_client: ApiClient, make_user: Any
+) -> None:
+    user = make_user("brute")
+    api_client.login("brute")
+    for attempt in range(1, 5):
+        response = api_client.post(
+            "/api/auth/change-password",
+            {"old_password": f"guess-{attempt}", "new_password": "Brand-New-Pass-77"},
+        )
+        _assert_error(response, 409, "PASSWORD_INVALID")
+        user.refresh_from_db()
+        assert user.failed_login_count == attempt
+    response = api_client.post(
+        "/api/auth/change-password",
+        {"old_password": "guess-5", "new_password": "Brand-New-Pass-77"},
+    )
+    body = _assert_error(response, 423, "ACCOUNT_LOCKED")
+    assert body["details"]["retry_after_seconds"] > 0
+    user.refresh_from_db()
+    assert user.locked_until is not None
+    assert user.check_password(TEST_PASSWORD)
+    # The session is gone and the account cannot log in again until the lock ends.
+    assert api_client.get("/api/auth/me").status_code == 401
+    _assert_error(api_client.login("brute"), 423, "ACCOUNT_LOCKED")
+    kinds = _kinds(user)
+    assert kinds.count(AuthEventKind.PASSWORD_CHANGE_FAILED) == 5
+    assert AuthEventKind.ACCOUNT_LOCKED in kinds
+
+
+def test_change_password_is_refused_while_locked_without_checking(
+    api_client: ApiClient, make_user: Any
+) -> None:
+    user = make_user("lockedsession")
+    api_client.login("lockedsession")
+    User.objects.filter(pk=user.pk).update(
+        failed_login_count=5, locked_until=timezone.now() + timedelta(minutes=10)
+    )
+    response = api_client.post(
+        "/api/auth/change-password",
+        {"old_password": TEST_PASSWORD, "new_password": "Brand-New-Pass-77"},
+    )
+    _assert_error(response, 423, "ACCOUNT_LOCKED")
+    user.refresh_from_db()
+    assert user.check_password(TEST_PASSWORD)
+
+
+def test_correct_current_password_resets_the_counter(api_client: ApiClient, make_user: Any) -> None:
+    user = make_user("resetme")
+    api_client.login("resetme")
+    api_client.post(
+        "/api/auth/change-password", {"old_password": "nope-1", "new_password": "Brand-New-77x"}
+    )
+    user.refresh_from_db()
+    assert user.failed_login_count == 1
+    response = api_client.post(
+        "/api/auth/change-password",
+        {"old_password": TEST_PASSWORD, "new_password": "Brand-New-Pass-77"},
+    )
+    assert response.status_code == 204
+    user.refresh_from_db()
+    assert user.failed_login_count == 0
+
+
+@pytest.mark.parametrize(
+    "new_password",
+    ["Ahmed-Altayeb", "altayeb-ahmed", "Hospital1", "Khartoum-2026", "مستشفى-2026"],
+)
+def test_change_password_rejects_own_name_and_local_words(
+    api_client: ApiClient, make_user: Any, new_password: str
+) -> None:
+    make_user("ahmed", full_name_en="Ahmed Altayeb", full_name_ar="أحمد الطيب")
+    api_client.login("ahmed")
+    response = api_client.post(
+        "/api/auth/change-password",
+        {"old_password": TEST_PASSWORD, "new_password": new_password},
+    )
+    body = _assert_error(response, 409, "PASSWORD_INVALID")
+    assert body["details"]["reason"] == "password_rejected"
+
+
+def test_change_password_rejects_the_center_name(api_client: ApiClient, make_user: Any) -> None:
+    from apps.core.models import CenterProfile
+
+    center = CenterProfile.load()
+    center.name_en = "Alamal Specialist Center"
+    center.save()
+    make_user("centered")
+    api_client.login("centered")
+    response = api_client.post(
+        "/api/auth/change-password",
+        {"old_password": TEST_PASSWORD, "new_password": "Alamal#2026x"},
+    )
+    body = _assert_error(response, 409, "PASSWORD_INVALID")
+    assert body["details"]["reason"] == "password_rejected"
+
+
+def test_preferences_never_chosen_are_null(api_client: ApiClient, make_user: Any) -> None:
+    """The client then keeps the device's choice and saves it (ARCHITECTURE 5.1)."""
+    make_user("fresh")
+    body = api_client.login("fresh").json()
+    assert (body["language"], body["theme"]) == (None, None)
+    body = api_client.patch("/api/auth/me/preferences", {"theme": "dark"}).json()
+    assert (body["language"], body["theme"]) == (None, "dark")

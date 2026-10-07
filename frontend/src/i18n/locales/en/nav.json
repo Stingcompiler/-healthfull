@@ -57,6 +57,8 @@
   "shell": {
     "menu": "Menu",
     "more": "More",
-    "home": "Home"
+    "home": "Home",
+    "expandMenu": "Show menu labels",
+    "collapseMenu": "Hide menu labels"
   }
 }

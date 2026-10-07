@@ -28,6 +28,14 @@ export function relativeLuminance([r, g, b]: Rgb): number {
   return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 
+/** Hex of `fg` drawn with `alpha` (0..1) over an opaque `bg`, as the browser composites it. */
+export function blend(fg: string, bg: string, alpha: number): string {
+  const f = parseHex(fg);
+  const b = parseHex(bg);
+  const mix = (i: 0 | 1 | 2) => Math.round(f[i] * alpha + b[i] * (1 - alpha));
+  return `#${[mix(0), mix(1), mix(2)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
 export function contrastRatio(a: string, b: string): number {
   const la = relativeLuminance(parseHex(a));
   const lb = relativeLuminance(parseHex(b));

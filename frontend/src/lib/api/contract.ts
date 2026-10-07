@@ -29,8 +29,9 @@ export type HealthOut = Schemas["HealthOut"];
 type Assert<T extends true> = T;
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 export type ContractChecks = [
-  Assert<Same<MeOut["language"], Language>>,
-  Assert<Same<MeOut["theme"], Theme>>,
+  // null = never chosen on the server (the client follows the device, ARCHITECTURE 5.1).
+  Assert<Same<MeOut["language"], Language | null>>,
+  Assert<Same<MeOut["theme"], Theme | null>>,
   Assert<Same<NonNullable<PreferencesPatch["language"]>, Language>>,
   Assert<Same<NonNullable<PreferencesPatch["theme"]>, Theme>>,
 ];

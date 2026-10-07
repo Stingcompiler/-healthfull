@@ -1,6 +1,6 @@
 /**
  * Playwright config (ARCHITECTURE 6). Run through `make e2e` (scripts/e2e.sh),
- * which resets the e2e database, seeds it, exports the ports and DB_NAME used
+ * which resets the e2e database, seeds it, exports the ports and E2E_DB_NAME used
  * below, and passes E2E_GREP as --grep. Running `pnpm test` here directly works
  * too when the e2e database already exists and is seeded.
  *

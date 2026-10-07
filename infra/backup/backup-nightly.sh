@@ -8,7 +8,8 @@
 #
 # Usage: backup-nightly.sh [--label NAME] [--no-pgbackrest] [--no-prune]
 #
-# Exit: 0 ok; 1 failed (no new dump); 3 partial (dump ok, a pgBackRest backup failed).
+# Exit: 0 ok; 1 failed (no new dump); 3 partial (the dump is good and its path is printed, but
+#       the media archive or a pgBackRest backup failed: see the status line's "error").
 #
 # Environment (defaults in brackets):
 #   PGHOST PGPORT PGUSER PGPASSWORD   libpq connection
@@ -78,7 +79,7 @@ require_cmd pg_dump pg_restore psql
 DUMP_DIR="$BACKUP_DIR/dumps"
 MEDIA_OUT_DIR="$BACKUP_DIR/media"
 STATUS_FILE="$BACKUP_DIR/status/backup-runs.jsonl"
-LOCK_DIR="$BACKUP_DIR/.backup.lock"
+LOCK_FILE="$BACKUP_DIR/.backup.flock"
 
 STARTED_AT="$(iso_now)"
 START_EPOCH="$(date +%s)"
@@ -94,6 +95,7 @@ PRUNED_JSON="[]"
 PARTIAL=""
 ERR_FILE=""
 FINALIZED=0
+WARNINGS=""
 
 mkdir -p "$DUMP_DIR" "$BACKUP_DIR/status"
 chmod 0750 "$DUMP_DIR" 2>/dev/null || true
@@ -120,7 +122,7 @@ on_exit() {
     log "FAILED: $ERROR"
   fi
   [[ -n "$ERR_FILE" ]] && rm -f "$ERR_FILE"
-  release_lock "$LOCK_DIR"
+  release_lock
   exit "$code"
 }
 
@@ -129,10 +131,23 @@ fail() {
   die "$*"
 }
 
-acquire_lock "$LOCK_DIR"
+warn_partial() {
+  # A non-fatal problem: the dump is kept and reported, the run ends with status "partial".
+  log "WARNING: $*"
+  WARNINGS="${WARNINGS:+$WARNINGS; }$*"
+}
+
+# The EXIT trap goes first, so even a refused lock leaves a "failed" line in the status log.
 trap on_exit EXIT
 trap 'exit 130' INT TERM
+acquire_lock "$LOCK_FILE" || fail "another backup run holds $LOCK_FILE ($(lock_holder "$LOCK_FILE"))"
 ERR_FILE="$(mktemp "${TMPDIR:-/tmp}/backup-err.XXXXXX")"
+
+# Leftovers of runs that were killed mid-write (power cut, docker stop): only reachable now
+# that we hold the lock, so they cannot belong to a live run. ls hides dotfiles, so prune()
+# below would never see them.
+find "$DUMP_DIR" "$MEDIA_OUT_DIR" -maxdepth 1 -name '.*.partial' -type f -print -delete 2>/dev/null |
+  while IFS= read -r stale; do log "removed leftover $stale"; done || true
 
 # ---------------------------------------------------------------- preflight
 log "starting backup of database $DB_NAME into $DUMP_DIR${LABEL:+ (label $LABEL)}"
@@ -183,8 +198,11 @@ if [[ -n "$MEDIA_DIR" && -d "$MEDIA_DIR" ]]; then
     log "media ok: $MEDIA_PATH"
   else
     rm -f "$MEDIA_OUT_DIR/.$media_name.partial"
-    fail "media archive failed: $(tail -n 3 "$ERR_FILE" | tr '\n' ' ')"
+    # The verified dump above is still a good backup: keep it, report it, flag the run.
+    warn_partial "media archive failed: $(tail -n 3 "$ERR_FILE" | tr '\n' ' ')"
   fi
+elif [[ -n "$MEDIA_DIR" ]]; then
+  warn_partial "media directory $MEDIA_DIR not found; uploaded files were not archived"
 fi
 
 # ---------------------------------------------------------------- pgBackRest (optional)
@@ -205,7 +223,7 @@ if [[ $RUN_PGBACKREST -eq 1 ]] && is_true "${PGBACKREST_ENABLED:-false}"; then
       result="failed"
       pgbackrest_failed=1
       # repo2 (cloud) failing while offline is expected; repo1 failing is not.
-      log "WARNING: pgbackrest backup to repo$repo failed"
+      warn_partial "pgbackrest $btype backup to repo$repo failed"
     fi
     items="${items:+$items,}{\"repo\":$repo,\"type\":\"$btype\",\"status\":\"$result\"}"
   done
@@ -239,7 +257,12 @@ if [[ $PRUNE -eq 1 ]]; then
   PRUNED_JSON="[$joined]"
 fi
 
-if [[ $pgbackrest_failed -eq 1 ]]; then STATUS="partial"; else STATUS="ok"; fi
+if [[ $pgbackrest_failed -eq 1 || -n "$WARNINGS" ]]; then
+  STATUS="partial"
+  ERROR="$WARNINGS"
+else
+  STATUS="ok"
+fi
 write_status
 FINALIZED=1
 log "backup finished: status=$STATUS"

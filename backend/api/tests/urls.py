@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404, HttpRequest
 from django.urls import path
 from ninja import NinjaAPI, Query, Schema, Status
@@ -83,6 +84,27 @@ def raise_conflict(request: HttpRequest) -> None:
 @test_api.get("/throttled", auth=None)
 def raise_throttled(request: HttpRequest) -> None:
     raise Throttled(wait=5)
+
+
+@test_api.get("/does-not-exist", auth=None)
+def raise_does_not_exist(request: HttpRequest) -> None:
+    Department.objects.get(code="NOPE-secret")
+
+
+@test_api.get("/model-invalid", auth=None)
+def raise_model_validation(request: HttpRequest) -> None:
+    raise DjangoValidationError({"code": ["Unknown role code 'x'."]})
+
+
+@test_api.get("/plain-invalid", auth=None)
+def raise_plain_validation(request: HttpRequest) -> None:
+    raise DjangoValidationError("Something is off.")
+
+
+@test_api.post("/duplicate", auth=None)
+def raise_integrity(request: HttpRequest) -> None:
+    Department.objects.create(code="DUP", name_ar="أ", name_en="A")
+    Department.objects.create(code="DUP", name_ar="ب", name_en="B")
 
 
 @test_api.get("/boom", auth=None)

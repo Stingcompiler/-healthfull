@@ -78,20 +78,21 @@
     "changePassword": "تغيير كلمة المرور",
     "logout": "تسجيل الخروج",
     "designSystem": "دليل التصميم",
-    "roles": "الأدوار"
+    "roles": "الأدوار",
+    "menuFor": "قائمة المستخدم: {{name}}"
   },
   "roles": {
     "receptionist": "موظف استقبال",
     "doctor": "طبيب",
     "cashier": "كاشير",
-    "cashier_supervisor": "مشرف الخزينة",
+    "cashier_supervisor": "مشرف الكاشير",
     "pharmacist": "صيدلي",
     "lab_tech": "فني معمل",
     "lab_supervisor": "مشرف المعمل",
-    "nurse": "تمريض",
+    "nurse": "ممرض",
     "accountant": "محاسب",
     "manager": "مدير",
-    "admin": "مسؤول النظام"
+    "admin": "مدير النظام"
   },
   "sex": {
     "male": "ذكر",
@@ -151,8 +152,18 @@
   },
   "validation": {
     "required": "هذا الحقل مطلوب",
-    "minLength": "يجب ألا يقل عن {{min}} أحرف",
-    "maxLength": "يجب ألا يزيد عن {{max}} حرفاً",
+    "minLength_zero": "يجب ألا يقل عن {{count}} حرف",
+    "minLength_one": "يجب ألا يقل عن حرف واحد",
+    "minLength_two": "يجب ألا يقل عن حرفين",
+    "minLength_few": "يجب ألا يقل عن {{count}} أحرف",
+    "minLength_many": "يجب ألا يقل عن {{count}} حرفاً",
+    "minLength_other": "يجب ألا يقل عن {{count}} حرف",
+    "maxLength_zero": "يجب ألا يزيد عن {{count}} حرف",
+    "maxLength_one": "يجب ألا يزيد عن حرف واحد",
+    "maxLength_two": "يجب ألا يزيد عن حرفين",
+    "maxLength_few": "يجب ألا يزيد عن {{count}} أحرف",
+    "maxLength_many": "يجب ألا يزيد عن {{count}} حرفاً",
+    "maxLength_other": "يجب ألا يزيد عن {{count}} حرف",
     "invalid": "القيمة غير صالحة",
     "number": "أدخل رقماً صحيحاً",
     "phone": "رقم هاتف غير صالح، أدخل 10 أرقام تبدأ بـ 0",
@@ -199,8 +210,8 @@
     "description": "تعذّر عرض هذه الصفحة. أعد المحاولة، وإن تكرر الخطأ فأبلغ مسؤول النظام."
   },
   "kpi": {
-    "trendUp": "ارتفاع {{value}}",
-    "trendDown": "انخفاض {{value}}",
+    "trendUp": "ارتفاع",
+    "trendDown": "انخفاض",
     "trendFlat": "بلا تغيير",
     "comparedToYesterday": "مقارنة بالأمس"
   },

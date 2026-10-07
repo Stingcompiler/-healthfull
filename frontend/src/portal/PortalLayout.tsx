@@ -15,10 +15,7 @@ export function PortalLayout() {
     <div className="flex min-h-dvh flex-col bg-bg">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/90 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between gap-2 px-4">
-          <Link
-            to="/portal"
-            className="flex min-w-0 items-center gap-2 rounded-control focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
-          >
+          <Link to="/portal" className="flex min-h-11 min-w-0 items-center gap-2 rounded-control focus-ring">
             <BrandMark className="size-8" />
             <span className="truncate text-sm font-bold text-fg">{t("brand")}</span>
           </Link>
@@ -35,7 +32,7 @@ export function PortalLayout() {
         <p>{t("privacy")}</p>
         <Link
           to="/login"
-          className="mt-2 inline-block font-medium text-primary-strong underline-offset-4 hover:underline"
+          className="mt-1 inline-flex min-h-11 items-center px-2 font-medium text-primary-strong underline-offset-4 hover:underline"
         >
           {t("staffLink")}
         </Link>

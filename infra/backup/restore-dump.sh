@@ -97,18 +97,27 @@ log "restored $tables tables into $INCOMING"
 exists="$(psql_q "$MAINT_DB" -c "SELECT 1 FROM pg_database WHERE datname = '$TARGET'")"
 if [[ "$exists" == "1" ]]; then
   log "swapping: $TARGET -> $BEFORE, $INCOMING -> $TARGET"
-  # One session: block new connections, kick existing ones, rename. If any step fails the
-  # target is re-opened for connections.
+  # 1. Block new connections and end existing ones (a rename needs the database idle).
   if ! psql_q "$MAINT_DB" <<SQL >/dev/null; then
 ALTER DATABASE "$TARGET" WITH ALLOW_CONNECTIONS false;
 SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$TARGET' AND pid <> pg_backend_pid();
 SELECT pg_sleep(1);
+SQL
+    psql_q "$MAINT_DB" -c "ALTER DATABASE \"$TARGET\" WITH ALLOW_CONNECTIONS true" >/dev/null 2>&1 || true
+    die "could not take $TARGET offline for the swap; it is unchanged and open again"
+  fi
+  # 2. Both renames in ONE transaction: all or nothing. If anything fails, PostgreSQL rolls
+  #    back, so $TARGET still exists under its own name, and step 3 re-opens it.
+  if ! psql_q "$MAINT_DB" <<SQL >/dev/null; then
+BEGIN;
 ALTER DATABASE "$TARGET" RENAME TO "$BEFORE";
 ALTER DATABASE "$BEFORE" WITH ALLOW_CONNECTIONS true;
 ALTER DATABASE "$INCOMING" RENAME TO "$TARGET";
+COMMIT;
 SQL
+    # 3. Rolled back: the live database is still $TARGET (with connections blocked).
     psql_q "$MAINT_DB" -c "ALTER DATABASE \"$TARGET\" WITH ALLOW_CONNECTIONS true" >/dev/null 2>&1 || true
-    die "swap failed; check databases $TARGET, $BEFORE and $INCOMING by hand"
+    die "swap failed and was rolled back; $TARGET is unchanged (restored copy left in $INCOMING)"
   fi
   log "done. Previous database kept as $BEFORE (drop it once the restore is confirmed)."
 else

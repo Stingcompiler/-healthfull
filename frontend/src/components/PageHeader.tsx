@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
 export interface PageHeaderProps {
@@ -10,10 +11,13 @@ export interface PageHeaderProps {
   /** Buttons aligned to the inline end; wrap under the title on phones. */
   actions?: ReactNode;
   icon?: ReactNode;
+  /** Browser tab title; defaults to `title` when that is a string. */
+  documentTitle?: string;
   className?: string;
 }
 
-export function PageHeader({ title, description, eyebrow, actions, icon, className }: PageHeaderProps) {
+export function PageHeader({ title, description, eyebrow, actions, icon, documentTitle, className }: PageHeaderProps) {
+  useDocumentTitle(documentTitle ?? (typeof title === "string" ? title : undefined));
   return (
     <header
       data-slot="page-header"

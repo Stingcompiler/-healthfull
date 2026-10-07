@@ -146,8 +146,9 @@ def test_center_profile_defaults_and_str() -> None:
 
 def test_user_defaults(make_user: Any) -> None:
     user = User.objects.create_user("plain", password="x-Strong-Pass-1")
-    assert user.language == "ar"
-    assert user.theme == "light"
+    # Never chosen: the client follows the device until the user picks (ARCHITECTURE 5.1).
+    assert user.language == ""
+    assert user.theme == ""
     assert user.must_change_password is True
     assert user.failed_login_count == 0
     assert user.password_changed_at is not None

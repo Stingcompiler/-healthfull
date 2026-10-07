@@ -83,10 +83,19 @@ def test_seed_creates_the_contract_dataset(settings: Any) -> None:
         assert (user.language, user.theme) == ("ar", "light")
         assert user.full_name_ar
         assert user.full_name_en
+    # The admin role user is a normal user: it gets the admin role's permissions only.
     admin = User.objects.get(username="admin")
-    assert admin.is_staff
-    assert admin.is_superuser
+    assert not admin.is_staff
+    assert not admin.is_superuser
+    assert "core.manage_users" in effective_permissions(admin)
     assert not User.objects.get(username="manager").is_staff
+    # Superuser is a separate break-glass account with no role.
+    root = User.objects.get(username="root")
+    assert root.is_superuser
+    assert root.is_staff
+    assert root.role_codes() == []
+    assert root.check_password(E2E_PASSWORD)
+    assert User.objects.filter(is_superuser=True).count() == 1
     assert {d[0] for d in DEPARTMENTS} == set(Department.objects.values_list("code", flat=True))
     assert set(Department.objects.values_list("name_en", flat=True)) == {
         "General Medicine",
@@ -153,7 +162,33 @@ def test_seed_refuses_without_debug(settings: Any, monkeypatch: pytest.MonkeyPat
     assert not User.objects.exists()
     monkeypatch.setenv("ALLOW_SEED_E2E", "1")
     call_command("seed_e2e", stdout=StringIO())
-    assert User.objects.count() == 11
+    assert User.objects.count() == 12
+
+
+@pytest.mark.django_db
+def test_seed_refuses_a_database_that_is_not_a_test_one(
+    settings: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from django.db import connection
+
+    settings.DEBUG = True
+    monkeypatch.delenv("ALLOW_SEED_E2E", raising=False)
+    monkeypatch.setitem(connection.settings_dict, "NAME", "hospital_dev")
+    with pytest.raises(CommandError, match="hospital_dev"):
+        call_command("seed_e2e", stdout=StringIO())
+    assert not User.objects.exists()
+    monkeypatch.setenv("ALLOW_SEED_E2E", "1")
+    call_command("seed_e2e", stdout=StringIO())
+    assert User.objects.filter(username="admin").exists()
+
+
+@pytest.mark.django_db
+def test_seed_clears_login_throttles(settings: Any) -> None:
+    from apps.core.models import LoginThrottle, ThrottleScope
+
+    LoginThrottle.objects.create(scope=ThrottleScope.IP, key="127.0.0.1", count=99)
+    _seed(settings)
+    assert not LoginThrottle.objects.exists()
 
 
 # --- export_openapi ---------------------------------------------------------------------------
@@ -206,3 +241,35 @@ def test_export_openapi_cleans_up_on_failure(
     with pytest.raises(OSError, match="disk full"):
         call_command("export_openapi", output=str(target), stdout=StringIO())
     assert list(tmp_path.iterdir()) == []
+
+
+# --- maintenance --------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_maintenance_removes_expired_sessions_and_stale_throttles() -> None:
+    from django.contrib.sessions.backends.db import SessionStore
+    from django.contrib.sessions.models import Session
+
+    from apps.core.models import LoginThrottle, ThrottleScope
+
+    now = timezone.now()
+    live = SessionStore()
+    live.create()
+    Session.objects.create(session_key="old" * 10, session_data="x", expire_date=now - timedelta(1))
+    old = LoginThrottle.objects.create(scope=ThrottleScope.IP, key="10.0.0.1", count=3)
+    locked = LoginThrottle.objects.create(
+        scope=ThrottleScope.USERNAME, key="ghost", count=5, locked_until=now + timedelta(hours=2)
+    )
+    fresh = LoginThrottle.objects.create(scope=ThrottleScope.IP, key="10.0.0.2", count=1)
+    LoginThrottle.objects.filter(pk__in=[old.pk, locked.pk]).update(
+        updated_at=now - timedelta(days=2)
+    )
+
+    out = StringIO()
+    call_command("maintenance", stdout=out)
+    assert "removed 1 expired session(s) and 1 stale login throttle row(s)" in out.getvalue()
+    assert list(Session.objects.values_list("session_key", flat=True)) == [live.session_key]
+    remaining = set(LoginThrottle.objects.values_list("key", flat=True))
+    assert remaining == {"ghost", "10.0.0.2"}
+    assert fresh.pk

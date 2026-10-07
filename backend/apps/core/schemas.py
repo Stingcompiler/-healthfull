@@ -22,8 +22,12 @@ class MeOut(Schema):
     permissions: list[str] = Field(
         ..., description="Effective permission codes, sorted. For hiding UI only."
     )
-    language: LanguageCode
-    theme: ThemeCode
+    language: LanguageCode | None = Field(
+        ..., description="null = never chosen: the client keeps the device's language"
+    )
+    theme: ThemeCode | None = Field(
+        ..., description="null = never chosen: the client follows prefers-color-scheme"
+    )
     must_change_password: bool
 
 

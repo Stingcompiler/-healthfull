@@ -69,14 +69,22 @@ def test_normalize_clears_only_expired_locks() -> None:
     assert normalize(partial, T0) == partial
 
 
-@given(gaps)
-def test_success_always_resets(gap_seconds: list[int]) -> None:
+@given(gaps, st.integers(min_value=0, max_value=10_000))
+def test_failure_after_success_starts_a_fresh_count(gap_seconds: list[int], later: int) -> None:
+    """Whatever came before, a success means the next failure is the first of a new run."""
     state = LockState()
     now = T0
     for g in gap_seconds:
         now += timedelta(seconds=g)
         state = register_failure(state, now)
-    assert register_success() == LockState()
+    # The service only reaches register_success() for an unlocked account (a locked one is
+    # refused before the password is checked), so model the success at an unlocked moment.
+    unlocked_at = max(now, state.locked_until or now)
+    assert not is_locked(normalize(state, unlocked_at), unlocked_at)
+    after_success = register_success()
+    assert attempts_remaining(after_success) == MAX_FAILED_ATTEMPTS
+    nxt = register_failure(after_success, unlocked_at + timedelta(seconds=later))
+    assert nxt == LockState(failed_count=1, locked_until=None)
 
 
 @given(gaps)

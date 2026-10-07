@@ -60,8 +60,28 @@ def test_rolled_back_transaction_does_not_consume_a_number() -> None:
 
 
 # Transactional tests run after all other DB tests (pytest-django ordering) and flush the
-# database when done, which also removes the migration-seeded roles. serialized_rollback is
-# not an option: restoring rows UPDATEs append-only history tables, which triggers forbid.
+# database when done, which also removes the migration-seeded roles; conftest re-seeds them
+# (serialized_rollback is not an option: restoring rows UPDATEs append-only history tables,
+# which triggers forbid).
+@pytest.mark.django_db(transaction=True)
+def test_next_number_refuses_to_run_in_autocommit() -> None:
+    assert not connection.in_atomic_block
+    with pytest.raises(RuntimeError, match="inside the transaction"):
+        next_number("INV", on=date(2026, 2, 2))
+    assert not Sequence.objects.exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_transactional_tests_still_see_the_migration_seed() -> None:
+    """Guards the conftest re-seed: an earlier transactional test flushed every table."""
+    from apps.core.models import CenterProfile, Policy, Role
+    from apps.core.roles import ROLE_CODES
+
+    assert set(Role.objects.values_list("code", flat=True)) == ROLE_CODES
+    assert CenterProfile.objects.filter(pk=1).exists()
+    assert Policy.objects.filter(pk=1).exists()
+
+
 @pytest.mark.django_db(transaction=True)
 def test_concurrent_allocation_is_gap_free_and_unique() -> None:
     day = date(2026, 5, 5)
@@ -75,7 +95,8 @@ def test_concurrent_allocation_is_gap_free_and_unique() -> None:
         try:
             start.wait()
             for _ in range(per_worker):
-                number = next_number("PAY", on=day)
+                with transaction.atomic():
+                    number = next_number("PAY", on=day)
                 with lock:
                     results.append(number)
         except BaseException as exc:  # pragma: no cover - surfaced by the assert below

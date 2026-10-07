@@ -212,6 +212,7 @@ Service line state colors (`--state-*`): requested slate, invoiced blue, paid li
 
 - i18next with namespaces per module (`common`, `errors`, `auth`, `nav`, plus one per feature). Both `ar` and `en` files must have identical key sets (a vitest test enforces this).
 - `<html lang dir>` updates instantly on switch; Radix `DirectionProvider` wraps the app. Use logical utilities only (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`). Never `ml-/mr-/pl-/pr-/left-/right-` in app code. Directional icons (chevrons, arrows) flip in RTL.
+- IDs, numbers and codes inside translated text use the `bidi` formatter (`{{fileNo, bidi}}`), which isolates them (FSI/PDI) so `2026-00412` never renders as `00412-2026` in Arabic. Components that render an ID on its own wrap it in `<bdi>`.
 - No hardcoded user-visible strings in components (eslint rule `i18next/no-literal-string` in `src/features`, `src/components`, `src/portal`).
 - Dates and numbers via `Intl` with the current locale; Arabic UI uses Arabic-Indic digits only if the center setting says so (default Latin digits, which Sudanese clinics commonly use).
 

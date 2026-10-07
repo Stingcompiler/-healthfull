@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { toApiError, type ApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { useLogin } from "@/lib/auth/hooks";
+import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { vmsg } from "@/lib/validation";
@@ -38,6 +39,7 @@ export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
   const translateError = useTranslateError();
   const language = useLanguage();
   const [error, setError] = useState<ApiError | null>(null);
+  useDocumentTitle(t("login.title"));
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -73,7 +75,8 @@ export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
           <Brand />
         </div>
         <div className="relative max-w-lg">
-          <h2 className="text-3xl leading-tight font-bold text-balance text-fg xl:text-4xl">{t("hero.title")}</h2>
+          {/* Not a heading: this panel precedes the page's h1 in the DOM (WCAG 1.3.1 order). */}
+          <p className="text-3xl leading-tight font-bold text-balance text-fg xl:text-4xl">{t("hero.title")}</p>
           <p className="mt-4 text-base text-pretty text-muted">{t("hero.subtitle")}</p>
           <ul className="mt-8 grid gap-4">
             {[
@@ -159,8 +162,11 @@ export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
             </div>
 
             <p className="mt-5 text-center text-xs text-pretty text-muted">{t("login.forgotHint")}</p>
-            <p className="mt-2 text-center text-xs">
-              <Link to="/portal" className="font-medium text-primary-strong underline-offset-4 hover:underline">
+            <p className="mt-1 text-center text-xs">
+              <Link
+                to="/portal"
+                className="inline-flex min-h-11 items-center px-2 font-medium text-primary-strong underline-offset-4 hover:underline"
+              >
                 {t("login.portalLink")}
               </Link>
             </p>

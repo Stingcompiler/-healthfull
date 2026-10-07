@@ -31,7 +31,7 @@ function CommandDialog({
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <DialogDescription className="sr-only">{description}</DialogDescription>
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:size-5 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]_svg]:size-4">
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:size-5 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]]:ps-3 [&_[cmdk-item]]:pe-2 [&_[cmdk-item]_svg]:size-4">
           {children}
         </Command>
       </DialogContent>
@@ -50,7 +50,7 @@ function CommandInput({ className, ...props }: React.ComponentProps<typeof Comma
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "flex h-10 w-full rounded-control bg-transparent py-3 text-sm outline-hidden placeholder:text-muted disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-10 w-full rounded-control bg-transparent py-3 text-base outline-hidden placeholder:text-muted disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           className,
         )}
         {...props}
@@ -103,8 +103,11 @@ function CommandItem({ className, ...props }: React.ComponentProps<typeof Comman
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "relative flex cursor-default items-center gap-2 rounded-[6px] px-2 py-2 text-sm outline-hidden select-none",
-        "data-[selected=true]:bg-accent data-[selected=true]:text-accent-fg",
+        "relative flex cursor-default items-center gap-2 rounded-[6px] py-2 ps-3 pe-2 text-sm outline-hidden select-none",
+        // Same highlight as menus: tint + strong text + solid start-edge bar (>= 3:1).
+        "data-[selected=true]:bg-primary-soft data-[selected=true]:text-primary-strong",
+        "data-[selected=true]:[&_svg:not([class*='text-'])]:text-primary-strong",
+        "before:pointer-events-none before:absolute before:inset-y-1 before:start-0.5 before:w-[3px] before:rounded-full before:content-[''] data-[selected=true]:before:bg-ring",
         "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted",
         className,

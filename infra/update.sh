@@ -17,8 +17,13 @@
 #                        [--dry-run] [--health-retries N] [--health-interval SECONDS]
 #
 # Settings (shell environment first, then the env file): ENV_FILE [<repo>/.env],
-#   UPDATE_LOG_DIR [<repo>/infra/logs], UPDATE_HEALTH_URL [] optional extra URL checked
-#   through Caddy, e.g. http://127.0.0.1/api/ops/health (needs curl on the host)
+#   UPDATE_LOG_DIR [<repo>/infra/logs], UPDATE_STATE_DIR [<repo>/infra] (lock and state file),
+#   UPDATE_HEALTH_URL [] optional extra URL checked from the host, e.g.
+#   http://127.0.0.1/api/ops/health (needs curl on the host)
+#
+# Crash safety (power cuts): the lock is a flock(2) the kernel drops when this process dies;
+# .env is replaced atomically (temp file + rename); a state file records the target tag and
+# the current step, so the next run says what an interrupted update left behind.
 #
 # Exit codes: 0 updated; 1 failed and rolled back (or nothing changed); 2 usage error;
 #             3 failed AND the rollback itself is unhealthy: act now (docs/runbooks/update-rollback.md).
@@ -28,6 +33,7 @@ shopt -u patsub_replacement 2>/dev/null || true
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 ENV_FILE="${ENV_FILE:-$ROOT/.env}"
 COMPOSE_FILE="$ROOT/infra/docker-compose.yml"
+STATE_DIR="${UPDATE_STATE_DIR:-$ROOT/infra}"
 
 NEW_TAG=""
 ARCHIVE=""
@@ -60,6 +66,9 @@ done
 [[ "$HEALTH_RETRIES" =~ ^[1-9][0-9]*$ && "$HEALTH_INTERVAL" =~ ^[0-9]+$ ]] || { echo "update: bad health retry settings" >&2; exit 2; }
 [[ -z "$ARCHIVE" || -f "$ARCHIVE" ]] || { echo "update: image archive not found: $ARCHIVE" >&2; exit 2; }
 [[ -f "$ENV_FILE" ]] || { echo "update: $ENV_FILE not found" >&2; exit 2; }
+# Absolute and exported: docker-compose.yml passes the same file to every container.
+ENV_FILE="$(cd "$(dirname "$ENV_FILE")" && pwd -P)/$(basename "$ENV_FILE")"
+export ENV_FILE
 
 # ------------------------------------------------------------------------------------ settings
 env_get() {
@@ -85,24 +94,33 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 
 STEP=""
 log() { printf '%s [update] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
-step() { STEP="$1"; log "==> $1"; }
+step() {
+  STEP="$1"
+  log "==> $1"
+  [[ "${LOCKED:-0}" -eq 1 ]] && save_state
+  return 0
+}
 warn() { log "WARNING: $*"; }
 
 # ------------------------------------------------------------------------------------ helpers
 env_set() {
-  # Replace (or append) KEY=VALUE in place, keeping the file's owner and permissions.
+  # Replace (or append) KEY=VALUE atomically: the new content goes to a temp file in the same
+  # directory (cp -p first, so it already has the file's owner and mode), is flushed to disk,
+  # then renamed over .env. A power cut leaves either the old or the new file, never a torn
+  # one (which would lose POSTGRES_PASSWORD, DJANGO_SECRET_KEY and the backup passphrases).
   local key="$1" value="$2" tmp
-  tmp="$(mktemp "${TMPDIR:-/tmp}/update-env.XXXXXX")"
+  tmp="$(mktemp "$(dirname "$ENV_FILE")/.env.update.XXXXXX")"
+  cp -p "$ENV_FILE" "$tmp"
   if grep -qE "^[[:space:]]*$key=" "$ENV_FILE"; then
     awk -v k="$key" -v v="$value" '
       $0 ~ "^[[:space:]]*" k "=" { if (!done) { print k "=" v; done = 1 }; next }
       { print }' "$ENV_FILE" >"$tmp"
   else
-    cp "$ENV_FILE" "$tmp"
     printf '%s=%s\n' "$key" "$value" >>"$tmp"
   fi
-  cat "$tmp" >"$ENV_FILE"
-  rm -f "$tmp"
+  sync "$tmp" 2>/dev/null || sync
+  mv -f "$tmp" "$ENV_FILE"
+  sync "$(dirname "$ENV_FILE")" 2>/dev/null || sync
 }
 
 compose() {
@@ -136,7 +154,11 @@ check_health() {
     out="$(compose_tag "$tag" exec -T app python -c "$HEALTH_PY" 2>/dev/null | tail -n 1 || true)"
     status="${out%% *}"
     version="${out#* }"
-    if [[ "$status" == "ok" && "$version" == "$tag" ]]; then
+    if [[ "$status" == "ok" && "$version" == "$tag" ]] &&
+      ! compose_tag "$tag" exec -T web wget -q -O /dev/null http://127.0.0.1:8081/api/ops/health >/dev/null 2>&1; then
+      # The app is fine but Caddy (SPA + proxy) is not serving: not a successful update.
+      status="web-unhealthy"
+    elif [[ "$status" == "ok" && "$version" == "$tag" ]]; then
       if [[ -n "${UPDATE_HEALTH_URL:-}" ]]; then
         if curl -fsS -k --max-time 5 "$UPDATE_HEALTH_URL" >/dev/null 2>&1; then
           log "healthy: app $tag (and $UPDATE_HEALTH_URL) after $i check(s)"
@@ -186,13 +208,44 @@ MIGRATED=0
 SWAPPED=0
 DB_RESTORED=0
 DUMP=""
-LOCK_DIR="$ROOT/infra/.update.lock"
+LOCK_FILE="$STATE_DIR/.update.flock"
+STATE_FILE="$STATE_DIR/.update.state"
+LOCKED=0
 
 command -v docker >/dev/null 2>&1 || { log "docker not found"; exit 2; }
 docker compose version >/dev/null 2>&1 || { log "docker compose v2 plugin not found"; exit 2; }
-if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-  log "another update is running (lock $LOCK_DIR). If not, remove the lock directory."
-  exit 1
+mkdir -p "$STATE_DIR"
+# flock(2) on fd 8: released by the kernel when this process ends for any reason (crash, kill,
+# power cut), so a dead update can never block the next one. perl does the same where flock(1)
+# is missing (macOS).
+exec 8>>"$LOCK_FILE"
+if command -v flock >/dev/null 2>&1; then
+  flock -n 8 || { log "another update is running (lock $LOCK_FILE held by $(head -n 1 "$LOCK_FILE" 2>/dev/null))"; exit 1; }
+else
+  perl -MFcntl=:flock -e 'open(my $fh, ">&=", 8) or exit 2; flock($fh, LOCK_EX | LOCK_NB) or exit 1' ||
+    { log "another update is running (lock $LOCK_FILE held by $(head -n 1 "$LOCK_FILE" 2>/dev/null))"; exit 1; }
+fi
+LOCKED=1
+printf 'pid=%s host=%s since=%s\n' "$$" "$(hostname)" "$STARTED_AT" >"$LOCK_FILE"
+
+save_state() {
+  # One small file, replaced atomically, describing what this run has done so far.
+  local tmp="$STATE_FILE.tmp.$$"
+  printf 'target=%s\nfrom=%s\nstep=%s\nmigrated=%s\nswapped=%s\ndump=%s\nstarted=%s\nlog=%s\n' \
+    "$NEW_TAG" "$PREV_TAG" "$STEP" "$MIGRATED" "$SWAPPED" "$DUMP" "$STARTED_AT" "$LOG_FILE" >"$tmp"
+  mv -f "$tmp" "$STATE_FILE"
+}
+
+state_get() { grep -E "^$1=" "$2" 2>/dev/null | head -n 1 | cut -d= -f2-; }
+
+if [[ -f "$STATE_FILE" ]]; then
+  # A previous run ended without its EXIT handler (power cut, SIGKILL). .env still names the
+  # last committed tag (PREV_TAG), which is what a rollback returns to; containers may be on
+  # the interrupted target. This run re-does every step, so it finishes the job (same tag) or
+  # replaces it (another tag); either way it ends in a known state.
+  warn "a previous update to $(state_get target "$STATE_FILE") was interrupted during '$(state_get step "$STATE_FILE")'"
+  warn "  (migrations applied: $(state_get migrated "$STATE_FILE"), swapped: $(state_get swapped "$STATE_FILE"), pre-update dump: $(state_get dump "$STATE_FILE"), log: $(state_get log "$STATE_FILE"))"
+  warn "  .env still says APP_IMAGE_TAG=${PREV_TAG:-<none>}; this run takes it from here"
 fi
 
 rollback() {
@@ -241,7 +294,8 @@ rollback() {
 
 finish() {
   local code=$?
-  rm -rf "$LOCK_DIR"
+  # Reached on success and after a completed rollback alike: the system is in a known state.
+  [[ $LOCKED -eq 1 ]] && rm -f "$STATE_FILE"
   log "log file: $LOG_FILE"
   exit "$code"
 }
@@ -301,15 +355,26 @@ if [[ $PENDING -eq 1 ]]; then
   compose stop app || fail "could not stop app"
 fi
 step "3/7 pre-update backup"
-DUMP="$(compose run --rm --no-deps -T backup /opt/backup/backup-nightly.sh --label "pre-update-$NEW_TAG" --no-pgbackrest --no-prune | tail -n 1)" ||
-  fail "pre-update backup failed; nothing was changed"
+set +e
+DUMP="$(compose run --rm --no-deps -T backup /opt/backup/backup-nightly.sh --label "pre-update-$NEW_TAG" --no-pgbackrest --no-prune | tail -n 1)"
+backup_rc=$?
+set -e
+# Exit 3 = partial: the database dump is verified and printed, only the media archive failed.
+# The dump is what a rollback restores, so the update may go on (with a loud warning).
+case "$backup_rc" in
+  0) ;;
+  3) warn "pre-update backup is PARTIAL (database dump ok; see the backup log for what failed)" ;;
+  *) fail "pre-update backup failed (exit $backup_rc); nothing was changed" ;;
+esac
 [[ "$DUMP" == /backups/dumps/*.dump ]] || fail "backup did not report a dump path (got '$DUMP')"
 log "pre-update dump: $DUMP"
+save_state
 
 # ------------------------------------------------------------------------------------ 4. migrate
 if [[ $PENDING -eq 1 ]]; then
   step "4/7 apply migrations with $NEW_TAG"
   MIGRATED=1 # set first: a partly applied run still changed the schema
+  save_state
   compose_tag "$NEW_TAG" run --rm --no-deps -T app migrate || fail "migrations failed"
 else
   step "4/7 no migrations to apply"
@@ -318,6 +383,7 @@ fi
 # ------------------------------------------------------------------------------------ 5. swap
 step "5/7 swap app and web to $NEW_TAG"
 SWAPPED=1
+save_state
 compose_tag "$NEW_TAG" up -d --no-deps app web || fail "could not start $NEW_TAG"
 
 # ------------------------------------------------------------------------------------ 6. health

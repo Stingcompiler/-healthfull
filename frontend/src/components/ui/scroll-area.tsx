@@ -8,7 +8,7 @@ function ScrollArea({ className, children, ...props }: React.ComponentProps<type
     <ScrollAreaPrimitive.Root data-slot="scroll-area" className={cn("relative overflow-hidden", className)} {...props}>
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="size-full rounded-[inherit] outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+        className="size-full rounded-[inherit] focus-ring-inset"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
@@ -37,7 +37,7 @@ function ScrollBar({
     >
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"
-        className="relative flex-1 rounded-full bg-border-strong/50"
+        className="relative flex-1 rounded-full bg-border-strong"
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
   );

@@ -58,6 +58,17 @@ export function cacheTheme(theme: Theme): void {
   write(THEME_KEY, theme);
 }
 
+const RAIL_KEY = "hs.rail";
+
+/** Tablet rail: show labels (this device's choice; not a profile preference). */
+export function readRailExpanded(): boolean {
+  return read(RAIL_KEY) === "expanded";
+}
+
+export function cacheRailExpanded(expanded: boolean): void {
+  write(RAIL_KEY, expanded ? "expanded" : "collapsed");
+}
+
 export function directionOf(language: Language): "rtl" | "ltr" {
   return language === "ar" ? "rtl" : "ltr";
 }
@@ -94,6 +105,12 @@ export function subscribeCachedTheme(listener: () => void): () => void {
 export function getCachedThemeSnapshot(): Theme | null {
   themeSnapshot ??= readCachedTheme();
   return themeSnapshot;
+}
+
+/** Forget the in-memory snapshot so the next read comes from storage (tests, other tabs). */
+export function resetCachedThemeSnapshot(): void {
+  themeSnapshot = undefined;
+  for (const listener of themeListeners) listener();
 }
 
 export function setCachedTheme(theme: Theme): void {

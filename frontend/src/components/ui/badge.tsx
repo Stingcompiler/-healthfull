@@ -9,7 +9,7 @@ const badgeVariants = cva(
     "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-2.5 py-0.5",
     "text-xs leading-5 font-medium whitespace-nowrap",
     "[&>svg]:pointer-events-none [&>svg]:size-3.5",
-    "focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none",
+    "focus-ring",
   ],
   {
     variants: {

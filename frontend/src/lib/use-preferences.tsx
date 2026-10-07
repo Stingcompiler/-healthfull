@@ -22,6 +22,7 @@ import {
   getCachedThemeSnapshot,
   isLanguage,
   DEFAULT_LANGUAGE,
+  readCachedLanguage,
   setCachedTheme,
   subscribeCachedTheme,
   type Language,
@@ -39,14 +40,21 @@ interface PreferencesValue {
 const PreferencesContext = createContext<PreferencesValue | null>(null);
 
 /**
- * Theme and language for the whole app.
+ * Theme and language for the whole app (ARCHITECTURE 5.1).
  *
- * - Logged in: the server profile (MeOut.theme/language) is the source of
- *   truth. Changes apply instantly (optimistic cache update) and are saved
- *   with PATCH /api/auth/me/preferences; on failure they stay local and a
- *   toast explains why.
+ * - Logged in with a saved choice (MeOut.theme/language not null): the server
+ *   profile is the source of truth. Changes apply instantly (optimistic cache
+ *   update) and are saved with PATCH /api/auth/me/preferences; on failure they
+ *   stay local and a toast explains why.
+ * - Logged in, never chose (null on the server): the device's choice stays (what
+ *   was picked on the login page, kept in localStorage) and is saved to the
+ *   profile once; with no local choice either, the theme follows
+ *   prefers-color-scheme and nothing is saved, so the OS setting keeps applying.
  * - Logged out: the choice lives in localStorage only.
- * - No saved theme at all: follow prefers-color-scheme.
+ *
+ * The local cache only ever holds explicit choices (the user's, or a saved server
+ * value): it is never filled from prefers-color-scheme, so boot.js can still
+ * follow the OS for someone who never chose.
  */
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { i18n, t } = useTranslation();
@@ -93,6 +101,22 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     },
     [queryClient, updatePreferences, t],
   );
+
+  // First login on a profile that never chose: save this device's explicit choices
+  // (e.g. "English" picked on the login page) instead of overwriting them.
+  const unsetTheme = me?.theme === null;
+  const unsetLanguage = me?.language === null;
+  useEffect(() => {
+    if (!unsetTheme && !unsetLanguage) return;
+    const current = queryClient.getQueryData<MeOut | null>(authKeys.me);
+    if (!current) return;
+    const patch: { theme?: Theme; language?: Language } = {};
+    const localTheme = getCachedThemeSnapshot();
+    const localLanguage = readCachedLanguage();
+    if (current.theme === null && localTheme) patch.theme = localTheme;
+    if (current.language === null && localLanguage) patch.language = localLanguage;
+    if (patch.theme ?? patch.language) persist(patch, current);
+  }, [unsetTheme, unsetLanguage, queryClient, persist]);
 
   const setTheme = useCallback(
     (next: Theme) => {

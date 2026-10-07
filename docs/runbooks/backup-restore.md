@@ -28,8 +28,23 @@ df -h /srv/hospital
 infra/compose.sh logs --since 24h backup
 ```
 
-`status` is `ok`, `partial` (dump fine, a pgBackRest repo failed, usually the cloud while offline)
-or `failed` (no new dump: act today).
+`status` is `ok`, `partial` (the dump is fine and kept, but the media archive or a pgBackRest repo
+failed, usually the cloud while offline: read `error`) or `failed` (no new dump: act today).
+
+### Missed backups and power cuts — النسخ الفائتة وانقطاع الكهرباء
+
+- **Catch-up:** if the server was off at `BACKUP_TIME`, the backup container takes the missed
+  backup as soon as it starts (and after every wake-up) when the last `ok`/`partial` backup is older
+  than `BACKUP_CATCHUP_HOURS` (24). A monthly restore test missed on `RESTORE_TEST_DAY` runs the
+  same way, once per month. `BACKUP_CATCHUP_HOURS=0` turns catch-up off.
+- **Locks:** backup and restore test each take a kernel lock (`flock`) on a file in
+  `/srv/hospital/backups` (`.backup.flock`, `.restore-test.flock`). It is released automatically
+  when the process ends for any reason, so a power cut can never leave a stale lock. A second run
+  while one is active is refused and recorded as `failed` ("another backup run holds ...").
+- **Leftovers:** a run killed mid-write leaves `.*.partial` files and possibly a
+  `restore_test_<stamp>_<pid>` scratch database; the next run removes both.
+- **Stopping:** `docker stop` passes the signal to a running backup, which cleans up; the backup
+  service has a 300 s stop grace period for that.
 
 ### Status file format (read by the ops module)
 
@@ -98,13 +113,15 @@ Target: clinic working again within 2 hours with last night's data.
 3. Load images (`docker load` from the release archive) with the same `APP_IMAGE_TAG`.
 4. Start only the database, restore, then the rest:
 
+Everything below uses only images that are already on the machine (no internet needed).
+
 ```bash
 infra/compose.sh up -d db
 infra/compose.sh run --rm --no-deps -T backup \
   /opt/backup/restore-dump.sh --dump /backups/dumps/<newest>.dump --yes
-# Uploaded files back into the media volume, owned by the app user (uid 10001):
-docker run --rm -v hospital_media:/m -v /srv/hospital/backups/media:/b:ro alpine \
-  sh -c 'tar -xzf /b/<newest>.tar.gz -C /m && chown -R 10001:10001 /m'
+# Uploaded files back into the media volume, owned by the app user (uid 10001), using the db image:
+docker run --rm -u 0 --entrypoint sh -v hospital_media:/m -v /srv/hospital/backups/media:/b:ro \
+  <registry>/db:16 -c 'tar -xzf /b/<newest>.tar.gz -C /m && chown -R 10001:10001 /m && chmod 0750 /m'
 infra/compose.sh up -d
 infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-test.sh
 ```

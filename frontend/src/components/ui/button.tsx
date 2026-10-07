@@ -9,7 +9,7 @@ const buttonVariants = cva(
   [
     "relative inline-flex shrink-0 items-center justify-center gap-2 rounded-control font-medium whitespace-nowrap select-none",
     "transition-[background-color,border-color,color,box-shadow] duration-150",
-    "focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none",
+    "focus-ring",
     "disabled:pointer-events-none disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:opacity-55",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   ],
@@ -18,19 +18,20 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-fg shadow-xs hover:bg-primary-hover",
         secondary: "bg-secondary text-secondary-fg hover:bg-secondary-hover",
-        outline: "border border-border-strong/60 bg-surface text-fg hover:bg-accent hover:text-accent-fg",
+        outline: "border border-border-strong bg-surface text-fg hover:bg-accent hover:text-accent-fg",
         ghost: "text-fg hover:bg-accent hover:text-accent-fg",
-        destructive: "bg-danger text-danger-contrast shadow-xs hover:bg-danger/90 focus-visible:ring-danger/35",
-        "destructive-soft": "bg-danger-bg text-danger-fg hover:bg-danger-bg/70 focus-visible:ring-danger/35",
+        destructive: "bg-danger text-danger-contrast shadow-xs hover:bg-danger/90",
+        "destructive-soft": "bg-danger-bg text-danger-fg hover:bg-danger-bg/70",
         soft: "bg-primary-soft text-primary-strong hover:bg-primary-soft/70",
         link: "h-auto px-0 text-primary-strong underline-offset-4 hover:underline",
       },
+      // Phones get 44px touch targets; from md (mouse and stylus first) the compact sizes.
       size: {
-        sm: "h-8 px-3 text-xs",
-        default: "h-10 px-4 text-sm",
+        sm: "h-11 px-3 text-xs md:h-8",
+        default: "h-11 px-4 text-sm md:h-10",
         lg: "h-11 px-6 text-base",
-        icon: "size-10",
-        "icon-sm": "size-8",
+        icon: "size-11 md:size-10",
+        "icon-sm": "size-11 md:size-8",
       },
     },
     defaultVariants: {

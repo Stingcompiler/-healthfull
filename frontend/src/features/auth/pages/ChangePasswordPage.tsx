@@ -15,6 +15,7 @@ import { toApiError, type ApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { useChangePassword, useCurrentUser } from "@/lib/auth/hooks";
 import { vmsg } from "@/lib/validation";
+import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 import { AuthLayout } from "../components/AuthLayout";
 
@@ -26,7 +27,7 @@ const schema = z
     newPassword: z
       .string()
       .min(1, vmsg("validation.required"))
-      .min(PASSWORD_MIN, vmsg("validation.minLength", { min: PASSWORD_MIN }))
+      .min(PASSWORD_MIN, vmsg("validation.minLength", { count: PASSWORD_MIN }))
       .refine((v) => !/^\d+$/.test(v), vmsg("validation.passwordNumeric")),
     confirmPassword: z.string().min(1, vmsg("validation.required")),
   })
@@ -58,6 +59,7 @@ function serverNotes(error: ApiError): string[] {
 
 export function ChangePasswordPage() {
   const { t } = useTranslation(["auth", "errors"]);
+  useDocumentTitle(t("changePassword.title"));
   const router = useRouter();
   const me = useCurrentUser();
   const changePassword = useChangePassword();

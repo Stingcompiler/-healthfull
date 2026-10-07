@@ -91,8 +91,13 @@ def test_me_out_shape(schema: dict[str, Any]) -> None:
         "theme",
         "must_change_password",
     }
-    assert me["properties"]["language"]["enum"] == ["ar", "en"]
-    assert me["properties"]["theme"]["enum"] == ["light", "dark", "warm"]
+    # Nullable: null means "never chosen" (the client follows the device).
+    language = me["properties"]["language"]["anyOf"]
+    theme = me["properties"]["theme"]["anyOf"]
+    assert {"enum": ["ar", "en"], "type": "string"} in language
+    assert {"type": "null"} in language
+    assert {"enum": ["light", "dark", "warm"], "type": "string"} in theme
+    assert {"type": "null"} in theme
 
 
 @pytest.mark.django_db
