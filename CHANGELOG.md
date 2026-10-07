@@ -27,6 +27,28 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 - Contract test that every navigation permission code is registered by the backend or listed as pending
   for a later phase.
 - Short phone tab bar labels (`nav:short`) so no label is cut at 360px; e2e test for it.
+- Phase 1 domain core: pure, Hypothesis-tested rules for the service-line state machine (credited
+  units and `open_quantity`, replacement lines), dated price-list versions, coverage splits, invoice
+  and credit-note positions, allocation and pooled patient credit, shifts, transfer verification,
+  double-entry ledger postings, payer claims, stock (units, FEFO, moves) and lab results.
+- Phase 1 schema for every app, with pghistory audit and database guards: `line_guard`,
+  `dispense_line_eligible`, `claim_line_guard`, `version_guard`, frozen and append-only tables,
+  open-shift checks, a commit-time journal balance check and `truncate_guard`.
+- Phase 1 services: ordering and perform-first authorizations, invoicing and credit notes with
+  re-billing, payments with allocation, transfer confirmation and rejection, refunds, cash handovers,
+  shift close with a frozen report, payer claims and payer payments (transfer, cheque, cash),
+  dispensing with partial dispense and returns, lab samples, results, approval and amendments.
+- Ledger account `CASH_SAFE` for cash in the safe, with a supervisor or between shifts; opening
+  floats, handovers and the close sweep post through it, so a drawer's ledger cash is its expected
+  cash.
+- ADR 0006 (Phase 1 money and stock rules) with the differences found against the code.
+- Arabic and English text for every error code the backend raises (`errors` namespace); a contract
+  test checks that every backend code is translated and that each placeholder is sent by every
+  raise of its code.
+- `infra/db/`: database roles `hospital_owner` (owns the schema; migrations only) and `hospital_app`
+  (DML only), created on the db image's first start; `infra/db-roles.sh` creates or repairs them on
+  an existing install and `--verify` reports any stray grant. A one-off compose `migrate` service
+  runs migrations as the owner before `app` and `maintenance` start.
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
@@ -39,6 +61,13 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 - `seed_e2e` refuses databases that are not `e2e_*` / `test_*`; `admin` is a normal admin-role user and
   the superuser is a separate break-glass account. e2e reads `E2E_DB_NAME` only.
 - Web container runs Caddy as a non-root user; published ports bind to `BIND_IP`.
+- Protected tables refuse `TRUNCATE` from any role that does not own them, and `pgtrigger`'s
+  session switch can no longer turn the guards off. A table owner or superuser can still bypass
+  triggers, so production must run the app as a non-owner role (ADR 0006, `infra/db/`).
+- The app and the maintenance job connect as `hospital_app`, which cannot `TRUNCATE`, alter or drop
+  tables, disable triggers or turn on `pgtrigger`'s ignore switch; the superuser is left to the db
+  container and the backup sidecar, and each service blanks the passwords it must not hold.
+  `PUBLIC` loses `CONNECT`/`TEMP` on the database and `CREATE` on schema `public`.
 
 ### Changed
 - `MeOut.language` / `MeOut.theme` are `null` until the user chooses; the SPA keeps the device's choice.
@@ -51,9 +80,18 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   `partial` run that keeps the dump, stale partial files and scratch databases cleaned up, atomic restore
   swap. `update.sh` writes `.env` atomically, records its state and checks the web container.
 - `make check` and CI fail on missing migrations; CI uploads e2e server logs.
+- ARCHITECTURE 4.4-4.9 rewritten to match the Phase 1 implementation: `in_progress` and credited
+  units, price-list version dates, claim withdrawal on credit, refunds, handovers, the chart with
+  `CASH_SAFE`, the frozen shift report, the database guard list and the non-owner database role.
+- `update.sh` refuses to run (exit 2, naming `infra/db-roles.sh`) until the role passwords exist,
+  reads the migration plan and migrates as the owner, and re-applies the role grants after the
+  backup. `restore-dump.sh` hands a restored database to the owner and re-grants the app role
+  before the swap. Role passwords: 16-128 characters of `A-Z a-z 0-9 . _ - ~`.
 
 ### Fixed
 - Patient names are never truncated (four-part Sudanese names wrap instead of losing the family name).
+- Error messages with placeholders (amounts, dates, bed codes, units) show their values:
+  `translateError` passes the error's `details` to i18next for interpolation only.
 - Arabic initials skip the article "ال" and stay separate letters; KPI trend values are read by screen
   readers; IDs inside translated text keep their order (`bidi` formatter); Arabic role and length
   messages corrected.

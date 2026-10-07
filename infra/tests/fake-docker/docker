@@ -32,6 +32,17 @@ case "$sub" in
   stop) echo "stopped" >"$FAKE_STATE/running"; exit 0 ;;
   up) echo "${APP_IMAGE_TAG:-}" >"$FAKE_STATE/running"; exit "${FAKE_UP_EXIT:-0}" ;;
   exec)
+    if [[ "$args" == *"db sh -c"* ]]; then
+      # infra/db-roles.sh: SQL arrives on stdin (never in argv). Verify SQL prints problems.
+      sql="$(cat)"
+      if [[ "$sql" == *"PROBLEM: "* ]]; then
+        printf '%s' "$sql" >"$FAKE_STATE/roles-verify.sql"
+        [[ -n "${FAKE_VERIFY_OUTPUT:-}" ]] && printf '%s\n' "$FAKE_VERIFY_OUTPUT"
+        exit 0
+      fi
+      printf '%s' "$sql" >"$FAKE_STATE/roles-apply.sql"
+      exit "${FAKE_ROLES_EXIT:-0}"
+    fi
     running="$(cat "$FAKE_STATE/running")"
     [[ "$running" == "stopped" ]] && { echo "unreachable -"; exit 0; }
     echo "$(health_for "$running") $running"
@@ -40,9 +51,9 @@ case "$sub" in
   run)
     case "$args" in
       *"app manage check"*) exit "${FAKE_CHECK_EXIT:-0}" ;;
-      *"app manage migrate --plan"*) echo "Planned operations:"; echo "core.0002_example"; exit 0 ;;
-      *"app manage migrate --check"*) [[ "${FAKE_PENDING:-0}" == "1" ]] && exit 1; exit 0 ;;
-      *"app migrate"*) exit "${FAKE_MIGRATE_EXIT:-0}" ;;
+      *"migrate manage migrate --plan"*) echo "Planned operations:"; echo "core.0002_example"; exit 0 ;;
+      *"migrate manage migrate --check"*) [[ "${FAKE_PENDING:-0}" == "1" ]] && exit 1; exit 0 ;;
+      *"-T migrate migrate"*) exit "${FAKE_MIGRATE_EXIT:-0}" ;;
       *"backup-nightly.sh"*)
         if [[ "${FAKE_BACKUP_EXIT:-0}" == "3" ]]; then
           echo "2026-10-06T00:00:00Z [backup] WARNING: media archive failed" >&2

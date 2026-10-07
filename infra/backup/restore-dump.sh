@@ -4,12 +4,16 @@
 #   2. stop accepting connections to the live DB, terminate its sessions
 #   3. rename live -> <target>_before_<stamp>, then incoming -> <target>
 # The previous database is kept under its new name until an operator drops it.
+# With DB_OWNER_USER / DB_APP_USER set (the compose backup service sets both), step 1 also hands
+# the restored database and every object to the owner role and re-grants the app role
+# (infra/db/roles.sh): pg_restore --no-owner makes the restoring superuser the owner of all.
 # Stop the app first (docker compose stop app) so it does not reconnect during step 3.
 #
 # Usage: restore-dump.sh --dump FILE [--target DB_NAME] --yes
 #
 # Environment: PGHOST PGPORT PGUSER PGPASSWORD (superuser or owner with CREATEDB),
-#              DB_NAME [hospital] default target, RESTORE_JOBS [2], RESTORE_MAINTENANCE_DB [postgres]
+#              DB_NAME [hospital] default target, RESTORE_JOBS [2], RESTORE_MAINTENANCE_DB [postgres],
+#              DB_OWNER_USER DB_APP_USER [unset: ownership and grants left as restored]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -35,7 +39,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -h | --help)
-      sed -n '2,14p' "$0"
+      sed -n '2,18p' "$0"
       exit 0
       ;;
     *) die "unknown argument: $1" ;;
@@ -93,6 +97,18 @@ if [[ "$tables" -eq 0 ]]; then
   die "restored database has no tables; live database $TARGET untouched"
 fi
 log "restored $tables tables into $INCOMING"
+
+if [[ -n "${DB_OWNER_USER:-}" || -n "${DB_APP_USER:-}" ]]; then
+  # Before the swap: a database the app role cannot use never becomes the live one.
+  roles="$SCRIPT_DIR/../db/roles.sh"
+  if ! "$roles" --db "$INCOMING" --no-passwords || ! "$roles" --db "$INCOMING" --verify; then
+    cleanup_incoming
+    die "could not hand $INCOMING to the owner and app roles; live database $TARGET untouched"
+  fi
+  log "ownership: ${DB_OWNER_USER:-hospital_owner}; app role ${DB_APP_USER:-hospital_app} granted DML"
+else
+  log "DB_OWNER_USER/DB_APP_USER not set: objects stay owned by ${PGUSER:-the restoring role}"
+fi
 
 exists="$(psql_q "$MAINT_DB" -c "SELECT 1 FROM pg_database WHERE datname = '$TARGET'")"
 if [[ "$exists" == "1" ]]; then

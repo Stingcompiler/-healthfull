@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import i18n from "@/i18n";
+import i18n, { FSI, PDI } from "@/i18n";
 
 import { ApiError, CLIENT_ERROR_CODES, networkError, normalizeError, toApiError } from "./errors";
 import { translateError } from "./translate-error";
@@ -83,6 +83,33 @@ describe("translateError", () => {
     expect(translateError("INVALID_CREDENTIALS")).toBe("Incorrect username or password.");
     await i18n.changeLanguage("ar");
     expect(translateError("INVALID_CREDENTIALS")).toBe("اسم المستخدم أو كلمة المرور غير صحيحة.");
+  });
+
+  it("fills placeholders from the error details, isolated for direction", async () => {
+    const error = new ApiError(409, { code: "STOCK_INSUFFICIENT", message: "", details: { available: "12" } });
+    await i18n.changeLanguage("en");
+    expect(translateError(error)).toBe(`Not enough stock. Available, in base units: ${FSI}12${PDI}.`);
+    await i18n.changeLanguage("ar");
+    expect(translateError(error)).toBe(`الكمية المتوفرة في المخزون لا تكفي. المتوفر بالوحدة الأساسية: ${FSI}12${PDI}.`);
+  });
+
+  it("uses details for interpolation only, never as i18next options", async () => {
+    await i18n.changeLanguage("en");
+    // A backend detail named like an i18next option (lng, defaultValue, ...) must not switch the
+    // language or replace the fallback.
+    const error = new ApiError(409, {
+      code: "STOCK_INSUFFICIENT",
+      message: "",
+      details: { available: "3", lng: "ar", defaultValue: "hijacked" },
+    });
+    expect(translateError(error)).toBe(`Not enough stock. Available, in base units: ${FSI}3${PDI}.`);
+    const unknown = new ApiError(409, {
+      code: "SOME_NEW_RULE",
+      message: "Rule says no",
+      details: { defaultValue: "x" },
+    });
+    expect(translateError(unknown)).toBe("Rule says no");
+    await i18n.changeLanguage("ar");
   });
 
   it("falls back to the server message, then to a generic text", async () => {

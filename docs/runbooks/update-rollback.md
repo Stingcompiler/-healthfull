@@ -3,13 +3,20 @@
 FEATURES 13.10. One image tag per release for `app` and `web`. Never change `APP_IMAGE_TAG` by hand
 and never run `migrate` yourself: `infra/update.sh` does both with a safety net.
 
+Installed before the separate database roles existed (no `DB_OWNER_PASSWORD` in `.env`)? Do
+[Separate database roles](#separate-database-roles--فصل-أدوار-قاعدة-البيانات) once first;
+`update.sh` refuses to run until then and says so.
+
 ## What update.sh does — ماذا يفعل سكربت التحديث
 
 1. Gets `app:<tag>` and `web:<tag>` (registry pull, or `--image-archive` from USB).
-2. Runs Django system checks and `migrate --plan` (dry run) in a throwaway container of the new image.
+2. Runs Django system checks and `migrate --plan` (dry run, as the owner role, which proves its
+   login) in throwaway containers of the new image.
 3. If migrations are pending, stops the app (maintenance), then takes a verified dump labelled
    `pre-update-<tag>`. Without migrations the app keeps serving during the backup.
-4. Applies migrations with the new image.
+4. Checks and repairs the database roles (`infra/db-roles.sh`: the owner owns everything, the app
+   role has row rights only), then applies migrations in the one-off `migrate` container of the new
+   image, which connects as the owner role. The app role cannot change the schema.
 5. Recreates `app` and `web` on the new tag.
 6. Polls `/api/ops/health` inside the app until `status=ok` and `version=<tag>`.
 7. Writes `APP_IMAGE_TAG=<tag>` to `.env` and records the run in `status/update-runs.jsonl`.
@@ -74,6 +81,40 @@ After the swap the script checks the app and the web container (SPA served, prox
 - Status page shows the new version; `tail -n 1 /srv/hospital/backups/status/update-runs.jsonl`.
 - Keep the previous images for a week (rollback), then `docker image prune -a --filter "until=168h"`.
 
+## Separate database roles — فصل أدوار قاعدة البيانات
+
+Once per install made before this change. Until then the app connects as the PostgreSQL superuser,
+which could `TRUNCATE` the ledger or switch off the protection triggers (ADR 0006). After it, the
+app and maintenance connect as `hospital_app` (rows only), migrations as `hospital_owner` (owns the
+schema), and only the db and backup containers use the superuser. About 10 minutes; the app is down
+for under a minute while the containers are recreated. Do it in a quiet hour.
+
+```bash
+cd /opt/hospital-sys
+tail -n 1 /srv/hospital/backups/status/backup-runs.jsonl     # last backup "ok"
+git fetch --tags && git checkout <release>                    # infra scripts with the roles
+# The db/backup image must contain the role scripts (first-start roles, re-grant after a restore):
+infra/compose.sh build db backup                              # online, or offline:
+docker load -i /media/usb/hospital-sys-<release>.tar.gz       #   the release archive includes db:16
+infra/db-roles.sh                     # writes DB_OWNER_PASSWORD and DB_APP_PASSWORD into .env if
+                                      # missing, creates both roles, hands the database and every
+                                      # table to hospital_owner, grants hospital_app, verifies
+infra/compose.sh up -d                # recreates db, migrate, app, maintenance, backup with the roles
+infra/compose.sh ps -a                # migrate "Exited (0)", the rest healthy / up
+infra/compose.sh exec -T app python -c "import os, psycopg; print(psycopg.connect(dbname=os.environ['DB_NAME']).execute('select current_user').fetchone()[0])"
+                                      # prints hospital_app
+curl -s http://127.0.0.1/api/ops/health
+```
+
+Then print `.env` again for the clinic safe: it now holds two more passwords, and a restore on a
+new server needs them. `infra/db-roles.sh` is idempotent: run it again any time, after changing
+`DB_OWNER_PASSWORD` or `DB_APP_PASSWORD` in `.env` (then `infra/compose.sh up -d`), or when it
+reports a problem.
+
+**Undo.** The roles do no harm on their own. To go back to the superuser connection, check out the
+previous release's infra (`git checkout <previous>`) and run `infra/compose.sh up -d`; the old
+compose file connects the app as `POSTGRES_USER` again.
+
 ## Manual rollback — التراجع اليدوي
 
 App only (no migrations in the bad release, or schema still compatible):
@@ -94,9 +135,16 @@ APP_IMAGE_TAG=v1.3.2 infra/compose.sh up -d --no-deps app web
 sed -i 's/^APP_IMAGE_TAG=.*/APP_IMAGE_TAG=v1.3.2/' .env
 ```
 
+`restore-dump.sh` hands the restored database to the owner role and re-grants the app role before
+it swaps it in, so the old tag can read it at once. If a migration ever has to be applied by hand
+(support asked for it), it runs as the owner role, never through `app`:
+`APP_IMAGE_TAG=<tag> infra/compose.sh run --rm --no-deps -T migrate migrate`.
+
 ## Emergency (exit 3) — حالة طارئة
 
 1. `infra/compose.sh ps` and `infra/compose.sh logs --tail=200 app db`: is the database healthy?
+   `permission denied for table ...` in the app log means ownership or grants are off (a database
+   restored by hand, a role changed): run `infra/db-roles.sh`, then `infra/compose.sh up -d app`.
 2. Database down: `infra/compose.sh up -d db`, wait for healthy, then start the previous tag as above.
 3. Database up but the old app fails on the new schema: restore the pre-update dump (above).
 4. Still down after 30 minutes: switch the clinic to the paper fallback forms and call support with
