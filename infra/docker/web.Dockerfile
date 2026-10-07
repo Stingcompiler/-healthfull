@@ -28,6 +28,15 @@ RUN pnpm build
 # ---------------------------------------------------------------------------- runtime
 FROM caddy:${CADDY_VERSION}-alpine AS web
 
+# The upstream binary carries the file capability cap_net_bind_service. Compose drops every
+# capability and sets no-new-privileges, so the kernel refuses to exec a binary that asks for
+# one ("exec /usr/bin/caddy: operation not permitted"). Binding 80/443 is instead allowed by
+# the namespaced sysctl net.ipv4.ip_unprivileged_port_start=0 in docker-compose.yml.
+RUN apk add --no-cache --virtual .setcap libcap-utils \
+ && setcap -r /usr/bin/caddy \
+ && if getcap /usr/bin/caddy | grep -q cap_; then echo "file capability still set" >&2; exit 1; fi \
+ && apk del .setcap
+
 # Caddy runs as an unprivileged user. Its certificates and state go to directories this user
 # owns. Not the base image's /data and /config: those are declared VOLUMEs, and a build step's
 # change to a VOLUME path may be discarded. The compose named volumes mount here and inherit
