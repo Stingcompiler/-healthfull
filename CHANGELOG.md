@@ -24,3 +24,10 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   languages, screenshots to `artifacts/screens/`).
 - ADRs 0002 (SPA administration at `/administration`), 0003 (light-theme primary foreground),
   0004 (sign-in, lockout and session semantics).
+- Contract test that every navigation permission code is registered by the backend or listed as pending
+  for a later phase.
+- Short phone tab bar labels (`nav:short`) so no label is cut at 360px; e2e test for it.
+
+### Fixed
+- Patient names in the other script (an English name in the Arabic UI and the reverse) were cut at their
+  beginning when too long; each name line now takes its own direction and stays aligned with the card.

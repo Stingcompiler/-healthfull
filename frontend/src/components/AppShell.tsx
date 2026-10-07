@@ -157,7 +157,7 @@ export function AppShell({ nav, search, children }: AppShellProps) {
               className="flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted hover:text-fg focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
             >
               <Menu className="size-5" aria-hidden="true" />
-              <span className="max-w-full truncate px-1">{t("nav:shell.more")}</span>
+              <span className="max-w-full truncate px-0.5">{t("nav:shell.more")}</span>
             </button>
           </li>
         </ul>
@@ -264,11 +264,14 @@ function NavLink({ item, variant, onNavigate }: { item: NavItem; variant: NavVar
   const label = t(`items.${item.labelKey}`);
 
   if (variant === "bottom") {
+    // Phone tab bar: five cells of ~72px at 360px width, so it uses the short label
+    // (nav:short, e.g. "Bookings" for "Appointments") and keeps the full one as a tooltip.
     return (
       <Link
         to={item.to}
         activeOptions={{ exact: item.exact ?? false }}
         data-testid={`nav-${item.id}`}
+        title={label}
         className={cn(
           "flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted transition-colors",
           "hover:text-fg focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none",
@@ -276,7 +279,7 @@ function NavLink({ item, variant, onNavigate }: { item: NavItem; variant: NavVar
         )}
       >
         <Icon className="size-5" aria-hidden="true" />
-        <span className="max-w-full truncate px-1">{label}</span>
+        <span className="max-w-full truncate px-0.5">{t(`short.${item.labelKey}`)}</span>
       </Link>
     );
   }

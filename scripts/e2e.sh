@@ -91,7 +91,11 @@ log "seeding (seed_e2e)"
 
 # ------------------------------------------------------------------ artifacts
 mkdir -p "$ROOT/artifacts/screens" "$E2E/.logs"
-find "$ROOT/artifacts/screens" -maxdepth 1 -type f -name '*.png' -delete
+# A full run replaces every screenshot, so stale ones (renamed or removed routes) go first. A filtered
+# run (E2E_GREP or extra arguments) only overwrites the files it produces and keeps the rest.
+if [[ -z "${E2E_GREP:-}" && $# -eq 0 ]]; then
+  find "$ROOT/artifacts/screens" -maxdepth 1 -type f -name '*.png' -delete
+fi
 : >"$E2E/.logs/backend.log"
 : >"$E2E/.logs/frontend.log"
 

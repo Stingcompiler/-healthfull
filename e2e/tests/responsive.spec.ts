@@ -72,6 +72,48 @@ for (const viewport of VIEWPORTS) {
 }
 
 /**
+ * The phone tab bar has five cells (four modules + More). Which modules land there depends on
+ * the user's permissions, so every short label (nav:short) in both languages must fit a cell
+ * without an ellipsis, at 360px: the most common Android width, narrower than the 375 matrix.
+ */
+test.describe("@responsive phone tab bar", () => {
+  test.use({ viewport: { width: 360, height: 800 }, storageState: ADMIN_STATE });
+
+  for (const lang of LANGS) {
+    test(`every short label fits at 360px (${lang})`, async ({ page }) => {
+      const file = path.join(FRONTEND_DIR, "src", "i18n", "locales", lang, "nav.json");
+      const nav = JSON.parse(readFileSync(file, "utf8")) as { short: Record<string, string>; shell: { more: string } };
+      const labels = [...Object.values(nav.short), nav.shell.more];
+      expect(labels.length).toBeGreaterThan(10);
+
+      await setPrefs(page, { theme: "light", lang });
+      await page.goto("/");
+      const bar = page.locator('[data-slot="app-bottom-nav"]');
+      await expect(bar).toBeVisible();
+      await expectPrefsApplied(page, { theme: "light", lang });
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+
+      // Measure each label in a real cell: same element, classes and font as the live label.
+      const truncated = await bar.evaluate((nav, texts) => {
+        const span = nav.querySelector<HTMLElement>("li a span");
+        if (!span) throw new Error("no label in the bottom navigation");
+        const original = span.textContent;
+        const out: string[] = [];
+        for (const text of texts) {
+          span.textContent = text;
+          if (span.scrollWidth > span.clientWidth) {
+            out.push(`${text} (${String(span.scrollWidth)}px > ${String(span.clientWidth)}px)`);
+          }
+        }
+        span.textContent = original;
+        return out;
+      }, labels);
+      expect(truncated, `shorten these in frontend/src/i18n/locales/${lang}/nav.json "short"`).toEqual([]);
+    });
+  }
+});
+
+/**
  * Guards the registry itself: every `path: "..."` declared in the frontend's
  * route modules must be covered by an entry in e2e/routes.ts, so a new screen
  * cannot skip the responsive check.

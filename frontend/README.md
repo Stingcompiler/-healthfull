@@ -40,6 +40,11 @@ All modules are already registered in `src/app/routes.ts` and `src/app/nav.ts`. 
 
 - `features/<m>/routes.tsx` exports `routes(parent)`; add child routes there.
 - `features/<m>/nav.ts` lists nav entries (`to` is type-checked against the router, `permission` is any-of).
+  Each label needs `nav:items.<key>` and a short form `nav:short.<key>` for the phone tab bar (five cells of about
+  72px at 360px width; the e2e "phone tab bar" test fails if a short label is cut).
+- Permission codes must be registered by the backend (`register_permission` in `backend/apps/<app>/permissions.py`).
+  Codes for apps built in later phases are listed in `PENDING` in `src/app/nav-permissions.test.ts`; remove a code
+  from there when its app registers it (the test fails until you do).
 - Strings go in `i18n/locales/{ar,en}/<m>.json` (same keys in both; `pnpm test` enforces parity).
 - Data hooks go in `features/<m>/api.ts` using `api` + `unwrap` from `@/lib/api/client`.
 
