@@ -269,3 +269,39 @@ def test_build_logging_renders_context(as_json: bool, capsys: pytest.CaptureFixt
         assert "rid-1" in line
     # Restore the project's configuration for the rest of the session.
     build_logging(json=True, level="INFO")
+
+
+def test_static_files_are_world_readable_but_uploads_are_not() -> None:
+    code = (
+        "import json, config.settings as s; "
+        "print(json.dumps([s.STORAGES['staticfiles'].get('OPTIONS'), "
+        "s.FILE_UPLOAD_PERMISSIONS, s.FILE_UPLOAD_DIRECTORY_PERMISSIONS]))"
+    )
+    for debug in ("0", "1"):
+        env = {"DJANGO_DEBUG": debug, "DJANGO_SECRET_KEY": "x" * 50}
+        result = _run_settings(env, code)
+        assert result.returncode == 0, result.stderr
+        options, upload_file, upload_dir = json.loads(result.stdout)
+        assert options == {"file_permissions_mode": 0o644, "directory_permissions_mode": 0o755}
+        assert (upload_file, upload_dir) == (0o640, 0o750)
+
+
+def test_collectstatic_output_is_readable_by_others(tmp_path: Path) -> None:
+    code = (
+        "import django; django.setup(); "
+        "from django.core.management import call_command; "
+        "call_command('collectstatic', interactive=False, verbosity=0)"
+    )
+    env = {
+        "DJANGO_SETTINGS_MODULE": "config.settings",
+        "DJANGO_DEBUG": "0",
+        "DJANGO_SECRET_KEY": "x" * 50,
+        "STATIC_ROOT": str(tmp_path / "st"),
+    }
+    result = _run_settings(env, code)
+    assert result.returncode == 0, result.stderr
+    root = tmp_path / "st"
+    assert root.stat().st_mode & 0o005 == 0o005
+    for path in root.rglob("*"):
+        need = 0o005 if path.is_dir() else 0o004
+        assert path.stat().st_mode & need == need, path
