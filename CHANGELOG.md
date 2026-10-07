@@ -49,6 +49,24 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   (DML only), created on the db image's first start; `infra/db-roles.sh` creates or repairs them on
   an existing install and `--verify` reports any stray grant. A one-off compose `migrate` service
   runs migrations as the owner before `app` and `maintenance` start.
+- E2E base catalog in `seed_e2e` (idempotent): departments, clinic rooms, wards and beds, three
+  more doctor accounts and weekly schedules, services of every kind in Arabic and English, a cash
+  price list and one list per payer with a version effective from the seed day (plus a scheduled
+  +10% cash version), payers `AMAN` (70%, one pre-approval rule, one exclusion), `NAKHEEL` (fixed
+  copay) and `RAHMA` (ceiling), drugs and consumables with unit hierarchies and two batches each in
+  the main store and the pharmacy, lab tests with reference ranges, tills and reason codes.
+- `manage.py e2e_fixture <name> --json`: named data builders over the services (patient, coverage,
+  visit, order, invoice, approve_invoice, open_shift, pay, close_shift, paid_visit, catalog) that
+  act as a seed user with that user's permission; test databases only. Apps can add their own in
+  `apps/<app>/e2e_fixtures.py`.
+- `e2e/helpers/api.ts`: logged-in, CSRF-aware API clients per seed user (`apiAs`), calls by
+  OpenAPI operation id, and typed factories (`createPatient`, `createVisit`, `orderLines`,
+  `approveInvoice`, `pay`, `openShift`, `closeShift`, `paidVisit`, ...) that use real endpoints
+  through per-module adapters when they exist and the fixture command otherwise; documented in
+  `e2e/README.md`, covered by `e2e/tests/helpers.spec.ts` (`@helpers`).
+- E2E route registry split per module: `e2e/module-routes/<module>.ts` lists a module's screens
+  for the responsive matrix (loaded automatically), and a route with path parameters builds its
+  data with `resolve`.
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)

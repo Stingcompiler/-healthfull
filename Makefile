@@ -120,7 +120,7 @@ seed: migrate ## Load the demo dataset into the dev DB (seed_demo when present, 
 	@cd "$(BACKEND)" && if $(MANAGE) help seed_demo >/dev/null 2>&1; then \
 		echo "seed: running seed_demo"; $(MANAGE) seed_demo; \
 	else \
-		echo "seed: seed_demo not available yet; running seed_e2e (users, center profile, policy)"; \
+		echo "seed: seed_demo not available yet; running seed_e2e (users, center, policy, base catalog)"; \
 		ALLOW_SEED_E2E=1 $(MANAGE) seed_e2e; \
 	fi
 

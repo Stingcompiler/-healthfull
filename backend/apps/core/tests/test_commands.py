@@ -10,7 +10,12 @@ import pytest
 from django.core.management import CommandError, call_command
 from django.utils import timezone
 
-from apps.core.management.commands.seed_e2e import DEPARTMENTS, E2E_PASSWORD, USERS
+from apps.core.management.commands.seed_e2e import (
+    DEPARTMENTS,
+    DOCTOR_USERS,
+    E2E_PASSWORD,
+    USERS,
+)
 from apps.core.models import (
     CenterProfile,
     Department,
@@ -104,10 +109,20 @@ def test_seed_creates_the_contract_dataset(settings: Any) -> None:
         "Dental",
         "Laboratory",
         "Pharmacy",
+        "Procedures and Nursing",
+        "Emergency",
+        "Inpatient Ward",
     }
     assert all(name for name in Department.objects.values_list("name_ar", flat=True))
     profile = DoctorProfile.objects.get(user__username="doctor")
     assert profile.department.code == "GEN"
+    # Three more doctor accounts (role doctor only) for the clinic screens.
+    for spec in DOCTOR_USERS:
+        extra = User.objects.get(username=spec.username)
+        assert extra.role_codes() == ["doctor"]
+        assert extra.check_password(E2E_PASSWORD)
+        assert not extra.must_change_password
+    assert "3 more doctors (3 new)" in output
     center = CenterProfile.load()
     assert center.name_ar
     assert center.name_en
@@ -169,7 +184,8 @@ def test_seed_refuses_without_debug(settings: Any, monkeypatch: pytest.MonkeyPat
     assert not User.objects.exists()
     monkeypatch.setenv("ALLOW_SEED_E2E", "1")
     call_command("seed_e2e", stdout=StringIO())
-    assert User.objects.count() == 12
+    # 11 role users, 3 more doctors and the break-glass superuser.
+    assert User.objects.count() == 15
 
 
 @pytest.mark.django_db

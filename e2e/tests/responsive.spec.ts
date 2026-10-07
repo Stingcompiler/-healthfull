@@ -14,7 +14,7 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
-import { FRONTEND_DIR } from "../env";
+import { BASE_URL, FRONTEND_DIR } from "../env";
 import { ADMIN_STATE, ANONYMOUS_STATE, PHARMACIST_STATE } from "../fixtures/state";
 import {
   expectNoHorizontalScroll,
@@ -27,7 +27,7 @@ import {
   type Lang,
   type Theme,
 } from "../helpers";
-import { routeByName, ROUTES } from "../routes";
+import { routeByName, ROUTES, visitPath } from "../routes";
 
 const VIEWPORTS = [
   { label: "phone", width: 375, height: 812 },
@@ -52,10 +52,11 @@ for (const viewport of VIEWPORTS) {
               const logged = trackConsoleErrors(page, { allowAnonymousMe: !route.auth });
               await setPrefs(page, { theme, lang });
 
-              await page.goto(route.path);
+              const target = await visitPath(route);
+              await page.goto(target);
               await expect(route.ready(page)).toBeVisible();
               // Still on the route: no bounce to /login, no redirect elsewhere.
-              expect(new URL(page.url()).pathname).toBe(route.path);
+              expect(new URL(page.url()).pathname).toBe(new URL(target, BASE_URL).pathname);
               await expectPrefsApplied(page, { theme, lang });
               await page.evaluate(() => document.fonts.ready.then(() => undefined));
 
@@ -171,7 +172,7 @@ test.describe("@responsive touch targets at 375px", () => {
       const page = await context.newPage();
       try {
         await setPrefs(page, { theme: "light", lang: "ar" });
-        await page.goto(route.path);
+        await page.goto(await visitPath(route));
         await expect(route.ready(page)).toBeVisible();
         await page.evaluate(() => document.fonts.ready.then(() => undefined));
         const small = await page.evaluate(() => {

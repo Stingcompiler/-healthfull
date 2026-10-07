@@ -6,7 +6,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 |---|---|---|
 | 0. Foundation | done (merged PR #1); Docker run pending in CI | `make check` and `make e2e` green locally; Docker exit gate (`docker compose up` shows a working login) not run: no Docker on the build machine, first run is the CI `docker` job |
 | 1. Domain core + schema | done on `feat/1-domain-core`; merge to main pending | backend 1290 tests (396 domain), all passing; ADR 0006; follow-ups below |
-| 2. Patients and visits | next (wave a) | |
+| 2. Patients and visits | next (wave a) | shared e2e ground ready on `wave/a` (seed catalog, `e2e_fixture`, `e2e/helpers/api.ts`) |
 | 3. Doctor and orders | next (wave a) | |
 | 4. Billing, payments, shifts | next (wave a) | |
 | 5. Pharmacy, lab, procedures | not started | |
@@ -105,3 +105,15 @@ including the full money cycle with a shift variance and a transfer rejected aft
   (app and maintenance as `hospital_app`, migrations as `hospital_owner`). `make check` green:
   backend 1290 passed, frontend 399 passed, api-check no drift (shellcheck not installed here).
   `make e2e` 482 passed. `make infra-test` 48 checks passed. Docker steps still first run in CI.
+- 2026-10-07: Wave a preparation on `wave/a` (from `feat/1-domain-core`): `seed_e2e` now seeds a
+  realistic base catalog (9 departments, 4 doctors with schedules, 34 services of every kind, cash +
+  3 payer price lists with effective versions, payers with percentage/copay/ceiling rules and one
+  exclusion, 12 stock items with units and two batches in two stores, 6 lab tests with ranges,
+  wards and 9 beds, tills, reason codes). `manage.py e2e_fixture` builds patients, visits, orders,
+  invoices, payments and shifts through the services as the acting seed user;
+  `e2e/helpers/api.ts` gives per-role CSRF-aware API clients and typed factories that switch to
+  real endpoints through `e2e/helpers/adapters/<module>.ts` (see `e2e/README.md`); screens are
+  listed per module in `e2e/module-routes/<module>.ts`. Module builders of wave a need no edits
+  to these shared files (still shared: `errors.json` and the generated OpenAPI files).
+  `make check` green (backend 1321 passed, frontend 399 passed, no API drift; shellcheck not
+  installed here); `make e2e` 491 passed (9 new `@helpers` tests).

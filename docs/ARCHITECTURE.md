@@ -260,7 +260,7 @@ Service line state colors (`--state-*`): requested slate, invoiced blue, paid li
 | Frontend | vitest + Testing Library | Components with logic, i18n key parity |
 | E2E | Playwright (chromium) | Each feature's main flow at 3 viewports; overflow check for every route × 3 viewports × 3 themes × 2 languages; screenshots to `artifacts/screens/<route>-<viewport>-<theme>-<lang>.png` for (ar,light), (en,dark), (ar,warm) |
 
-E2E seed users (one per role) are created by `manage.py seed_e2e`; credentials live in `e2e/fixtures/users.ts` and `backend/apps/core/management/commands/seed_e2e.py` only (test values, never real).
+E2E seed users (one per role, plus three more doctors) are created by `manage.py seed_e2e`; credentials live in `e2e/fixtures/users.ts` and `backend/apps/core/management/commands/seed_e2e.py` only (test values, never real). The same command seeds the base catalog (`backend/apps/core/e2e/catalog.py`: departments, doctors' schedules, services, price lists, payers and coverage rules, stock, lab tests, wards and beds). Specs build further data with the factories in `e2e/helpers/api.ts`, which call the real endpoints through registered adapters when they exist and otherwise `manage.py e2e_fixture` (builders over the services, test databases only); see `e2e/README.md`.
 
 ## 7. Git workflow (see `.claude/skills/ship-feature/SKILL.md`)
 

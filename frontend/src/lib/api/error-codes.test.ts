@@ -23,6 +23,9 @@ const sources = import.meta.glob<string>(
     "!../../../../backend/**/tests/**",
     "!../../../../backend/**/migrations/**",
     "!../../../../backend/**/management/**",
+    // e2e data builders (manage.py e2e_fixture) run only from the command line, never in a response.
+    "!../../../../backend/**/e2e/**",
+    "!../../../../backend/**/e2e_fixtures.py",
   ],
   { query: "?raw", import: "default", eager: true },
 );

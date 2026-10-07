@@ -51,6 +51,31 @@ export const USERS = {
 } as const satisfies Record<string, E2EUser>;
 
 /**
+ * More doctor accounts (role `doctor`, same E2E_PASSWORD) seeded with the base catalog, one per
+ * clinic department besides general practice. Each has a schedule and a consultation fee
+ * service (backend/apps/core/e2e/catalog.py, EXTRA_DOCTORS). `USERS.doctor` is the general
+ * practitioner (department GEN, CONS-GEN).
+ */
+export const EXTRA_DOCTORS = {
+  pediatrician: {
+    username: "pediatrician",
+    role: "doctor",
+    fullNameAr: "د. فاطمة الزين",
+    fullNameEn: "Dr. Fatima Alzain",
+  },
+  gynecologist: { username: "gynecologist", role: "doctor", fullNameAr: "د. سلمى عوض", fullNameEn: "Dr. Salma Awad" },
+  dentist: { username: "dentist", role: "doctor", fullNameAr: "د. ياسر النور", fullNameEn: "Dr. Yasir Alnour" },
+} as const satisfies Record<string, E2EUser>;
+
+/** Department code of each seeded doctor (USERS.doctor and EXTRA_DOCTORS). */
+export const DOCTOR_DEPARTMENTS = {
+  doctor: "GEN",
+  pediatrician: "PED",
+  gynecologist: "GYN",
+  dentist: "DEN",
+} as const;
+
+/**
  * Break-glass superuser seeded apart from the role users (`root`, no role, every registered
  * permission through is_superuser). The `admin` user above is a normal user holding the admin
  * role, so specs exercise that role's real permissions. Use root only to test the superuser.
@@ -60,9 +85,19 @@ export const SUPERUSER = { username: "root", fullNameAr: "حساب الطوار�
 /** Seed user key, e.g. "cashier". `login(page, "cashier")`. */
 export type UserKey = keyof typeof USERS;
 
-/** Accepts a seed user key ("cashsup") or a role code ("cashier_supervisor"). */
-export function resolveUser(who: UserKey | RoleCode): E2EUser {
+/** One of the extra doctor accounts, e.g. "pediatrician". */
+export type ExtraDoctorKey = keyof typeof EXTRA_DOCTORS;
+
+/** Any seeded login: a role user key, an extra doctor or a role code. */
+export type SeedUser = UserKey | ExtraDoctorKey | RoleCode;
+
+/**
+ * Accepts a seed user key ("cashsup"), an extra doctor ("pediatrician") or a role code
+ * ("cashier_supervisor"; a role code means the role user, so "doctor" is USERS.doctor).
+ */
+export function resolveUser(who: SeedUser): E2EUser {
   if (who in USERS) return USERS[who as UserKey];
+  if (who in EXTRA_DOCTORS) return EXTRA_DOCTORS[who as ExtraDoctorKey];
   const byRole = Object.values(USERS).find((user) => user.role === who);
   if (!byRole) throw new Error(`No e2e seed user for "${who}"`);
   return byRole;
