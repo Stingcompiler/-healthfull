@@ -1,0 +1,62 @@
+# hospital-agent configuration. Copy to config.toml next to the executable (or pass --config).
+# The agent refuses to start on unsafe values: non-loopback host, short or placeholder token.
+
+[server]
+# Loopback only. The web app in this workstation's browser calls http://127.0.0.1:9123.
+host = "127.0.0.1"
+port = 9123
+
+# Shared secret the web app sends as "Authorization: Bearer <token>". At least 24 characters.
+# Generate one per workstation, e.g.:  python -c "import secrets; print(secrets.token_urlsafe(32))"
+# Use either token or token_file (a file containing only the token; relative to this file).
+token = "change-me-generate-a-long-random-token"
+# token_file = "agent-token.txt"
+
+# Origins of the hospital-sys web app allowed to call the agent from the browser (CORS).
+# Use exactly what appears in the browser address bar, without a path.
+allowed_origins = ["http://hospital.lan", "http://192.168.1.10"]
+
+# true: never touch a printer; write each job's bytes to dry_run_dir/<job-id>.bin instead.
+# Use it for first setup, training and tests.
+dry_run = true
+dry_run_dir = "print-out"
+
+# Request body limit in bytes.
+max_body_bytes = 65536
+
+[receipt_printer]
+enabled = true
+# usb | network | file | win32
+#   network: Ethernet/Wi-Fi printers on raw port 9100 (recommended; no drivers needed)
+#   usb:     direct USB via libusb (Linux; on Windows prefer win32)
+#   file:    a device node such as /dev/usb/lp0 (Linux)
+#   win32:   an installed Windows printer queue name, sent RAW through the spooler
+transport = "network"
+host = "192.168.1.50"
+port = 9100
+timeout_s = 10
+# vendor_id = 0x0416      # usb only (see `lsusb`)
+# product_id = 0x5011     # usb only
+# device_path = "/dev/usb/lp0"          # file only
+# win32_printer = "POS-80 Receipt"      # win32 only
+
+# python-escpos capability profile. TM-T20II / RP-F10-80mm describe common 80mm printers.
+profile = "TM-T20II"
+# Characters per line at font A: 48 for 80mm paper (576 dots), 32 for 58mm.
+columns = 48
+cut = true
+# Use the printer's built-in QR command. Set false to print the QR as an image instead.
+qr_native = true
+
+[label_printer]
+enabled = true
+# zpl: Zebra and compatible label printers. escpos: thermal printers in label mode.
+language = "zpl"
+transport = "network"
+host = "192.168.1.51"
+port = 9100
+timeout_s = 10
+width_mm = 50
+height_mm = 25
+dpi = 203
+profile = "default"

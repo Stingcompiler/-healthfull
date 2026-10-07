@@ -1,0 +1,10 @@
+{
+  "queue": {
+    "title": "Queue",
+    "description": "Today's paid visits and the order patients see the doctor."
+  },
+  "appointments": {
+    "title": "Appointments",
+    "description": "Book, reschedule, and convert appointments to visits per doctor."
+  }
+}

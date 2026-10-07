@@ -1,0 +1,87 @@
+# hospital-sys: Caddy serves the SPA and reverse proxies the Django app (infra/docker-compose.yml).
+#
+# Environment (all optional; see .env.example):
+#   CADDY_SITE_ADDRESS   ":80" (default) = plain HTTP on the LAN.
+#                        "hospital.lan" or "hospital.lan, 192.168.1.10" = HTTPS with certificates
+#                        from Caddy's internal CA (no internet, no ACME). Workstations must trust
+#                        the CA once: docs/runbooks/install.md "Internal TLS".
+#   APP_UPSTREAM         Django upstream, default app:8000
+#   DEVICE_AGENT_ORIGIN  local device agent origin allowed by the CSP, default http://127.0.0.1:9123
+#   CADDY_MAX_BODY       request body limit (Excel imports), default 25MB
+
+{
+	# Every certificate comes from Caddy's local CA: the server never contacts Let's Encrypt.
+	local_certs
+	# Inside a container there is no system trust store to install the CA into.
+	skip_install_trust
+}
+
+(security_headers) {
+	# Deferred (because of "-Server"), so these also replace whatever the upstream sent.
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		Cross-Origin-Opener-Policy "same-origin"
+		Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=(), usb=()"
+		-Server
+	}
+}
+
+# Internal health listener, never published (compose healthcheck and infra/update.sh):
+#   /index.html          the SPA build is in place
+#   /api/ops/health      Caddy reaches the app
+http://127.0.0.1:8081 {
+	bind 127.0.0.1
+	handle /api/ops/health {
+		reverse_proxy {$APP_UPSTREAM:app:8000}
+	}
+	handle {
+		root * /srv
+		file_server
+	}
+}
+
+{$CADDY_SITE_ADDRESS::80} {
+	import security_headers
+	encode zstd gzip
+
+	request_body {
+		max_size {$CADDY_MAX_BODY:25MB}
+	}
+
+	# Django: API, admin, and its static files (served by whitenoise inside the app).
+	@backend path /api /api/* /admin /admin/* /static/*
+	handle @backend {
+		reverse_proxy {$APP_UPSTREAM:app:8000} {
+			# X-Forwarded-For/-Proto/-Host are set by Caddy; Django trusts them only when
+			# DJANGO_TRUST_X_FORWARDED_PROTO / DJANGO_TRUST_X_FORWARDED_FOR are enabled.
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 120s
+			}
+		}
+	}
+
+	# The single-page app (React build in /srv).
+	handle {
+		root * /srv
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' {$DEVICE_AGENT_ORIGIN:http://127.0.0.1:9123}; worker-src 'self' blob:; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+
+		# Vite's content-hashed bundles never change: cache forever. A missing asset is a 404,
+		# never index.html, so a stale tab fails loudly instead of parsing HTML as JavaScript.
+		@assets path /assets/*
+		handle @assets {
+			header Cache-Control "public, max-age=31536000, immutable"
+			file_server
+		}
+
+		# Everything else (index.html, boot.js, favicon, client-side routes) revalidates, so an
+		# update reaches every workstation on the next page load.
+		handle {
+			header Cache-Control "no-cache"
+			try_files {path} /index.html
+			file_server
+		}
+	}
+}

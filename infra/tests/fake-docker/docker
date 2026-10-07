@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Fake `docker` for infra/tests/test_update.sh. Records every call in $FAKE_STATE/calls.log and
+# simulates outcomes from FAKE_* variables. Never touches a real Docker daemon.
+set -euo pipefail
+: "${FAKE_STATE:?FAKE_STATE must point to a writable directory}"
+
+health_for() {
+  local key
+  key="FAKE_HEALTH_$(printf '%s' "$1" | tr '.-' '__')"
+  printf '%s' "${!key:-ok}"
+}
+
+record() { echo "TAG=${APP_IMAGE_TAG:-} $*" >>"$FAKE_STATE/calls.log"; }
+
+if [[ "${1:-}" != "compose" ]]; then record "$@"; fi
+if [[ "${1:-}" == "load" ]]; then echo "Loaded image"; exit 0; fi
+if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+  [[ -n "${FAKE_MISSING_IMAGE:-}" && "$3" == *"$FAKE_MISSING_IMAGE"* ]] && exit 1
+  exit 0
+fi
+[[ "${1:-}" == "compose" ]] || { echo "fake docker: unsupported: $*" >&2; exit 99; }
+shift
+[[ "${1:-}" == "version" ]] && { echo "Docker Compose version v2.99.0-fake"; exit 0; }
+while [[ "${1:-}" == "--env-file" || "${1:-}" == "-f" ]]; do shift 2; done
+record compose "$@" # normalised: global options stripped
+
+sub="${1:-}"
+shift || true
+args="$*"
+case "$sub" in
+  pull) exit "${FAKE_PULL_EXIT:-0}" ;;
+  stop) echo "stopped" >"$FAKE_STATE/running"; exit 0 ;;
+  up) echo "${APP_IMAGE_TAG:-}" >"$FAKE_STATE/running"; exit "${FAKE_UP_EXIT:-0}" ;;
+  exec)
+    running="$(cat "$FAKE_STATE/running")"
+    [[ "$running" == "stopped" ]] && { echo "unreachable -"; exit 0; }
+    echo "$(health_for "$running") $running"
+    exit 0
+    ;;
+  run)
+    case "$args" in
+      *"app manage check"*) exit "${FAKE_CHECK_EXIT:-0}" ;;
+      *"app manage migrate --plan"*) echo "Planned operations:"; echo "core.0002_example"; exit 0 ;;
+      *"app manage migrate --check"*) [[ "${FAKE_PENDING:-0}" == "1" ]] && exit 1; exit 0 ;;
+      *"app migrate"*) exit "${FAKE_MIGRATE_EXIT:-0}" ;;
+      *"backup-nightly.sh"*)
+        if [[ "${FAKE_BACKUP_EXIT:-0}" == "3" ]]; then
+          echo "2026-10-06T00:00:00Z [backup] WARNING: media archive failed" >&2
+          echo "/backups/dumps/hospital-20261006T000000Z-pre-update.dump"
+          exit 3
+        fi
+        [[ "${FAKE_BACKUP_EXIT:-0}" != "0" ]] && { echo "pg_dump: error" >&2; exit "$FAKE_BACKUP_EXIT"; }
+        echo "2026-10-06T00:00:00Z [backup] dump ok" >&2
+        echo "/backups/dumps/hospital-20261006T000000Z-pre-update.dump"
+        exit 0
+        ;;
+      *"restore-dump.sh"*) exit "${FAKE_RESTORE_EXIT:-0}" ;;
+    esac
+    ;;
+esac
+echo "fake docker: unhandled compose $sub $args" >&2
+exit 98

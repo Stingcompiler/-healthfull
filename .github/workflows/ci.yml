@@ -1,0 +1,349 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the run in progress.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "24"
+  UV_VERSION: "0.12.15"
+  FORCE_COLOR: "1"
+
+jobs:
+  backend:
+    name: backend (ruff, mypy, pytest + Hypothesis)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      DB_NAME: hospital_ci
+      HYPOTHESIS_PROFILE: ci
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - name: No missing migrations
+        run: uv run python manage.py makemigrations --check --dry-run
+      - run: uv run mypy
+      - run: uv run pytest
+
+  frontend:
+    name: frontend (eslint, prettier, tsc, vitest, build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  api-drift:
+    name: api drift (openapi.json and schema.d.ts are current)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: uv sync --locked
+        working-directory: backend
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      # Regenerates both files, then fails on any difference from the commit.
+      - run: make api-check
+
+  e2e:
+    name: e2e (Playwright, chromium)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      CI: "true"
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: |
+            frontend/pnpm-lock.yaml
+            e2e/pnpm-lock.yaml
+      - run: uv sync --locked
+        working-directory: backend
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm install --frozen-lockfile
+        working-directory: e2e
+      - name: Typecheck e2e
+        run: pnpm typecheck
+        working-directory: e2e
+      - name: Playwright version
+        id: playwright
+        working-directory: e2e
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+      - name: Install chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: e2e
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Install chromium system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: e2e
+        run: pnpm exec playwright install-deps chromium
+      # scripts/e2e.sh: reset e2e_hospital_<hash>, seed_e2e, start backend and frontend on
+      # per-checkout ports, run Playwright (chromium only), write artifacts/screens/.
+      - name: Run e2e
+        run: make e2e
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screens
+          path: artifacts/screens/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+            e2e/.logs/
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 14
+
+  agent:
+    name: device agent (ruff, mypy, pytest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: agent/uv.lock
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run pytest
+
+  infra:
+    name: infra (shellcheck, backup/restore and update.sh tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      REQUIRE_PG: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - name: PostgreSQL 16 client tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+      - name: Shell syntax and shellcheck
+        run: |
+          shellcheck --version
+          scripts/lint-shell.sh
+      - name: Infra tests
+        run: bash infra/tests/run.sh
+
+  docker:
+    name: docker (build images, compose smoke test; no push)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build app image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/app.Dockerfile
+          build-args: APP_VERSION=ci
+          tags: hospital-sys/app:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/web.Dockerfile
+          build-args: APP_VERSION=ci
+          tags: hospital-sys/web:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+      - name: Build db/backup image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/db.Dockerfile
+          tags: hospital-sys/db:16
+          load: true
+          push: false
+          cache-from: type=gha,scope=db
+          cache-to: type=gha,mode=max,scope=db
+      - name: Prepare .env (CI-only values)
+        run: |
+          cp .env.example .env
+          sed -i \
+            -e 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-only-password-not-secret/' \
+            -e 's/^DJANGO_SECRET_KEY=.*/DJANGO_SECRET_KEY=ci-only-secret-key-not-for-production-0123456789/' \
+            -e 's/^APP_IMAGE_TAG=.*/APP_IMAGE_TAG=ci/' \
+            -e 's/^HTTP_PORT=.*/HTTP_PORT=8080/' \
+            -e 's/^HTTPS_PORT=.*/HTTPS_PORT=8443/' \
+            -e "s|^BACKUP_HOST_DIR=.*|BACKUP_HOST_DIR=${RUNNER_TEMP}/backups|" \
+            -e "s|^PGBACKREST_REPO_HOST_DIR=.*|PGBACKREST_REPO_HOST_DIR=${RUNNER_TEMP}/pgbackrest|" \
+            .env
+          infra/compose.sh config --quiet
+      - name: Start the stack
+        run: infra/compose.sh up -d --no-build --pull never
+      - name: Smoke test through Caddy
+        run: |
+          set -euo pipefail
+          base=http://127.0.0.1:8080
+          for i in $(seq 1 60); do
+            if curl -fsS "$base/api/ops/health" | tee /tmp/health.json | grep -q '"status": *"ok"'; then break; fi
+            [ "$i" -eq 60 ] && { echo "app never became healthy"; exit 1; }
+            sleep 3
+          done
+          cat /tmp/health.json; echo
+          curl -fsS "$base/" | grep -q 'id="root"'
+          curl -fsS "$base/patients/123" | grep -q 'id="root"'          # SPA history fallback
+          curl -fsSI "$base/" | grep -qi '^content-security-policy:'
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$base/assets/missing.js")" = 404
+          curl -fsS -o /dev/null "$base/static/admin/css/base.css"       # whitenoise via proxy
+          curl -fsS -c /tmp/jar -o /dev/null -w '%{http_code}\n' "$base/api/auth/csrf"
+          token="$(awk '$6 == "csrftoken" {print $7}' /tmp/jar)"
+          code="$(curl -s -b /tmp/jar -o /tmp/login.json -w '%{http_code}' -X POST \
+            -H 'Content-Type: application/json' -H "X-CSRFToken: $token" -H "Referer: $base/" \
+            -d '{"username":"nobody","password":"wrong-password"}' "$base/api/auth/login")"
+          cat /tmp/login.json; echo
+          test "$code" = 401 && grep -q INVALID_CREDENTIALS /tmp/login.json
+      - name: Backup and restore test in the sidecar
+        run: |
+          set -euo pipefail
+          infra/compose.sh run --rm --no-deps -T backup /opt/backup/backup-nightly.sh
+          infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-test.sh
+          cat "${RUNNER_TEMP}"/backups/status/*.jsonl
+      - name: Logs on failure
+        if: failure()
+        run: infra/compose.sh logs --no-color --tail=200
+      - name: Tear down
+        if: always()
+        run: infra/compose.sh down -v --remove-orphans

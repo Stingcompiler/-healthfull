@@ -1,0 +1,245 @@
+# hospital-sys production stack for the clinic server (docs/runbooks/install.md).
+#
+# Always run through the wrapper, which passes the env file (ENV_FILE, default the repo-root
+# .env) both for interpolation and to the containers:
+#   infra/compose.sh up -d            infra/compose.sh ps            infra/compose.sh logs -f app
+# Equivalent:  ENV_FILE=$PWD/.env docker compose --env-file .env -f infra/docker-compose.yml <command>
+#
+# Services
+#   db           PostgreSQL 16 (+ pgBackRest for optional WAL archiving), data in `pgdata`
+#   app          Django + gunicorn; not published, reachable only through `web`
+#   web          Caddy (non-root): the SPA, reverse proxy to app, compression, headers, TLS
+#   backup       nightly verified dump + monthly restore test (infra/backup), same image as db
+#   maintenance  daily housekeeping in the app image (expired sessions, login throttles)
+#
+# Published ports bind to BIND_IP. Docker writes its own iptables rules, so a host firewall
+# such as ufw does NOT filter them: set BIND_IP to the server's LAN address
+# (docs/runbooks/install.md "Firewall").
+#
+# Updates go through infra/update.sh (backup, dry-run migrations, swap, health check, rollback).
+
+name: ${COMPOSE_PROJECT_NAME:-hospital}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-db-image: &db-image ${IMAGE_REGISTRY:-hospital-sys}/db:${DB_IMAGE_TAG:-16}
+
+x-db-build: &db-build
+  context: ..
+  dockerfile: infra/docker/db.Dockerfile
+
+services:
+  db:
+    image: *db-image
+    build: *db-build
+    restart: unless-stopped
+    env_file:
+      - path: ${ENV_FILE:-../.env}
+        required: true
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hospital}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${DB_NAME:-hospital}
+      # Page checksums let PostgreSQL and pgBackRest detect disk corruption early.
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+      TZ: ${TZ:-Africa/Khartoum}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${PG_SHARED_BUFFERS:-512MB}
+      - -c
+      - effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-2GB}
+      - -c
+      - max_wal_size=${PG_MAX_WAL_SIZE:-2GB}
+      - -c
+      - log_min_duration_statement=${PG_LOG_MIN_DURATION_MS:-2000}
+      # WAL archiving to pgBackRest; "on" only after `stanza-create` (docs/runbooks/backup-restore.md).
+      - -c
+      - archive_mode=${PG_ARCHIVE_MODE:-off}
+      - -c
+      - archive_command=pgbackrest --stanza=${PGBACKREST_STANZA:-hospital} archive-push %p
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - pgsocket:/var/run/postgresql
+      - ${PGBACKREST_REPO_HOST_DIR:-/srv/hospital/pgbackrest}:/var/lib/pgbackrest
+    healthcheck:
+      # TCP on purpose: during first-time init the temporary server listens on the socket only.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    shm_size: 256m
+    stop_grace_period: 60s
+    logging: *logging
+
+  app:
+    image: ${IMAGE_REGISTRY:-hospital-sys}/app:${APP_IMAGE_TAG:-dev}
+    build:
+      context: ..
+      dockerfile: infra/docker/app.Dockerfile
+      args:
+        APP_VERSION: ${APP_IMAGE_TAG:-dev}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: ${ENV_FILE:-../.env}
+        required: true
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-hospital}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:-hospital}
+      APP_VERSION: ${APP_IMAGE_TAG:-dev}
+      # Read by the ops status page (backup and restore-test JSON lines).
+      BACKUP_STATUS_DIR: /var/lib/hospital/backup-status
+      # The app never needs backup encryption or cloud credentials: blank them here.
+      PGBACKREST_REPO1_CIPHER_PASS: ""
+      PGBACKREST_REPO2_S3_KEY: ""
+      PGBACKREST_REPO2_S3_KEY_SECRET: ""
+      PGBACKREST_REPO2_CIPHER_PASS: ""
+    volumes:
+      - media:/var/lib/hospital/media
+      - ${BACKUP_HOST_DIR:-/srv/hospital/backups}/status:/var/lib/hospital/backup-status:ro
+    expose:
+      - "8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *logging
+
+  web:
+    image: ${IMAGE_REGISTRY:-hospital-sys}/web:${APP_IMAGE_TAG:-dev}
+    build:
+      context: ..
+      dockerfile: infra/docker/web.Dockerfile
+      args:
+        APP_VERSION: ${APP_IMAGE_TAG:-dev}
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    ports:
+      - "${BIND_IP:-0.0.0.0}:${HTTP_PORT:-80}:80"
+      - "${BIND_IP:-0.0.0.0}:${HTTPS_PORT:-443}:443"
+    # Caddy runs as a non-root user (web.Dockerfile) with no capabilities at all: binding 80
+    # and 443 inside the container's own network namespace needs only this namespaced sysctl
+    # (Docker's default since 20.10; stated here so it never depends on the daemon version).
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: 0
+    environment:
+      CADDY_SITE_ADDRESS: "${CADDY_SITE_ADDRESS:-:80}"
+      APP_UPSTREAM: "app:8000"
+      DEVICE_AGENT_ORIGIN: "${DEVICE_AGENT_ORIGIN:-http://127.0.0.1:9123}"
+      CADDY_MAX_BODY: "${CADDY_MAX_BODY:-25MB}"
+    volumes:
+      - caddy_data:/var/lib/caddy/data
+      - caddy_config:/var/lib/caddy/config
+    healthcheck:
+      # Internal listener (Caddyfile): proves the SPA is in place and the proxy reaches the app,
+      # whatever CADDY_SITE_ADDRESS (plain HTTP or TLS) is set to.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *logging
+
+  backup:
+    image: *db-image
+    build: *db-build
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["backup-scheduler"]
+    init: true
+    env_file:
+      - path: ${ENV_FILE:-../.env}
+        required: true
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-hospital}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_USER: ${POSTGRES_USER:-hospital}
+      DB_NAME: ${DB_NAME:-hospital}
+      BACKUP_DIR: /backups
+      MEDIA_DIR: /var/lib/hospital/media
+      TZ: ${TZ:-Africa/Khartoum}
+    volumes:
+      - ${BACKUP_HOST_DIR:-/srv/hospital/backups}:/backups
+      - ${PGBACKREST_REPO_HOST_DIR:-/srv/hospital/pgbackrest}:/var/lib/pgbackrest
+      # pgBackRest reads the data directory and talks to the server over the shared socket.
+      - pgdata:/var/lib/postgresql/data:ro
+      - pgsocket:/var/run/postgresql
+      # Uploaded files, read through group 10001 (the db image adds postgres to it). Mounted at
+      # a path that does not exist in the db image and with nocopy, so a backup container never
+      # re-stamps the volume's ownership: only the app image (10001:10001, 0750) does.
+      - type: volume
+        source: media
+        target: /var/lib/hospital/media
+        read_only: true
+        volume:
+          nocopy: true
+    # docker stop: the scheduler passes SIGTERM to a running backup, which then removes its
+    # partial files and records the interruption; a large pg_dump needs time to stop cleanly.
+    stop_grace_period: 300s
+    logging: *logging
+
+  maintenance:
+    image: ${IMAGE_REGISTRY:-hospital-sys}/app:${APP_IMAGE_TAG:-dev}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    # Once at start, then daily: `manage.py maintenance` (expired sessions, stale throttles).
+    command: ["maintenance-loop"]
+    init: true
+    env_file:
+      - path: ${ENV_FILE:-../.env}
+        required: true
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-hospital}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:-hospital}
+      APP_VERSION: ${APP_IMAGE_TAG:-dev}
+      MAINTENANCE_INTERVAL_SECONDS: ${MAINTENANCE_INTERVAL_SECONDS:-86400}
+      PGBACKREST_REPO1_CIPHER_PASS: ""
+      PGBACKREST_REPO2_S3_KEY: ""
+      PGBACKREST_REPO2_S3_KEY_SECRET: ""
+      PGBACKREST_REPO2_CIPHER_PASS: ""
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      disable: true
+    logging: *logging
+
+volumes:
+  pgdata:
+  pgsocket:
+  media:
+  caddy_data:
+  caddy_config:

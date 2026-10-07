@@ -1,0 +1,22 @@
+{
+  "title": "Dashboard",
+  "greeting": "Welcome, {{name}}",
+  "subtitle": "Today at the center at a glance",
+  "kpi": {
+    "visitsToday": "Visits today",
+    "queueWaiting": "Waiting in queue",
+    "collectedToday": "Confirmed collections today",
+    "pendingTransfers": "Transfers pending verification",
+    "noData": "No data yet"
+  },
+  "setupAlert": {
+    "title": "System setup in progress",
+    "description": "Figures will appear here once the registration, billing, and payment modules are enabled."
+  },
+  "activity": {
+    "title": "Today's activity",
+    "emptyTitle": "No activity yet today",
+    "emptyDescription": "Once the first visit is registered, today's orders, invoices, and payments will appear here.",
+    "emptyAction": "Open patient records"
+  }
+}

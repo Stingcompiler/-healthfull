@@ -1,0 +1,17 @@
+# Build context is the repo root; only backend/ and the entrypoint are needed.
+*
+!backend/
+!infra/docker/app-entrypoint.sh
+backend/.venv/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/.hypothesis/
+backend/htmlcov/
+backend/.coverage
+backend/staticfiles/
+backend/media/
+backend/.env
+backend/.env.*

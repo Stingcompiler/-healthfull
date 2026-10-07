@@ -1,0 +1,5 @@
+# Local operator state: never commit
+logs/
+.update.lock/
+.update.flock
+.update.state

@@ -1,0 +1,5 @@
+# Build context is the repo root; only the backup scripts and the entrypoint are needed.
+*
+!infra/backup/
+!infra/docker/db-entrypoint.sh
+infra/backup/examples/

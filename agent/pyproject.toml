@@ -1,0 +1,60 @@
+[project]
+name = "hospital-agent"
+version = "0.1.0"
+description = "Local device agent for hospital-sys workstations: thermal receipt and label printing over a loopback HTTP API"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "python-escpos[usb]>=3.1,<4",
+    # Windows workstations print RAW through the spooler (transport = "win32").
+    "pywin32>=306; sys_platform == 'win32'",
+]
+
+[project.scripts]
+hospital-agent = "hospital_agent.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.7",
+    "mypy>=1.13",
+]
+build = [
+    "pyinstaller>=6.10",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hospital_agent"]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "PL", "N"]
+ignore = ["PLR2004", "PLR0913"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "PLR2004"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+packages = ["hospital_agent"]
+
+[[tool.mypy.overrides]]
+module = ["escpos", "escpos.*", "usb", "usb.*"]
+ignore_missing_imports = true

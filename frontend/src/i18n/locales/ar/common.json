@@ -1,0 +1,233 @@
+{
+  "appName": "نظام المركز الطبي",
+  "appShortName": "المركز الطبي",
+  "appTagline": "من التسجيل حتى إغلاق الوردية",
+  "actions": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "search": "بحث",
+    "clear": "مسح",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "add": "إضافة",
+    "retry": "إعادة المحاولة",
+    "submit": "إرسال",
+    "continue": "متابعة",
+    "apply": "تطبيق",
+    "reset": "إعادة الضبط",
+    "print": "طباعة",
+    "export": "تصدير",
+    "view": "عرض",
+    "details": "التفاصيل",
+    "more": "المزيد",
+    "moreActions": "إجراءات أخرى",
+    "goHome": "العودة إلى الرئيسية",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور",
+    "dismiss": "تجاهل",
+    "copy": "نسخ",
+    "reload": "إعادة تحميل الصفحة"
+  },
+  "loading": "جارٍ التحميل…",
+  "saving": "جارٍ الحفظ…",
+  "optional": "اختياري",
+  "required": "مطلوب",
+  "status": {
+    "requested": "مطلوب",
+    "invoiced": "مفوتر",
+    "paid": "مدفوع",
+    "performed": "منفذ",
+    "cancelled": "ملغى",
+    "pending_verification": "بانتظار التحقق",
+    "confirmed": "مؤكد",
+    "rejected": "مرفوض"
+  },
+  "statusHint": {
+    "requested": "طُلب ولم يُفوتر بعد",
+    "invoiced": "في فاتورة معتمدة، بانتظار التحصيل",
+    "paid": "حصة المريض محصّلة، جاهز للتنفيذ",
+    "performed": "نُفذت الخدمة",
+    "cancelled": "أُلغي بسبب موثق",
+    "pending_verification": "تحويل لم يُتحقق منه بعد، لا يُحسب محصّلاً",
+    "confirmed": "تحقق منه مستخدم مخوّل",
+    "rejected": "رُفض بعد المراجعة"
+  },
+  "theme": {
+    "label": "المظهر",
+    "change": "تغيير المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "warm": "دافئ"
+  },
+  "language": {
+    "label": "اللغة",
+    "ar": "العربية",
+    "en": "English",
+    "switchTo": "التبديل إلى {{language}}"
+  },
+  "user": {
+    "menu": "قائمة المستخدم",
+    "signedInAs": "تم الدخول باسم",
+    "changePassword": "تغيير كلمة المرور",
+    "logout": "تسجيل الخروج",
+    "designSystem": "دليل التصميم",
+    "roles": "الأدوار",
+    "menuFor": "قائمة المستخدم: {{name}}"
+  },
+  "roles": {
+    "receptionist": "موظف استقبال",
+    "doctor": "طبيب",
+    "cashier": "كاشير",
+    "cashier_supervisor": "مشرف الكاشير",
+    "pharmacist": "صيدلي",
+    "lab_tech": "فني معمل",
+    "lab_supervisor": "مشرف المعمل",
+    "nurse": "ممرض",
+    "accountant": "محاسب",
+    "manager": "مدير",
+    "admin": "مدير النظام"
+  },
+  "sex": {
+    "male": "ذكر",
+    "female": "أنثى"
+  },
+  "patient": {
+    "fileNo": "رقم الملف",
+    "age": "العمر",
+    "sex": "الجنس",
+    "phone": "الهاتف",
+    "allergies": "الحساسية",
+    "allergyAlert": "تنبيه حساسية",
+    "noKnownAllergies": "لا حساسية معروفة",
+    "allergiesUnknown": "الحساسية غير مسجلة",
+    "coverage": "التغطية",
+    "cash": "نقدي",
+    "incompleteFile": "ملف طوارئ غير مكتمل",
+    "years_zero": "أقل من سنة",
+    "years_one": "سنة واحدة",
+    "years_two": "سنتان",
+    "years_few": "{{count}} سنوات",
+    "years_many": "{{count}} سنة",
+    "years_other": "{{count}} سنة",
+    "months_zero": "أقل من شهر",
+    "months_one": "شهر واحد",
+    "months_two": "شهران",
+    "months_few": "{{count}} أشهر",
+    "months_many": "{{count}} شهراً",
+    "months_other": "{{count}} شهر"
+  },
+  "serviceLine": {
+    "qty": "الكمية",
+    "quantity": "الكمية: {{count}}",
+    "unitPrice": "سعر الوحدة",
+    "total": "الإجمالي",
+    "patientShare": "حصة المريض",
+    "payerShare": "حصة جهة التغطية",
+    "authorized": "تنفيذ بتصريح",
+    "orderedBy": "طلبه {{name}}"
+  },
+  "table": {
+    "rowsPerPage": "عدد الصفوف",
+    "pageOf": "صفحة {{page}} من {{pages}}",
+    "range": "{{from}}–{{to}} من {{total}}",
+    "firstPage": "الصفحة الأولى",
+    "previousPage": "الصفحة السابقة",
+    "nextPage": "الصفحة التالية",
+    "lastPage": "الصفحة الأخيرة",
+    "sortBy": "ترتيب حسب {{column}}",
+    "sortedAsc": "مرتب تصاعدياً",
+    "sortedDesc": "مرتب تنازلياً",
+    "actions": "الإجراءات",
+    "rowActions": "إجراءات الصف",
+    "noResultsTitle": "لا توجد نتائج",
+    "noResultsDescription": "جرّب تغيير كلمات البحث أو عوامل التصفية.",
+    "loading": "جارٍ تحميل البيانات…"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "minLength_zero": "يجب ألا يقل عن {{count}} حرف",
+    "minLength_one": "يجب ألا يقل عن حرف واحد",
+    "minLength_two": "يجب ألا يقل عن حرفين",
+    "minLength_few": "يجب ألا يقل عن {{count}} أحرف",
+    "minLength_many": "يجب ألا يقل عن {{count}} حرفاً",
+    "minLength_other": "يجب ألا يقل عن {{count}} حرف",
+    "maxLength_zero": "يجب ألا يزيد عن {{count}} حرف",
+    "maxLength_one": "يجب ألا يزيد عن حرف واحد",
+    "maxLength_two": "يجب ألا يزيد عن حرفين",
+    "maxLength_few": "يجب ألا يزيد عن {{count}} أحرف",
+    "maxLength_many": "يجب ألا يزيد عن {{count}} حرفاً",
+    "maxLength_other": "يجب ألا يزيد عن {{count}} حرف",
+    "invalid": "القيمة غير صالحة",
+    "number": "أدخل رقماً صحيحاً",
+    "phone": "رقم هاتف غير صالح، أدخل 10 أرقام تبدأ بـ 0",
+    "passwordsMismatch": "كلمتا المرور غير متطابقتين",
+    "passwordSameAsOld": "يجب أن تختلف كلمة المرور الجديدة عن الحالية",
+    "passwordNumeric": "لا يمكن أن تتكون كلمة المرور من أرقام فقط",
+    "selectOption": "اختر قيمة من القائمة",
+    "mustAccept": "يجب الموافقة للمتابعة"
+  },
+  "reason": {
+    "title": "سبب الإجراء",
+    "description": "يُسجَّل هذا الإجراء في سجل التعديل باسمك ووقته.",
+    "code": "السبب",
+    "codePlaceholder": "اختر السبب",
+    "note": "تفاصيل إضافية",
+    "notePlaceholder": "اكتب توضيحاً مختصراً",
+    "submit": "تأكيد مع السبب"
+  },
+  "confirm": {
+    "title": "هل أنت متأكد؟",
+    "description": "لا يمكن التراجع عن هذا الإجراء."
+  },
+  "search": {
+    "placeholder": "بحث…",
+    "globalPlaceholder": "ابحث عن صفحة…",
+    "open": "فتح البحث السريع",
+    "commandPlaceholder": "اكتب اسم الصفحة…",
+    "noResults": "لا توجد نتائج مطابقة",
+    "pages": "الصفحات",
+    "clear": "مسح البحث"
+  },
+  "underConstruction": {
+    "title": "الوحدة قيد الإنشاء",
+    "description": "هذه الوحدة ضمن خطة البناء وستتوفر في مرحلة قادمة.",
+    "action": "العودة إلى لوحة المتابعة"
+  },
+  "notFound": {
+    "code": "404",
+    "title": "الصفحة غير موجودة",
+    "description": "ربما تغيّر الرابط أو أُزيلت الصفحة. تأكد من العنوان أو عد إلى الرئيسية."
+  },
+  "errorBoundary": {
+    "title": "حدث خطأ غير متوقع",
+    "description": "تعذّر عرض هذه الصفحة. أعد المحاولة، وإن تكرر الخطأ فأبلغ مسؤول النظام."
+  },
+  "kpi": {
+    "trendUp": "ارتفاع",
+    "trendDown": "انخفاض",
+    "trendFlat": "بلا تغيير",
+    "comparedToYesterday": "مقارنة بالأمس"
+  },
+  "a11y": {
+    "skipToContent": "انتقل إلى المحتوى",
+    "mainNavigation": "التنقل الرئيسي",
+    "mobileNavigation": "التنقل السريع",
+    "loading": "جارٍ التحميل",
+    "dismissAlert": "إغلاق التنبيه"
+  },
+  "shortcuts": {
+    "title": "اختصارات لوحة المفاتيح",
+    "openSearch": "البحث السريع"
+  },
+  "toast": {
+    "saved": "تم الحفظ",
+    "preferencesFailed": "تعذّر حفظ التفضيلات على الخادم، وطُبقت على هذا الجهاز فقط."
+  }
+}

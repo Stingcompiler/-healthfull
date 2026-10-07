@@ -1,0 +1,11 @@
+# Build context is the repo root; only frontend/ and the Caddyfile are needed.
+*
+!frontend/
+!infra/Caddyfile
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+frontend/**/*.tsbuildinfo
+frontend/.env
+frontend/.env.*

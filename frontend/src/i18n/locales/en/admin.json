@@ -1,0 +1,39 @@
+{
+  "title": "Administration",
+  "description": "Center setup, users, catalog, prices, and system.",
+  "open": "Open",
+  "sections": {
+    "users": {
+      "title": "Users",
+      "description": "Create accounts, assign roles, and reset passwords."
+    },
+    "roles": {
+      "title": "Roles & permissions",
+      "description": "The permission matrix per role, with safe defaults."
+    },
+    "catalog": {
+      "title": "Service catalog",
+      "description": "Consultations, lab tests, procedures, drugs, and consumables."
+    },
+    "priceLists": {
+      "title": "Price lists",
+      "description": "Price lists with effective dates and bulk percentage updates."
+    },
+    "payers": {
+      "title": "Payers",
+      "description": "Insurers, contracts, copay rules, and exclusions."
+    },
+    "settings": {
+      "title": "Center settings",
+      "description": "Center profile, policies, reason lists, and numbering."
+    },
+    "imports": {
+      "title": "Imports",
+      "description": "Import patients, items, and prices from Excel with preview."
+    },
+    "system": {
+      "title": "System status",
+      "description": "Server, backups, restore tests, and updates."
+    }
+  }
+}

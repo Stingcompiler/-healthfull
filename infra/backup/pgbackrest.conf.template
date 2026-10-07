@@ -1,0 +1,60 @@
+# pgBackRest configuration for hospital-sys.
+# Rendered by render-pgbackrest-conf.sh at container start; ${VAR} placeholders come from the
+# environment (.env). Blocks between "#BEGIN name" and "#END name" are included only when enabled.
+#
+# repo1: local POSIX repository on the server (mount a second disk; see docs/runbooks/install.md).
+# repo2: S3-compatible object storage, only when PGBACKREST_REPO2_S3_BUCKET is set. One-way: this
+#        server pushes WAL and backups; nothing is ever pulled from the cloud automatically.
+#        Always encrypted client-side (FEATURES 14.5), so the provider only sees ciphertext.
+
+[global]
+repo1-type=posix
+repo1-path=${PGBACKREST_REPO1_PATH}
+repo1-retention-full=${PGBACKREST_REPO1_RETENTION_FULL}
+repo1-retention-full-type=count
+repo1-bundle=y
+repo1-block=y
+#BEGIN repo1-cipher
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass=${PGBACKREST_REPO1_CIPHER_PASS}
+#END repo1-cipher
+#BEGIN repo2
+repo2-type=s3
+repo2-path=${PGBACKREST_REPO2_PATH}
+repo2-s3-bucket=${PGBACKREST_REPO2_S3_BUCKET}
+repo2-s3-endpoint=${PGBACKREST_REPO2_S3_ENDPOINT}
+repo2-s3-region=${PGBACKREST_REPO2_S3_REGION}
+repo2-s3-key=${PGBACKREST_REPO2_S3_KEY}
+repo2-s3-key-secret=${PGBACKREST_REPO2_S3_KEY_SECRET}
+repo2-s3-uri-style=${PGBACKREST_REPO2_S3_URI_STYLE}
+repo2-storage-verify-tls=${PGBACKREST_REPO2_S3_VERIFY_TLS}
+repo2-retention-full=${PGBACKREST_REPO2_RETENTION_FULL}
+repo2-retention-full-type=count
+repo2-cipher-type=aes-256-cbc
+repo2-cipher-pass=${PGBACKREST_REPO2_CIPHER_PASS}
+repo2-bundle=y
+repo2-block=y
+#END repo2
+
+compress-type=zst
+compress-level=3
+process-max=${PGBACKREST_PROCESS_MAX}
+start-fast=y
+delta=y
+
+# WAL archiving is asynchronous. When the cloud repo is unreachable (no internet), WAL queues in
+# the spool; past archive-push-queue-max pgBackRest drops the oldest queued WAL instead of filling
+# the database disk. The next full/diff backup closes the gap. The local repo is unaffected.
+archive-async=y
+spool-path=/var/spool/pgbackrest
+archive-push-queue-max=${PGBACKREST_ARCHIVE_QUEUE_MAX}
+archive-timeout=120
+
+log-path=/var/log/pgbackrest
+log-level-console=info
+log-level-file=detail
+
+[${PGBACKREST_STANZA}]
+pg1-path=${PGDATA}
+pg1-socket-path=${PG_SOCKET_DIR}
+pg1-user=${POSTGRES_USER}

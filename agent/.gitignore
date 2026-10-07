@@ -1,0 +1,7 @@
+# Local secrets and outputs: never commit
+config.toml
+agent-token.txt
+print-out/
+build/
+dist/
+*.spec
