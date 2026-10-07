@@ -19,13 +19,17 @@
   charges the nights that have passed, and discharge charges the rest, at least one day.
   Each night is a ``bed_charge`` service line (one ``BedCharge`` per admission and date)
   at the bed occupied at the end of that date. Charging in arrears never needs a reversal.
+  The admission records the perform-first exception the nights are given under (who and
+  why, invariants 1 and 4), and each night's line is performed when it is charged. A
+  patient holds one open admission (locked on the patient, unique in the database).
+* Lock order: patient, visit, queue entries, service lines (the money engine's order).
 """
 
 from __future__ import annotations
 
 import importlib
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from types import ModuleType
@@ -36,9 +40,9 @@ from django.db import transaction
 from django.db.models import Exists, Max, OuterRef, Q, QuerySet
 from django.utils import timezone
 
-from apps.catalog.models import ServiceKind
-from apps.core.models import Department, DoctorProfile, Policy, ReasonCode, Room, User
-from apps.core.services import next_number
+from apps.catalog.models import Service, ServiceKind
+from apps.core.models import Department, DoctorProfile, Policy, Room, User
+from apps.core.services import next_number, resolve_reason
 from apps.orders.models import BillingStatus, FulfilmentStatus, OrderSource, ServiceLine
 from apps.patients import services as patient_services
 from apps.patients.models import Patient, PatientCoverage
@@ -59,10 +63,13 @@ from apps.visits.models import (
     VisitStatus,
     VisitType,
 )
+from domain import coverage as dc
 from domain.errors import DomainError
 
 __all__ = [
     "EMERGENCY_PRIORITY",
+    "FINANCIAL_EVENTS",
+    "TimelineEvent",
     "admit",
     "available_slots",
     "bed_charge_dates",
@@ -71,21 +78,26 @@ __all__ = [
     "cancel_appointment",
     "cancel_queue_entry",
     "cancel_visit",
+    "change_coverage",
     "charge_bed_days",
     "close_visit",
     "convert_appointment",
+    "create_bed",
     "create_visit",
     "discharge",
     "enqueue",
     "finish_consultation",
     "follow_up_discount_percent",
     "follow_up_origin",
+    "is_ready",
     "mark_appointment_no_show",
     "mark_no_show",
     "queue",
+    "reassign_future_appointments",
     "requeue",
     "reschedule_appointment",
     "start_consultation",
+    "timeline",
     "transfer_bed",
 ]
 
@@ -118,30 +130,11 @@ def _orders() -> ModuleType:
     return importlib.import_module("apps.orders.services")
 
 
-def _reason(category: str, code: str, note: str) -> ReasonCode:
-    reason = ReasonCode.objects.filter(category=category, code=code, active=True).first()
-    if reason is None:
-        raise DomainError(
-            "REASON_UNKNOWN", "Unknown reason code", category=category, reason_code=code
-        )
-    if reason.requires_note and not note.strip():
-        raise DomainError(
-            "REASON_NOTE_REQUIRED", "This reason needs an explanation", reason_code=code
-        )
-    return reason
-
-
 def _now(now: datetime | None) -> datetime:
     return now or timezone.now()
 
 
 # --- visits ---------------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class FollowUp:
-    origin: Visit
-    discount_percent: Decimal
 
 
 def follow_up_origin(
@@ -193,6 +186,7 @@ def _visit_coverage(
     )
     if not valid:
         raise DomainError("COVERAGE_INVALID", "The coverage is not valid for this visit")
+    dc.require_contract(coverage.payer.contract_start, coverage.payer.contract_end, on)
     card = card_number.strip() or coverage.card_number
     if coverage.payer.requires_card_number and not card:
         raise DomainError("CARD_NUMBER_REQUIRED", "This payer requires a card number")
@@ -300,7 +294,7 @@ def create_visit(
 def close_visit(visit: Visit, *, actor: User, now: datetime | None = None) -> Visit:
     """Close an open visit (the doctor or discharge finished it)."""
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="close visit"):
-        locked = Visit.objects.select_for_update().get(pk=visit.pk)
+        locked = Visit.objects.select_for_update(no_key=True).get(pk=visit.pk)
         if locked.status != VisitStatus.OPEN:
             raise DomainError("VISIT_NOT_OPEN", "Only an open visit can be closed")
         locked.status = VisitStatus.CLOSED
@@ -318,34 +312,46 @@ def cancel_visit(
     note: str = "",
     line_reason_code: str = "PATIENT_REFUSED",
     now: datetime | None = None,
+    approver: User | None = None,
 ) -> Visit:
     """Cancel a visit with a reason (FEATURES 2.7, invariant 4).
 
     Every open service line is cancelled through ``orders.services.cancel_line``, which issues
-    the credit note (and so the refundable patient credit) for invoiced or paid lines.
-    A visit with performed work cannot be cancelled: credit those lines instead.
+    the credit note (approved by ``approver``, default the actor, holding
+    ``billing.approve_credit_note``) and so the refundable patient credit for invoiced or
+    paid lines. A visit with performed work, or with dispensed units, cannot be cancelled:
+    credit those lines instead.
 
     Raises:
+        PermissionRequired: a paid line's approver lacks ``billing.approve_credit_note``.
         DomainError: ``VISIT_NOT_OPEN``, ``REASON_UNKNOWN``, ``REASON_NOTE_REQUIRED``,
             ``VISIT_HAS_PERFORMED_WORK``.
     """
-    reason = _reason("visit_cancel", reason_code, note)
+    reason = resolve_reason(reason_code, "visit_cancel", note)
     with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"cancel visit: {note}"):
-        locked = Visit.objects.select_for_update().get(pk=visit.pk)
+        _orders().lock_patient(visit.patient_id)  # the money engine's lock order
+        locked = Visit.objects.select_for_update(no_key=True).get(pk=visit.pk)
         if locked.status != VisitStatus.OPEN:
             raise DomainError("VISIT_NOT_OPEN", "Only an open visit can be cancelled")
+        # Queue entries before service lines: the order finish_consultation uses too.
+        entries = list(
+            QueueEntry.objects.select_for_update()
+            .filter(visit=locked, status__in=[*ACTIVE_QUEUE_STATUSES, QueueStatus.NO_SHOW])
+            .order_by("id")
+        )
         lines = list(ServiceLine.objects.select_for_update().filter(visit=locked).order_by("id"))
-        if any(ln.fulfilment_status == FulfilmentStatus.PERFORMED for ln in lines):
+        if any(
+            ln.fulfilment_status == FulfilmentStatus.PERFORMED or _orders().given_units(ln) > 0
+            for ln in lines
+        ):
             raise DomainError(
                 "VISIT_HAS_PERFORMED_WORK", "Performed work must be credited, not cancelled"
             )
-        line_reason = _reason("line_cancel", line_reason_code, note)
+        line_reason = resolve_reason(line_reason_code, "line_cancel", note)
         for line in lines:
             if line.fulfilment_status in (FulfilmentStatus.PENDING, FulfilmentStatus.IN_PROGRESS):
-                _orders().cancel_line(line, line_reason, actor, note=note)
-        for entry in QueueEntry.objects.select_for_update().filter(
-            visit=locked, status__in=[*ACTIVE_QUEUE_STATUSES, QueueStatus.NO_SHOW]
-        ):
+                _orders().cancel_line(line, line_reason, actor, note=note, approver=approver)
+        for entry in entries:
             entry.status = QueueStatus.CANCELLED
             entry.save(update_fields=["status"])
         locked.status = VisitStatus.CANCELLED
@@ -481,8 +487,14 @@ def start_consultation(entry: QueueEntry, *, actor: User) -> QueueEntry:
 
 
 def finish_consultation(entry: QueueEntry, *, actor: User) -> QueueEntry:
-    """Done with the doctor: the consultation line is performed (FLOW step 3)."""
+    """Done with the doctor: the consultation line is performed (FLOW step 3).
+
+    Locks the visit first (then the queue entry, then the lines), the order cancel_visit
+    uses, so a cancellation and a finish serialize instead of deadlocking.
+    """
     with transaction.atomic():
+        visit_id = QueueEntry.objects.filter(pk=entry.pk).values_list("visit_id", flat=True).get()
+        Visit.objects.select_for_update(no_key=True).filter(pk=visit_id).first()
         done = _move(entry, QueueStatus.DONE, actor)
         open_fees = ServiceLine.objects.filter(
             visit_id=done.visit_id,
@@ -664,7 +676,7 @@ def convert_appointment(
         raise DomainError("PATIENT_REQUIRED", "Register the caller before opening the visit")
     if patient is not None and appointment.patient_id not in (None, patient.pk):
         raise DomainError("APPOINTMENT_PATIENT_MISMATCH", "The booking is for another patient")
-    with transaction.atomic():
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="convert appointment"):
         if appointment.patient_id is None:
             Appointment.objects.filter(pk=appointment.pk).update(patient=who)
         return create_visit(
@@ -754,19 +766,30 @@ def admit(
     """
     when = _now(at)
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="admit"):
-        locked = Visit.objects.select_for_update().get(pk=visit.pk)
+        # The patient first: two admissions of one patient serialize here (and the partial
+        # unique index on open admissions per patient is the backstop).
+        _orders().lock_patient(visit.patient_id)
+        locked = Visit.objects.select_for_update(no_key=True).get(pk=visit.pk)
         if locked.status != VisitStatus.OPEN:
             raise DomainError("VISIT_NOT_OPEN", "Only an open visit can be admitted")
         if Admission.objects.filter(visit=locked).exists():
             raise DomainError("ALREADY_ADMITTED", "The visit already has an admission")
         if Admission.objects.filter(
-            visit__patient=locked.patient, status=AdmissionStatus.ADMITTED
+            patient_id=locked.patient_id, status=AdmissionStatus.ADMITTED
         ).exists():
             raise DomainError("PATIENT_ALREADY_ADMITTED", "The patient is already admitted")
         free = _free_bed(bed)
+        number = next_number("ADM")
+        authorization = _orders().authorize_stay(
+            locked,
+            actor=actor,
+            note=f"inpatient stay {number}: bed nights are charged in arrears",
+        )
         admission = Admission.objects.create(
-            number=next_number("ADM"),
+            number=number,
             visit=locked,
+            patient_id=locked.patient_id,
+            authorization=authorization,
             admitting_doctor=doctor,
             admission_diagnosis=diagnosis.strip()[:300],
             admitted_at=when,
@@ -815,11 +838,17 @@ def charge_bed_days(
             BedCharge.objects.filter(admission=locked).values_list("charge_date", flat=True)
         )
         created: list[BedCharge] = []
+        tz = timezone.get_current_timezone()
         for day in dates:
             if day in charged:
                 continue
             stay = _stay_for(locked, day)
-            lines = _orders().create_service_lines(
+            # The night was given under the admission's authorization: performed now,
+            # invoiced afterwards (invariant 1's documented exception).
+            night_end = min(
+                datetime.combine(day + timedelta(days=1), time.min, tzinfo=tz), timezone.now()
+            )
+            lines = _orders().order_performed(
                 locked.visit,
                 [
                     {
@@ -830,6 +859,8 @@ def charge_bed_days(
                     }
                 ],
                 actor,
+                authorization=_stay_authorization(locked, actor),
+                at=night_end,
             )
             created.append(
                 BedCharge.objects.create(
@@ -837,6 +868,19 @@ def charge_bed_days(
                 )
             )
     return created
+
+
+def _stay_authorization(admission: Admission, actor: User) -> Any:
+    """The admission's perform-first authorization (created for admissions made before it
+    was recorded at admission)."""
+    if admission.authorization_id is None:
+        admission.authorization = _orders().authorize_stay(
+            admission.visit,
+            actor=actor,
+            note=f"inpatient stay {admission.number}: bed nights are charged in arrears",
+        )
+        admission.save(update_fields=["authorization", "updated_at"])
+    return admission.authorization
 
 
 def transfer_bed(
@@ -896,3 +940,215 @@ def discharge(
         if visit.status == VisitStatus.OPEN:
             close_visit(visit, actor=actor, now=when)
     return locked
+
+
+def change_coverage(
+    visit: Visit,
+    *,
+    actor: User,
+    note: str,
+    coverage: PatientCoverage | None = None,
+    card_number: str = "",
+) -> Visit:
+    """Change who pays for an open visit (a card shown after ordering; FEATURES 2.1, 5.6).
+
+    The visit's payer, coverage and card change, and every unbilled line moves to the new
+    payer (``orders.services.set_line_payer``), leaving draft invoices to be priced again.
+    Invoiced lines keep their payer (correct them with a credit note).
+
+    Raises:
+        DomainError: ``VISIT_NOT_OPEN``, ``REASON_REQUIRED``, ``COVERAGE_INVALID``,
+            ``CARD_NUMBER_REQUIRED``, ``PAYER_CONTRACT_EXPIRED``.
+    """
+    text = note.strip()
+    if not text:
+        raise DomainError("REASON_REQUIRED", "Say why the visit's coverage changes")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"coverage: {text}"):
+        _orders().lock_patient(visit.patient_id)
+        locked = (
+            Visit.objects.select_for_update(no_key=True).select_related("patient").get(pk=visit.pk)
+        )
+        if locked.status != VisitStatus.OPEN:
+            raise DomainError("VISIT_NOT_OPEN", "Only an open visit can change coverage")
+        cov, card = _visit_coverage(
+            locked.patient, coverage, False, card_number, timezone.localdate(locked.created_at)
+        )
+        locked.coverage = cov
+        locked.payer = cov.payer if cov is not None else None
+        locked.card_number = card
+        locked.save(update_fields=["coverage", "payer", "card_number", "updated_at"])
+        for line in ServiceLine.objects.filter(
+            visit=locked, billing_status=BillingStatus.UNBILLED
+        ).exclude(fulfilment_status=FulfilmentStatus.CANCELLED):
+            if line.payer_id != locked.payer_id:
+                _orders().set_line_payer(line, payer=locked.payer, actor=actor, note=text)
+    return locked
+
+
+def reassign_future_appointments(source: Patient, target: Patient, *, actor: User) -> int:
+    """Move a merged file's future booked appointments to the surviving file (FEATURES 1.4).
+
+    Called by ``apps.patients.services.merge_patients``. Returns how many moved.
+    """
+    moved = 0
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="merge: appointments"):
+        for appt in Appointment.objects.select_for_update().filter(
+            patient=source, status=AppointmentStatus.BOOKED, starts_at__gte=timezone.now()
+        ):
+            appt.patient = target
+            appt.save(update_fields=["patient", "updated_at"])
+            moved += 1
+    return moved
+
+
+def create_bed(
+    *,
+    code: str,
+    name_ar: str,
+    name_en: str,
+    bed_service: Service,
+    actor: User,
+    room: Room | None = None,
+) -> Bed:
+    """A bed charged with a ``bed`` catalog service per night (FEATURES 10.5)."""
+    if bed_service.kind != ServiceKind.BED:
+        raise DomainError("BED_SERVICE_INVALID", "The bed's charge service must be a bed day")
+    if Bed.objects.filter(code=code.strip()).exists():
+        raise DomainError("BED_EXISTS", "A bed with this code exists", bed_code=code)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="create bed"):
+        return Bed.objects.create(
+            code=code.strip(),
+            name_ar=name_ar.strip(),
+            name_en=name_en.strip(),
+            room=room,
+            bed_service=bed_service,
+        )
+
+
+# --- visit timeline -------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class TimelineEvent:
+    at: datetime
+    kind: str
+    ref_id: int
+    actor_id: int | None = None
+    detail: dict[str, Any] = field(default_factory=dict)
+
+
+#: Event kinds that carry money; left out of the doctor's view (FEATURES 3.8).
+FINANCIAL_EVENTS = frozenset({"invoice_approved", "payment_allocated", "credit_note", "refund"})
+
+
+def timeline(visit: Visit, *, include_financial: bool = True) -> list[TimelineEvent]:
+    """Everything that happened on a visit, oldest first (FEATURES 2.4): orders, invoices,
+    payments, results, dispenses, credit notes, refunds, admission and closing.
+    """
+    from apps.billing.models import CreditNote, DocumentStatus, Invoice
+    from apps.lab.models import ResultStatus, ResultVersion
+    from apps.payments.models import Allocation, Refund
+    from apps.pharmacy.models import Dispense
+
+    visit = Visit.objects.get(pk=visit.pk)  # fresh status and timestamps
+    events = [TimelineEvent(visit.created_at, "visit_created", visit.pk, visit.created_by_id)]
+    for line in ServiceLine.objects.filter(visit=visit).order_by("id"):
+        events.append(
+            TimelineEvent(
+                line.ordered_at,
+                "line_ordered",
+                line.pk,
+                line.ordered_by_id,
+                {"service_id": line.service_id, "kind": line.kind},
+            )
+        )
+        if line.performed_at is not None:
+            events.append(
+                TimelineEvent(line.performed_at, "line_performed", line.pk, line.performed_by_id)
+            )
+        if line.cancelled_at is not None:
+            events.append(
+                TimelineEvent(line.cancelled_at, "line_cancelled", line.pk, line.cancelled_by_id)
+            )
+    for version in ResultVersion.objects.filter(
+        result_set__service_line__visit=visit,
+        status__in=[ResultStatus.APPROVED, ResultStatus.AMENDED],
+    ):
+        events.append(
+            TimelineEvent(
+                version.approved_at or version.entered_at,
+                "result_approved",
+                version.pk,
+                version.approved_by_id,
+                {
+                    "service_line_id": version.result_set.service_line_id,
+                    "version": version.version_no,
+                },
+            )
+        )
+    for dispense in Dispense.objects.filter(visit=visit):
+        events.append(
+            TimelineEvent(dispense.dispensed_at, "dispensed", dispense.pk, dispense.dispensed_by_id)
+        )
+    if include_financial:
+        invoices = Invoice.objects.filter(visit=visit, status=DocumentStatus.APPROVED)
+        for inv in invoices:
+            events.append(
+                TimelineEvent(
+                    inv.approved_at or inv.created_at,
+                    "invoice_approved",
+                    inv.pk,
+                    inv.approved_by_id,
+                    {"number": inv.number, "patient_total": str(inv.patient_total)},
+                )
+            )
+        for alloc in Allocation.objects.filter(invoice__in=invoices):
+            events.append(
+                TimelineEvent(
+                    alloc.created_at,
+                    "payment_allocated",
+                    alloc.pk,
+                    alloc.created_by_id,
+                    {"invoice_id": alloc.invoice_id, "amount": str(alloc.amount)},
+                )
+            )
+        for cn in CreditNote.objects.filter(invoice__in=invoices, status=DocumentStatus.APPROVED):
+            events.append(
+                TimelineEvent(
+                    cn.approved_at or cn.created_at,
+                    "credit_note",
+                    cn.pk,
+                    cn.approved_by_id,
+                    {"number": cn.number, "patient_total": str(cn.patient_total)},
+                )
+            )
+        for refund in Refund.objects.filter(
+            Q(credit_note__invoice__visit=visit) | Q(service_line__visit=visit)
+        ).distinct():
+            events.append(
+                TimelineEvent(
+                    refund.requested_at,
+                    "refund",
+                    refund.pk,
+                    refund.requested_by_id,
+                    {"amount": str(refund.amount), "status": refund.status},
+                )
+            )
+    admission = Admission.objects.filter(visit=visit).first()
+    if admission is not None:
+        events.append(
+            TimelineEvent(admission.admitted_at, "admitted", admission.pk, admission.admitted_by_id)
+        )
+        if admission.discharged_at is not None:
+            events.append(
+                TimelineEvent(
+                    admission.discharged_at, "discharged", admission.pk, admission.discharged_by_id
+                )
+            )
+    if visit.closed_at is not None:
+        events.append(TimelineEvent(visit.closed_at, "visit_closed", visit.pk, visit.closed_by_id))
+    if visit.cancelled_at is not None:
+        events.append(
+            TimelineEvent(visit.cancelled_at, "visit_cancelled", visit.pk, visit.cancelled_by_id)
+        )
+    return sorted(events, key=lambda e: (e.at, e.kind, e.ref_id))

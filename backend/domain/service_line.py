@@ -28,7 +28,12 @@ Every transition is a pure function ``LineStatus -> LineStatus`` that raises
 ``LINE_NOT_CREDITABLE``, ``LINE_NOT_CREDITED``, ``LINE_ALREADY_SETTLED``,
 ``LINE_ALREADY_AUTHORIZED``, ``LINE_ALREADY_PERFORMED``, ``LINE_ALREADY_STARTED``,
 ``LINE_ALREADY_CANCELLED``, ``LINE_NOT_ELIGIBLE``, ``CREDIT_NOTE_REQUIRED``,
-``INVALID_LINE_STATUS``, ``INVALID_AMOUNT``, ``REASON_REQUIRED``.
+``INVALID_LINE_STATUS``, ``INVALID_AMOUNT``, ``REASON_REQUIRED``, ``INVALID_QUANTITY``,
+``CREDIT_EXCEEDS_UNGIVEN``.
+
+Quantities (:func:`open_quantity`, :func:`remainder_to_credit`): units credited by an approved
+credit note are never given afterwards, so what may still be performed or dispensed is the
+ordered quantity less credited and already given units (invariant 1).
 """
 
 from __future__ import annotations
@@ -46,6 +51,7 @@ __all__ = [
     "BILLED",
     "TERMINAL_FULFILMENT",
     "BillingStatus",
+    "DoctorStatus",
     "FulfilmentStatus",
     "LineState",
     "LineStatus",
@@ -55,9 +61,12 @@ __all__ = [
     "cancel",
     "credit",
     "derived_state",
+    "doctor_status",
     "invoice",
     "is_consistent",
+    "open_quantity",
     "perform",
+    "remainder_to_credit",
     "replacement",
     "settle",
     "start",
@@ -143,6 +152,36 @@ def derived_state(billing: BillingStatus, fulfilment: FulfilmentStatus) -> LineS
     if billing is BillingStatus.INVOICED:
         return LineState.INVOICED
     return LineState.REQUESTED
+
+
+class DoctorStatus(StrEnum):
+    """What the ordering doctor sees on a line (FEATURES 3.7): no prices, but progress."""
+
+    REQUESTED = "requested"
+    PAID = "paid"
+    IN_PROGRESS = "in_progress"
+    DONE = "done"
+    CANCELLED = "cancelled"
+
+
+def doctor_status(
+    billing: BillingStatus, fulfilment: FulfilmentStatus, *, authorized: bool = False
+) -> DoctorStatus:
+    """The doctor's view of a line: cancelled > done > in progress > paid > requested.
+
+    ``paid`` means the department may start (settled, or a perform-first authorization);
+    ``in_progress`` keeps the step :func:`derived_state` folds away (sample taken, part of a
+    prescription dispensed), so the doctor can tell started work from waiting work.
+    """
+    if fulfilment is FulfilmentStatus.CANCELLED:
+        return DoctorStatus.CANCELLED
+    if fulfilment is FulfilmentStatus.PERFORMED:
+        return DoctorStatus.DONE
+    if fulfilment is FulfilmentStatus.IN_PROGRESS:
+        return DoctorStatus.IN_PROGRESS
+    if billing is BillingStatus.SETTLED or authorized:
+        return DoctorStatus.PAID
+    return DoctorStatus.REQUESTED
 
 
 def can_enter_worklist(status: LineStatus) -> bool:
@@ -302,3 +341,56 @@ def replacement(status: LineStatus, approval: Approval) -> LineStatus:
     if status.fulfilment is FulfilmentStatus.PERFORMED:
         return LineStatus(BillingStatus.UNBILLED, FulfilmentStatus.PERFORMED, authorized=True)
     return LineStatus()
+
+
+# --- quantities -----------------------------------------------------------------------
+
+
+def _units(value: int, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise DomainError(
+            "INVALID_QUANTITY", f"{name} must be a whole number >= 0", **{name: value}
+        )
+    return value
+
+
+def open_quantity(ordered: int, *, credited: int = 0, given: int = 0) -> int:
+    """Units of a line that may still be performed or dispensed (invariant 1).
+
+    ``ordered`` units are on the line; ``credited`` of them were removed by approved credit
+    notes (their money went back to the patient) and ``given`` were already dispensed or
+    performed. Credited units are never given, so ``ordered - credited - given`` is left.
+
+    Raises:
+        DomainError: ``INVALID_QUANTITY`` for a negative or non-whole input;
+            ``CREDIT_EXCEEDS_UNGIVEN`` when credited and given units add up to more than the
+            line (a credit took back units the patient already received).
+    """
+    o, c, g = _units(ordered, "ordered"), _units(credited, "credited"), _units(given, "given")
+    if c + g > o:
+        raise DomainError(
+            "CREDIT_EXCEEDS_UNGIVEN",
+            "Credited and given units exceed the line",
+            ordered=o,
+            credited=c,
+            given=g,
+        )
+    return o - c - g
+
+
+def remainder_to_credit(ordered: int, *, credited: int = 0, performed: int) -> int:
+    """Units to credit when a partly performed line is closed (partial dispense remainder).
+
+    The line keeps ``performed`` units; units an earlier credit note already took back are not
+    credited twice. Raises ``LINE_NOTHING_REMAINING`` when nothing is left to credit.
+    """
+    left = open_quantity(ordered, credited=credited, given=_units(performed, "performed"))
+    if left == 0:
+        raise DomainError(
+            "LINE_NOTHING_REMAINING",
+            "Nothing of the line is left to cancel",
+            ordered=ordered,
+            credited=credited,
+            performed=performed,
+        )
+    return left

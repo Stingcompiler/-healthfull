@@ -13,6 +13,9 @@
   outstanding amounts. Money allocated to the invoice is applied to lines in line order; a
   line is settled when it is not fully credited and its outstanding is zero. Money above
   the invoice's due is the over-allocation that must be de-allocated into patient credit.
+* When a credit note takes back (part of) a line that held patient money, that money becomes
+  patient credit (ARCHITECTURE 4.4 rule 3): :func:`credit_release` measures it, so that the
+  money does not drift onto the invoice's other lines.
 
 Error codes: ``INVOICE_NOT_DRAFT``, ``INVOICE_FROZEN``, ``INVOICE_EMPTY``,
 ``DUPLICATE_LINE``, ``INVALID_QUANTITY``, ``COVERAGE_WITHOUT_PAYER``,
@@ -50,6 +53,7 @@ __all__ = [
     "approve",
     "build_credit_line",
     "build_invoice_lines",
+    "credit_release",
     "credited_quantity",
     "invoice_position",
     "invoice_totals",
@@ -445,3 +449,23 @@ def invoice_position(
         outstanding=total_due - applied,
         over_allocation=remaining,
     )
+
+
+def credit_release(before: InvoicePosition, after: InvoicePosition) -> Decimal:
+    """Patient money a credit note frees: what credited lines held above their new due.
+
+    ``before`` and ``after`` are positions of the same invoice with the same allocations,
+    before and after the credit. A line keeps at most its new due of what it held; the rest
+    must leave the invoice as patient credit (ARCHITECTURE 4.4 rule 3). De-allocating exactly
+    this amount leaves every other line's paid amount (and so its settlement) unchanged.
+
+    Raises ``UNKNOWN_INVOICE_LINE`` when the positions do not have the same lines.
+    """
+    if {lp.position for lp in before.lines} != {lp.position for lp in after.lines}:
+        raise DomainError("UNKNOWN_INVOICE_LINE", "The positions are of different invoices")
+    released = ZERO
+    for old in before.lines:
+        new = after.line(old.position)
+        if old.patient_paid > new.patient_due:
+            released += old.patient_paid - new.patient_due
+    return released

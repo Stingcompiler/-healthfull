@@ -19,5 +19,5 @@ def _reference_data(request: pytest.FixtureRequest) -> None:
 @pytest.hookimpl(wrapper=True)
 def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> Generator[None]:
     result = yield
-    restore_after_flush(item)
+    restore_after_flush(item, nextitem)
     return result

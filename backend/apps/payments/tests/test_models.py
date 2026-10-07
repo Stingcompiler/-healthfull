@@ -73,6 +73,7 @@ def test_close_must_be_documented_and_variance_explained() -> None:
         "closed_at": timezone.now(),
         "closed_by": sh.cashier,
         "expected_cash": Decimal("1000.00"),
+        "close_report": {"frozen": True},
     }
     b.db_rejects(
         lambda: Shift.objects.filter(pk=sh.pk).update(
@@ -85,6 +86,16 @@ def test_close_must_be_documented_and_variance_explained() -> None:
             **common, counted_cash=Decimal("990.00"), variance=Decimal("0.00")
         ),
         "payments_shift_variance_is_counted_minus_expected",
+    )
+    # The report is frozen at close (invariant 3): a closed shift always carries it.
+    b.db_rejects(
+        lambda: Shift.objects.filter(pk=sh.pk).update(
+            **{**common, "close_report": None},
+            counted_cash=Decimal("990.00"),
+            variance=Decimal("-10.00"),
+            variance_reason=b.reason("variance"),
+        ),
+        "payments_shift_close_report_frozen",
     )
     Shift.objects.filter(pk=sh.pk).update(
         **common,
@@ -140,25 +151,25 @@ def test_refund_cannot_be_paid_from_a_closed_shift() -> None:
         requested_by=b.user(),
     )
     closed = b.close_shift(b.shift())
+    # A refund is approved before it is paid (never straight from requested).
     b.db_rejects(
         lambda: Refund.objects.filter(pk=refund.pk).update(
-            status="paid",
-            decided_by=b.user(),
-            decided_at=timezone.now(),
-            shift=closed,
-            paid_by=closed.cashier,
-            paid_at=timezone.now(),
+            status="paid", shift=b.shift(), paid_by=b.user(), paid_at=timezone.now()
+        ),
+        "REFUND_TRANSITION",
+    )
+    Refund.objects.filter(pk=refund.pk).update(
+        status="approved", decided_by=b.user(), decided_at=timezone.now()
+    )
+    b.db_rejects(
+        lambda: Refund.objects.filter(pk=refund.pk).update(
+            status="paid", shift=closed, paid_by=closed.cashier, paid_at=timezone.now()
         ),
         "SHIFT_NOT_OPEN",
     )
     open_shift = b.shift()
     Refund.objects.filter(pk=refund.pk).update(
-        status="paid",
-        decided_by=b.user(),
-        decided_at=timezone.now(),
-        shift=open_shift,
-        paid_by=open_shift.cashier,
-        paid_at=timezone.now(),
+        status="paid", shift=open_shift, paid_by=open_shift.cashier, paid_at=timezone.now()
     )
     # Paid refunds are final.
     b.sql_rejects(
@@ -370,7 +381,7 @@ def test_allocation_is_append_only_orm_and_raw_sql() -> None:
         amount=Decimal("-100.00"),
         reversal_of=alloc,
     )
-    assert alloc.reversal == reversal
+    assert list(alloc.reversals.all()) == [reversal]
 
 
 @pytest.mark.parametrize(

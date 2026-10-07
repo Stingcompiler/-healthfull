@@ -20,7 +20,6 @@ Error codes: ``INVALID_AMOUNT``, ``BANK_REQUIRED``, ``REFERENCE_REQUIRED``,
 
 from __future__ import annotations
 
-import re
 import unicodedata
 from collections.abc import Collection
 from dataclasses import dataclass
@@ -117,13 +116,24 @@ _ARABIC_DIGITS = str.maketrans(
         **{chr(0x06F0 + i): str(i) for i in range(10)},
     }
 )
-_SEPARATORS = re.compile(r"[\s\-_/.‐-―]+")
 
 
 def normalize_reference(reference: str) -> str:
-    """Canonical form for uniqueness: NFKC, ASCII digits, no spaces/dashes, upper case."""
-    text = unicodedata.normalize("NFKC", reference).translate(_ARABIC_DIGITS)
-    return _SEPARATORS.sub("", text).upper()
+    """Canonical form for uniqueness: NFKC, ASCII digits, upper case, letters and digits only.
+
+    Every character that is not a letter or a digit (spaces, dashes, slashes, ``#``) is
+    dropped, in any script, so ``ft-12 3``, ``FT123`` and ``ＦＴ１２３`` are one reference while
+    Arabic letters stay significant (``حوالة٥٥`` and ``حوالة٥٥ب`` differ). This is the only
+    definition: the stored ``reference_norm`` columns are written from it.
+    """
+    text = reference
+    for _ in range(4):  # NFKC and upper-casing reach a fixed point within a few passes
+        step = unicodedata.normalize("NFKC", text).translate(_ARABIC_DIGITS).upper()
+        step = "".join(ch for ch in step if ch.isalnum())
+        if step == text:
+            break
+        text = step
+    return text
 
 
 def normalize_bank(bank: str) -> str:

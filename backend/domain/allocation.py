@@ -49,6 +49,7 @@ __all__ = [
     "net_by_invoice",
     "net_by_payment",
     "plan_rejection",
+    "refund_source_available",
     "reverse_payment",
     "spendable_credit",
     "unallocated",
@@ -331,6 +332,17 @@ def validate_credit_spend(amount: Decimal, spendable: Decimal) -> None:
             amount=str(value),
             spendable=str(spendable),
         )
+
+
+def refund_source_available(deallocated: Iterable[Decimal], refunds: Iterable[Decimal]) -> Decimal:
+    """Credit a credit note created (its de-allocation rows, negative) less live refunds of it.
+
+    ``deallocated`` are the signed de-allocation amounts the note wrote; ``refunds`` the
+    amounts of its refunds that are not rejected.
+    """
+    created = -sum((require_money(a, "deallocation") for a in deallocated), ZERO)
+    used = sum((require_positive(r, "refund") for r in refunds), ZERO)
+    return created - used
 
 
 def validate_refund(

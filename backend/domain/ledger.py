@@ -20,8 +20,17 @@ Postings:
 * Credit note: Dr REVENUE / Cr AR_PATIENT, Cr AR_PAYER, Cr DISCOUNT (mirror of the credited
   shares). An over-allocated invoice is then de-allocated with negative allocation rows.
 * Refund: Dr PATIENT_CREDIT / Cr CASH. Shift variance: CASH vs CASH_OVER_SHORT.
-* Payer rejection rebilled: Dr AR_PATIENT / Cr AR_PAYER. Written off: Dr WRITE_OFF /
-  Cr AR_PAYER. Payer payment: Dr BANK / Cr AR_PAYER.
+* Cash outside the drawers (ADR 0006): the opening float comes from the safe (Dr CASH /
+  Cr CASH_SAFE); a handover to the safe, a supervisor or the next shift moves cash into
+  CASH_SAFE (cash in the safe or in transit) and the receiving shift takes it out again
+  (Dr CASH / Cr CASH_SAFE); a bank deposit goes Dr BANK / Cr CASH. At close the counted
+  cash leaves the drawer for the safe (Dr CASH_SAFE / Cr CASH), so a closed shift's CASH is
+  zero and an open shift's CASH is its expected cash.
+* Payer rejection rebilled: Dr AR_PATIENT / Cr AR_PAYER. Written off (a rejection or an
+  accepted amount the payer short-paid): Dr WRITE_OFF / Cr AR_PAYER. Payer payment:
+  Dr BANK (transfer), BANK_PENDING (cheque, until it clears) or CASH (in the recording
+  shift) / Cr AR_PAYER; a cleared cheque Dr BANK / Cr BANK_PENDING; a reversed payer payment
+  the opposite of its posting.
 
 Invariant 7 follows from the chart: payer share enters CASH/BANK only through a payer
 payment.
@@ -53,19 +62,28 @@ __all__ = [
     "DimValue",
     "JournalDraft",
     "JournalLine",
+    "PayerMoney",
     "RevenueLine",
     "Side",
     "SourceType",
     "account_balance",
     "assert_balanced",
     "post_allocation",
+    "post_cash_handover",
     "post_credit_note",
+    "post_handover_cancelled",
+    "post_handover_received",
     "post_invoice_approved",
+    "post_payer_cheque_cleared",
     "post_payer_payment",
+    "post_payer_payment_reversed",
     "post_payer_rebill",
+    "post_payer_short_write_off",
     "post_payer_write_off",
     "post_payment_received",
     "post_refund",
+    "post_shift_opening",
+    "post_shift_sweep",
     "post_shift_variance",
     "post_transfer_confirmed",
     "post_transfer_rejected",
@@ -86,6 +104,7 @@ class Account(StrEnum):
     DISCOUNT = "DISCOUNT"
     WRITE_OFF = "WRITE_OFF"
     CASH_OVER_SHORT = "CASH_OVER_SHORT"
+    CASH_SAFE = "CASH_SAFE"
 
 
 class AccountKind(StrEnum):
@@ -121,7 +140,15 @@ class SourceType(StrEnum):
     SHIFT_VARIANCE = "shift_variance"
     PAYER_REBILL = "payer_rebill"
     PAYER_WRITE_OFF = "payer_write_off"
+    PAYER_SHORT_WRITE_OFF = "payer_short_write_off"
     PAYER_PAYMENT = "payer_payment"
+    PAYER_CHEQUE_CLEARED = "payer_cheque_cleared"
+    PAYER_PAYMENT_REVERSED = "payer_payment_reversed"
+    SHIFT_OPENING = "shift_opening"
+    SHIFT_SWEEP = "shift_sweep"
+    CASH_HANDOVER = "cash_handover"
+    HANDOVER_RECEIPT = "handover_receipt"
+    HANDOVER_CANCELLED = "handover_cancelled"
 
 
 @dataclass(frozen=True, slots=True)
@@ -225,12 +252,19 @@ CHART: Mapping[Account, AccountSpec] = MappingProxyType(
                 Side.DEBIT,
                 Dim.SHIFT,
             ),
+            _spec(
+                Account.CASH_SAFE,
+                "Cash in the safe or in transit",
+                "نقد في الخزنة أو قيد التسليم",
+                AccountKind.ASSET,
+                Side.DEBIT,
+            ),
         )
     }
 )
 
 #: Accounts that hold real money. Payer share reaches them only via a payer payment.
-MONEY_ACCOUNTS = frozenset({Account.CASH, Account.BANK_PENDING, Account.BANK})
+MONEY_ACCOUNTS = frozenset({Account.CASH, Account.BANK_PENDING, Account.BANK, Account.CASH_SAFE})
 
 
 @dataclass(frozen=True, slots=True)
@@ -404,15 +438,25 @@ def post_payment_received(
 
 
 def post_allocation(
-    allocation_id: int, patient_id: int, invoice_id: int, amount: Decimal
+    allocation_id: int,
+    patient_id: int,
+    invoice_id: int,
+    amount: Decimal,
+    *,
+    invoice_patient_id: int | None = None,
 ) -> JournalDraft:
-    """Signed: positive applies credit to the invoice, negative takes it back."""
+    """Signed: positive applies credit to the invoice, negative takes it back.
+
+    ``patient_id`` is the file whose payment (credit) is applied; ``invoice_patient_id`` the
+    file the invoice belongs to when it differs (one person's merged files, FEATURES 1.4).
+    """
     value = require_money(amount, "amount")
     if value == 0:
         raise DomainError("INVALID_AMOUNT", "An allocation cannot be zero", field="amount")
     b = _Builder()
     b.debit(Account.PATIENT_CREDIT, value, patient=patient_id)
-    b.credit(Account.AR_PATIENT, value, patient=patient_id, invoice=invoice_id)
+    owner = patient_id if invoice_patient_id is None else invoice_patient_id
+    b.credit(Account.AR_PATIENT, value, patient=owner, invoice=invoice_id)
     return b.build(SourceType.ALLOCATION, allocation_id)
 
 
@@ -472,10 +516,37 @@ def post_payer_write_off(
     return b.build(SourceType.PAYER_WRITE_OFF, source_id)
 
 
+class PayerMoney(StrEnum):
+    """Where a payer payment's money lands (FEATURES 11.6)."""
+
+    BANK = "bank"  # a verified bank transfer
+    CHEQUE = "cheque"  # BANK_PENDING until the cheque clears
+    CASH = "cash"  # the recording cashier's drawer
+
+
+def _payer_money(b: _Builder, money: PayerMoney, amount: Decimal, shift_id: int | None) -> None:
+    if money is PayerMoney.CASH:
+        if shift_id is None:
+            raise DomainError("SHIFT_NOT_OPEN", "Payer cash goes into an open shift")
+        b.add(Account.CASH, amount, shift=shift_id)
+    elif money is PayerMoney.CHEQUE:
+        b.add(Account.BANK_PENDING, amount)
+    else:
+        b.add(Account.BANK, amount)
+
+
 def post_payer_payment(
-    payer_payment_id: int, payer_id: int, allocations: Iterable[tuple[int, Decimal]]
+    payer_payment_id: int,
+    payer_id: int,
+    allocations: Iterable[tuple[int, Decimal]],
+    *,
+    money: PayerMoney = PayerMoney.BANK,
+    shift_id: int | None = None,
 ) -> JournalDraft:
-    """Dr BANK (total) / Cr AR_PAYER per invoice. A payer payment is fully allocated."""
+    """Dr BANK, BANK_PENDING (cheque) or CASH (shift) / Cr AR_PAYER per invoice.
+
+    A payer payment is fully allocated.
+    """
     b = _Builder()
     total = ZERO
     for invoice_id, amount in allocations:
@@ -484,8 +555,106 @@ def post_payer_payment(
         total += value
     if total == 0:
         raise DomainError("INVALID_AMOUNT", "A payer payment needs allocations", field="amount")
-    b.debit(Account.BANK, total)
+    _payer_money(b, money, total, shift_id)
     return b.build(SourceType.PAYER_PAYMENT, payer_payment_id)
+
+
+def post_payer_cheque_cleared(payer_payment_id: int, amount: Decimal) -> JournalDraft:
+    """A payer cheque cleared: Dr BANK / Cr BANK_PENDING."""
+    value = require_positive(amount, "amount")
+    b = _Builder()
+    b.debit(Account.BANK, value)
+    b.credit(Account.BANK_PENDING, value)
+    return b.build(SourceType.PAYER_CHEQUE_CLEARED, payer_payment_id)
+
+
+def post_payer_payment_reversed(
+    payer_payment_id: int,
+    payer_id: int,
+    allocations: Iterable[tuple[int, Decimal]],
+    *,
+    money: PayerMoney,
+) -> JournalDraft:
+    """A payer payment that bounced or was recorded in error: the opposite of its posting.
+
+    ``money`` is where the money sits now (a cleared cheque is BANK). Cash is never reversed.
+    """
+    if money is PayerMoney.CASH:
+        raise DomainError("PAYER_PAYMENT_NOT_REVERSIBLE", "Payer cash is not reversed")
+    b = _Builder()
+    total = ZERO
+    for invoice_id, amount in allocations:
+        value = require_positive(amount, "amount")
+        b.debit(Account.AR_PAYER, value, payer=payer_id, invoice=invoice_id)
+        total += value
+    if total == 0:
+        raise DomainError("INVALID_AMOUNT", "Nothing to reverse", field="amount")
+    _payer_money(b, money, -total, None)
+    return b.build(SourceType.PAYER_PAYMENT_REVERSED, payer_payment_id)
+
+
+def post_payer_short_write_off(
+    source_id: int, payer_id: int, invoice_id: int, amount: Decimal
+) -> JournalDraft:
+    """An accepted amount the payer will not pay (short payment): Dr WRITE_OFF / Cr AR_PAYER."""
+    value = require_positive(amount, "amount")
+    b = _Builder()
+    b.debit(Account.WRITE_OFF, value, payer=payer_id)
+    b.credit(Account.AR_PAYER, value, payer=payer_id, invoice=invoice_id)
+    return b.build(SourceType.PAYER_SHORT_WRITE_OFF, source_id)
+
+
+# --- cash outside the drawers (ADR 0006) -------------------------------------------------
+
+
+def post_shift_opening(shift_id: int, opening_float: Decimal) -> JournalDraft:
+    """The opening float leaves the safe for the drawer. Zero float: empty draft."""
+    value = require_non_negative(opening_float, "opening_float")
+    b = _Builder()
+    b.add(Account.CASH, value, shift=shift_id)
+    b.add(Account.CASH_SAFE, -value)
+    return b.build(SourceType.SHIFT_OPENING, shift_id)
+
+
+def post_shift_sweep(shift_id: int, counted: Decimal) -> JournalDraft:
+    """At close the counted cash leaves the drawer for the safe. Zero counted: empty draft."""
+    value = require_non_negative(counted, "counted")
+    b = _Builder()
+    b.add(Account.CASH_SAFE, value)
+    b.add(Account.CASH, -value, shift=shift_id)
+    return b.build(SourceType.SHIFT_SWEEP, shift_id)
+
+
+def post_cash_handover(
+    handover_id: int, from_shift_id: int, amount: Decimal, *, to_bank: bool
+) -> JournalDraft:
+    """Cash leaves a drawer: into the bank (deposit) or the safe / in transit (the rest)."""
+    value = require_positive(amount, "amount")
+    b = _Builder()
+    b.debit(Account.BANK if to_bank else Account.CASH_SAFE, value)
+    b.credit(Account.CASH, value, shift=from_shift_id)
+    return b.build(SourceType.CASH_HANDOVER, handover_id)
+
+
+def post_handover_received(handover_id: int, to_shift_id: int, amount: Decimal) -> JournalDraft:
+    """The receiving shift takes handed-over cash out of transit into its drawer."""
+    value = require_positive(amount, "amount")
+    b = _Builder()
+    b.debit(Account.CASH, value, shift=to_shift_id)
+    b.credit(Account.CASH_SAFE, value)
+    return b.build(SourceType.HANDOVER_RECEIPT, handover_id)
+
+
+def post_handover_cancelled(
+    handover_id: int, from_shift_id: int, amount: Decimal, *, to_bank: bool = False
+) -> JournalDraft:
+    """An unreceived handover came back to the sender's (open) drawer: the opposite of
+    :func:`post_cash_handover`."""
+    value = require_positive(amount, "amount")
+    b = _Builder()
+    b.debit(Account.CASH, value, shift=from_shift_id)
+    b.credit(Account.BANK if to_bank else Account.CASH_SAFE, value)
+    return b.build(SourceType.HANDOVER_CANCELLED, handover_id)
 
 
 def _matches(line: JournalLine, filters: Mapping[str, DimValue]) -> bool:

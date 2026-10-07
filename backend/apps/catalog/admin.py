@@ -1,6 +1,14 @@
+"""Catalog admin. Price list versions that are effective (today or earlier) are read-only:
+prices change only through a new dated version (``apps.catalog.services``, invariant 6).
+"""
+
 from __future__ import annotations
 
+from typing import Any
+
 from django.contrib import admin
+from django.http import HttpRequest
+from django.utils import timezone
 
 from apps.catalog.models import (
     CoverageRule,
@@ -36,19 +44,47 @@ class PriceListAdmin(admin.ModelAdmin[PriceList]):
     search_fields = ("code", "name_ar", "name_en")
 
 
+def _effective(version: PriceListVersion | None) -> bool:
+    return version is not None and version.effective_from <= timezone.localdate()
+
+
 class PriceItemInline(admin.TabularInline[PriceItem, PriceListVersion]):
     model = PriceItem
     extra = 0
     raw_id_fields = ("service",)
 
+    def has_add_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return not _effective(obj) and super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return not _effective(obj) and super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return not _effective(obj) and super().has_delete_permission(request, obj)
+
 
 @admin.register(PriceListVersion)
 class PriceListVersionAdmin(admin.ModelAdmin[PriceListVersion]):
+    """Versions are created by the catalog services; effective ones are read-only here."""
+
     list_display = ("price_list", "effective_from", "percent_change", "created_by", "created_at")
     list_filter = ("price_list",)
     date_hierarchy = "effective_from"
     raw_id_fields = ("based_on", "created_by")
     inlines = (PriceItemInline,)
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False  # catalog.services.create_version validates dates and prices
+
+    def has_change_permission(
+        self, request: HttpRequest, obj: PriceListVersion | None = None
+    ) -> bool:
+        return not _effective(obj) and super().has_change_permission(request, obj)
+
+    def has_delete_permission(
+        self, request: HttpRequest, obj: PriceListVersion | None = None
+    ) -> bool:
+        return not _effective(obj) and super().has_delete_permission(request, obj)
 
 
 @admin.register(PriceItem)
@@ -57,6 +93,17 @@ class PriceItemAdmin(admin.ModelAdmin[PriceItem]):
     list_filter = ("version__price_list",)
     search_fields = ("service__code", "service__name_ar", "service__name_en")
     raw_id_fields = ("version", "service")
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False  # prices are added to a version through the catalog services
+
+    def has_change_permission(self, request: HttpRequest, obj: PriceItem | None = None) -> bool:
+        effective = obj is not None and _effective(obj.version)
+        return not effective and super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request: HttpRequest, obj: PriceItem | None = None) -> bool:
+        effective = obj is not None and _effective(obj.version)
+        return not effective and super().has_delete_permission(request, obj)
 
 
 class CoverageRuleInline(admin.TabularInline[CoverageRule, Payer]):

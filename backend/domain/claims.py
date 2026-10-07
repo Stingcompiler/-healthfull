@@ -15,18 +15,21 @@ One claim line follows the payer share of one invoice line:
   writing it off, with an :class:`~domain.audit.Approval`. A fully rejected line moves to
   ``rebilled``/``written_off``; a partly accepted line keeps its status and records the
   resolution.
-* ``receivable`` (the AR_PAYER balance of the line) = ``amount - paid`` minus the rejected
-  part once resolved. It is never cash until a payer payment is recorded.
+* An accepted amount the payer will not pay in full (withholding, deductions) is written off
+  with an approval: ``written_off`` grows and the line stops being receivable.
+* A payer payment that bounced is reversed: ``paid`` goes back down.
+* ``receivable`` (the AR_PAYER balance of the line) = ``amount - paid - written_off`` minus
+  the rejected part once resolved. It is never cash until a payer payment is recorded.
 
 Error codes: ``INVALID_AMOUNT``, ``CLAIM_AMOUNT_INVALID``, ``CLAIM_LINE_NOT_ACCRUED``,
 ``CLAIM_LINE_NOT_CLAIMED``, ``CLAIM_LINE_NOT_ACCEPTED``, ``CLAIM_PAYMENT_EXCEEDS_ACCEPTED``,
 ``CLAIM_NOTHING_REJECTED``, ``CLAIM_LINE_LOCKED``, ``CLAIM_LINE_UNKNOWN``,
-``PAYER_PAYMENT_UNBALANCED``, ``REASON_REQUIRED``.
+``PAYER_PAYMENT_UNBALANCED``, ``REASON_REQUIRED``, ``CLAIM_NOTHING_UNPAID``.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from enum import StrEnum
@@ -36,19 +39,33 @@ from domain.errors import DomainError
 from domain.money import ZERO, require_non_negative, require_positive
 
 __all__ = [
+    "AGING_BUCKETS",
     "ClaimLine",
     "ClaimLineStatus",
     "Resolution",
     "accrue",
+    "aging_bucket",
+    "allocate_oldest_first",
     "is_settled",
     "record_payment",
     "reduce_for_credit",
     "require_creditable",
     "resolve_rejection",
     "respond",
+    "reverse_payment",
     "submit",
     "validate_payer_payment",
+    "withdraw_for_credit",
+    "write_off_shortfall",
 ]
+
+#: Aging buckets in days since invoice approval (upper bounds; the last is open-ended).
+AGING_BUCKETS: tuple[tuple[str, int | None], ...] = (
+    ("0_30", 30),
+    ("31_60", 60),
+    ("61_90", 90),
+    ("over_90", None),
+)
 
 
 class ClaimLineStatus(StrEnum):
@@ -80,18 +97,23 @@ def _bad(message: str, **details: object) -> DomainError:
 
 @dataclass(frozen=True, slots=True)
 class ClaimLine:
-    """Snapshot of a claim line; construction checks status/amount consistency."""
+    """Snapshot of a claim line; construction checks status/amount consistency.
+
+    ``written_off`` is the part of the accepted amount written off as short-paid.
+    """
 
     status: ClaimLineStatus
     amount: Decimal
     accepted: Decimal = ZERO
     paid: Decimal = ZERO
     resolution: Resolution | None = None
+    written_off: Decimal = ZERO
 
     def __post_init__(self) -> None:
         amount = require_non_negative(self.amount, "amount")
         accepted = require_non_negative(self.accepted, "accepted")
         paid = require_non_negative(self.paid, "paid")
+        off = require_non_negative(self.written_off, "written_off")
         st, res = self.status, self.resolution
         ok = {
             S.ACCRUED: amount > 0 and accepted == paid == 0 and res is None,
@@ -106,6 +128,8 @@ class ClaimLine:
             S.WRITTEN_OFF: amount > 0 and accepted == paid == 0 and res is Resolution.WRITTEN_OFF,
             S.VOIDED: amount == accepted == paid == 0 and res is None,
         }[st]
+        if off > 0 and (st not in (S.ACCEPTED, S.PARTIALLY_ACCEPTED) or paid + off > accepted):
+            ok = False
         if not ok:
             raise _bad(
                 "Claim line amounts do not match its status",
@@ -113,6 +137,7 @@ class ClaimLine:
                 amount=str(amount),
                 accepted=str(accepted),
                 paid=str(paid),
+                written_off=str(off),
                 resolution=str(res) if res else None,
             )
 
@@ -126,10 +151,15 @@ class ClaimLine:
         return self.rejected if self.resolution is None else ZERO
 
     @property
+    def unpaid(self) -> Decimal:
+        """Accepted money the payer still owes (not paid, not written off)."""
+        return max(self.accepted - self.paid - self.written_off, ZERO)
+
+    @property
     def receivable(self) -> Decimal:
         """What the payer still owes on this line (its AR_PAYER balance)."""
         resolved = self.rejected if self.resolution is not None else ZERO
-        return self.amount - self.paid - resolved
+        return self.amount - self.paid - resolved - self.written_off
 
 
 def accrue(amount: Decimal) -> ClaimLine:
@@ -149,6 +179,33 @@ def require_creditable(line: ClaimLine | None) -> None:
             "The payer share is already claimed; resolve it through the claim",
             status=str(line.status),
         )
+
+
+def withdraw_for_credit(line: ClaimLine, credit: Decimal) -> ClaimLine:
+    """A credit note takes back ``credit`` of a claimed payer share by withdrawing its line.
+
+    * An unanswered (claimed) line is withdrawn for any credit; what is left of the payer
+      share becomes claimable again in a later batch.
+    * An answered line is withdrawn only when nothing was paid, resolved or written off on
+      it and the credit takes its whole claimed amount (a service that was not given).
+
+    Anything else raises ``CLAIM_LINE_LOCKED``: the payer side is corrected through the
+    claim (rejection, rebill, write-off).
+    """
+    value = require_positive(credit, "credit")
+    if line.status is S.CLAIMED:
+        return ClaimLine(S.VOIDED, ZERO)
+    answered = line.status in (S.ACCEPTED, S.PARTIALLY_ACCEPTED, S.REJECTED)
+    untouched = line.paid == 0 and line.resolution is None and line.written_off == 0
+    if answered and untouched and value >= line.amount:
+        return ClaimLine(S.VOIDED, ZERO)
+    raise DomainError(
+        "CLAIM_LINE_LOCKED",
+        "The payer share is claimed and answered; correct it through the claim",
+        status=str(line.status),
+        credit=str(value),
+        claimed=str(line.amount),
+    )
 
 
 def reduce_for_credit(line: ClaimLine, credited: Decimal) -> ClaimLine:
@@ -190,15 +247,42 @@ def record_payment(line: ClaimLine, amount: Decimal) -> ClaimLine:
     value = require_positive(amount, "amount")
     if line.status not in (S.ACCEPTED, S.PARTIALLY_ACCEPTED):
         raise DomainError("CLAIM_LINE_NOT_ACCEPTED", "Only accepted amounts can be paid")
-    if line.paid + value > line.accepted:
+    if value > line.unpaid:
         raise DomainError(
             "CLAIM_PAYMENT_EXCEEDS_ACCEPTED",
             "Payment is larger than the accepted amount left",
-            left=str(line.accepted - line.paid),
+            left=str(line.unpaid),
         )
     paid = line.paid + value
     status = S.PAID if paid == line.accepted else line.status
     return replace(line, status=status, paid=paid)
+
+
+def reverse_payment(line: ClaimLine, amount: Decimal, status: ClaimLineStatus) -> ClaimLine:
+    """Take back part of a payer payment from this line (the payment bounced).
+
+    ``status`` is the line's answered status (accepted or partially accepted) it returns to.
+    """
+    value = require_positive(amount, "amount")
+    if status not in (S.ACCEPTED, S.PARTIALLY_ACCEPTED) or value > line.paid:
+        raise _bad("Cannot reverse more than was paid", paid=str(line.paid), amount=str(value))
+    return replace(line, status=status, paid=line.paid - value)
+
+
+def write_off_shortfall(line: ClaimLine, amount: Decimal, approval: Approval) -> ClaimLine:
+    """Write off accepted money the payer will not pay (FEATURES 11.5-11.7, invariant 4)."""
+    if not isinstance(approval, Approval):
+        raise TypeError("write_off_shortfall() needs an Approval")
+    value = require_positive(amount, "amount")
+    if line.status not in (S.ACCEPTED, S.PARTIALLY_ACCEPTED) or line.unpaid == 0:
+        raise DomainError("CLAIM_NOTHING_UNPAID", "No accepted amount is left unpaid")
+    if value > line.unpaid:
+        raise _bad(
+            "The write-off is larger than the unpaid accepted amount",
+            unpaid=str(line.unpaid),
+            amount=str(value),
+        )
+    return replace(line, written_off=line.written_off + value)
 
 
 def resolve_rejection(line: ClaimLine, resolution: Resolution, approval: Approval) -> ClaimLine:
@@ -234,7 +318,7 @@ def validate_payer_payment(
             raise DomainError("CLAIM_LINE_UNKNOWN", "Unknown claim line", claim_line_id=line_id)
         if line.status not in (S.ACCEPTED, S.PARTIALLY_ACCEPTED):
             raise DomainError("CLAIM_LINE_NOT_ACCEPTED", "Only accepted amounts can be paid")
-        if line.paid + v > line.accepted:
+        if v > line.unpaid:
             raise DomainError(
                 "CLAIM_PAYMENT_EXCEEDS_ACCEPTED",
                 "Payment is larger than the accepted amount left",
@@ -248,3 +332,35 @@ def validate_payer_payment(
             amount=str(total),
             allocated=str(allocated),
         )
+
+
+def allocate_oldest_first(
+    amount: Decimal, dues: Iterable[tuple[int, Decimal]]
+) -> dict[int, Decimal]:
+    """Spread a payer payment over claim lines in the given order (oldest claims first).
+
+    ``dues`` are ``(claim line id, unpaid accepted amount)``; lines owing nothing are
+    skipped. The parts never exceed a line's due; what is left over stays unallocated (the
+    caller's balance check then refuses the payment).
+    """
+    left = require_positive(amount, "amount")
+    out: dict[int, Decimal] = {}
+    for line_id, due in dues:
+        if left == 0:
+            break
+        owed = require_non_negative(due, "due")
+        if owed > 0:
+            take = min(owed, left)
+            out[line_id] = take
+            left -= take
+    return out
+
+
+def aging_bucket(age_days: int) -> str:
+    """The aging bucket (FEATURES 11.7) of a receivable ``age_days`` old."""
+    if age_days < 0:
+        raise DomainError("INVALID_DATE_RANGE", "An age cannot be negative", age_days=age_days)
+    for name, upper in AGING_BUCKETS:
+        if upper is None or age_days <= upper:
+            return name
+    raise AssertionError("unreachable: the last bucket is open-ended")  # pragma: no cover

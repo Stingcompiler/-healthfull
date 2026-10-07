@@ -42,7 +42,15 @@ SOURCE_TYPES: dict[dl.SourceType, str] = {
     dl.SourceType.SHIFT_VARIANCE: DbSourceType.SHIFT_CLOSE,
     dl.SourceType.PAYER_REBILL: DbSourceType.CLAIM_REBILL,
     dl.SourceType.PAYER_WRITE_OFF: DbSourceType.CLAIM_WRITEOFF,
+    dl.SourceType.PAYER_SHORT_WRITE_OFF: DbSourceType.CLAIM_SHORT_WRITEOFF,
     dl.SourceType.PAYER_PAYMENT: DbSourceType.PAYER_PAYMENT,
+    dl.SourceType.PAYER_CHEQUE_CLEARED: DbSourceType.PAYER_CHEQUE_CLEAR,
+    dl.SourceType.PAYER_PAYMENT_REVERSED: DbSourceType.PAYER_PAYMENT_REVERSE,
+    dl.SourceType.SHIFT_OPENING: DbSourceType.SHIFT_OPEN,
+    dl.SourceType.SHIFT_SWEEP: DbSourceType.SHIFT_SWEEP,
+    dl.SourceType.CASH_HANDOVER: DbSourceType.HANDOVER,
+    dl.SourceType.HANDOVER_RECEIPT: DbSourceType.HANDOVER_RECEIPT,
+    dl.SourceType.HANDOVER_CANCELLED: DbSourceType.HANDOVER_CANCEL,
 }
 
 #: Sentinel the services pass as ``department_id`` for revenue without a department.

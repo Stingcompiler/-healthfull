@@ -28,9 +28,13 @@ def _claim_line(**kw: Any) -> ClaimLine:
         period_end=date(2026, 9, 30),
         created_by=b.user(),
     )
-    return ClaimLine.objects.create(
-        claim=claim, invoice_line=inv.lines.get(), amount_claimed=Decimal("80.00"), **kw
+    line = ClaimLine.objects.create(
+        claim=claim, invoice_line=inv.lines.get(), amount_claimed=Decimal("80.00")
     )
+    if kw:  # lines join a draft claim as pending; the answer comes afterwards
+        ClaimLine.objects.filter(pk=line.pk).update(**kw)
+        line.refresh_from_db()
+    return line
 
 
 def test_response_amounts_add_up() -> None:
@@ -83,7 +87,13 @@ def test_invoice_line_is_claimed_once() -> None:
         ClaimLine.objects.create(
             claim=line.claim, invoice_line=line.invoice_line, amount_claimed=Decimal("80")
         )
-    ClaimLine.objects.filter(pk=line.pk).update(status="withdrawn")
+    b.db_rejects(
+        lambda: ClaimLine.objects.filter(pk=line.pk).update(status="withdrawn"),
+        "claims_line_withdrawal_documented",
+    )
+    ClaimLine.objects.filter(pk=line.pk).update(
+        status="withdrawn", withdrawn_at=timezone.now(), withdrawn_by=b.user(), withdraw_note="x"
+    )
     ClaimLine.objects.create(
         claim=line.claim, invoice_line=line.invoice_line, amount_claimed=Decimal("80")
     )

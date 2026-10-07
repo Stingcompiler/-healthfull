@@ -1,4 +1,5 @@
-"""Backup runs and restore tests shown on the status page (FEATURES 0.8, 13.8, 14.1)."""
+"""Backup runs, restore tests and update runs shown on the status page (FEATURES 0.8,
+13.8, 13.10, 14.1)."""
 
 from __future__ import annotations
 
@@ -109,3 +110,50 @@ class RestoreTest(models.Model):
 
     def __str__(self) -> str:
         return f"restore test {self.started_at:%Y-%m-%d} ({self.status})"
+
+
+class UpdateResult(models.TextChoices):
+    RUNNING = "running", "Running"
+    SUCCEEDED = "succeeded", "Succeeded"
+    FAILED = "failed", "Failed"
+    ROLLED_BACK = "rolled_back", "Rolled back"
+
+
+@track_history()
+class UpdateRun(models.Model):
+    """One application update (FEATURES 13.10): version shown, release notes, rollback log.
+
+    Written by ``infra/update.sh`` through the ops services; the status page shows the
+    running version and the history.
+    """
+
+    version = models.CharField(max_length=50)
+    previous_version = models.CharField(max_length=50, blank=True)
+    release_notes = models.TextField(blank=True)
+    result = models.CharField(
+        max_length=20, choices=UpdateResult.choices, default=UpdateResult.RUNNING
+    )
+    started_at = models.DateTimeField()
+    finished_at = models.DateTimeField(null=True, blank=True)
+    log = models.TextField(blank=True)
+    started_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        verbose_name = "update run"
+        ordering: ClassVar[list[str]] = ["-started_at"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            choice_check("result", UpdateResult, "ops_update_result_valid"),
+            models.CheckConstraint(
+                condition=Q(result=UpdateResult.RUNNING) | Q(finished_at__isnull=False),
+                name="ops_update_finished_documented",
+            ),
+            models.CheckConstraint(
+                condition=Q(finished_at__isnull=True) | Q(finished_at__gte=F("started_at")),
+                name="ops_update_finish_after_start",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.version} ({self.result})"

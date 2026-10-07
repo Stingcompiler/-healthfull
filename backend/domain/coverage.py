@@ -15,21 +15,34 @@ parts always sum exactly to the gross). Discounts touch only the patient side an
 exceed the patient's pre-discount share (5.9). The per-role discount limit is a percentage
 of that pre-discount share, compared exactly (no rounding).
 
+A discount given as a percent is rounded down to the cent (:func:`percent_discount`), so it
+never exceeds its percent. A payer's share is billed only inside the payer's contract
+window (:func:`require_contract`).
+
 Error codes: ``INVALID_COVERAGE_RULE``, ``DISCOUNT_EXCEEDS_PATIENT_SHARE``,
 ``DISCOUNT_LIMIT_EXCEEDED``, ``PREAPPROVAL_REQUIRED``, ``REASON_REQUIRED``,
-``INVALID_AMOUNT``, ``INVALID_PERCENT``.
+``INVALID_AMOUNT``, ``INVALID_PERCENT``, ``PAYER_CONTRACT_EXPIRED``.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from decimal import Decimal
+from datetime import date
+from decimal import ROUND_DOWN, Decimal
 from enum import StrEnum
 
 from domain.audit import Approval
 from domain.errors import DomainError
-from domain.money import HUNDRED, ZERO, allocate, is_money, percent_of, require_non_negative
+from domain.money import (
+    CENT,
+    HUNDRED,
+    ZERO,
+    allocate,
+    is_money,
+    percent_of,
+    require_non_negative,
+)
 
 __all__ = [
     "CoverageKind",
@@ -42,6 +55,8 @@ __all__ = [
     "distribute_discount",
     "max_discount_percent",
     "payer_share_for",
+    "percent_discount",
+    "require_contract",
     "split_line",
 ]
 
@@ -178,6 +193,18 @@ def discount_within_limit(discount: Decimal, base: Decimal, limit_percent: Decim
     return d * HUNDRED <= _percent(limit_percent, "limit_percent") * b
 
 
+def percent_discount(base: Decimal, percent: Decimal | int) -> Decimal:
+    """A discount of ``percent``% of ``base``, rounded down to the cent.
+
+    Rounding down keeps a percent discount within the percent: a discount entered at the
+    approver's exact limit always passes :func:`discount_within_limit` (half-up rounding of
+    25% of 301.50 would give 75.38, above the limit).
+    """
+    b = require_non_negative(base, "base")
+    p = _percent(percent, "percent")
+    return (b * p / HUNDRED).quantize(CENT, rounding=ROUND_DOWN)
+
+
 def max_discount_percent(roles: Iterable[str], role_limits: Mapping[str, Decimal | int]) -> Decimal:
     """Highest discount percent any of ``roles`` may give (0 when none is listed)."""
     limits = [_percent(role_limits[r], "limit") for r in set(roles) if r in role_limits]
@@ -256,3 +283,19 @@ def check_preapproval(
     if rule is not None and rule.requires_preapproval and not excluded and ref is None:
         raise DomainError("PREAPPROVAL_REQUIRED", "The payer requires a pre-approval reference")
     return ref
+
+
+def require_contract(start: date | None, end: date | None, on: date) -> None:
+    """A payer's share is billed only inside its contract window (FEATURES 11.1).
+
+    Open ends (``None``) do not limit. Raises ``PAYER_CONTRACT_EXPIRED`` outside the window:
+    a receivable booked on an ended contract is one the payer will reject.
+    """
+    if (start is not None and on < start) or (end is not None and on > end):
+        raise DomainError(
+            "PAYER_CONTRACT_EXPIRED",
+            "The payer's contract does not cover this date",
+            on=on.isoformat(),
+            contract_start=start.isoformat() if start else None,
+            contract_end=end.isoformat() if end else None,
+        )

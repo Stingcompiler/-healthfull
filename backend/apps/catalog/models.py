@@ -5,18 +5,109 @@ the line's payer price list (cash list when the payer has none) and frozen on th
 line (invariant 6). Coverage per line comes from the most specific active ``CoverageRule``
 (service, then service kind, then payer default); an ``Exclusion`` routes the line 100% to the
 patient (ARCHITECTURE 4.5, ``domain/coverage.py``).
+
+Database backstops for invariant 6 (the services refuse first): a price list version that
+priced a frozen invoice line never changes (its prices, list or date) and is never deleted;
+a version's start date never moves once it is effective (today or earlier), nor into the
+past; no version is added (or moved) to a date on or before an approved invoice that an
+earlier version of the list priced. Every change locks the version row, which invoice
+approval locks for share while it prices, so an edit and an approval cannot interleave.
 """
 
 from __future__ import annotations
 
 from typing import ClassVar
 
+import pgtrigger
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models import F, Q
 
 from apps.core.db import choice_check, money_field, percent_field, track_history
+
+_VERSION_USED_SQL = """
+    SELECT 1 FROM billing_invoiceline il WHERE il.price_list_version_id = {version} AND il.frozen
+"""
+
+#: A version of list L starting on day d becomes "the list effective" on d and later days. If a
+#: frozen line of L was priced on such a day by an earlier version, inserting (or moving a
+#: version to) d would rewrite which prices were effective when that invoice was approved.
+_REWRITES_HISTORY_SQL = """
+    SELECT 1 FROM billing_invoiceline il
+      JOIN billing_invoice i ON i.id = il.invoice_id
+      JOIN catalog_pricelistversion v ON v.id = il.price_list_version_id
+     WHERE il.frozen AND v.price_list_id = NEW.price_list_id
+       AND v.effective_from < NEW.effective_from AND i.priced_on >= NEW.effective_from
+"""
+
+_VERSION_GUARD_SQL = (
+    """
+    IF TG_OP = 'INSERT' THEN
+        IF EXISTS ("""
+    + _REWRITES_HISTORY_SQL
+    + """) THEN
+            RAISE EXCEPTION
+                'PRICE_VERSION_BACKDATED: a version from % would reprice frozen invoices',
+                NEW.effective_from;
+        END IF;
+        RETURN NEW;
+    END IF;
+    PERFORM 1 FROM catalog_pricelistversion v WHERE v.id = OLD.id FOR UPDATE;
+    IF EXISTS ("""
+    + _VERSION_USED_SQL.format(version="OLD.id")
+    + """) AND (TG_OP = 'DELETE'
+                OR NEW.price_list_id IS DISTINCT FROM OLD.price_list_id
+                OR NEW.effective_from IS DISTINCT FROM OLD.effective_from) THEN
+        RAISE EXCEPTION 'PRICE_VERSION_LOCKED: version % priced approved invoices', OLD.id;
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW.effective_from IS DISTINCT FROM OLD.effective_from THEN
+        IF OLD.effective_from <= current_date OR NEW.effective_from < current_date THEN
+            RAISE EXCEPTION 'PRICE_VERSION_LOCKED: version % is effective; its date is fixed',
+                OLD.id;
+        END IF;
+        IF EXISTS ("""
+    + _REWRITES_HISTORY_SQL
+    + """) THEN
+            RAISE EXCEPTION
+                'PRICE_VERSION_BACKDATED: a version from % would reprice frozen invoices',
+                NEW.effective_from;
+        END IF;
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+"""
+)
+
+#: Prices of a version that priced a frozen line never change and are never removed. A price
+#: may still be added for a service the version did not list: no invoice line can have frozen
+#: a price the version did not have.
+_ITEM_GUARD_SQL = (
+    """
+    PERFORM 1 FROM catalog_pricelistversion v WHERE v.id = OLD.version_id FOR UPDATE;
+    IF EXISTS ("""
+    + _VERSION_USED_SQL.format(version="OLD.version_id")
+    + """) THEN
+        RAISE EXCEPTION 'PRICE_VERSION_LOCKED: version % priced approved invoices',
+            OLD.version_id;
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW.version_id IS DISTINCT FROM OLD.version_id THEN
+        PERFORM 1 FROM catalog_pricelistversion v WHERE v.id = NEW.version_id FOR UPDATE;
+        IF EXISTS ("""
+    + _VERSION_USED_SQL.format(version="NEW.version_id")
+    + """) THEN
+            RAISE EXCEPTION 'PRICE_VERSION_LOCKED: version % priced approved invoices',
+                NEW.version_id;
+        END IF;
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+"""
+)
 
 
 class ServiceKind(models.TextChoices):
@@ -182,6 +273,14 @@ class PriceListVersion(models.Model):
                 name="catalog_pricelistversion_percent_valid",
             ),
         ]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            pgtrigger.Trigger(
+                name="version_guard",
+                when=pgtrigger.Before,
+                operation=pgtrigger.Insert | pgtrigger.Update | pgtrigger.Delete,
+                func=_VERSION_GUARD_SQL,
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.price_list_id} from {self.effective_from}"
@@ -204,6 +303,14 @@ class PriceItem(models.Model):
         ]
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["service", "version"], name="catalog_priceitem_service_idx"),
+        ]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            pgtrigger.Trigger(
+                name="item_guard",
+                when=pgtrigger.Before,
+                operation=pgtrigger.Update | pgtrigger.Delete,
+                func=_ITEM_GUARD_SQL,
+            ),
         ]
 
     def __str__(self) -> str:

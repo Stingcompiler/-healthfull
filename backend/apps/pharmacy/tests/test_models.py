@@ -159,7 +159,8 @@ def test_dispense_is_append_only() -> None:
     b.stock_move(batch, store, "20")
     move = b.stock_move(batch, store, "-10", "dispense")
     visit = b.visit()
-    line = b.service_line(visit, batch.item.service)
+    # Stock leaves only for a paid (or authorized) line with units left (dispense_line_eligible).
+    line = b.billed_line(visit, batch.item.service, quantity="20")
     dispense = Dispense.objects.create(
         number="DSP-1", visit=visit, store=store, dispensed_by=b.user()
     )

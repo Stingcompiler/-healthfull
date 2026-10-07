@@ -31,6 +31,7 @@ from apps.core.db import (
     protect_when,
     quantity_field,
     track_history,
+    truncate_guard,
 )
 
 
@@ -308,6 +309,7 @@ class StockMove(models.Model):
             models.Index(fields=["kind", "moved_at"], name="pharmacy_move_kind_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             append_only(),
             pgtrigger.Trigger(
                 name="stock_balance",
@@ -344,6 +346,7 @@ class StockBalance(models.Model):
             models.Index(fields=["item", "store"], name="pharmacy_balance_item_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             protect_when(
                 "balance_only_from_moves",
                 code="STOCK_BALANCE_DERIVED",
@@ -427,10 +430,103 @@ class DispenseLine(models.Model):
                 name="pharmacy_dispenseline_override_reason",
             ),
         ]
-        triggers: ClassVar[list[pgtrigger.Trigger]] = [append_only()]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
+            append_only(),
+            # Invariants 1 and 5: stock leaves only for an open line of the dispense's visit
+            # that is paid or under an unrevoked authorization of that visit, and never for
+            # more units than the line still has (credited units are never given).
+            pgtrigger.Trigger(
+                name="dispense_line_eligible",
+                when=pgtrigger.Before,
+                operation=pgtrigger.Insert,
+                declare=[("line", "record")],
+                func="""
+                    SELECT sl.id, sl.visit_id, sl.quantity, sl.billing_status,
+                           sl.fulfilment_status, sl.authorization_id
+                      INTO line FROM orders_serviceline sl WHERE sl.id = NEW.service_line_id;
+                    IF line.fulfilment_status NOT IN ('pending', 'in_progress') OR NOT (
+                        line.billing_status = 'settled' OR EXISTS (
+                            SELECT 1 FROM orders_performauthorization a
+                             WHERE a.id = line.authorization_id AND a.revoked_at IS NULL
+                               AND a.visit_id = line.visit_id)
+                    ) THEN
+                        RAISE EXCEPTION
+                            'LINE_NOT_ELIGIBLE: service line % is not paid nor authorized', line.id;
+                    END IF;
+                    IF line.visit_id IS DISTINCT FROM (
+                        SELECT d.visit_id FROM pharmacy_dispense d WHERE d.id = NEW.dispense_id
+                    ) THEN
+                        RAISE EXCEPTION 'LINE_NOT_ON_VISIT: service line % is on another visit',
+                            line.id;
+                    END IF;
+                    IF NEW.qty_base + coalesce((
+                        SELECT sum(x.qty_base) FROM pharmacy_dispenseline x
+                         WHERE x.service_line_id = NEW.service_line_id), 0)
+                       > line.quantity - coalesce((
+                        SELECT sum(cl.quantity) FROM billing_creditnoteline cl
+                          JOIN billing_creditnote cn ON cn.id = cl.credit_note_id
+                          JOIN billing_invoiceline il ON il.id = cl.invoice_line_id
+                         WHERE il.service_line_id = NEW.service_line_id AND il.frozen
+                           AND cn.status = 'approved'), 0) THEN
+                        RAISE EXCEPTION
+                            'DISPENSE_EXCEEDS_LINE: more than service line % still needs', line.id;
+                    END IF;
+                    RETURN NEW;
+                """,
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.dispense_id}: {self.qty_base} of {self.item_id}"
+
+
+class DispenseReturn(models.Model):
+    """Units a patient brought back, put back on the shelf (``return`` stock move).
+
+    Linked to the dispensed line it reverses and, when the units were refunded, to the credit
+    note that took them off the bill (FEATURES 8.4; invariants 4 and 5). Append-only.
+    """
+
+    number = models.CharField(max_length=30, unique=True)
+    dispense_line = models.ForeignKey(
+        DispenseLine, on_delete=models.PROTECT, related_name="returns"
+    )
+    credit_note = models.ForeignKey(
+        "billing.CreditNote",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="stock_returns",
+    )
+    qty_base = quantity_field()
+    reason_code = models.ForeignKey(
+        "core.ReasonCode",
+        on_delete=models.PROTECT,
+        related_name="+",
+        limit_choices_to={"category": "stock_adjust"},
+    )
+    note = models.CharField(max_length=300, blank=True)
+    returned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    returned_at = models.DateTimeField(auto_now_add=True)
+    stock_move = models.OneToOneField(
+        StockMove, on_delete=models.PROTECT, related_name="dispense_return"
+    )
+
+    class Meta:
+        verbose_name = "dispense return"
+        ordering: ClassVar[list[str]] = ["-returned_at", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(qty_base__gt=0), name="pharmacy_dispensereturn_qty_positive"
+            ),
+        ]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [truncate_guard(), append_only()]
+
+    def __str__(self) -> str:
+        return self.number
 
 
 # --- Goods receipts ------------------------------------------------------------------------
@@ -755,6 +851,24 @@ class StockTransfer(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
     received_at = models.DateTimeField(null=True, blank=True)
+    shortage_reason = models.ForeignKey(
+        "core.ReasonCode",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        limit_choices_to={"category": "stock_adjust"},
+        help_text="Why units sent did not arrive (lost or damaged in transit).",
+    )
+    shortage_note = models.CharField(max_length=300, blank=True)
+    shortage_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancel_note = models.CharField(max_length=300, blank=True)
 
     class Meta:
         verbose_name = "stock transfer"
@@ -773,6 +887,19 @@ class StockTransfer(models.Model):
                 condition=~Q(status=TransferStatus.RECEIVED)
                 | Q(received_by__isnull=False, received_at__isnull=False),
                 name="pharmacy_transfer_receipt_documented",
+            ),
+            # Invariant 4: a transit shortage records reason and approver.
+            models.CheckConstraint(
+                condition=Q(shortage_reason__isnull=True)
+                | Q(status=TransferStatus.RECEIVED, shortage_approved_by__isnull=False),
+                name="pharmacy_transfer_shortage_documented",
+            ),
+            # A transfer cancelled after it was sent (its stock went back) says who and why.
+            models.CheckConstraint(
+                condition=~Q(status=TransferStatus.CANCELLED)
+                | Q(sent_at__isnull=True)
+                | (Q(cancelled_by__isnull=False, cancelled_at__isnull=False) & ~Q(cancel_note="")),
+                name="pharmacy_transfer_cancel_documented",
             ),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [

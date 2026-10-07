@@ -83,6 +83,8 @@ def test_chart_matches_architecture() -> None:
         A.DISCOUNT: set(),
         A.WRITE_OFF: {Dim.PAYER},
         A.CASH_OVER_SHORT: {Dim.SHIFT},
+        # ADR 0006: cash outside the drawers (safe, in transit between shifts).
+        A.CASH_SAFE: set(),
     }
     for account, dims in expected_dims.items():
         assert CHART[account].dimensions == dims
@@ -91,7 +93,7 @@ def test_chart_matches_architecture() -> None:
     assert CHART[A.PATIENT_CREDIT].normal is Side.CREDIT
     assert CHART[A.REVENUE].normal is Side.CREDIT
     assert CHART[A.AR_PATIENT].normal is Side.DEBIT
-    assert {A.CASH, A.BANK, A.BANK_PENDING} == MONEY_ACCOUNTS
+    assert {A.CASH, A.BANK, A.BANK_PENDING, A.CASH_SAFE} == MONEY_ACCOUNTS
 
 
 # --- lines and balance ------------------------------------------------------------------

@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-import importlib.util
+import threading
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
+from django.db import connection
 from django.utils import timezone
 
+from api.errors import PermissionRequired
+from apps.catalog.tests import engine
 from apps.core.models import Policy
 from apps.core.tests import builders as b
 from apps.orders.models import ServiceLine
@@ -27,11 +30,6 @@ from apps.visits.models import (
 from domain.errors import DomainError
 
 pytestmark = pytest.mark.django_db
-
-FIN_READY = importlib.util.find_spec("apps.orders.services") is not None
-awaiting_fin = pytest.mark.xfail(
-    not FIN_READY, reason="awaiting financial engine", raises=ModuleNotFoundError, strict=True
-)
 
 
 @pytest.fixture
@@ -70,6 +68,10 @@ def _fee_line(visit: Visit, **extra) -> ServiceLine:
 
 
 def _settle(line: ServiceLine) -> None:
+    """Bill the line on an approved invoice (what the line guard requires), then settle it."""
+    inv = b.draft_invoice(line.visit)
+    b.invoice_line(inv, line=line)
+    b.approve_invoice(inv)
     now = timezone.now()
     ServiceLine.objects.filter(pk=line.pk).update(billing_status="invoiced", invoiced_at=now)
     ServiceLine.objects.filter(pk=line.pk).update(billing_status="settled", settled_at=now)
@@ -201,7 +203,6 @@ def test_follow_up_counts_merged_files(clerk, doctor, make_user) -> None:
     assert vs.create_visit(patient=survivor, actor=clerk, doctor=doctor).visit_type == "follow_up"
 
 
-@awaiting_fin
 def test_create_visit_adds_requested_consultation_line(clerk, fee_doctor, patient) -> None:
     v = vs.create_visit(patient=patient, actor=clerk, doctor=fee_doctor)
     line = ServiceLine.objects.get(visit=v)
@@ -287,7 +288,6 @@ def test_tokens_restart_per_department_and_day(clerk, doctor) -> None:
     assert later.token_no == 1
 
 
-@awaiting_fin
 def test_finish_consultation_performs_the_fee_line(clerk, doctor) -> None:
     v = vs.create_visit(patient=b.patient(), actor=clerk, doctor=doctor)
     line = _fee_line(v)
@@ -339,7 +339,6 @@ def test_visit_with_performed_work_cannot_be_cancelled(clerk, doctor) -> None:
     assert exc.value.code == "VISIT_HAS_PERFORMED_WORK"
 
 
-@awaiting_fin
 def test_cancel_visit_cancels_open_lines(clerk, doctor) -> None:
     v = vs.create_visit(patient=b.patient(), actor=clerk, doctor=doctor)
     line = _fee_line(v)
@@ -348,6 +347,40 @@ def test_cancel_visit_cancels_open_lines(clerk, doctor) -> None:
     assert line.fulfilment_status == "cancelled"
     assert line.cancel_reason is not None
     assert line.cancel_reason.code == "PATIENT_REFUSED"
+
+
+def test_cancelling_a_paid_visit_opens_a_refund(make_user, clerk, fee_doctor) -> None:
+    from apps.payments import services as payments
+    from apps.payments.models import Refund
+
+    cashier = make_user(roles=["cashier"])
+    visit = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
+    line = ServiceLine.objects.get(visit=visit)
+    fee = fee_doctor.consultation_service
+    engine.price_version().items.get_or_create(service=fee, defaults={"unit_price": Decimal(500)})
+    from apps.billing import services as billing
+
+    invoice = billing.approve_invoice(billing.create_draft_invoice(visit, cashier), actor=cashier)
+    shift = payments.open_shift(cashier, Decimal("0.00"))
+    payments.record_payment(
+        shift,
+        visit.patient,
+        "cash",
+        Decimal("500.00"),
+        actor=cashier,
+        allocations=[(invoice, Decimal("500.00"))],
+    )
+    line.refresh_from_db()
+    assert line.billing_status == "settled"
+    assert [e.visit_id for e in vs.queue(department=fee_doctor.department)] == [visit.pk]
+    # The paid fee's credit note needs a billing supervisor's approval (FEATURES 5.11).
+    with pytest.raises(PermissionRequired):
+        vs.cancel_visit(visit, actor=clerk, reason_code="DOCTOR_UNAVAILABLE")
+    supervisor = make_user(roles=["cashier_supervisor"])
+    vs.cancel_visit(visit, actor=clerk, reason_code="DOCTOR_UNAVAILABLE", approver=supervisor)
+    line.refresh_from_db()
+    assert (line.billing_status, line.fulfilment_status) == ("credited", "cancelled")
+    assert Refund.objects.get(patient=visit.patient).amount == Decimal("500.00")
 
 
 # --- appointments ---------------------------------------------------------------------------
@@ -506,7 +539,6 @@ def test_bed_service_must_be_a_bed_day(clerk, doctor) -> None:
     assert exc.value.code == "BED_SERVICE_INVALID"
 
 
-@awaiting_fin
 def test_bed_nights_are_charged_once_and_discharge_closes(clerk, doctor, ward) -> None:
     v = vs.create_visit(patient=b.patient(), actor=clerk, department=b.department())
     admitted_at = timezone.now() - timedelta(days=3)
@@ -536,3 +568,82 @@ def test_admission_is_required_for_discharge(clerk, doctor, ward) -> None:
     with pytest.raises(DomainError) as exc:
         vs.discharge(adm, actor=clerk)
     assert exc.value.code == "NOT_ADMITTED"
+
+
+def test_create_bed(clerk) -> None:
+    with pytest.raises(DomainError) as exc:
+        vs.create_bed(
+            code="B9", name_ar="س", name_en="B", bed_service=b.service("lab"), actor=clerk
+        )
+    assert exc.value.code == "BED_SERVICE_INVALID"
+    bed = vs.create_bed(
+        code="B9", name_ar="سرير ٩", name_en="Bed 9", bed_service=b.service("bed"), actor=clerk
+    )
+    assert bed.status == "available"
+    with pytest.raises(DomainError) as exc:
+        vs.create_bed(
+            code="B9", name_ar="س", name_en="B", bed_service=b.service("bed"), actor=clerk
+        )
+    assert exc.value.code == "BED_EXISTS"
+
+
+def test_visit_timeline(make_user, clerk, fee_doctor) -> None:
+    from apps.billing import services as billing
+    from apps.payments import services as payments
+
+    cashier = make_user(roles=["cashier"])
+    visit = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
+    engine.price_version().items.get_or_create(
+        service=fee_doctor.consultation_service, defaults={"unit_price": Decimal(300)}
+    )
+    invoice = billing.approve_invoice(billing.create_draft_invoice(visit, cashier), actor=cashier)
+    shift = payments.open_shift(cashier, Decimal("0.00"))
+    payments.record_payment(
+        shift,
+        visit.patient,
+        "cash",
+        Decimal("300.00"),
+        actor=cashier,
+        allocations=[(invoice, Decimal("300.00"))],
+    )
+    entry = vs.start_consultation(QueueEntry.objects.get(visit=visit), actor=clerk)
+    vs.finish_consultation(entry, actor=clerk)
+    vs.close_visit(visit, actor=clerk)
+    kinds = [e.kind for e in vs.timeline(visit)]
+    assert kinds[0] == "visit_created"
+    assert kinds[-1] == "visit_closed"
+    assert {"line_ordered", "invoice_approved", "payment_allocated", "line_performed"} <= set(kinds)
+    doctor_view = [e.kind for e in vs.timeline(visit, include_financial=False)]
+    assert not set(doctor_view) & vs.FINANCIAL_EVENTS
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_booking_never_double_books(make_user) -> None:
+    clerks = [make_user(roles=["receptionist"]) for _ in range(4)]
+    doctor = b.doctor()
+    start = _at(1, 10)
+    results: list[str] = []
+    lock = threading.Lock()
+    barrier = threading.Barrier(len(clerks))
+
+    def book(clerk) -> None:
+        try:
+            barrier.wait(timeout=10)
+            vs.book_appointment(
+                doctor=doctor, starts_at=start, actor=clerk, contact_name=f"caller {clerk.pk}"
+            )
+            outcome = "ok"
+        except DomainError as exc:
+            outcome = exc.code
+        finally:
+            connection.close()
+        with lock:
+            results.append(outcome)
+
+    threads = [threading.Thread(target=book, args=(c,)) for c in clerks]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=60)
+    assert sorted(results) == ["APPOINTMENT_CONFLICT"] * 3 + ["ok"], results
+    assert Appointment.objects.filter(doctor=doctor, status="booked").count() == 1

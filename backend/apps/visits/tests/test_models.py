@@ -82,6 +82,7 @@ def test_bed_is_occupied_by_one_stay_and_charged_once_a_day() -> None:
         return Admission.objects.create(
             number=f"ADM-{b.n()}",
             visit=v,
+            patient=v.patient,
             admitting_doctor=doc,
             admitted_at=timezone.now(),
             admitted_by=b.user(),

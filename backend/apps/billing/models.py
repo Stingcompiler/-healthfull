@@ -4,7 +4,9 @@
   freezes its price (from the ``PriceListVersion`` effective that day), quantity, gross,
   discount, payer and shares, and the invoice gets its number.
 * Approved and void invoices, frozen lines, and approved credit notes and their lines can
-  never be updated or deleted (DB triggers). No line can be added to a non-draft document.
+  never be updated or deleted (DB triggers). No line can be added to, changed on or removed
+  from a non-draft document, and a line never moves to another document (its parent and the
+  service line or invoice line it bills are read-only).
 * A deferred (commit-time) trigger refuses to commit an approved invoice or credit note whose
   lines are not all frozen, that has no lines, or whose header totals differ from its lines.
   It also refuses credit notes that credit more than the invoice line holds.
@@ -27,9 +29,11 @@ from apps.core.db import (
     choice_check,
     money_field,
     parent_must_be_editable,
+    percent_field,
     protect_when,
     quantity_field,
     track_history,
+    truncate_guard,
 )
 
 
@@ -131,6 +135,17 @@ _OVER_CREDIT_SQL = """
         ) THEN
             RAISE EXCEPTION 'CREDIT_WRONG_INVOICE: credit note % credits another invoice', NEW.id;
         END IF;
+        -- A payer share on a live claim is corrected through the claim (domain.claims).
+        IF EXISTS (
+            SELECT 1 FROM billing_creditnoteline cl
+              JOIN claims_claimline c ON c.invoice_line_id = cl.invoice_line_id
+              JOIN claims_claim k ON k.id = c.claim_id
+             WHERE cl.credit_note_id = NEW.id AND cl.payer_share > 0
+               AND c.status <> 'withdrawn' AND k.status <> 'void'
+        ) THEN
+            RAISE EXCEPTION 'CLAIM_LINE_LOCKED: credit note % credits a claimed payer share',
+                NEW.id;
+        END IF;
 """
 
 
@@ -209,6 +224,7 @@ class Invoice(models.Model):
             models.Index(fields=["status", "approved_at"], name="billing_invoice_approved_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             protect_when(
                 "invoice_frozen",
                 code="INVOICE_FROZEN",
@@ -254,6 +270,12 @@ class InvoiceLine(models.Model):
     unit_price = money_field()
     gross = money_field()
     discount = money_field(default=ZERO)
+    discount_percent = percent_field(
+        null=True,
+        blank=True,
+        help_text="Set when the discount was given as a percent of the patient share: approval "
+        "derives the amount from the price effective that day (FEATURES 5.9).",
+    )
     discount_reason = models.ForeignKey(
         "core.ReasonCode",
         on_delete=models.PROTECT,
@@ -308,6 +330,15 @@ class InvoiceLine(models.Model):
                 | Q(discount_reason__isnull=False, discount_approved_by__isnull=False),
                 name="billing_invoiceline_discount_documented",
             ),
+            models.CheckConstraint(
+                condition=Q(discount_percent__isnull=True)
+                | (
+                    Q(discount_percent__gt=0)
+                    & Q(discount_percent__lte=100)
+                    & Q(discount_reason__isnull=False, discount_approved_by__isnull=False)
+                ),
+                name="billing_invoiceline_discount_percent_valid",
+            ),
             # Invariant 6: a frozen line knows which price list version priced it.
             models.CheckConstraint(
                 condition=Q(frozen=False) | Q(price_list_version__isnull=False),
@@ -326,6 +357,7 @@ class InvoiceLine(models.Model):
             models.Index(fields=["payer", "frozen"], name="billing_invline_payer_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             protect_when(
                 "line_frozen",
                 code="INVOICE_FROZEN",
@@ -338,7 +370,9 @@ class InvoiceLine(models.Model):
                 parent_table="billing_invoice",
                 fk_column="invoice_id",
                 editable_condition="p.status = 'draft'",
-                operation=pgtrigger.Insert,
+            ),
+            pgtrigger.ReadOnly(
+                name="line_parent_fixed", fields=["invoice", "line_no", "service_line"]
             ),
         ]
 
@@ -412,6 +446,7 @@ class CreditNote(models.Model):
             models.Index(fields=["status", "approved_at"], name="billing_cn_approved_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             protect_when(
                 "credit_note_frozen",
                 code="CREDIT_NOTE_FROZEN",
@@ -465,6 +500,7 @@ class CreditNoteLine(models.Model):
             ),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             protect_when(
                 "line_frozen",
                 code="CREDIT_NOTE_FROZEN",
@@ -477,7 +513,9 @@ class CreditNoteLine(models.Model):
                 parent_table="billing_creditnote",
                 fk_column="credit_note_id",
                 editable_condition="p.status = 'draft'",
-                operation=pgtrigger.Insert,
+            ),
+            pgtrigger.ReadOnly(
+                name="line_parent_fixed", fields=["credit_note", "line_no", "invoice_line"]
             ),
         ]
 

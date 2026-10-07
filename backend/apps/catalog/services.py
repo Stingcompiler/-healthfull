@@ -5,8 +5,10 @@ FEATURES 5.1-5.8, invariant 6. Every rule comes from ``domain.pricing`` and
 
 * A price list version is a complete, dated snapshot of prices. The version that prices a
   line is the one effective on the invoice approval date (``effective_version``).
-* New versions start today or later on a free date (no backdating: it would change which
-  prices were effective on days whose invoices are already frozen).
+* New versions start tomorrow or later on a free date (no backdating, and no second version
+  for a day that already has one effective: either would change which prices were effective
+  on a day whose invoices are already frozen). Only a list with nothing effective yet may
+  start today.
 * A bulk percentage update creates a NEW dated version from the version effective on that
   date; the old version is never edited.
 * Only versions that have not started yet may have their prices edited.
@@ -22,7 +24,7 @@ from datetime import date
 from decimal import Decimal
 
 import pghistory
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -52,6 +54,7 @@ __all__ = [
     "effective_price",
     "effective_prices",
     "effective_version",
+    "lock_versions_for_pricing",
     "price_list_for",
     "resolve_coverage",
     "set_prices",
@@ -117,6 +120,22 @@ def effective_version(price_list: PriceList, on: date) -> PriceListVersion:
     return PriceListVersion.objects.get(pk=chosen.version_id)
 
 
+def lock_versions_for_pricing(version_ids: Collection[int]) -> None:
+    """``FOR SHARE`` the versions an invoice approval prices from (invariant 6).
+
+    Edits of a version's prices lock it ``FOR UPDATE`` (its guard trigger), so an edit and an
+    approval never interleave: the approval either prices the committed edit or holds the
+    edit back until its frozen lines make the version read-only.
+    """
+    ids = sorted(set(version_ids))
+    if ids:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id FROM catalog_pricelistversion WHERE id = ANY(%s) ORDER BY id FOR SHARE",
+                [ids],
+            )
+
+
 def version_prices(version: PriceListVersion) -> dict[int, Decimal]:
     """``{service_id: unit_price}`` of one version."""
     return dict(PriceItem.objects.filter(version=version).values_list("service_id", "unit_price"))
@@ -144,12 +163,11 @@ def effective_prices(
     plist = price_list or price_list_for(payer)
     version = effective_version(plist, on)
     wanted = {s.pk for s in services}
-    prices: dict[pricing.ItemKey, Decimal] = {
-        service_id: price
-        for service_id, price in PriceItem.objects.filter(
-            version=version, service_id__in=wanted
-        ).values_list("service_id", "unit_price")
-    }
+    prices: dict[pricing.ItemKey, Decimal] = {}
+    for service_id, price in PriceItem.objects.filter(
+        version=version, service_id__in=wanted
+    ).values_list("service_id", "unit_price"):
+        prices[service_id] = price
     domain_version = pricing.PriceVersion(version.pk, version.effective_from, prices)
     out: dict[int, EffectivePrice] = {}
     for service_id in sorted(wanted):
@@ -183,10 +201,11 @@ def create_version(
             ``INVALID_PRICE``, ``SERVICE_UNKNOWN``, ``PRICE_LIST_INACTIVE``.
     """
     # Validates every price (non-negative, at most 2 decimals) before touching the database.
-    snapshot = pricing.PriceVersion(0, effective_from, {sid: p for sid, p in prices.items()})
+    # (a comprehension, not dict(): mapping key types are invariant for the type checker)
+    snapshot = pricing.PriceVersion(0, effective_from, {sid: p for sid, p in prices.items()})  # noqa: C416
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="price list version"):
         # One writer per list at a time, so two versions can never take the same date.
-        plist = PriceList.objects.select_for_update().get(pk=price_list.pk)
+        plist = PriceList.objects.select_for_update(no_key=True).get(pk=price_list.pk)
         if not plist.active:
             raise DomainError("PRICE_LIST_INACTIVE", "The price list is inactive")
         pricing.validate_new_version(
@@ -222,29 +241,32 @@ def derive_version(
     """A new version copying the one effective on ``effective_from`` with ``changes`` applied.
 
     ``changes`` maps service id to its new price, or None to drop the service from the list.
-    A list without any version yet starts from an empty snapshot.
+    A list without any version yet starts from an empty snapshot. The base is read under the
+    price list lock, so two derivations on one list never build on a stale base.
     """
-    try:
-        base: PriceListVersion | None = effective_version(price_list, effective_from)
-    except DomainError as exc:
-        if exc.code != "NO_EFFECTIVE_PRICE_LIST":
-            raise
-        base = None
-    prices = version_prices(base) if base is not None else {}
-    for service_id, price in changes.items():
-        if price is None:
-            prices.pop(service_id, None)
-        else:
-            prices[service_id] = price
-    return create_version(
-        price_list,
-        effective_from=effective_from,
-        prices=prices,
-        actor=actor,
-        note=note,
-        based_on=base,
-        today=today,
-    )
+    with transaction.atomic():
+        PriceList.objects.select_for_update(no_key=True).get(pk=price_list.pk)
+        try:
+            base: PriceListVersion | None = effective_version(price_list, effective_from)
+        except DomainError as exc:
+            if exc.code != "NO_EFFECTIVE_PRICE_LIST":
+                raise
+            base = None
+        prices = version_prices(base) if base is not None else {}
+        for service_id, price in changes.items():
+            if price is None:
+                prices.pop(service_id, None)
+            else:
+                prices[service_id] = price
+        return create_version(
+            price_list,
+            effective_from=effective_from,
+            prices=prices,
+            actor=actor,
+            note=note,
+            based_on=base,
+            today=today,
+        )
 
 
 def bulk_percentage_update(
@@ -272,30 +294,34 @@ def bulk_percentage_update(
     """
     if isinstance(percent, bool) or not isinstance(percent, Decimal | int):
         raise DomainError("INVALID_PERCENT", "Percent must be a number", percent=str(percent))
-    base = effective_version(price_list, effective_from)
-    base_prices = version_prices(base)
-    only: set[int] | None = None
-    if service_ids is not None:
-        only = set(service_ids)
-    if kinds is not None:
-        by_kind = set(
-            Service.objects.filter(pk__in=base_prices.keys(), kind__in=list(kinds)).values_list(
-                "pk", flat=True
+    with transaction.atomic():
+        # The base is read under the price list lock (concurrent updates never build on a
+        # base that an earlier one is about to supersede).
+        PriceList.objects.select_for_update(no_key=True).get(pk=price_list.pk)
+        base = effective_version(price_list, effective_from)
+        base_prices = version_prices(base)
+        only: set[int] | None = None
+        if service_ids is not None:
+            only = set(service_ids)
+        if kinds is not None:
+            by_kind = set(
+                Service.objects.filter(pk__in=base_prices.keys(), kind__in=list(kinds)).values_list(
+                    "pk", flat=True
+                )
             )
+            only = by_kind if only is None else only & by_kind
+        rule = pricing.RoundingRule(step, mode)
+        new_prices = pricing.bulk_percentage_update(base_prices, percent, rule, only=only)
+        return create_version(
+            price_list,
+            effective_from=effective_from,
+            prices=new_prices,
+            actor=actor,
+            note=note,
+            based_on=base,
+            percent_change=Decimal(percent).quantize(CENT),
+            today=today,
         )
-        only = by_kind if only is None else only & by_kind
-    rule = pricing.RoundingRule(step, mode)
-    new_prices = pricing.bulk_percentage_update(base_prices, percent, rule, only=only)
-    return create_version(
-        price_list,
-        effective_from=effective_from,
-        prices=new_prices,
-        actor=actor,
-        note=note,
-        based_on=base,
-        percent_change=Decimal(percent).quantize(CENT),
-        today=today,
-    )
 
 
 def set_prices(
@@ -322,7 +348,7 @@ def set_prices(
             )
         to_set = {sid: p for sid, p in prices.items() if p is not None}
         # Validates every price (non-negative, at most 2 decimals).
-        pricing.PriceVersion(locked.pk, locked.effective_from, {k: v for k, v in to_set.items()})
+        pricing.PriceVersion(locked.pk, locked.effective_from, {k: v for k, v in to_set.items()})  # noqa: C416
         _check_services(to_set.keys())
         removed = [sid for sid, p in prices.items() if p is None]
         if removed:

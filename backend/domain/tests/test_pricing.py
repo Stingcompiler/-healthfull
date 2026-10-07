@@ -87,10 +87,17 @@ def test_versions_reject_bad_prices() -> None:
 def test_new_version_date_rules() -> None:
     v1 = PriceVersion(1, date(2026, 10, 1), {})
     today = date(2026, 10, 7)
-    validate_new_version([v1], date(2026, 10, 7), today)
+    validate_new_version([v1], date(2026, 10, 8), today)
     validate_new_version([v1], date(2026, 11, 1), today)
+    # Only a list with nothing effective yet may start today (no invoice priced from it).
+    validate_new_version([], today, today)
+    validate_new_version([PriceVersion(3, date(2026, 12, 1), {})], today, today)
     with pytest.raises(DomainError) as exc:
         validate_new_version([v1], date(2026, 10, 6), today)
+    assert exc.value.code == "PRICE_VERSION_BACKDATED"
+    # A second version effective today would give one day two prices (invariant 6).
+    with pytest.raises(DomainError) as exc:
+        validate_new_version([v1], today, today)
     assert exc.value.code == "PRICE_VERSION_BACKDATED"
     v2 = PriceVersion(2, date(2026, 11, 1), {})
     with pytest.raises(DomainError) as exc:

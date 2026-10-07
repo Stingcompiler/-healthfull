@@ -87,8 +87,18 @@ def test_versions_cannot_be_backdated_or_share_a_date(cash, actor) -> None:
             today=TODAY,
         )
     assert exc.value.code == "PRICE_VERSION_BACKDATED"
+    # A second version from today would make two prices "effective today" (invariant 6).
     with pytest.raises(DomainError) as exc:
         _version(cash, TODAY, {s.pk: Decimal("11.00")}, actor)
+    assert exc.value.code == "PRICE_VERSION_BACKDATED"
+    later = TODAY + timedelta(days=5)
+    cat.create_version(
+        cash, effective_from=later, prices={s.pk: Decimal("12.00")}, actor=actor, today=TODAY
+    )
+    with pytest.raises(DomainError) as exc:
+        cat.create_version(
+            cash, effective_from=later, prices={s.pk: Decimal("13.00")}, actor=actor, today=TODAY
+        )
     assert exc.value.code == "PRICE_VERSION_DATE_TAKEN"
 
 

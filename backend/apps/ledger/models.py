@@ -13,6 +13,8 @@ the business document. Database backstops:
 * Each line is a debit or a credit, never both, never zero, and carries the dimension its
   account needs (patient for AR_PATIENT/PATIENT_CREDIT, payer for AR_PAYER/WRITE_OFF, shift for
   CASH/CASH_OVER_SHORT).
+* An entry or line names only an open shift (invariant 3): a later effect of a closed shift
+  is booked in the acting user's current shift.
 """
 
 from __future__ import annotations
@@ -25,7 +27,16 @@ from django.db import models
 from django.db.models import Q
 
 from apps.catalog.models import ServiceKind
-from apps.core.db import ZERO, append_only, choice_check, money_field, protect_when, track_history
+from apps.core.db import (
+    ZERO,
+    append_only,
+    choice_check,
+    money_field,
+    protect_when,
+    shift_must_be_open,
+    track_history,
+    truncate_guard,
+)
 
 
 class AccountKind(models.TextChoices):
@@ -84,10 +95,16 @@ class SourceType(models.TextChoices):
     REFUND = "refund", "Refund paid"
     SHIFT_OPEN = "shift_open", "Shift opening float"
     SHIFT_CLOSE = "shift_close", "Shift close variance"
+    SHIFT_SWEEP = "shift_sweep", "Counted cash to the safe at close"
     HANDOVER = "handover", "Cash handover"
+    HANDOVER_RECEIPT = "handover_receipt", "Cash handover received"
+    HANDOVER_CANCEL = "handover_cancel", "Cash handover cancelled"
     CLAIM_REBILL = "claim_rebill", "Payer rejection rebilled to patient"
     CLAIM_WRITEOFF = "claim_writeoff", "Payer rejection written off"
+    CLAIM_SHORT_WRITEOFF = "claim_short_writeoff", "Payer short payment written off"
     PAYER_PAYMENT = "payer_payment", "Payer payment received"
+    PAYER_CHEQUE_CLEAR = "payer_cheque_clear", "Payer cheque cleared"
+    PAYER_PAYMENT_REVERSE = "payer_payment_reverse", "Payer payment reversed"
 
 
 _BALANCE_SQL = """
@@ -149,8 +166,10 @@ class JournalEntry(models.Model):
             models.Index(fields=["entry_date"], name="ledger_entry_date_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             append_only(),
             _balanced("entry_balanced", "NEW.id"),
+            shift_must_be_open(),
         ]
 
     def __str__(self) -> str:
@@ -218,6 +237,7 @@ class JournalLine(models.Model):
             ),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             append_only(),
             _balanced("line_entry_balanced", "NEW.entry_id"),
             pgtrigger.Trigger(
@@ -227,6 +247,7 @@ class JournalLine(models.Model):
                 declare=[("account_code", "text")],
                 func=_DIMENSIONS_SQL,
             ),
+            shift_must_be_open(),
         ]
 
     def __str__(self) -> str:

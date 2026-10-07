@@ -7,6 +7,7 @@ from apps.pharmacy.models import (
     Batch,
     Dispense,
     DispenseLine,
+    DispenseReturn,
     DrugClass,
     GoodsReceipt,
     GoodsReceiptLine,
@@ -100,6 +101,11 @@ class DispenseAdmin(ReadOnlyAdmin[Dispense]):
 @admin.register(DispenseLine)
 class DispenseLineAdmin(ReadOnlyAdmin[DispenseLine]):
     list_display = ("dispense", "item", "batch", "qty_base", "batch_override")
+
+
+@admin.register(DispenseReturn)
+class DispenseReturnAdmin(ReadOnlyAdmin[DispenseReturn]):
+    list_display = ("number", "dispense_line", "qty_base", "reason_code", "returned_by")
 
 
 class GoodsReceiptLineInline(ReadOnlyInline[GoodsReceiptLine, GoodsReceipt]):

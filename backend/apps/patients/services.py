@@ -19,6 +19,7 @@ coverage move to the target, and :func:`file_ids` lets history views include mer
 
 from __future__ import annotations
 
+import importlib
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -28,7 +29,6 @@ from typing import Any
 
 import pghistory
 from django.contrib.postgres.search import TrigramSimilarity
-from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, connection, transaction
 from django.db.models import Q, QuerySet
 from django.forms.models import model_to_dict
@@ -36,8 +36,7 @@ from django.utils import timezone
 
 from apps.catalog.models import Payer
 from apps.core.models import User
-from apps.core.permissions import effective_permissions
-from apps.core.services import next_number
+from apps.core.services import next_number, require_permission
 from apps.patients.models import Patient, PatientCoverage, PatientMerge, Sex
 from domain.errors import DomainError
 
@@ -54,6 +53,7 @@ __all__ = [
     "merge_patients",
     "normalize_phone",
     "normalize_text",
+    "person_file_ids",
     "register_emergency",
     "register_patient",
     "resolve",
@@ -174,11 +174,6 @@ def _is_complete(patient: Patient) -> bool:
     )
 
 
-def _require_perm(actor: User, code: str) -> None:
-    if code not in effective_permissions(actor):
-        raise PermissionDenied(code)
-
-
 # --- duplicates and search ------------------------------------------------------------------
 
 
@@ -262,9 +257,9 @@ def search_patients(
     every_word = Q()
     for word in words:
         every_word &= Q(search_name__contains=word)
-    qs: QuerySet[Patient] = base.annotate(
-        sim=TrigramSimilarity("search_name", folded)
-    ).filter(every_word | Q(sim__gte=SEARCH_SIMILARITY))
+    qs: QuerySet[Patient] = base.annotate(sim=TrigramSimilarity("search_name", folded)).filter(
+        every_word | Q(sim__gte=SEARCH_SIMILARITY)
+    )
     return list(qs.order_by("-sim", "-created_at", "-id")[:limit])
 
 
@@ -273,6 +268,24 @@ def search_patients(
 
 def _new_file_no() -> str:
     return next_number("PT")
+
+
+def _lock_identity(
+    name_ar: str, name_en: str, phone: str, phone_alt: str, dob: date | None
+) -> None:
+    """Transaction-scoped advisory locks on the identity keys the duplicate check matches.
+
+    One lock per normalized phone and one per normalized name with birth date, taken in a
+    fixed (sorted) order, so two registrations that could match each other run one after
+    the other and the second sees the first file (FEATURES 1.3).
+    """
+    keys = {f"phone:{p}" for p in (normalize_phone(phone), normalize_phone(phone_alt)) if p}
+    name = normalize_text(f"{name_ar} {name_en}")
+    if name and dob is not None:
+        keys.add(f"name:{name}:{dob.isoformat()}")
+    with connection.cursor() as cursor:
+        for key in sorted(keys):
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [f"patient:{key}"])
 
 
 def register_patient(
@@ -295,26 +308,33 @@ def register_patient(
         raise DomainError("NAME_REQUIRED", "A name in Arabic or English is required")
     _require_sex(data.sex, allow_unknown=False)
     dob, estimated = _birth_date(data, on)
-    if not confirm_not_duplicate:
-        candidates = find_duplicates(
-            full_name_ar=name_ar,
-            full_name_en=name_en,
-            phone=data.phone,
-            phone_alt=data.phone_alt,
-            date_of_birth=dob,
-            national_id=data.national_id,
-        )
-        if candidates:
-            raise DomainError(
-                "DUPLICATE_PATIENT",
-                "A similar patient file exists",
-                candidates=[
-                    {"id": c.patient.pk, "file_no": c.patient.file_no, "reasons": list(c.reasons)}
-                    for c in candidates
-                ],
-            )
     try:
         with transaction.atomic(), pghistory.context(user=actor.pk, reason="register patient"):
+            # Registrations of the same person (a double-click, two receptionists) serialize
+            # on the person's phone and name+birth date before the duplicate check runs.
+            _lock_identity(name_ar, name_en, data.phone, data.phone_alt, dob)
+            if not confirm_not_duplicate:
+                candidates = find_duplicates(
+                    full_name_ar=name_ar,
+                    full_name_en=name_en,
+                    phone=data.phone,
+                    phone_alt=data.phone_alt,
+                    date_of_birth=dob,
+                    national_id=data.national_id,
+                )
+                if candidates:
+                    raise DomainError(
+                        "DUPLICATE_PATIENT",
+                        "A similar patient file exists",
+                        candidates=[
+                            {
+                                "id": c.patient.pk,
+                                "file_no": c.patient.file_no,
+                                "reasons": list(c.reasons),
+                            }
+                            for c in candidates
+                        ],
+                    )
             return Patient.objects.create(
                 file_no=_new_file_no(),
                 full_name_ar=name_ar,
@@ -423,7 +443,7 @@ def update_patient(
 
 def resolve(patient: Patient) -> Patient:
     """The surviving file of a merged patient (the patient itself when not merged)."""
-    current = patient
+    current = Patient.objects.get(pk=patient.pk)  # fresh: a merge may have happened since
     seen = {current.pk}
     while current.merged_into_id is not None:
         current = Patient.objects.get(pk=current.merged_into_id)
@@ -431,6 +451,12 @@ def resolve(patient: Patient) -> Patient:
             break
         seen.add(current.pk)
     return current
+
+
+def person_file_ids(patient: Patient | int) -> list[int]:
+    """Every file of the person ``patient`` belongs to: the survivor and all merged into it."""
+    pk = patient if isinstance(patient, int) else patient.pk
+    return file_ids(resolve(Patient.objects.get(pk=pk)))
 
 
 def file_ids(patient: Patient) -> list[int]:
@@ -459,19 +485,21 @@ def merge_patients(
         DomainError: ``REASON_REQUIRED``, ``MERGE_SAME_FILE``, ``PATIENT_MERGED`` (either
             file already merged away).
     """
-    from apps.clinical.models import Allergy, ChronicCondition
-    from apps.visits.models import Appointment, AppointmentStatus
-
-    _require_perm(actor, "patients.merge")
+    require_permission(actor, "patients.merge")
     note = reason_note.strip()
     if not note:
         raise DomainError("REASON_REQUIRED", "A merge needs a reason")
     if source.pk == target.pk:
         raise DomainError("MERGE_SAME_FILE", "A file cannot be merged into itself")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"merge: {note}"):
+        # Files merged into the source first, then the two files (id order): a money lock
+        # always takes a file before the file it was merged into (orders.lock_patient).
+        list(Patient.objects.select_for_update().filter(merged_into_id=source.pk).order_by("id"))
         locked = {
             p.pk: p
-            for p in Patient.objects.select_for_update().filter(pk__in=[source.pk, target.pk])
+            for p in Patient.objects.select_for_update()
+            .filter(pk__in=[source.pk, target.pk])
+            .order_by("id")
         }
         src, tgt = locked[source.pk], locked[target.pk]
         if src.merged_into_id is not None or tgt.merged_into_id is not None:
@@ -501,13 +529,8 @@ def merge_patients(
             tgt.is_incomplete = False
         tgt.save()
 
-        # Clinical safety data follows the person.
-        for allergy in Allergy.objects.filter(patient=src):
-            allergy.patient = tgt
-            allergy.save(update_fields=["patient", "updated_at"])
-        for condition in ChronicCondition.objects.filter(patient=src):
-            condition.patient = tgt
-            condition.save(update_fields=["patient", "updated_at"])
+        # Clinical safety data follows the person (through the clinical app's services).
+        importlib.import_module("apps.clinical.services").reassign_patient(src, tgt, actor=actor)
         target_has_default = PatientCoverage.objects.filter(
             patient=tgt, is_default=True, active=True
         ).exists()
@@ -517,11 +540,9 @@ def merge_patients(
                 cov.is_default = False
             cov.save(update_fields=["patient", "is_default", "updated_at"])
             target_has_default = target_has_default or (cov.is_default and cov.active)
-        for appt in Appointment.objects.filter(
-            patient=src, status=AppointmentStatus.BOOKED, starts_at__gte=timezone.now()
-        ):
-            appt.patient = tgt
-            appt.save(update_fields=["patient", "updated_at"])
+        importlib.import_module("apps.visits.services").reassign_future_appointments(
+            src, tgt, actor=actor
+        )
 
         return PatientMerge.objects.create(
             source=src, target=tgt, reason_note=note, source_snapshot=snapshot, merged_by=actor

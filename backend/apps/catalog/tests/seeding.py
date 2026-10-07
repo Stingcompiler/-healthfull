@@ -64,12 +64,21 @@ def ensure_reference_data() -> None:
         restore_reference_data()
 
 
-def restore_after_flush(item: pytest.Item) -> None:
-    """Call from ``pytest_runtest_teardown`` after the item's own teardown."""
+def restore_after_flush(item: pytest.Item, nextitem: pytest.Item | None = None) -> None:
+    """Call from ``pytest_runtest_teardown`` after the item's own teardown.
+
+    Nothing to restore after the last test of the session (``nextitem`` is None): by then
+    pytest-django has destroyed the test database and pointed the connection back at the
+    runtime database, which must never receive test seeds. The connection must name the
+    test database (``test_...``) for the same reason.
+    """
+    from django.db import connection
     from pytest_django.plugin import blocking_manager_key
 
     marker = item.get_closest_marker("django_db")
-    if marker is None or not marker.kwargs.get("transaction"):
+    if marker is None or not marker.kwargs.get("transaction") or nextitem is None:
+        return
+    if not str(connection.settings_dict.get("NAME", "")).startswith("test_"):
         return
     blocker: Any = item.config.stash[blocking_manager_key]
     with blocker.unblock():

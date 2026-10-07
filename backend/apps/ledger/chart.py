@@ -35,6 +35,10 @@ CHART: tuple[AccountDef, ...] = (
     AccountDef("DISCOUNT", "الخصومات والإعفاءات", "Discounts", "contra_revenue", "debit"),
     AccountDef("WRITE_OFF", "شطب مرفوضات جهات التغطية", "Payer write-offs", "expense", "debit"),
     AccountDef("CASH_OVER_SHORT", "فروق النقد", "Cash over and short", "expense", "debit"),
+    # ADR 0006: cash outside the drawers (safe, supervisor, between shifts); ledger.0005.
+    AccountDef(
+        "CASH_SAFE", "نقد في الخزنة أو قيد التسليم", "Cash in safe or in transit", "asset", "debit"
+    ),
 )
 
 ACCOUNT_CODES: frozenset[str] = frozenset(a.code for a in CHART)

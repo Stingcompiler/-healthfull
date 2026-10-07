@@ -320,10 +320,25 @@ def test_credit_note_cannot_credit_more_than_invoiced() -> None:
 def test_credit_note_lines_must_belong_to_its_invoice() -> None:
     inv = b.approved_invoice()
     other = b.approved_invoice()
+    note = _credit_note(inv, approve=False)
+    # A credit line never changes the invoice line it credits (refused at once) ...
+    b.db_rejects(
+        lambda: CreditNoteLine.objects.filter(credit_note=note).update(
+            invoice_line=other.lines.get()
+        ),
+        "Cannot update",
+    )
+    # ... and a note crediting another invoice's line is refused when it is approved.
     with b.deferred_checks_fire("CREDIT_WRONG_INVOICE"):
-        note = _credit_note(inv, approve=False)
-        CreditNoteLine.objects.filter(credit_note=note).update(
-            invoice_line=other.lines.get(), frozen=True
+        CreditNoteLine.objects.filter(credit_note=note).delete()
+        CreditNoteLine.objects.create(
+            credit_note=note,
+            line_no=1,
+            invoice_line=other.lines.get(),
+            quantity=Decimal("1"),
+            gross=Decimal("100.00"),
+            patient_share=Decimal("100.00"),
+            frozen=True,
         )
         CreditNote.objects.filter(pk=note.pk).update(
             status="approved",

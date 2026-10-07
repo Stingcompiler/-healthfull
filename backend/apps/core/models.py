@@ -213,6 +213,55 @@ class CenterProfile(SingletonModel):
         return self.name_en or self.name_ar or "Center profile"
 
 
+class PrintDocument(models.TextChoices):
+    INVOICE = "invoice", "Invoice"
+    RECEIPT = "receipt", "Receipt"
+    PRESCRIPTION = "prescription", "Prescription"
+    LAB_RESULT = "lab_result", "Lab result"
+    CLAIM_EXPORT = "claim_export", "Claim export"
+    SHIFT_REPORT = "shift_report", "Shift report"
+
+
+class PaperSize(models.TextChoices):
+    A4 = "a4", "A4"
+    THERMAL_80 = "thermal_80", "Thermal 80 mm"
+
+
+@pghistory.track(pghistory.InsertEvent(), pghistory.UpdateEvent(), pghistory.DeleteEvent())
+class PrintTemplate(models.Model):
+    """Header and footer of one printed document on one paper size (FEATURES 0.10, 13.7)."""
+
+    document = models.CharField(max_length=20, choices=PrintDocument.choices)
+    paper = models.CharField(max_length=20, choices=PaperSize.choices, default=PaperSize.A4)
+    show_logo = models.BooleanField(default=True)
+    header_ar = models.TextField(blank=True)
+    header_en = models.TextField(blank=True)
+    footer_ar = models.TextField(blank=True)
+    footer_en = models.TextField(blank=True)
+    active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "print template"
+        ordering: ClassVar[list[str]] = ["document", "paper"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=["document", "paper"], name="core_printtemplate_one_per_paper"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(document__in=PrintDocument.values),
+                name="core_printtemplate_document_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(paper__in=PaperSize.values),
+                name="core_printtemplate_paper_valid",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.document} ({self.paper})"
+
+
 def _default_discount_limits() -> dict[str, int]:
     return {"cashier": 0, "cashier_supervisor": 25, "accountant": 25, "manager": 100}
 
@@ -221,12 +270,41 @@ def _default_perform_first_roles() -> list[str]:
     return ["cashier_supervisor", "manager"]
 
 
+class PartialDispenseRemainder(models.TextChoices):
+    """What happens to the undispensed rest of a partly dispensed line (FLOW 6, FEATURES 8.3)."""
+
+    DEFER = "defer", "Keep it open to dispense later"
+    REFUND = "refund", "Cancel it and refund the patient"
+
+
 @pghistory.track(pghistory.InsertEvent(), pghistory.UpdateEvent())
 class Policy(SingletonModel):
-    """Center-wide policy switches (FEATURES 13.4)."""
+    """Center-wide policy switches (FEATURES 13.4).
+
+    ``default_pay_first`` is documentation, not a switch: pay-first is invariant 1, and
+    perform-first exists only as a documented authorization (ADR 0006). The database keeps it
+    on.
+    """
 
     allow_partial_payment = models.BooleanField(default=False)
-    default_pay_first = models.BooleanField(default=True)
+    default_pay_first = models.BooleanField(
+        default=True, help_text="Always on: perform-first needs an authorization (invariant 1)."
+    )
+    pending_transfer_alert_days = models.PositiveSmallIntegerField(
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(90)],
+        help_text="Alert verifiers about transfers pending longer than this (FEATURES 0.13).",
+    )
+    partial_dispense_remainder = models.CharField(
+        max_length=10,
+        choices=PartialDispenseRemainder.choices,
+        default=PartialDispenseRemainder.DEFER,
+        help_text="Default for the undispensed rest of a line when stock runs short (FLOW 6).",
+    )
+    show_estimated_cost = models.BooleanField(
+        default=False,
+        help_text="Doctors with the permission may see an estimated cost of orders (3.8).",
+    )
     follow_up_window_days = models.PositiveSmallIntegerField(default=7)
     follow_up_discount_percent = models.DecimalField(
         max_digits=5,
@@ -261,6 +339,18 @@ class Policy(SingletonModel):
                 condition=models.Q(session_idle_minutes__gte=5)
                 & models.Q(session_idle_minutes__lte=1440),
                 name="core_policy_session_idle_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(default_pay_first=True), name="core_policy_pay_first_always"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(pending_transfer_alert_days__gte=1)
+                & models.Q(pending_transfer_alert_days__lte=90),
+                name="core_policy_transfer_alert_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(partial_dispense_remainder__in=PartialDispenseRemainder.values),
+                name="core_policy_partial_dispense_valid",
             ),
         ]
 

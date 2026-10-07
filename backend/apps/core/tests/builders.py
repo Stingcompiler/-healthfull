@@ -149,6 +149,12 @@ def service(kind: str = "lab", **extra: Any) -> Any:
     )
 
 
+#: Effective date of the shared reference version (well before any test date): one version
+#: per list, so a builder never adds a version dated before invoices already priced
+#: (the ``version_guard`` trigger refuses that, invariant 6).
+REFERENCE_VERSION_DATE = date(2020, 1, 1)
+
+
 def price_version(price_list: Any | None = None, effective_from: date | None = None) -> Any:
     from apps.catalog.models import PriceList, PriceListVersion
 
@@ -158,9 +164,11 @@ def price_version(price_list: Any | None = None, effective_from: date | None = N
         price_list = PriceList.objects.create(
             code="CASH", name_ar="نقد", name_en="Cash", kind="cash", is_default=True
         )
-    return PriceListVersion.objects.create(
-        price_list=price_list, effective_from=effective_from or date(2026, 1, n() % 28 + 1)
-    )
+    if effective_from is None:
+        return PriceListVersion.objects.get_or_create(
+            price_list=price_list, effective_from=REFERENCE_VERSION_DATE
+        )[0]
+    return PriceListVersion.objects.create(price_list=price_list, effective_from=effective_from)
 
 
 def payer(**extra: Any) -> Any:
@@ -203,6 +211,37 @@ def service_line(v: Any | None = None, svc: Any | None = None, **extra: Any) -> 
         ordered_by=extra.pop("ordered_by", None) or user(),
         **extra,
     )
+
+
+def billed_line(
+    v: Any | None = None,
+    svc: Any | None = None,
+    *,
+    billing_status: str = "settled",
+    quantity: str = "1",
+    unit_price: str = "10.00",
+    **extra: Any,
+) -> Any:
+    """A service line billed the way the database allows: ordered unbilled, put on a frozen
+    line of an approved invoice, then moved to ``billing_status`` (invoiced or settled).
+
+    The ``line_guard`` trigger refuses a line inserted billed, or billed without an approved
+    invoice line behind it (invariant 1).
+    """
+    from apps.orders.models import ServiceLine
+
+    line = service_line(v, svc, quantity=Decimal(quantity), **extra)
+    inv = draft_invoice(line.visit)
+    invoice_line(inv, line=line, unit_price=unit_price, quantity=quantity)
+    approve_invoice(inv)
+    now = timezone.now()
+    ServiceLine.objects.filter(pk=line.pk).update(
+        billing_status=billing_status,
+        invoiced_at=now,
+        settled_at=now if billing_status == "settled" else None,
+    )
+    line.refresh_from_db()
+    return line
 
 
 # --- Billing -------------------------------------------------------------------------------
@@ -304,6 +343,7 @@ def close_shift(sh: Any) -> Any:
         expected_cash=Decimal("1000.00"),
         counted_cash=Decimal("1000.00"),
         variance=Decimal("0.00"),
+        close_report={"built_by": "test builder"},
     )
     sh.refresh_from_db()
     return sh

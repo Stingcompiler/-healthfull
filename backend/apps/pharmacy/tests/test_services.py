@@ -6,7 +6,6 @@ under concurrent dispensing from separate database connections.
 
 from __future__ import annotations
 
-import importlib.util
 import threading
 from datetime import date, timedelta
 from decimal import Decimal
@@ -15,7 +14,10 @@ import pytest
 from django.core.exceptions import PermissionDenied
 from django.db import connection
 from django.utils import timezone
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
+from apps.catalog.tests import engine
 from apps.core.tests import builders as b
 from apps.orders.models import PerformAuthorization, ServiceLine
 from apps.pharmacy import services as ps
@@ -28,15 +30,11 @@ from apps.pharmacy.models import (
     Supplier,
     UnitConversion,
 )
+from domain import stock as ds
 from domain.errors import DomainError
 from domain.stock import Pick
 
 pytestmark = pytest.mark.django_db
-
-FIN_READY = importlib.util.find_spec("apps.orders.services") is not None
-awaiting_fin = pytest.mark.xfail(
-    not FIN_READY, reason="awaiting financial engine", raises=ModuleNotFoundError, strict=True
-)
 
 TODAY = date(2026, 10, 7)
 
@@ -93,11 +91,12 @@ def stock(it, st, qty: int, expiry: date, batch_no: str | None = None) -> Batch:
 
 
 def paid_line(visit, it, qty: int, **extra) -> ServiceLine:
-    now = timezone.now()
-    extra.setdefault("billing_status", "settled")
-    if extra["billing_status"] != "unbilled":
-        extra.setdefault("invoiced_at", now)
-    return b.service_line(visit, it.service, quantity=Decimal(qty), **extra)
+    """A drug line of ``qty`` units: settled (default) or invoiced through an approved
+    invoice line (``b.billed_line``), or unbilled."""
+    status = extra.pop("billing_status", "settled")
+    if status == "unbilled":
+        return b.service_line(visit, it.service, quantity=Decimal(qty), **extra)
+    return b.billed_line(visit, it.service, billing_status=status, quantity=str(qty), **extra)
 
 
 def balance(batch: Batch, st) -> int:
@@ -270,14 +269,72 @@ def test_fefo_dispense_skips_expired_and_empty_batches(pharmacist, store, item) 
     assert balance(late, store) == 3
     assert balance(expired, store) == 100
     assert balance(empty, store) == 0
-    # Partial dispense: the line stays open with the remainder (deferred).
+    # Partial dispense: the line stays open with the remainder (deferred), in progress.
     line.refresh_from_db()
-    assert line.fulfilment_status == "pending"
+    assert line.fulfilment_status == "in_progress"
     assert ps.dispensed_quantity(line) == 7
     # Expired stock is never dispensed, even when it is the only stock left.
     with pytest.raises(DomainError) as exc:
-        ps.dispense(visit=visit, store=store, actor=pharmacist, requests=[req(line, 4)], today=TODAY)
+        ps.dispense(
+            visit=visit, store=store, actor=pharmacist, requests=[req(line, 4)], today=TODAY
+        )
     assert exc.value.code == "STOCK_INSUFFICIENT"
+
+
+@settings(
+    max_examples=25,
+    deadline=None,
+    suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.too_slow],
+)
+@given(
+    batches=st.lists(
+        st.tuples(
+            st.integers(min_value=-30, max_value=400), st.integers(min_value=0, max_value=40)
+        ),
+        min_size=1,
+        max_size=6,
+    ),
+    wanted=st.integers(min_value=1, max_value=120),
+)
+def test_dispense_follows_fefo_and_never_goes_negative(pharmacist, batches, wanted) -> None:
+    """Whatever the batches (expired, empty, any expiry), the stored picks are the domain's
+    FEFO choice, on-hand drops by exactly what was given, and nothing goes below zero."""
+    store_ = b.store()
+    store_.allows_dispense = True
+    store_.save()
+    it = b.item()
+    rows = [stock(it, store_, qty, TODAY + timedelta(days=days)) for days, qty in batches]
+    before = {r.pk: balance(r, store_) for r in rows}
+    visit = b.visit()
+    line = paid_line(visit, it, 200)
+    snapshot = [ds.BatchStock(r.pk, r.expiry_date, before[r.pk]) for r in rows]
+    usable = sum(bs.on_hand for bs in ds.fefo_order(snapshot, TODAY))
+    if wanted > usable:
+        with pytest.raises(DomainError) as refused:
+            ps.dispense(
+                visit=visit,
+                store=store_,
+                actor=pharmacist,
+                requests=[req(line, wanted)],
+                today=TODAY,
+            )
+        assert refused.value.code == "STOCK_INSUFFICIENT"
+        assert {r.pk: balance(r, store_) for r in rows} == before
+        return
+    expected = ds.select_batches(snapshot, wanted, TODAY)
+    record = ps.dispense(
+        visit=visit, store=store_, actor=pharmacist, requests=[req(line, wanted)], today=TODAY
+    )
+    got = tuple(
+        Pick(dl.batch_id, int(dl.qty_base))
+        for dl in DispenseLine.objects.filter(dispense=record).order_by("id")
+    )
+    assert got == expected
+    for r in rows:
+        taken = sum(p.quantity for p in expected if p.batch_id == r.pk)
+        assert balance(r, store_) == before[r.pk] - taken >= 0
+        if r.expiry_date < TODAY:
+            assert taken == 0
 
 
 def test_dispense_in_pack_units(pharmacist, store, item) -> None:
@@ -358,7 +415,14 @@ def test_batch_override_needs_reason_and_permission(pharmacist, store, item, mak
             visit=visit,
             store=store,
             actor=pharmacist,
-            requests=[req(line, 3, batches=[ps.BatchPick(expired.pk, 3)], override_reason_code="BATCH_CHOICE")],
+            requests=[
+                req(
+                    line,
+                    3,
+                    batches=[ps.BatchPick(expired.pk, 3)],
+                    override_reason_code="BATCH_CHOICE",
+                )
+            ],
             today=TODAY,
         )
     assert exc.value.code == "BATCH_EXPIRED"
@@ -367,7 +431,11 @@ def test_batch_override_needs_reason_and_permission(pharmacist, store, item, mak
             visit=visit,
             store=store,
             actor=pharmacist,
-            requests=[req(line, 3, batches=[ps.BatchPick(late.pk, 2)], override_reason_code="BATCH_CHOICE")],
+            requests=[
+                req(
+                    line, 3, batches=[ps.BatchPick(late.pk, 2)], override_reason_code="BATCH_CHOICE"
+                )
+            ],
             today=TODAY,
         )
     assert exc.value.code == "OVERRIDE_QUANTITY_MISMATCH"
@@ -448,13 +516,9 @@ def test_dispense_refusals(pharmacist, store, item) -> None:
     stock(item, store, 100, date(2027, 1, 1))
     visit = b.visit()
     line = paid_line(visit, item, 10)
-    lab_line = b.service_line(
-        visit, b.service("lab"), billing_status="settled", invoiced_at=timezone.now()
-    )
+    lab_line = b.billed_line(visit, b.service("lab"))
     other_visit_line = paid_line(b.visit(), item, 10)
-    unstocked = b.service_line(
-        visit, b.service("drug"), billing_status="settled", invoiced_at=timezone.now()
-    )
+    unstocked = b.billed_line(visit, b.service("drug"))
     cases = [
         ([req(lab_line, 1)], "LINE_NOT_DISPENSABLE"),
         ([req(other_visit_line, 1)], "LINE_NOT_ON_VISIT"),
@@ -512,14 +576,13 @@ def test_dispense_worklist(pharmacist, store, item) -> None:
     visit = b.visit()
     paid = paid_line(visit, item, 10)
     paid_line(visit, item, 10, billing_status="unbilled")
-    b.service_line(visit, b.service("lab"), billing_status="settled", invoiced_at=timezone.now())
+    b.billed_line(visit, b.service("lab"))
     ps.dispense(visit=visit, store=store, actor=pharmacist, requests=[req(paid, 4)])
     rows = list(ps.dispense_worklist(visit=visit))
     assert [r.pk for r in rows] == [paid.pk]
     assert rows[0].remaining == 6  # type: ignore[attr-defined]
 
 
-@awaiting_fin
 def test_full_dispense_performs_the_line(pharmacist, store, item) -> None:
     stock(item, store, 50, date(2027, 1, 1))
     visit = b.visit()
@@ -533,21 +596,61 @@ def test_full_dispense_performs_the_line(pharmacist, store, item) -> None:
     assert not list(ps.dispense_worklist(visit=visit))
 
 
-@awaiting_fin
-def test_partial_dispense_closed_with_the_remainder_cancelled(pharmacist, store, item) -> None:
+def test_partial_dispense_closed_with_the_remainder_credited(
+    make_user, pharmacist, store, item
+) -> None:
+    from apps.billing.models import CreditNoteLine
+
     stock(item, store, 4, date(2027, 1, 1))
-    visit = b.visit()
-    line = paid_line(visit, item, 10)
+    line = engine.settled_line(item.service, 10, pharmacist)
     ps.dispense(
-        visit=visit,
+        visit=line.visit,
         store=store,
         actor=pharmacist,
+        approver=make_user(roles=["cashier_supervisor"]),
         requests=[req(line, 4, complete=True)],
         today=TODAY,
     )
     line.refresh_from_db()
     assert line.fulfilment_status == "performed"
     assert line.performed_quantity == 4
+    assert line.cancel_reason is not None
+    assert line.cancel_reason.code == "OUT_OF_STOCK"
+    credit = CreditNoteLine.objects.get(invoice_line__service_line=line)
+    assert credit.quantity == 6
+    assert credit.credit_note.status == "approved"
+    assert ps.on_hand(item, store) == 0
+
+
+def test_dispense_of_an_engine_settled_line_performs_it(pharmacist, store, item) -> None:
+    stock(item, store, 30, date(2027, 1, 1))
+    line = engine.settled_line(item.service, 10, pharmacist)
+    ps.dispense(
+        visit=line.visit, store=store, actor=pharmacist, requests=[req(line, 10)], today=TODAY
+    )
+    line.refresh_from_db()
+    assert line.fulfilment_status == "performed"
+    assert ps.on_hand(item, store) == 20
+
+
+def test_out_of_stock_remainder_of_a_paid_line_is_refundable(make_user, pharmacist, store, item):
+    from apps.payments import services as payments
+    from apps.payments.models import Refund
+
+    cashier = make_user(roles=["cashier"])
+    stock(item, store, 4, date(2027, 1, 1))
+    line = engine.cash_paid_line(item.service, 10, cashier, unit_price="10.00")
+    ps.dispense(
+        visit=line.visit,
+        store=store,
+        actor=pharmacist,
+        approver=make_user(roles=["cashier_supervisor"]),
+        requests=[req(line, 4, complete=True)],
+        today=TODAY,
+    )
+    patient = line.visit.patient
+    assert payments.credit_balance(patient) == Decimal("60.00")
+    assert Refund.objects.get(patient=patient).amount == Decimal("60.00")
 
 
 # --- adjustments ----------------------------------------------------------------------------
@@ -665,6 +768,29 @@ def test_count_session_posts_variances(pharmacist, manager, store, item) -> None
     assert ps.cancel_count(again, actor=pharmacist).status == "cancelled"
 
 
+def test_count_refuses_stock_that_moved_after_counting(pharmacist, manager, store, item) -> None:
+    batch = stock(item, store, 10, date(2027, 1, 1))
+    count = ps.start_count(store, actor=pharmacist)
+    # A dispense before the batch is counted: the book follows it (no false variance).
+    visit = b.visit()
+    ps.dispense(
+        visit=visit, store=store, actor=pharmacist, requests=[req(paid_line(visit, item, 5), 2)]
+    )
+    line = ps.record_count(count, batch=batch, counted_qty=8, actor=pharmacist)
+    assert line.book_qty == 8
+    # A dispense after counting: posting is refused until the batch is counted again.
+    ps.dispense(
+        visit=visit, store=store, actor=pharmacist, requests=[req(paid_line(visit, item, 5), 1)]
+    )
+    with pytest.raises(DomainError) as exc:
+        ps.post_count(count, actor=manager)
+    assert exc.value.code == "COUNT_STOCK_MOVED"
+    assert exc.value.details["batches"] == [batch.pk]
+    ps.record_count(count, batch=batch, counted_qty=6, actor=pharmacist)
+    ps.post_count(count, actor=manager)
+    assert balance(batch, store) == 6
+
+
 # --- transfers ------------------------------------------------------------------------------
 
 
@@ -681,7 +807,9 @@ def test_transfer_between_stores(pharmacist, store, item) -> None:
         ps.send_transfer(too_much, actor=pharmacist)
     assert exc.value.code == "STOCK_INSUFFICIENT"
     ps.cancel_transfer(too_much, actor=pharmacist)
-    t = ps.create_transfer(from_store=main, to_store=store, lines=[(batch.pk, 12)], actor=pharmacist)
+    t = ps.create_transfer(
+        from_store=main, to_store=store, lines=[(batch.pk, 12)], actor=pharmacist
+    )
     with pytest.raises(DomainError) as exc:
         ps.receive_transfer(t, actor=pharmacist)
     assert exc.value.code == "TRANSFER_NOT_SENT"
@@ -691,10 +819,87 @@ def test_transfer_between_stores(pharmacist, store, item) -> None:
     received = ps.receive_transfer(t, actor=pharmacist)
     assert received.status == "received"
     assert balance(batch, store) == 12
-    assert sum(StockMove.objects.filter(source_type="transfer").values_list("qty_base", flat=True)) == 0
+    assert (
+        sum(StockMove.objects.filter(source_type="transfer").values_list("qty_base", flat=True))
+        == 0
+    )
     with pytest.raises(DomainError) as exc:
         ps.cancel_transfer(t, actor=pharmacist)
     assert exc.value.code == "DOCUMENT_FINAL"
+
+
+# --- item master ----------------------------------------------------------------------------
+
+
+def test_item_master(pharmacist) -> None:
+    with pytest.raises(DomainError) as exc:
+        ps.create_item(
+            service=b.service("lab"),
+            generic_name="X",
+            base_unit_code="tablet",
+            base_unit_name_ar="حبة",
+            base_unit_name_en="tablet",
+            actor=pharmacist,
+        )
+    assert exc.value.code == "SERVICE_NOT_STOCKABLE"
+    svc = b.service("drug")
+    it = ps.create_item(
+        service=svc,
+        generic_name=" Metformin ",
+        base_unit_code="tablet",
+        base_unit_name_ar="حبة",
+        base_unit_name_en="tablet",
+        actor=pharmacist,
+        strength="500 mg",
+        min_stock=Decimal(100),
+    )
+    assert (it.generic_name, it.strength) == ("Metformin", "500 mg")
+    with pytest.raises(DomainError) as exc:
+        ps.create_item(
+            service=svc,
+            generic_name="Again",
+            base_unit_code="tablet",
+            base_unit_name_ar="حبة",
+            base_unit_name_en="tablet",
+            actor=pharmacist,
+        )
+    assert exc.value.code == "ITEM_EXISTS"
+    ps.add_unit(it, unit_code="strip", name_ar="شريط", name_en="strip", factor=10, actor=pharmacist)
+    ps.add_unit(it, unit_code="box", name_ar="علبة", name_en="box", factor=100, actor=pharmacist)
+    assert ps.item_factors(it) == {"tablet": 1, "strip": 10, "box": 100}
+    for code, factor, err in [
+        ("tablet", 5, "INVALID_CONVERSION"),
+        ("strip", 5, "INVALID_CONVERSION"),
+        ("pack", 1, "INVALID_QUANTITY"),
+    ]:
+        with pytest.raises(DomainError) as exc:
+            ps.add_unit(
+                it, unit_code=code, name_ar="x", name_en="x", factor=factor, actor=pharmacist
+            )
+        assert exc.value.code == err
+
+
+def test_low_stock_notifies_pharmacists(pharmacist, store, make_user) -> None:
+    from apps.core.models import Notification
+
+    other = make_user(roles=["pharmacist"])
+    it = b.item(min_stock=Decimal(5))
+    stock(it, store, 8, date(2027, 1, 1))
+    visit = b.visit()
+    line = paid_line(visit, it, 10)
+    ps.dispense(visit=visit, store=store, actor=pharmacist, requests=[req(line, 2)])
+    assert not Notification.objects.filter(kind="stock_low").exists()  # 6 > 5
+    ps.dispense(visit=visit, store=store, actor=pharmacist, requests=[req(line, 1)])
+    notified = set(Notification.objects.filter(kind="stock_low").values_list("user_id", flat=True))
+    assert notified == {pharmacist.pk, other.pk}
+    assert (
+        Notification.objects.filter(kind="stock_low").values_list("payload", flat=True)[0][
+            "on_hand"
+        ]
+        == 5
+    )
+    ps.dispense(visit=visit, store=store, actor=pharmacist, requests=[req(line, 1)])
+    assert Notification.objects.filter(kind="stock_low").count() == 2  # once per crossing
 
 
 # --- queries --------------------------------------------------------------------------------
@@ -740,7 +945,7 @@ def _run_threads(work, args_list):
             outcome = "ok"
         except DomainError as exc:
             outcome = exc.code
-        except Exception as exc:  # noqa: BLE001 - reported in the assertion
+        except Exception as exc:
             outcome = f"{type(exc).__name__}: {exc}"
         finally:
             connection.close()

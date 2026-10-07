@@ -26,13 +26,15 @@ EXPECTED_CODES = {
     "DISCOUNT",
     "WRITE_OFF",
     "CASH_OVER_SHORT",
+    "CASH_SAFE",  # ADR 0006: cash in the safe or in transit between drawers
 }
 
 
 def test_chart_matches_architecture_and_migration_copy() -> None:
     assert ACCOUNT_CODES == EXPECTED_CODES
     migration = importlib.import_module("apps.ledger.migrations.0003_seed_accounts")
-    assert [tuple(row) for row in migration.CHART] == [
+    added = importlib.import_module("apps.ledger.migrations.0005_seed_cash_safe")
+    assert [tuple(row) for row in [*migration.CHART, *added.ADDED]] == [
         (a.code, a.name_ar, a.name_en, a.kind, a.normal_balance) for a in CHART
     ]
 

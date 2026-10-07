@@ -41,6 +41,7 @@ APPEND_ONLY = {
     ("pharmacy", "StockMove"),
     ("pharmacy", "Dispense"),
     ("pharmacy", "DispenseLine"),
+    ("pharmacy", "DispenseReturn"),
     ("claims", "PayerPaymentAllocation"),
 }
 
@@ -78,6 +79,32 @@ PROTECTION_TRIGGERS = [
     ("lab_resultversion", "result_version_guard"),
     ("lab_resultvalue", "value_needs_draft_version"),
     ("orders_serviceline", "line_guard"),
+    # Phase 1 review fixes: a line never moves to another document (invariant 2) ...
+    ("billing_invoiceline", "line_parent_fixed"),
+    ("billing_creditnoteline", "line_parent_fixed"),
+    # ... nothing is booked into a closed shift and its handovers never change (invariant 3)
+    ("payments_allocation", "shift_must_be_open"),
+    ("ledger_journalentry", "shift_must_be_open"),
+    ("ledger_journalline", "shift_must_be_open"),
+    ("payments_cashhandover", "handover_guard"),
+    # ... decisions stay recorded (invariant 4) ...
+    ("payments_payment", "payment_verification_forward"),
+    ("payments_refund", "refund_request_readonly"),
+    ("payments_refund", "refund_forward"),
+    ("orders_performauthorization", "authorization_guard"),
+    ("claims_claimline", "claim_line_guard"),
+    # ... stock leaves only for paid or authorized, still billed units (invariants 1 and 5)
+    ("pharmacy_dispenseline", "dispense_line_eligible"),
+    # ... frozen prices keep their version (invariant 6) ...
+    ("catalog_pricelistversion", "version_guard"),
+    ("catalog_priceitem", "item_guard"),
+    # ... and protected tables are never truncated by the application role.
+    ("billing_invoice", "truncate_guard"),
+    ("payments_payment", "truncate_guard"),
+    ("payments_allocation", "truncate_guard"),
+    ("ledger_journalline", "truncate_guard"),
+    ("pharmacy_stockmove", "truncate_guard"),
+    ("orders_serviceline", "truncate_guard"),
 ]
 
 

@@ -541,10 +541,13 @@ def require_permission(user: User, code: str) -> None:
 def resolve_reason(reason: ReasonCode | str | None, category: str, note: str = "") -> ReasonCode:
     """Return the active ``ReasonCode`` of ``category`` given as an instance or its code.
 
+    Uses the same error codes as the visits and pharmacy services so the frontend shows one
+    message per case.
+
     Raises:
-        DomainError: ``REASON_REQUIRED`` when no reason is given or the code needs a note and
-            ``note`` is blank; ``REASON_INVALID`` when the code is unknown, inactive or of
-            another category.
+        DomainError: ``REASON_REQUIRED`` when no reason is given; ``REASON_UNKNOWN`` when the
+            code is unknown, inactive or of another category; ``REASON_NOTE_REQUIRED`` when
+            the code needs an explanation and ``note`` is blank.
     """
     if reason is None or reason == "":
         raise DomainError("REASON_REQUIRED", "A reason is required for this action")
@@ -554,14 +557,14 @@ def resolve_reason(reason: ReasonCode | str | None, category: str, note: str = "
         found = ReasonCode.objects.filter(category=category, code=str(reason)).first()
     if found is None or found.category != category or not found.active:
         raise DomainError(
-            "REASON_INVALID",
-            "Unknown or inactive reason for this action",
+            "REASON_UNKNOWN",
+            "Unknown or inactive reason code for this action",
             category=category,
-            reason=str(getattr(found, "code", reason)),
+            reason_code=str(getattr(found, "code", reason)),
         )
     if found.requires_note and not note.strip():
         raise DomainError(
-            "REASON_REQUIRED", "This reason needs an explanation", reason=found.code, note=True
+            "REASON_NOTE_REQUIRED", "This reason needs an explanation", reason_code=found.code
         )
     return found
 

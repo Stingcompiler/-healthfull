@@ -22,7 +22,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
 
-from apps.core.db import choice_check, parent_must_be_editable, track_history
+from apps.core.db import choice_check, parent_must_be_editable, track_history, truncate_guard
 
 
 class SampleType(models.TextChoices):
@@ -351,6 +351,7 @@ class ResultVersion(models.Model):
             models.Index(fields=["status", "approved_at"], name="lab_version_status_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             pgtrigger.Trigger(
                 name="result_version_guard",
                 when=pgtrigger.Before,
@@ -396,6 +397,7 @@ class ResultValue(models.Model):
             models.UniqueConstraint(fields=["version", "parameter"], name="lab_value_unique"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             parent_must_be_editable(
                 "value_needs_draft_version",
                 code="RESULT_FROZEN",

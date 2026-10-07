@@ -371,8 +371,27 @@ class AdmissionStatus(models.TextChoices):
 
 @track_history()
 class Admission(models.Model):
+    """An inpatient stay (FEATURES 10.5). A patient holds at most one open admission.
+
+    ``authorization`` documents the perform-first exception under which bed nights are given
+    before they are invoiced (they are charged in arrears, invariant 1).
+    """
+
     number = models.CharField(max_length=30, unique=True)
     visit = models.OneToOneField(Visit, on_delete=models.PROTECT, related_name="admission")
+    patient = models.ForeignKey(
+        "patients.Patient",
+        on_delete=models.PROTECT,
+        related_name="admissions",
+        help_text="The visit's patient (copied, so one open admission per patient is a rule).",
+    )
+    authorization = models.ForeignKey(
+        "orders.PerformAuthorization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="admissions",
+    )
     admitting_doctor = models.ForeignKey(
         "core.DoctorProfile", on_delete=models.PROTECT, related_name="admissions"
     )
@@ -404,6 +423,11 @@ class Admission(models.Model):
             models.CheckConstraint(
                 condition=Q(discharged_at__isnull=True) | Q(discharged_at__gte=F("admitted_at")),
                 name="visits_admission_discharge_after_admit",
+            ),
+            models.UniqueConstraint(
+                fields=["patient"],
+                condition=Q(status=AdmissionStatus.ADMITTED),
+                name="visits_admission_one_open_per_patient",
             ),
         ]
         indexes: ClassVar[list[models.Index]] = [

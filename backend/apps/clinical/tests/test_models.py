@@ -72,7 +72,7 @@ def test_notes_diagnoses_and_conditions() -> None:
         lambda: ClinicalNote.objects.filter(pk=note.pk).update(status="signed"),
         "clinical_note_signed_has_time",
     )
-    icd = Icd10Code.objects.create(code="R51", title_en="Headache")
+    icd = Icd10Code.objects.get_or_create(code="R51", defaults={"title_en": "Headache"})[0]
     Diagnosis.objects.create(visit=v, note=note, icd10=icd, recorded_by=b.user())
     with pytest.raises(IntegrityError, match="clinical_diagnosis_named"), transaction.atomic():
         Diagnosis.objects.create(visit=v, recorded_by=b.user())

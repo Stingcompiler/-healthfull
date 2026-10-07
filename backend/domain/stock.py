@@ -48,9 +48,12 @@ __all__ = [
     "is_low_stock",
     "is_usable",
     "on_hand",
+    "reorder_suggestion",
+    "return_move",
     "select_batches",
     "to_base",
     "transfer_moves",
+    "transfer_receipt",
     "unit_factors",
     "validate_move",
 ]
@@ -352,6 +355,56 @@ def transfer_moves(
     )
 
 
+def return_move(
+    item_id: int,
+    batch_id: int,
+    store_id: int,
+    quantity: int,
+    *,
+    dispensed: int,
+    returned: int,
+    approval: Approval,
+) -> StockMoveDraft:
+    """Units a patient brought back go on the shelf again (a positive ``return`` move).
+
+    At most what was dispensed for the line less what was already returned; with a reason
+    and an actor (invariant 4). Raises ``RETURN_EXCEEDS_DISPENSED``.
+    """
+    if not isinstance(approval, Approval):
+        raise TypeError("return_move() needs an Approval")
+    qty = _count(quantity)
+    given = _count(dispensed, "dispensed", minimum=0)
+    back = _count(returned, "returned", minimum=0)
+    if qty > given - back:
+        raise DomainError(
+            "RETURN_EXCEEDS_DISPENSED",
+            "More units than were dispensed and not yet returned",
+            requested=qty,
+            dispensed=given,
+            returned=back,
+        )
+    return StockMoveDraft(item_id, batch_id, store_id, qty, MoveKind.RETURN)
+
+
+def transfer_receipt(sent: int, received: int, approval: Approval | None) -> int:
+    """The shortage of a transfer line received short (lost or damaged in transit).
+
+    ``received`` is at most ``sent``; a shortage needs an approval with a reason
+    (FEATURES 8.6, invariant 4). Returns the shortage. Raises ``RECEIPT_EXCEEDS_SENT``,
+    ``REASON_REQUIRED``.
+    """
+    out = _count(sent, "sent")
+    got = _count(received, "received", minimum=0)
+    if got > out:
+        raise DomainError(
+            "RECEIPT_EXCEEDS_SENT", "More received than was sent", sent=out, received=got
+        )
+    short = out - got
+    if short and approval is None:
+        raise DomainError("REASON_REQUIRED", "A transfer shortage needs a reason and approver")
+    return short
+
+
 # --- counts and reports ------------------------------------------------------------------
 
 
@@ -384,6 +437,17 @@ def count_adjustments(lines: Iterable[CountLine]) -> tuple[StockMoveDraft, ...]:
 def is_low_stock(on_hand_total: int, min_stock: int) -> bool:
     """At or below the item's minimum: time to reorder (FEATURES 8.9)."""
     return on_hand_total <= min_stock
+
+
+def reorder_suggestion(on_hand_total: int, min_stock: int, reorder_qty: int = 0) -> int:
+    """How much to order for a low item (FEATURES 8.9).
+
+    The item's own ``reorder_qty`` when set, otherwise enough to reach twice the minimum.
+    """
+    total = _count(on_hand_total, "on_hand_total", minimum=0)
+    minimum = _count(min_stock, "min_stock", minimum=0)
+    fixed = _count(reorder_qty, "reorder_qty", minimum=0)
+    return fixed or max(2 * minimum - total, 0)
 
 
 def expiring_within(batches: Iterable[BatchStock], today: date, days: int) -> list[BatchStock]:

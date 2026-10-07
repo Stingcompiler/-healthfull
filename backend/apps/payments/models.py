@@ -3,11 +3,17 @@
 Database backstops:
 
 * A cashier has at most one open shift (partial unique index). A closed shift never changes
-  (trigger, invariant 3), and no payment, refund or handover can be written against a shift
-  that is not open: later effects post to the acting user's current shift, linked to the
-  original row (``reversal_of``).
+  (trigger, invariant 3), its report is frozen at close (``close_report``), and no payment,
+  refund, allocation or handover can be written against a shift that is not open: later
+  effects post to the acting user's current shift, linked to the original row
+  (``reversal_of``).
 * A payment's money fields never change and payments are never deleted; only verification
-  and override bookkeeping moves. A rejected transfer is terminal.
+  and override bookkeeping moves, and verification only forward (pending -> confirmed or
+  rejected, confirmed -> rejected). A rejected transfer is terminal.
+* A refund's request never changes; its status moves only forward (requested -> approved or
+  rejected, approved -> paid or rejected) and its approver is never its requester.
+* A handover's amount, route and sender never change; it is received once (into an open
+  shift) or cancelled once (while the sender's shift is open), and never deleted.
 * ``(bank, normalized reference)`` is unique for bank/QR/card payments, except rows a
   supervisor explicitly overrode as a known duplicate (FEATURES 6.2).
 * Allocations are append-only; a reversal is a new negative row (ARCHITECTURE 4.9).
@@ -15,7 +21,7 @@ Database backstops:
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import pgtrigger
 from django.conf import settings
@@ -23,14 +29,15 @@ from django.db import models
 from django.db.models import F, Q
 
 from apps.core.db import (
-    NormalizeReference,
     append_only,
     choice_check,
     money_field,
     protect_when,
     shift_must_be_open,
     track_history,
+    truncate_guard,
 )
+from domain.payments import normalize_reference
 
 
 @track_history()
@@ -108,6 +115,11 @@ class Shift(models.Model):
     )
     variance_note = models.TextField(blank=True)
     note = models.CharField(max_length=500, blank=True)
+    close_report = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="The shift report as it stood at close (FEATURES 7.3); never recomputed.",
+    )
 
     class Meta:
         verbose_name = "shift"
@@ -152,12 +164,17 @@ class Shift(models.Model):
                 condition=Q(closed_at__isnull=True) | Q(closed_at__gte=F("opened_at")),
                 name="payments_shift_close_after_open",
             ),
+            models.CheckConstraint(
+                condition=~Q(status=ShiftStatus.CLOSED) | Q(close_report__isnull=False),
+                name="payments_shift_close_report_frozen",
+            ),
         ]
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["cashier", "-opened_at"], name="payments_shift_cashier_idx"),
             models.Index(fields=["status", "-closed_at"], name="payments_shift_status_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             protect_when(
                 "shift_closed",
                 code="SHIFT_CLOSED",
@@ -228,6 +245,7 @@ _PAYMENT_MONEY_FIELDS = [
     "amount",
     "bank",
     "reference",
+    "reference_norm",
     "transfer_date",
     "reversal_of",
     "created_by",
@@ -257,10 +275,11 @@ class Payment(models.Model):
         Bank, on_delete=models.PROTECT, null=True, blank=True, related_name="payments"
     )
     reference = models.CharField(max_length=100, blank=True)
-    reference_norm = models.GeneratedField(
-        expression=NormalizeReference(F("reference")),
-        output_field=models.TextField(),
-        db_persist=True,
+    reference_norm = models.CharField(
+        max_length=200,
+        blank=True,
+        editable=False,
+        help_text="``domain.payments.normalize_reference(reference)``, written by the service.",
     )
     transfer_date = models.DateField(null=True, blank=True)
     sender_name = models.CharField(max_length=200, blank=True)
@@ -325,7 +344,8 @@ class Payment(models.Model):
                 name="payments_payment_cash_is_confirmed_without_bank",
             ),
             models.CheckConstraint(
-                condition=~Q(method__in=BANK_METHODS) | (Q(bank__isnull=False) & ~Q(reference="")),
+                condition=~Q(method__in=BANK_METHODS)
+                | (Q(bank__isnull=False) & ~Q(reference="") & ~Q(reference_norm="")),
                 name="payments_payment_bank_needs_reference",
             ),
             # Invariant 4: confirmation and rejection record actor and time; rejection a reason.
@@ -369,6 +389,7 @@ class Payment(models.Model):
             models.Index(fields=["bank", "reference_norm"], name="payments_payment_ref_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             pgtrigger.ReadOnly(name="payment_money_readonly", fields=_PAYMENT_MONEY_FIELDS),
             protect_when(
                 "payment_no_delete",
@@ -383,11 +404,39 @@ class Payment(models.Model):
                 condition=pgtrigger.Q(old__verification="rejected"),
                 operation=pgtrigger.Update,
             ),
+            pgtrigger.Trigger(
+                name="payment_verification_forward",
+                when=pgtrigger.Before,
+                operation=pgtrigger.Update,
+                func="""
+                    IF NEW.verification IS DISTINCT FROM OLD.verification AND NOT (
+                        (OLD.verification = 'pending'
+                         AND NEW.verification IN ('confirmed', 'rejected'))
+                        OR (OLD.verification = 'confirmed' AND NEW.verification = 'rejected')
+                    ) THEN
+                        RAISE EXCEPTION
+                            'PAYMENT_VERIFICATION_TRANSITION: payment % cannot go from % to %',
+                            OLD.id, OLD.verification, NEW.verification;
+                    END IF;
+                    RETURN NEW;
+                """,
+            ),
             shift_must_be_open(),
         ]
 
     def __str__(self) -> str:
         return self.number
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Write ``reference_norm`` from the one Python definition of a reference's canonical
+        form (``domain.payments.normalize_reference``), so the unique index and duplicate
+        lookups compare exactly what the domain compares."""
+        bank = self.method in BANK_METHODS
+        self.reference_norm = normalize_reference(self.reference) if bank else ""
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None and "reference" in update_fields:
+            kwargs["update_fields"] = {*update_fields, "reference_norm"}
+        super().save(*args, **kwargs)
 
 
 class AllocationKind(models.TextChoices):
@@ -410,8 +459,10 @@ class Allocation(models.Model):
         max_length=20, choices=AllocationKind.choices, default=AllocationKind.ALLOCATE
     )
     amount = money_field()
-    reversal_of = models.OneToOneField(
-        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="reversal"
+    # A ForeignKey, not one-to-one: a credit-funded allocation can be taken back in parts by
+    # separate transfer rejections (``domain.allocation.plan_rejection`` recovery rows).
+    reversal_of = models.ForeignKey(
+        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="reversals"
     )
     credit_note = models.ForeignKey(
         "billing.CreditNote",
@@ -459,7 +510,11 @@ class Allocation(models.Model):
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["invoice"], name="payments_alloc_invoice_idx"),
         ]
-        triggers: ClassVar[list[pgtrigger.Trigger]] = [append_only()]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
+            append_only(),
+            shift_must_be_open(),
+        ]
 
     def __str__(self) -> str:
         return f"{self.payment_id} -> {self.invoice_id}: {self.amount}"
@@ -563,17 +618,63 @@ class Refund(models.Model):
                 condition=~Q(method=RefundMethod.BANK_TRANSFER) | Q(bank__isnull=False),
                 name="payments_refund_transfer_has_bank",
             ),
+            # Segregation of duties (FLOW 8): nobody approves their own refund request.
+            models.CheckConstraint(
+                condition=~Q(status__in=[RefundStatus.APPROVED, RefundStatus.PAID])
+                | ~Q(decided_by=F("requested_by")),
+                name="payments_refund_approver_not_requester",
+            ),
         ]
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["status", "requested_at"], name="payments_refund_status_idx"),
             models.Index(fields=["patient"], name="payments_refund_patient_idx"),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             protect_when(
                 "refund_final",
                 code="REFUND_FINAL",
                 message="paid or rejected refunds never change",
                 condition=pgtrigger.Q(old__status__in=["paid", "rejected"]),
+            ),
+            pgtrigger.ReadOnly(
+                name="refund_request_readonly",
+                fields=[
+                    "number",
+                    "patient",
+                    "amount",
+                    "method",
+                    "bank",
+                    "reference",
+                    "credit_note",
+                    "service_line",
+                    "reason_code",
+                    "reason_note",
+                    "requested_by",
+                    "requested_at",
+                ],
+            ),
+            pgtrigger.Trigger(
+                name="refund_forward",
+                when=pgtrigger.Before,
+                operation=pgtrigger.Update,
+                func="""
+                    IF NEW.status IS DISTINCT FROM OLD.status AND NOT (
+                        (OLD.status = 'requested' AND NEW.status IN ('approved', 'rejected'))
+                        OR (OLD.status = 'approved' AND NEW.status IN ('paid', 'rejected'))
+                    ) THEN
+                        RAISE EXCEPTION 'REFUND_TRANSITION: refund % cannot go from % to %',
+                            OLD.id, OLD.status, NEW.status;
+                    END IF;
+                    IF OLD.status = 'approved' AND NEW.status IN ('approved', 'paid') AND (
+                        NEW.decided_by_id IS DISTINCT FROM OLD.decided_by_id
+                        OR NEW.decided_at IS DISTINCT FROM OLD.decided_at
+                        OR NEW.decision_note IS DISTINCT FROM OLD.decision_note) THEN
+                        RAISE EXCEPTION 'REFUND_DECISION_FINAL: refund % was already approved',
+                            OLD.id;
+                    END IF;
+                    RETURN NEW;
+                """,
             ),
             shift_must_be_open(),
         ]
@@ -612,6 +713,11 @@ class CashHandover(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
     received_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    cancel_note = models.CharField(max_length=500, blank=True)
     note = models.CharField(max_length=500, blank=True)
 
     class Meta:
@@ -632,10 +738,70 @@ class CashHandover(models.Model):
                 condition=Q(received_at__isnull=True) | Q(received_by__isnull=False),
                 name="payments_handover_receipt_documented",
             ),
+            models.CheckConstraint(
+                condition=Q(cancelled_at__isnull=True)
+                | (
+                    Q(cancelled_by__isnull=False) & ~Q(cancel_note="") & Q(received_at__isnull=True)
+                ),
+                name="payments_handover_cancel_documented",
+            ),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             shift_must_be_open(),
             shift_must_be_open(name="to_shift_must_be_open", column="to_shift_id"),
+            pgtrigger.Trigger(
+                name="handover_guard",
+                when=pgtrigger.Before,
+                operation=pgtrigger.Update | pgtrigger.Delete,
+                func="""
+                    IF TG_OP = 'DELETE' THEN
+                        RAISE EXCEPTION 'HANDOVER_PERMANENT: handover % is never deleted', OLD.id;
+                    END IF;
+                    IF ROW(NEW.number, NEW.shift_id, NEW.destination, NEW.to_shift_id,
+                           NEW.to_user_id, NEW.amount, NEW.bank_reference, NEW.handed_by_id,
+                           NEW.handed_at)
+                       IS DISTINCT FROM
+                       ROW(OLD.number, OLD.shift_id, OLD.destination, OLD.to_shift_id,
+                           OLD.to_user_id, OLD.amount, OLD.bank_reference, OLD.handed_by_id,
+                           OLD.handed_at) THEN
+                        RAISE EXCEPTION 'HANDOVER_READONLY: handover % never changes', OLD.id;
+                    END IF;
+                    IF ROW(NEW.received_at, NEW.received_by_id)
+                       IS DISTINCT FROM ROW(OLD.received_at, OLD.received_by_id) THEN
+                        IF OLD.received_at IS NOT NULL OR OLD.cancelled_at IS NOT NULL THEN
+                            RAISE EXCEPTION 'HANDOVER_FINAL: handover % is already settled',
+                                OLD.id;
+                        END IF;
+                        IF NEW.to_shift_id IS NOT NULL AND NOT EXISTS (
+                            SELECT 1 FROM payments_shift s
+                             WHERE s.id = NEW.to_shift_id AND s.status = 'open'
+                        ) THEN
+                            RAISE EXCEPTION 'SHIFT_NOT_OPEN: shift % is not open (table %)',
+                                NEW.to_shift_id, TG_TABLE_NAME;
+                        END IF;
+                    END IF;
+                    IF ROW(NEW.cancelled_at, NEW.cancelled_by_id, NEW.cancel_note)
+                       IS DISTINCT FROM ROW(OLD.cancelled_at, OLD.cancelled_by_id, OLD.cancel_note)
+                    THEN
+                        IF OLD.received_at IS NOT NULL OR OLD.cancelled_at IS NOT NULL THEN
+                            RAISE EXCEPTION 'HANDOVER_FINAL: handover % is already settled',
+                                OLD.id;
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM payments_shift s
+                             WHERE s.id = OLD.shift_id AND s.status = 'open'
+                        ) THEN
+                            RAISE EXCEPTION 'SHIFT_NOT_OPEN: shift % is not open (table %)',
+                                OLD.shift_id, TG_TABLE_NAME;
+                        END IF;
+                    END IF;
+                    IF TG_OP = 'DELETE' THEN
+                        RETURN OLD;
+                    END IF;
+                    RETURN NEW;
+                """,
+            ),
         ]
 
     def __str__(self) -> str:

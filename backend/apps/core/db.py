@@ -152,6 +152,10 @@ def shift_must_be_open(name: str = "shift_must_be_open", column: str = "shift_id
 
     Applies on INSERT and on UPDATE that changes the shift. Later effects of a closed shift
     are posted to the acting user's current open shift instead (ARCHITECTURE 4.6).
+
+    The shift row is read ``FOR SHARE``: a writer racing ``close_shift`` (which holds the
+    shift row ``FOR UPDATE``) waits for the close to commit and then sees the shift closed,
+    so nothing is ever booked into a shift after it closed.
     """
     return pgtrigger.Trigger(
         name=name,
@@ -160,16 +164,66 @@ def shift_must_be_open(name: str = "shift_must_be_open", column: str = "shift_id
         # Trigger DDL built at import time from code constants, never from user input.
         func=f"""
             IF NEW.{column} IS NOT NULL
-               AND (TG_OP = 'INSERT' OR NEW.{column} IS DISTINCT FROM OLD.{column})
-               AND NOT EXISTS (
-                   SELECT 1 FROM payments_shift s WHERE s.id = NEW.{column} AND s.status = 'open'
-               ) THEN
-                RAISE EXCEPTION 'SHIFT_NOT_OPEN: shift % is not open (table %)',
-                    NEW.{column}, TG_TABLE_NAME;
+               AND (TG_OP = 'INSERT' OR NEW.{column} IS DISTINCT FROM OLD.{column}) THEN
+                PERFORM 1 FROM payments_shift s
+                 WHERE s.id = NEW.{column} AND s.status = 'open' FOR SHARE;
+                IF NOT FOUND THEN
+                    RAISE EXCEPTION 'SHIFT_NOT_OPEN: shift % is not open (table %)',
+                        NEW.{column}, TG_TABLE_NAME;
+                END IF;
             END IF;
             RETURN NEW;
-        """,  # noqa: S608
+        """,
     )
+
+
+def truncate_guard(name: str = "truncate_guard") -> pgtrigger.Trigger:
+    """Refuse ``TRUNCATE`` of a protected table unless the session role owns the table.
+
+    Row triggers never see a TRUNCATE, so without this an append-only or frozen table could
+    be wiped in one statement. The table owner (migrations, the test database flush) keeps
+    the right; an application role with only DML grants (the production set-up recorded in
+    ADR 0006) is refused even if it was granted TRUNCATE.
+    """
+    return pgtrigger.Trigger(
+        name=name,
+        level=pgtrigger.Statement,
+        when=pgtrigger.Before,
+        operation=pgtrigger.Truncate,
+        func="""
+            IF NOT pg_has_role(
+                session_user,
+                (SELECT c.relowner FROM pg_class c WHERE c.oid = TG_RELID),
+                'MEMBER'
+            ) THEN
+                RAISE EXCEPTION 'APPEND_ONLY: % cannot be truncated', TG_TABLE_NAME;
+            END IF;
+            RETURN NULL;
+        """,
+    )
+
+
+#: ``pgtrigger`` wraps every trigger body in ``_pgtrigger_should_ignore(TG_NAME)``, which
+#: reads the session setting ``pgtrigger.ignore``: any connection could switch the guards off
+#: with ``SET LOCAL pgtrigger.ignore = '{...}'``. Every trigger install re-creates that
+#: function, so ``apps.core.signals`` replaces it after each ``migrate`` with this body,
+#: which never ignores a trigger. The application never uses ``pgtrigger.ignore``.
+LOCK_IGNORE_SQL = """
+    CREATE OR REPLACE FUNCTION "public"._pgtrigger_should_ignore(trigger_name NAME)
+    RETURNS BOOLEAN AS $$
+    BEGIN
+        RETURN FALSE;
+    END;
+    $$ LANGUAGE plpgsql;
+"""
+
+
+def lock_trigger_ignore(using: str = "default") -> None:
+    """Install :data:`LOCK_IGNORE_SQL` (idempotent)."""
+    from django.db import connections
+
+    with connections[using].cursor() as cursor:
+        cursor.execute(LOCK_IGNORE_SQL)
 
 
 def parent_must_be_editable(

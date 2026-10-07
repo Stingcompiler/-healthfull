@@ -10,8 +10,14 @@ A ``ServiceLine`` is one ordered unit of service on a visit with two orthogonal 
 Database backstops (the domain and services check first, these catch bypasses):
 
 * ``line_guard`` trigger: a line enters ``in_progress``/``performed`` only while settled or
-  under an unrevoked ``PerformAuthorization`` (invariant 1); terminal fulfilment states never
-  change; billing moves only along the arrows above; lines are never deleted (cancel them).
+  under an unrevoked ``PerformAuthorization`` of its own visit (invariant 1); a line starts
+  unbilled and becomes invoiced/settled only once a frozen line of an approved invoice bills
+  it; terminal fulfilment states never change; billing moves only along the arrows above; a
+  billed line keeps its quantity, service, kind, payer and visit, and is cancelled only
+  together with its credit; a line with dispensed units is never cancelled (its given units
+  are performed and only the rest is closed); lines are never deleted (cancel them).
+* ``authorization_guard`` trigger: an authorization's decision fields never change, a
+  revocation is final, and authorizations are never deleted (invariant 4).
 * Check constraints: every cancellation records reason, actor and time (invariant 4), every
   performance records actor and time, invoiced/credited lines carry their timestamps.
 """
@@ -26,7 +32,30 @@ from django.db import models
 from django.db.models import F, Q
 
 from apps.catalog.models import ServiceKind
-from apps.core.db import choice_check, quantity_field, track_history
+from apps.core.db import choice_check, quantity_field, track_history, truncate_guard
+
+_AUTHORIZATION_GUARD_SQL = """
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'AUTHORIZATION_PERMANENT: authorization % is never deleted', OLD.id;
+    END IF;
+    IF NEW.visit_id IS DISTINCT FROM OLD.visit_id
+       OR NEW.kind IS DISTINCT FROM OLD.kind
+       OR NEW.reason_code_id IS DISTINCT FROM OLD.reason_code_id
+       OR NEW.reason_note IS DISTINCT FROM OLD.reason_note
+       OR NEW.approval_reference IS DISTINCT FROM OLD.approval_reference
+       OR NEW.requested_by_id IS DISTINCT FROM OLD.requested_by_id
+       OR NEW.authorized_by_id IS DISTINCT FROM OLD.authorized_by_id
+       OR NEW.authorized_at IS DISTINCT FROM OLD.authorized_at THEN
+        RAISE EXCEPTION 'AUTHORIZATION_READONLY: authorization % records a decision', OLD.id;
+    END IF;
+    IF OLD.revoked_at IS NOT NULL AND (
+        NEW.revoked_at IS DISTINCT FROM OLD.revoked_at
+        OR NEW.revoked_by_id IS DISTINCT FROM OLD.revoked_by_id
+        OR NEW.revoke_note IS DISTINCT FROM OLD.revoke_note) THEN
+        RAISE EXCEPTION 'AUTHORIZATION_REVOKED: authorization % stays revoked', OLD.id;
+    END IF;
+    RETURN NEW;
+"""
 
 
 class AuthorizationKind(models.TextChoices):
@@ -84,6 +113,15 @@ class PerformAuthorization(models.Model):
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["authorized_at"], name="orders_auth_time_idx"),
         ]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
+            pgtrigger.Trigger(
+                name="authorization_guard",
+                when=pgtrigger.Before,
+                operation=pgtrigger.Update | pgtrigger.Delete,
+                func=_AUTHORIZATION_GUARD_SQL,
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.kind} on visit {self.visit_id}"
@@ -117,6 +155,9 @@ _LINE_GUARD_SQL = """
         RAISE EXCEPTION 'LINE_NOT_DELETABLE: service line % cannot be deleted; cancel it',
             OLD.id;
     END IF;
+    IF TG_OP = 'INSERT' AND NEW.billing_status <> 'unbilled' THEN
+        RAISE EXCEPTION 'LINE_BILLING_TRANSITION: service line % must start unbilled', NEW.id;
+    END IF;
     IF TG_OP = 'UPDATE' THEN
         IF OLD.fulfilment_status IN ('performed', 'cancelled')
            AND NEW.fulfilment_status IS DISTINCT FROM OLD.fulfilment_status THEN
@@ -131,17 +172,59 @@ _LINE_GUARD_SQL = """
             RAISE EXCEPTION 'LINE_BILLING_TRANSITION: service line % cannot go from % to %',
                 OLD.id, OLD.billing_status, NEW.billing_status;
         END IF;
+        -- Billed only from a frozen line of an approved invoice (invariant 1).
+        IF OLD.billing_status = 'unbilled' AND NEW.billing_status <> 'unbilled'
+           AND NOT EXISTS (
+               SELECT 1 FROM billing_invoiceline il
+                 JOIN billing_invoice i ON i.id = il.invoice_id
+                WHERE il.service_line_id = NEW.id AND il.frozen AND i.status = 'approved'
+           ) THEN
+            RAISE EXCEPTION 'LINE_NOT_INVOICED: service line % is on no approved invoice',
+                NEW.id;
+        END IF;
+        -- What was ordered and billed never changes afterwards.
+        IF NEW.visit_id IS DISTINCT FROM OLD.visit_id
+           OR (OLD.billing_status <> 'unbilled' AND (
+               NEW.quantity IS DISTINCT FROM OLD.quantity
+               OR NEW.service_id IS DISTINCT FROM OLD.service_id
+               OR NEW.kind IS DISTINCT FROM OLD.kind
+               OR NEW.payer_id IS DISTINCT FROM OLD.payer_id)) THEN
+            RAISE EXCEPTION 'LINE_BILLED_READONLY: service line % is billed; its order is fixed',
+                OLD.id;
+        END IF;
+        IF NEW.authorization_id IS DISTINCT FROM OLD.authorization_id
+           AND OLD.authorization_id IS NOT NULL THEN
+            RAISE EXCEPTION 'LINE_AUTHORIZATION_FIXED: service line % keeps its authorization',
+                OLD.id;
+        END IF;
+        -- A billed line is cancelled only by the credit note that credits it (ARCH 4.4).
+        IF NEW.fulfilment_status = 'cancelled' AND OLD.fulfilment_status <> 'cancelled'
+           AND NEW.billing_status IN ('invoiced', 'settled') THEN
+            RAISE EXCEPTION 'CREDIT_NOTE_REQUIRED: billed service line % needs a credit note',
+                OLD.id;
+        END IF;
+        -- Stock that left for a line is never cancelled away: perform the given units and
+        -- close the rest instead (invariants 1 and 5).
+        IF NEW.fulfilment_status = 'cancelled' AND OLD.fulfilment_status <> 'cancelled'
+           AND EXISTS (SELECT 1 FROM pharmacy_dispenseline d WHERE d.service_line_id = NEW.id)
+        THEN
+            RAISE EXCEPTION 'LINE_PARTLY_DISPENSED: service line % has dispensed units', OLD.id;
+        END IF;
     END IF;
     IF NEW.fulfilment_status IN ('in_progress', 'performed')
        AND (TG_OP = 'INSERT' OR NEW.fulfilment_status IS DISTINCT FROM OLD.fulfilment_status)
-       AND NEW.billing_status <> 'settled'
-       AND NOT EXISTS (
-           SELECT 1 FROM orders_performauthorization a
-           WHERE a.id = NEW.authorization_id AND a.revoked_at IS NULL
-       ) THEN
-        RAISE EXCEPTION
-            'LINE_NOT_ELIGIBLE: service line % is neither settled nor authorized to perform',
-            NEW.id;
+       AND NEW.billing_status <> 'settled' THEN
+        -- FOR SHARE: a concurrent revocation (which locks the authorization FOR UPDATE)
+        -- either commits first and is seen here, or waits for this transaction.
+        PERFORM 1 FROM orders_performauthorization a
+         WHERE a.id = NEW.authorization_id AND a.revoked_at IS NULL
+           AND a.visit_id = NEW.visit_id
+           FOR SHARE;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION
+                'LINE_NOT_ELIGIBLE: service line % is neither settled nor authorized to perform',
+                NEW.id;
+        END IF;
     END IF;
     RETURN NEW;
 """
@@ -285,6 +368,7 @@ class ServiceLine(models.Model):
             ),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            truncate_guard(),
             pgtrigger.Trigger(
                 name="line_guard",
                 when=pgtrigger.Before,

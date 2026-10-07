@@ -13,10 +13,17 @@ rows, locks them, calls the rule and writes ``StockMove`` rows. Invariant 5:
 
 Dispensing (FEATURES 8.3): only drug/consumable lines that are settled or under an unrevoked
 perform-first authorization (invariant 1), FEFO batches by default; another batch needs a
-reason (``override`` reason code) and ``pharmacy.override_batch``. A line can be dispensed in
-parts: the remainder stays open (deferred) until dispensed, or ``complete=True`` closes the
-line with what was given (the remainder goes back through ``orders.services`` for the credit
-note and refund). A fully dispensed line is performed through ``orders.services.perform_line``.
+reason (``override`` reason code) and ``pharmacy.override_batch``. Units an approved credit
+note took back are never dispensed (``orders.services.open_units``). A line can be dispensed
+in parts: the first part moves it to ``in_progress``; the remainder stays open (deferred)
+until dispensed, or ``complete=True`` (default from ``Policy.partial_dispense_remainder``)
+closes the line with what was given (the remainder goes back through ``orders.services`` for
+the credit note, approved by a ``billing.approve_credit_note`` holder, and the refund). A
+line whose units are all given is performed through ``orders.services.perform_line``.
+
+Returns (:func:`return_dispense`) put units a patient brought back on the shelf with a
+``return`` move; transfers can be cancelled after sending (stock goes back) and received
+short with an approved, reasoned shortage (FEATURES 8.6, 8.10).
 
 Quantities are whole base units (e.g. tablets): ``UnitConversion.factor`` says how many base
 units one pack unit holds.
@@ -33,16 +40,16 @@ from decimal import Decimal
 from types import ModuleType
 
 import pghistory
-from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.db.models import DecimalField, Exists, F, OuterRef, Q, QuerySet, Sum, Value
+from django.db.models import DecimalField, Exists, F, OuterRef, Q, QuerySet, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from apps.catalog.models import ServiceKind
-from apps.core.models import ReasonCode, User
-from apps.core.permissions import effective_permissions
-from apps.core.services import next_number
+from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus
+from apps.catalog.models import Service, ServiceKind
+from apps.core.models import PartialDispenseRemainder, Policy, ReasonCode, User
+from apps.core.roles import PHARMACIST
+from apps.core.services import next_number, notify_roles, require_permission, resolve_reason
 from apps.orders.models import BillingStatus, FulfilmentStatus, PerformAuthorization, ServiceLine
 from apps.pharmacy.models import (
     AdjustmentStatus,
@@ -50,6 +57,7 @@ from apps.pharmacy.models import (
     CountStatus,
     Dispense,
     DispenseLine,
+    DispenseReturn,
     GoodsReceipt,
     GoodsReceiptLine,
     Item,
@@ -81,12 +89,14 @@ __all__ = [
     "LowStockItem",
     "add_count_line",
     "add_receipt_line",
+    "add_unit",
     "approve_adjustment",
     "batch_stock",
     "cancel_count",
     "cancel_receipt",
     "cancel_transfer",
     "count_variances",
+    "create_item",
     "create_receipt",
     "create_transfer",
     "dispense",
@@ -102,6 +112,8 @@ __all__ = [
     "record_count",
     "reject_adjustment",
     "request_adjustment",
+    "return_dispense",
+    "returned_quantity",
     "send_transfer",
     "start_count",
     "suggest_batches",
@@ -117,26 +129,6 @@ DISPENSABLE_KINDS = (ServiceKind.DRUG, ServiceKind.CONSUMABLE)
 def _orders() -> ModuleType:
     """``apps.orders.services`` (the write path for service line states)."""
     return importlib.import_module("apps.orders.services")
-
-
-def _require_perm(actor: User, code: str) -> None:
-    if code not in effective_permissions(actor):
-        raise PermissionDenied(code)
-
-
-def _reason(category: str, code: str | None, note: str) -> ReasonCode:
-    if not code:
-        raise DomainError("REASON_REQUIRED", "A reason is required for this action")
-    reason = ReasonCode.objects.filter(category=category, code=code, active=True).first()
-    if reason is None:
-        raise DomainError(
-            "REASON_UNKNOWN", "Unknown reason code", category=category, reason_code=code
-        )
-    if reason.requires_note and not note.strip():
-        raise DomainError(
-            "REASON_NOTE_REQUIRED", "This reason needs an explanation", reason_code=code
-        )
-    return reason
 
 
 def _whole(value: Decimal | int, name: str = "quantity", *, minimum: int = 1) -> int:
@@ -356,13 +348,22 @@ def low_stock(*, store: Store | None = None) -> list[LowStockItem]:
         minimum = int(it.min_stock)
         if not ds.is_low_stock(total, minimum):
             continue
-        reorder = int(it.reorder_qty) or max(2 * minimum - total, 0)
+        reorder = ds.reorder_suggestion(total, minimum, int(it.reorder_qty))
         out.append(LowStockItem(it, total, minimum, reorder))
     return out
 
 
 def dispensed_quantity(line: ServiceLine) -> int:
+    """Base units handed out for the line (returns are counted apart)."""
     total = DispenseLine.objects.filter(service_line=line).aggregate(t=Sum("qty_base"))["t"]
+    return int(total or 0)
+
+
+def returned_quantity(line: ServiceLine) -> int:
+    """Base units of the line a patient brought back (:func:`return_dispense`)."""
+    total = DispenseReturn.objects.filter(dispense_line__service_line=line).aggregate(
+        t=Sum("qty_base")
+    )["t"]
     return int(total or 0)
 
 
@@ -389,15 +390,99 @@ def dispense_worklist(*, visit: Visit | None = None) -> QuerySet[ServiceLine]:
         .annotate(
             dispensed=Coalesce(
                 Sum("dispense_lines__qty_base"), Value(Decimal(0)), output_field=DecimalField()
-            )
+            ),
+            credited=Coalesce(
+                Subquery(
+                    CreditNoteLine.objects.filter(
+                        invoice_line__service_line=OuterRef("pk"),
+                        invoice_line__frozen=True,
+                        credit_note__status=DocumentStatus.APPROVED,
+                    )
+                    .values("invoice_line__service_line")
+                    .annotate(t=Sum("quantity"))
+                    .values("t")
+                ),
+                Value(Decimal(0)),
+                output_field=DecimalField(),
+            ),
         )
-        .annotate(remaining=F("quantity") - F("dispensed"))
+        .annotate(remaining=F("quantity") - F("credited") - F("dispensed"))
         .select_related("visit", "visit__patient", "service")
         .order_by("ordered_at", "id")
     )
     if visit is not None:
         qs = qs.filter(visit=visit)
     return qs
+
+
+# --- item master ----------------------------------------------------------------------------
+
+
+def create_item(
+    *,
+    service: Service,
+    generic_name: str,
+    base_unit_code: str,
+    base_unit_name_ar: str,
+    base_unit_name_en: str,
+    actor: User,
+    **fields: object,
+) -> Item:
+    """A stock item for a drug or consumable catalog service (FEATURES 8.1).
+
+    Raises:
+        DomainError: ``SERVICE_NOT_STOCKABLE`` (the service is not a drug or consumable),
+            ``ITEM_EXISTS``, ``NAME_REQUIRED``, ``UNIT_REQUIRED``.
+    """
+    if service.kind not in DISPENSABLE_KINDS:
+        raise DomainError(
+            "SERVICE_NOT_STOCKABLE", "Only drug and consumable services have stock items"
+        )
+    if not generic_name.strip():
+        raise DomainError("NAME_REQUIRED", "The generic name is required")
+    if not base_unit_code.strip():
+        raise DomainError("UNIT_REQUIRED", "The base unit is required")
+    if Item.objects.filter(service=service).exists():
+        raise DomainError("ITEM_EXISTS", "The service already has a stock item")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="create item"):
+        return Item.objects.create(
+            service=service,
+            generic_name=generic_name.strip(),
+            base_unit_code=base_unit_code.strip(),
+            base_unit_name_ar=base_unit_name_ar.strip(),
+            base_unit_name_en=base_unit_name_en.strip(),
+            **fields,
+        )
+
+
+def add_unit(
+    item: Item,
+    *,
+    unit_code: str,
+    name_ar: str,
+    name_en: str,
+    factor: int,
+    actor: User,
+    is_dispensable: bool = True,
+    is_purchase_unit: bool = False,
+) -> UnitConversion:
+    """A pack unit holding ``factor`` base units (box -> strip -> tablet, FEATURES 8.1)."""
+    code = unit_code.strip()
+    whole = _whole(factor, "factor", minimum=2)
+    if not code or code == item.base_unit_code:
+        raise DomainError("INVALID_CONVERSION", "A pack unit differs from the base unit")
+    if UnitConversion.objects.filter(item=item, unit_code=code).exists():
+        raise DomainError("INVALID_CONVERSION", "The unit is already defined", unit=code)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="add unit"):
+        return UnitConversion.objects.create(
+            item=item,
+            unit_code=code,
+            name_ar=name_ar.strip(),
+            name_en=name_en.strip(),
+            factor=Decimal(whole),
+            is_dispensable=is_dispensable,
+            is_purchase_unit=is_purchase_unit,
+        )
 
 
 # --- goods receipts -------------------------------------------------------------------------
@@ -514,6 +599,7 @@ def post_receipt(receipt: GoodsReceipt, *, actor: User, today: date | None = Non
                     ),
                 )
             )
+        _lock_balances([locked.store_id], {ln.item_id for ln in lines})  # writers queue in id order
         for line, move in moves:
             _write_moves([move], actor=actor, source_type="receipt_line", source_id=line.pk)
         locked.total_cost = q(sum((ln.line_total for ln in lines), Decimal(0)))
@@ -551,8 +637,9 @@ class DispenseRequest:
 
     ``batches`` overrides the FEFO suggestion (needs ``override_reason_code``).
     ``complete`` closes the line with what has been dispensed so far plus this quantity;
-    the rest is cancelled and refunded (out of stock). Without it a partial dispense leaves
-    the remainder open (deferred).
+    the rest is cancelled and refunded (out of stock). ``False`` leaves the remainder of a
+    partial dispense open (deferred); ``None`` follows ``Policy.partial_dispense_remainder``
+    (FLOW 6: the center decides).
     """
 
     service_line_id: int
@@ -561,7 +648,7 @@ class DispenseRequest:
     batches: Sequence[BatchPick] | None = None
     override_reason_code: str | None = None
     override_note: str = ""
-    complete: bool = False
+    complete: bool | None = False
     complete_reason_code: str = "OUT_OF_STOCK"
 
 
@@ -577,18 +664,19 @@ class _Planned:
     qty_base: int
 
 
-def _line_status(line: ServiceLine) -> dsl.LineStatus:
-    authorized = (
-        line.authorization_id is not None
-        and PerformAuthorization.objects.filter(
-            pk=line.authorization_id, revoked_at__isnull=True
-        ).exists()
-    )
-    return dsl.LineStatus(
-        dsl.BillingStatus(line.billing_status),
-        dsl.FulfilmentStatus(line.fulfilment_status),
-        authorized=authorized,
-    )
+def _eligible(line: ServiceLine) -> bool:
+    """``domain.service_line.can_enter_worklist`` with the authorization as locked and
+    reloaded by ``orders.lock_lines`` (a revoked one no longer counts)."""
+    auth = line.authorization if line.authorization_id is not None else None
+    try:
+        status = dsl.LineStatus(
+            dsl.BillingStatus(line.billing_status),
+            dsl.FulfilmentStatus(line.fulfilment_status),
+            authorized=auth is not None and auth.revoked_at is None,
+        )
+    except DomainError:  # started work whose authorization was revoked behind its back
+        return False
+    return dsl.can_enter_worklist(status)
 
 
 def dispense(
@@ -599,17 +687,23 @@ def dispense(
     requests: Sequence[DispenseRequest],
     note: str = "",
     today: date | None = None,
+    approver: User | None = None,
 ) -> Dispense:
     """Dispense paid (or authorized) drug lines of one visit from ``store`` (FEATURES 8.2-8.4).
 
-    All requests succeed or none does. Raises:
+    All requests succeed or none does. ``approver`` approves the credit note of a billed
+    line closed with ``complete`` (default the actor; needs ``billing.approve_credit_note``).
+
+    Raises:
         DomainError: ``STORE_CANNOT_DISPENSE``, ``DISPENSE_EMPTY``, ``DUPLICATE_LINE``,
             ``LINE_NOT_ON_VISIT``, ``LINE_NOT_DISPENSABLE``, ``ITEM_NOT_STOCKED``,
             ``LINE_NOT_ELIGIBLE`` (not paid nor authorized, or already performed/cancelled),
-            ``DISPENSE_EXCEEDS_LINE``, ``STOCK_INSUFFICIENT``, ``BATCH_EXPIRED``,
-            ``BATCH_UNKNOWN``, ``OVERRIDE_QUANTITY_MISMATCH``, ``REASON_REQUIRED``,
-            ``UNIT_UNKNOWN``, ``UNIT_NOT_DISPENSABLE``, ``INVALID_QUANTITY``.
-        PermissionDenied: a batch override without ``pharmacy.override_batch``.
+            ``DISPENSE_EXCEEDS_LINE`` (more than the line's units still billed and not
+            given), ``STOCK_INSUFFICIENT``, ``BATCH_EXPIRED``, ``BATCH_UNKNOWN``,
+            ``OVERRIDE_QUANTITY_MISMATCH``, ``REASON_REQUIRED``, ``UNIT_UNKNOWN``,
+            ``UNIT_NOT_DISPENSABLE``, ``INVALID_QUANTITY``.
+        PermissionDenied: a batch override without ``pharmacy.override_batch``; closing a
+            billed line's remainder without ``billing.approve_credit_note``.
     """
     if not requests:
         raise DomainError("DISPENSE_EMPTY", "Nothing to dispense")
@@ -619,13 +713,12 @@ def dispense(
     on = today or timezone.localdate()
     now = timezone.now()
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="dispense"):
+        # Lock order of the money engine: patient, then service lines, then stock.
+        _orders().lock_patient(visit.patient_id)
         st = Store.objects.get(pk=store.pk)
         if not st.active or not st.allows_dispense:
             raise DomainError("STORE_CANNOT_DISPENSE", "This store does not dispense")
-        lines = {
-            ln.pk: ln
-            for ln in ServiceLine.objects.select_for_update().filter(pk__in=line_ids).order_by("id")
-        }
+        lines = {ln.pk: ln for ln in _orders().lock_lines(line_ids)}
         items: dict[int, Item] = {}
         for line_id in line_ids:
             line = lines.get(line_id)
@@ -642,7 +735,7 @@ def dispense(
                 raise DomainError(
                     "ITEM_NOT_STOCKED", "The service has no stock item", line_id=line_id
                 )
-            if not dsl.can_enter_worklist(_line_status(line)):
+            if not _eligible(line):
                 raise DomainError(
                     "LINE_NOT_ELIGIBLE",
                     "The line is not paid nor authorized, or is already closed",
@@ -654,15 +747,17 @@ def dispense(
 
         balances = _lock_balances([st.pk], {it.pk for it in items.values()})
         current = _current(balances)
+        before = _item_totals(current)
         expiry = {bl.batch_id: bl.batch.expiry_date for bl in balances}
         already = {ln_id: dispensed_quantity(lines[ln_id]) for ln_id in line_ids}
+        # Units still to give: ordered less credited (refunded) and already given units.
+        remaining_units = {ln_id: _orders().open_units(lines[ln_id]) for ln_id in line_ids}
 
         planned: list[_Planned] = []
         for req in sorted(requests, key=lambda r: r.service_line_id):
             line, item = lines[req.service_line_id], items[req.service_line_id]
             qty_base, unit = to_base_units(item, req.quantity, req.unit_code, dispensing=True)
-            ordered = _whole(line.quantity, "line quantity")
-            remaining = ordered - already[line.pk]
+            remaining = remaining_units[line.pk]
             if qty_base > remaining:
                 raise DomainError(
                     "DISPENSE_EXCEEDS_LINE",
@@ -684,8 +779,8 @@ def dispense(
             reason: ReasonCode | None = None
             approval: Approval | None = None
             if override is not None and tuple(override) != fefo:
-                _require_perm(actor, "pharmacy.override_batch")
-                reason = _reason("override", req.override_reason_code, req.override_note)
+                require_permission(actor, "pharmacy.override_batch")
+                reason = resolve_reason(req.override_reason_code, "override", req.override_note)
                 approval = Approval(actor.pk, now, req.override_note, reason.code)
             picks = ds.select_batches(batches, qty_base, on, override=override, approval=approval)
             current = ds.apply_moves(current, ds.dispense_moves(item.pk, st.pk, picks))
@@ -720,32 +815,73 @@ def dispense(
                     stock_move=move,
                 )
 
+        _notify_low_stock(st, before, _item_totals(current), {it.pk: it for it in items.values()})
+
+        refund_rest = Policy.load().partial_dispense_remainder == PartialDispenseRemainder.REFUND
         for p in planned:
             given = already[p.line.pk] + p.qty_base
-            ordered = _whole(p.line.quantity, "line quantity")
-            if given == ordered:
+            complete = refund_rest if p.request.complete is None else p.request.complete
+            if p.qty_base == remaining_units[p.line.pk]:
+                # Every unit still billed is now given (credited units never are); with
+                # credited units the performed quantity is what was given.
                 _orders().perform_line(p.line, actor)
-            elif p.request.complete:
+            elif complete:
                 _close_partially(
                     p.line,
                     actor=actor,
                     given=given,
                     reason_code=p.request.complete_reason_code,
                     note=p.request.override_note or note,
+                    approver=approver,
                 )
+            elif p.line.fulfilment_status == FulfilmentStatus.PENDING:
+                # The first part given: the doctor sees the order in progress, and the
+                # perform-first authorization can no longer be withdrawn under it.
+                _orders().start_line(p.line, actor)
     return record
 
 
+def _item_totals(current: Mapping[ds.StockKey, int]) -> dict[int, int]:
+    totals: dict[int, int] = defaultdict(int)
+    for (item_id, _batch, _store), qty in current.items():
+        totals[item_id] += qty
+    return dict(totals)
+
+
+def _notify_low_stock(
+    store: Store, before: Mapping[int, int], after: Mapping[int, int], items: Mapping[int, Item]
+) -> None:
+    """Tell pharmacists when an item crosses down to its minimum in a store (FEATURES 0.13)."""
+    for item_id, item in items.items():
+        minimum = int(item.min_stock)
+        was, now = before.get(item_id, 0), after.get(item_id, 0)
+        if minimum > 0 and not ds.is_low_stock(was, minimum) and ds.is_low_stock(now, minimum):
+            notify_roles(
+                [PHARMACIST],
+                "stock_low",
+                item_id=item_id,
+                store_id=store.pk,
+                on_hand=now,
+                min_stock=minimum,
+            )
+
+
 def _close_partially(
-    line: ServiceLine, *, actor: User, given: int, reason_code: str, note: str
+    line: ServiceLine,
+    *,
+    actor: User,
+    given: int,
+    reason_code: str,
+    note: str,
+    approver: User | None = None,
 ) -> None:
     """A partial dispense that will not be completed: perform what was given, cancel the rest.
 
     The remainder's credit note and refund are the financial engine's (``orders.services``).
     """
-    reason = _reason("line_cancel", reason_code, note)
+    reason = resolve_reason(reason_code, "line_cancel", note)
     _orders().perform_line(line, actor, performed_quantity=Decimal(given), note=note)
-    _orders().cancel_line_remainder(line, reason, actor, note=note)
+    _orders().cancel_line_remainder(line, reason, actor, note=note, approver=approver)
 
 
 # --- adjustments ----------------------------------------------------------------------------
@@ -762,7 +898,7 @@ def request_adjustment(
     """Request a stock correction (FEATURES 8.6): ``lines`` of (batch id, signed base qty,
     note). Nothing moves until a supervisor approves it.
     """
-    reason = _reason("stock_adjust", reason_code, note)
+    reason = resolve_reason(reason_code, "stock_adjust", note)
     if not lines:
         raise DomainError("ADJUSTMENT_EMPTY", "The adjustment has no lines")
     seen: set[int] = set()
@@ -793,7 +929,7 @@ def request_adjustment(
 
 
 def _decide(adjustment: StockAdjustment, actor: User) -> StockAdjustment:
-    _require_perm(actor, "pharmacy.approve_adjustment")
+    require_permission(actor, "pharmacy.approve_adjustment")
     locked = StockAdjustment.objects.select_for_update().get(pk=adjustment.pk)
     if locked.status != AdjustmentStatus.DRAFT:
         raise DomainError("DOCUMENT_FINAL", "The adjustment was already decided")
@@ -856,9 +992,11 @@ def reject_adjustment(adjustment: StockAdjustment, *, actor: User, note: str) ->
 def start_count(
     store: Store, *, actor: User, items: Iterable[Item] | None = None, note: str = ""
 ) -> StockCount:
-    """Open a count session: the book quantity of every batch in the store is snapshotted.
+    """Open a count session listing every batch with stock in the store (or of ``items``).
 
-    Stock should not move in the store while counting; corrections are ``counted - book``.
+    Each batch's book quantity is taken again when it is counted, and posting refuses a
+    batch whose stock moved after it was counted (``COUNT_STOCK_MOVED``); corrections are
+    ``counted - book``.
     """
     try:
         with transaction.atomic(), pghistory.context(user=actor.pk, reason="start count"):
@@ -912,19 +1050,29 @@ def add_count_line(count: StockCount, *, batch: Batch, actor: User) -> StockCoun
 def record_count(
     count: StockCount, *, batch: Batch, counted_qty: int, actor: User, note: str = ""
 ) -> StockCountLine:
-    """Enter (or correct) the counted quantity of a batch in base units."""
+    """Enter (or correct) the counted quantity of a batch in base units.
+
+    The line's book quantity is refreshed to the on-hand at this moment, so stock that moved
+    since the session started (a dispense during the count) is not mistaken for a variance.
+    """
     counted = _whole(counted_qty, "counted_qty", minimum=0)
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="record count"):
-        _open_count(count)
-        line = StockCountLine.objects.filter(count=count, batch=batch).first()
+        locked = _open_count(count)
+        line = StockCountLine.objects.filter(count=locked, batch=batch).first()
         if line is None:
-            line = add_count_line(count, batch=batch, actor=actor)
+            line = add_count_line(locked, batch=batch, actor=actor)
+        line.book_qty = Decimal(_book(batch.pk, locked.store_id))
         line.counted_qty = Decimal(counted)
         line.counted_by = actor
         line.counted_at = timezone.now()
         line.note = note[:300]
-        line.save(update_fields=["counted_qty", "counted_by", "counted_at", "note"])
+        line.save(update_fields=["book_qty", "counted_qty", "counted_by", "counted_at", "note"])
     return line
+
+
+def _book(batch_id: int, store_id: int) -> int:
+    row = StockBalance.objects.filter(batch_id=batch_id, store_id=store_id).first()
+    return int(row.qty_base) if row is not None else 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -953,13 +1101,26 @@ def count_variances(count: StockCount) -> list[CountVariance]:
 
 def post_count(count: StockCount, *, actor: User) -> StockCount:
     """Post count corrections for every variance (``pharmacy.post_count``)."""
-    _require_perm(actor, "pharmacy.post_count")
+    require_permission(actor, "pharmacy.post_count")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="post count"):
         locked = _open_count(count)
         lines = list(locked.lines.order_by("id"))
         uncounted = [ln.batch_id for ln in lines if ln.counted_qty is None]
         if uncounted:
             raise DomainError("COUNT_INCOMPLETE", "Some batches are not counted", batches=uncounted)
+        balances = _lock_balances([locked.store_id], {ln.item_id for ln in lines})
+        current = _current(balances)
+        moved = [
+            ln.batch_id
+            for ln in lines
+            if current.get((ln.item_id, ln.batch_id, locked.store_id), 0) != int(ln.book_qty)
+        ]
+        if moved:
+            raise DomainError(
+                "COUNT_STOCK_MOVED",
+                "Stock of these batches moved after they were counted; count them again",
+                batches=moved,
+            )
         moves = ds.count_adjustments(
             ds.CountLine(
                 ln.item_id,
@@ -1054,36 +1215,167 @@ def send_transfer(transfer: StockTransfer, *, actor: User) -> StockTransfer:
     return locked
 
 
-def receive_transfer(transfer: StockTransfer, *, actor: User) -> StockTransfer:
-    """Stock arrives in the destination store."""
+def receive_transfer(
+    transfer: StockTransfer,
+    *,
+    actor: User,
+    received: Mapping[int, int] | None = None,
+    shortage_reason_code: str | None = None,
+    shortage_note: str = "",
+    approver: User | None = None,
+) -> StockTransfer:
+    """Stock arrives in the destination store (FEATURES 8.10).
+
+    ``received`` maps transfer line id to the base units that arrived (default: all). Units
+    sent but not received left the source at sending and are lost in transit: the shortage
+    is recorded on the transfer with a reason and an approver holding
+    ``pharmacy.approve_adjustment`` (FEATURES 8.6, invariant 4).
+
+    Raises:
+        DomainError: ``TRANSFER_NOT_SENT``, ``RECEIPT_EXCEEDS_SENT``, ``REASON_REQUIRED``,
+            ``TRANSFER_LINE_UNKNOWN``, reason errors.
+        PermissionDenied: a shortage approver without ``pharmacy.approve_adjustment``.
+    """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="receive transfer"):
         locked = StockTransfer.objects.select_for_update().get(pk=transfer.pk)
         if locked.status != TransferStatus.SENT:
             raise DomainError("TRANSFER_NOT_SENT", "Only a sent transfer can be received")
-        moves = [
-            ds.StockMoveDraft(
-                ln.item_id,
-                ln.batch_id,
-                locked.to_store_id,
-                _whole(ln.qty_base),
-                ds.MoveKind.TRANSFER_IN,
-            )
-            for ln in locked.lines.order_by("id")
-        ]
-        _write_moves(moves, actor=actor, source_type="transfer", source_id=locked.pk)
+        lines = list(locked.lines.order_by("id"))
+        got = dict(received or {})
+        unknown = sorted(set(got) - {ln.pk for ln in lines})
+        if unknown:
+            raise DomainError("TRANSFER_LINE_UNKNOWN", "Unknown transfer lines", line_ids=unknown)
+        now = timezone.now()
+        reason: ReasonCode | None = None
+        approval: Approval | None = None
+        chosen = approver or actor
+        if any(got.get(ln.pk, _whole(ln.qty_base)) < _whole(ln.qty_base) for ln in lines):
+            reason = resolve_reason(shortage_reason_code, "stock_adjust", shortage_note)
+            require_permission(chosen, "pharmacy.approve_adjustment")
+            approval = Approval(chosen.pk, now, shortage_note.strip(), reason.code)
+        moves = []
+        for ln in lines:
+            sent = _whole(ln.qty_base)
+            arrived = got.get(ln.pk, sent)
+            ds.transfer_receipt(sent, arrived, approval)
+            if arrived:
+                moves.append(
+                    ds.StockMoveDraft(
+                        ln.item_id,
+                        ln.batch_id,
+                        locked.to_store_id,
+                        arrived,
+                        ds.MoveKind.TRANSFER_IN,
+                    )
+                )
+        _apply(moves, actor=actor, source_type="transfer", source_id=locked.pk)
         locked.status = TransferStatus.RECEIVED
         locked.received_by = actor
-        locked.received_at = timezone.now()
-        locked.save(update_fields=["status", "received_by", "received_at"])
+        locked.received_at = now
+        fields = ["status", "received_by", "received_at"]
+        if reason is not None:
+            locked.shortage_reason = reason
+            locked.shortage_note = shortage_note.strip()[:300]
+            locked.shortage_approved_by = chosen
+            fields += ["shortage_reason", "shortage_note", "shortage_approved_by"]
+        locked.save(update_fields=fields)
     return locked
 
 
-def cancel_transfer(transfer: StockTransfer, *, actor: User) -> StockTransfer:
-    """Cancel a draft transfer (a sent transfer must be received)."""
+def cancel_transfer(transfer: StockTransfer, *, actor: User, note: str = "") -> StockTransfer:
+    """Cancel a transfer. A sent one (not received) returns its stock to the source store,
+    with who and why recorded."""
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="cancel transfer"):
         locked = StockTransfer.objects.select_for_update().get(pk=transfer.pk)
-        if locked.status != TransferStatus.DRAFT:
-            raise DomainError("DOCUMENT_FINAL", "Only a draft transfer can be cancelled")
+        if locked.status not in (TransferStatus.DRAFT, TransferStatus.SENT):
+            raise DomainError("DOCUMENT_FINAL", "Only a draft or sent transfer can be cancelled")
+        fields = ["status"]
+        if locked.status == TransferStatus.SENT:
+            text = note.strip()
+            if not text:
+                raise DomainError("REASON_REQUIRED", "Say why the sent transfer is cancelled")
+            back = [
+                ds.StockMoveDraft(
+                    ln.item_id,
+                    ln.batch_id,
+                    locked.from_store_id,
+                    _whole(ln.qty_base),
+                    ds.MoveKind.TRANSFER_IN,
+                )
+                for ln in locked.lines.order_by("id")
+            ]
+            _apply(back, actor=actor, source_type="transfer_cancel", source_id=locked.pk)
+            locked.cancelled_by = actor
+            locked.cancelled_at = timezone.now()
+            locked.cancel_note = text[:300]
+            fields += ["cancelled_by", "cancelled_at", "cancel_note"]
         locked.status = TransferStatus.CANCELLED
-        locked.save(update_fields=["status"])
+        locked.save(update_fields=fields)
     return locked
+
+
+# --- returns -------------------------------------------------------------------------------
+
+
+def return_dispense(
+    dispense_line: DispenseLine,
+    *,
+    quantity: int,
+    actor: User,
+    reason_code: str,
+    note: str = "",
+    credit_note: CreditNote | None = None,
+) -> DispenseReturn:
+    """Put units a patient brought back on the shelf: a ``return`` move into the batch and
+    store they left (FEATURES 8.4; invariants 4 and 5).
+
+    ``credit_note`` is the approved credit note that took the units off the bill when they
+    are refunded; it must credit this line. The return itself never moves money.
+
+    Raises:
+        PermissionDenied: without ``pharmacy.dispense``.
+        DomainError: ``RETURN_EXCEEDS_DISPENSED``, ``INVALID_QUANTITY``,
+            ``REFUND_SOURCE_INVALID`` (the credit note is not approved or credits another
+            line), reason errors.
+    """
+    require_permission(actor, "pharmacy.dispense")
+    reason = resolve_reason(reason_code, "stock_adjust", note)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"return: {note}"):
+        dl_row = DispenseLine.objects.select_related("dispense").get(pk=dispense_line.pk)
+        (line,) = _orders().lock_lines([dl_row.service_line_id])
+        if (
+            credit_note is not None
+            and not CreditNoteLine.objects.filter(
+                credit_note=credit_note,
+                credit_note__status=DocumentStatus.APPROVED,
+                invoice_line__service_line_id=line.pk,
+            ).exists()
+        ):
+            raise DomainError("REFUND_SOURCE_INVALID", "The credit note does not credit this line")
+        returned = int(
+            DispenseReturn.objects.filter(dispense_line=dl_row).aggregate(t=Sum("qty_base"))["t"]
+            or 0
+        )
+        now = timezone.now()
+        move = ds.return_move(
+            dl_row.item_id,
+            dl_row.batch_id,
+            dl_row.dispense.store_id,
+            _whole(quantity),
+            dispensed=_whole(dl_row.qty_base),
+            returned=returned,
+            approval=Approval(actor.pk, now, note.strip(), reason.code),
+        )
+        (stock_move,) = _apply(
+            [move], actor=actor, source_type="dispense_return", source_id=dl_row.pk, note=note
+        )
+        return DispenseReturn.objects.create(
+            number=next_number("RTN"),
+            dispense_line=dl_row,
+            credit_note=credit_note,
+            qty_base=Decimal(move.quantity),
+            reason_code=reason,
+            note=note.strip()[:300],
+            returned_by=actor,
+            stock_move=stock_move,
+        )

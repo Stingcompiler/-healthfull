@@ -20,7 +20,15 @@ def _perform(line: ServiceLine) -> None:
     )
 
 
+def _bill(line: ServiceLine) -> None:
+    """Put the line on a frozen line of an approved invoice (what billing it requires)."""
+    inv = b.draft_invoice(line.visit)
+    b.invoice_line(inv, line=line)
+    b.approve_invoice(inv)
+
+
 def _settle(line: ServiceLine) -> None:
+    _bill(line)
     now = timezone.now()
     ServiceLine.objects.filter(pk=line.pk).update(billing_status="invoiced", invoiced_at=now)
     ServiceLine.objects.filter(pk=line.pk).update(billing_status="settled", settled_at=now)
@@ -50,10 +58,8 @@ def test_unpaid_line_cannot_be_performed_orm_or_raw_sql() -> None:
         [line.pk],
         "LINE_NOT_ELIGIBLE",
     )
-    ServiceLine.objects.filter(pk=line.pk).update(
-        billing_status="invoiced", invoiced_at=timezone.now()
-    )
-    b.db_rejects(lambda: _perform(line), "LINE_NOT_ELIGIBLE")
+    invoiced = b.billed_line(billing_status="invoiced")
+    b.db_rejects(lambda: _perform(invoiced), "LINE_NOT_ELIGIBLE")
 
 
 def test_line_cannot_be_inserted_as_performed() -> None:
@@ -124,6 +130,7 @@ def test_billing_moves_only_along_the_state_machine(start: str, target: str) -> 
     line = b.service_line()
     now = timezone.now()
     if start != "unbilled":
+        _bill(line)
         ServiceLine.objects.filter(pk=line.pk).update(billing_status="invoiced", invoiced_at=now)
         ServiceLine.objects.filter(pk=line.pk).update(billing_status=start, credited_at=now)
     b.db_rejects(
@@ -180,9 +187,112 @@ def test_quantities() -> None:
 
 def test_invoiced_line_has_timestamp() -> None:
     line = b.service_line()
+    _bill(line)
     b.db_rejects(
         lambda: ServiceLine.objects.filter(pk=line.pk).update(billing_status="invoiced"),
         "orders_line_invoiced_has_time",
+    )
+
+
+# --- Phase 1 review: the status itself is guarded (invariant 1) ----------------------------
+
+
+def test_line_cannot_be_inserted_billed() -> None:
+    """Review: a line inserted 'settled' and 'performed' was accepted with no invoice."""
+    now = timezone.now()
+    b.db_rejects(
+        lambda: b.service_line(
+            billing_status="settled",
+            invoiced_at=now,
+            settled_at=now,
+            fulfilment_status="performed",
+            performed_at=now,
+            performed_by=b.user(),
+        ),
+        "LINE_BILLING_TRANSITION",
+    )
+
+
+def test_line_is_billed_only_from_an_approved_invoice_line() -> None:
+    """Review: two queryset updates moved an uninvoiced line to settled, then performed."""
+    line = b.service_line()
+    now = timezone.now()
+    b.db_rejects(
+        lambda: ServiceLine.objects.filter(pk=line.pk).update(
+            billing_status="settled", invoiced_at=now
+        ),
+        "LINE_NOT_INVOICED",
+    )
+    draft = b.draft_invoice(line.visit)
+    b.invoice_line(draft, line=line)  # on a draft invoice only: still refused
+    b.db_rejects(
+        lambda: ServiceLine.objects.filter(pk=line.pk).update(
+            billing_status="settled", invoiced_at=now
+        ),
+        "LINE_NOT_INVOICED",
+    )
+
+
+def test_authorization_of_another_visit_does_not_unlock_a_line() -> None:
+    """Review: an authorization of a different visit let a line be performed."""
+    other = b.service_line()
+    auth = _authorize(other)
+    line = b.service_line()
+    assert line.visit_id != other.visit_id
+    b.db_rejects(
+        lambda: ServiceLine.objects.filter(pk=line.pk).update(
+            authorization=auth,
+            fulfilment_status="performed",
+            performed_at=timezone.now(),
+            performed_by=b.user(),
+        ),
+        "LINE_NOT_ELIGIBLE",
+    )
+
+
+def test_billed_line_is_cancelled_only_with_its_credit() -> None:
+    line = b.service_line()
+    _settle(line)
+    b.db_rejects(
+        lambda: ServiceLine.objects.filter(pk=line.pk).update(
+            fulfilment_status="cancelled",
+            cancelled_at=timezone.now(),
+            cancelled_by=b.user(),
+            cancel_reason=b.reason("line_cancel"),
+        ),
+        "CREDIT_NOTE_REQUIRED",
+    )
+    b.db_rejects(
+        lambda: ServiceLine.objects.filter(pk=line.pk).update(quantity=Decimal("5")),
+        "LINE_BILLED_READONLY",
+    )
+    other_service = b.service()
+    b.db_rejects(
+        lambda: ServiceLine.objects.filter(pk=line.pk).update(service=other_service),
+        "LINE_BILLED_READONLY",
+    )
+
+
+def test_authorization_decision_is_final() -> None:
+    """Review: an authorization's approver and reason could be rewritten and a revocation
+    undone."""
+    line = b.service_line()
+    auth = _authorize(line)
+    b.db_rejects(
+        lambda: PerformAuthorization.objects.filter(pk=auth.pk).update(authorized_by=b.user()),
+        "AUTHORIZATION_READONLY",
+    )
+    PerformAuthorization.objects.filter(pk=auth.pk).update(
+        revoked_at=timezone.now(), revoked_by=b.user(), revoke_note="patient left"
+    )
+    b.db_rejects(
+        lambda: PerformAuthorization.objects.filter(pk=auth.pk).update(revoked_at=None),
+        "AUTHORIZATION_REVOKED",
+    )
+    b.sql_rejects(
+        "DELETE FROM orders_performauthorization WHERE id = %s",
+        [auth.pk],
+        "AUTHORIZATION_PERMANENT",
     )
 
 
