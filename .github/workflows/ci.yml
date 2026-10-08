@@ -171,14 +171,32 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+      # apt mirrors occasionally hang; without a bound the whole job sat until its 45-minute
+      # limit. Each attempt is capped, a stuck apt is killed, and the step retries.
       - name: Install chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: e2e
-        run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 20
+        run: |
+          for attempt in 1 2 3; do
+            timeout --kill-after=15 360 pnpm exec playwright install --with-deps chromium && exit 0
+            echo "::warning::playwright install attempt $attempt failed or hung; retrying"
+            sudo pkill -f 'apt-get|dpkg' || true
+            sleep 10
+          done
+          exit 1
       - name: Install chromium system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         working-directory: e2e
-        run: pnpm exec playwright install-deps chromium
+        timeout-minutes: 20
+        run: |
+          for attempt in 1 2 3; do
+            timeout --kill-after=15 360 pnpm exec playwright install-deps chromium && exit 0
+            echo "::warning::playwright install-deps attempt $attempt failed or hung; retrying"
+            sudo pkill -f 'apt-get|dpkg' || true
+            sleep 10
+          done
+          exit 1
       # scripts/e2e.sh: reset e2e_hospital_<hash>, seed_e2e, start backend and frontend on
       # per-checkout ports, run Playwright (chromium only), write artifacts/screens/.
       - name: Run e2e
