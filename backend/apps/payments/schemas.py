@@ -95,6 +95,18 @@ class ReasonTotalOut(Schema):
     amount: MoneyStr
 
 
+class ReasonCountOut(Schema):
+    reason: BillingReasonOut | None
+    code: str
+    count: int
+
+
+class VoidedDraftOut(Schema):
+    invoice_id: int
+    amount: MoneyStr = Field(..., description="Gross total of the draft when it was voided")
+    note: str
+
+
 class HandoverOut(Schema):
     id: int
     number: str
@@ -137,6 +149,12 @@ class ShiftReportOut(Schema):
     cancellations: list[ReasonTotalOut]
     credit_from_cancellations: MoneyStr
     credit_unallocated: MoneyStr
+    line_cancellations: list[ReasonCountOut] = Field(
+        ..., description="Unbilled lines the shift's cashier cancelled during the shift (FLOW 4)"
+    )
+    voided_drafts: list[VoidedDraftOut] = Field(
+        ..., description="Draft invoices the shift's cashier voided during the shift"
+    )
     handovers: list[HandoverOut]
 
 
@@ -314,6 +332,13 @@ class ReceiptOut(Schema):
 class TransferOut(Schema):
     payment: PaymentOut
     cashier: BillingUserRefOut | None
+    self_recorded: bool = Field(
+        ..., description="The viewer took it or it is their shift's: another checker confirms it"
+    )
+    reject_needs_open_shift: bool = Field(
+        ...,
+        description="Its shift is closed and the viewer has no open shift to book the reversal",
+    )
 
 
 # --- refunds ---------------------------------------------------------------------------------

@@ -21,7 +21,7 @@ from apps.orders.models import FulfilmentStatus, PerformAuthorization, ServiceLi
 from apps.visits.models import Visit
 from domain import service_line as dsl
 
-__all__ = ["authorizations", "authorize", "revoke", "visit_lines"]
+__all__ = ["authorizations", "authorize", "requesters", "revoke", "visit_lines"]
 
 _OPEN = (FulfilmentStatus.PENDING, FulfilmentStatus.IN_PROGRESS)
 
@@ -96,11 +96,21 @@ def authorize(
     reason: str,
     note: str,
     approval_reference: str,
+    requested_by_id: int | None = None,
 ) -> dict[str, Any]:
-    """Allow open, unpaid lines of one visit to be performed before payment."""
+    """Allow open, unpaid lines of one visit to be performed before payment.
+
+    ``requested_by_id`` names the active user who asked for the exception (the doctor or the
+    lab, FEATURES 4.4 "who"); without it the authorizer is recorded as the requester.
+    """
     lines = list(ServiceLine.objects.filter(pk__in=list(line_ids)).order_by("id"))
     if len(lines) != len(set(line_ids)):
         raise ServiceLine.DoesNotExist("service line")
+    requester = (
+        User.objects.get(pk=requested_by_id, is_active=True)
+        if requested_by_id is not None
+        else None
+    )
     auth = orders.authorize_perform_first(
         lines,
         actor=actor,
@@ -108,8 +118,23 @@ def authorize(
         kind=kind,
         note=note,
         approval_reference=approval_reference,
+        requested_by=requester,
     )
     return _auth_json(_auths().get(pk=auth.pk))
+
+
+def requesters(q: str | None = None, *, limit: int = 50) -> list[dict[str, Any]]:
+    """Active staff who may have asked for a perform-first exception, by username."""
+    qs = User.objects.filter(is_active=True)
+    if q and q.strip():
+        term = q.strip()
+        qs = qs.filter(
+            Q(username__icontains=term)
+            | Q(full_name_ar__icontains=term)
+            | Q(full_name_en__icontains=term)
+        )
+    users = qs.order_by("username")[:limit]
+    return [u for u in (bq.user_json(user) for user in users) if u is not None]
 
 
 def revoke(authorization_id: int, *, actor: User, note: str) -> dict[str, Any]:

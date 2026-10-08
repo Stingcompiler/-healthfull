@@ -37,9 +37,9 @@ from apps.patients.schemas import (
     PatientListOut,
     PatientOut,
     PatientPatch,
+    PatientPayerOut,
     PatientProfileOut,
     PatientSearchParams,
-    PayerOut,
 )
 
 patients_router = Router(tags=["patients"])
@@ -97,7 +97,7 @@ def find_duplicates(request: HttpRequest, params: Query[DuplicateParams]) -> lis
 
 @patients_router.get(
     "/payers",
-    response={200: list[PayerOut], **_READ},
+    response={200: list[PatientPayerOut], **_READ},
     operation_id="patients_list_payers",
     summary="Active payers a coverage can be recorded with",
 )

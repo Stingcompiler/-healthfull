@@ -78,6 +78,8 @@
   "REFUND_NOT_REQUESTED": "This refund is not awaiting approval; it was already decided.",
   "REFUND_NOT_APPROVED": "Only an approved refund can be paid out.",
   "SELF_APPROVAL_NOT_ALLOWED": "You cannot approve your own refund request. Another supervisor must approve it.",
+  "CREDIT_NOTE_SELF_APPROVAL": "You drafted this credit note, so someone else must approve it.",
+  "SELF_CONFIRMATION_NOT_ALLOWED": "You took this payment, so someone else must check it against the bank and confirm it.",
   "APPROVER_REQUIRED": "Select the user who approves this action.",
   "REASON_UNKNOWN": "Choose a valid reason from the list for this action.",
   "REASON_NOTE_REQUIRED": "This reason needs a written explanation.",

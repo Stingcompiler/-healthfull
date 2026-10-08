@@ -58,6 +58,9 @@ class AuthorizeIn(Schema):
     reason: str = Field(..., min_length=1, max_length=40)
     note: str = Field("", max_length=1000)
     approval_reference: str = Field("", max_length=100)
+    requested_by_id: int | None = Field(
+        None, description="The active user who asked for the exception (default: the authorizer)"
+    )
 
 
 class RevokeIn(Schema):
@@ -117,8 +120,20 @@ def authorize(request: HttpRequest, payload: AuthorizeIn) -> Any:
             reason=payload.reason,
             note=payload.note,
             approval_reference=payload.approval_reference,
+            requested_by_id=payload.requested_by_id,
         ),
     )
+
+
+@perform_first_router.get(
+    "/requesters",
+    response={200: list[BillingUserRefOut], **_READ},
+    operation_id="orders_list_perform_first_requesters",
+    summary="Active staff who may have asked for a perform-first exception",
+)
+@require_perm("orders.authorize_perform_first")
+def list_requesters(request: HttpRequest, q: str | None = None) -> Any:
+    return perform_first.requesters(q)
 
 
 @perform_first_router.get(

@@ -94,7 +94,8 @@ def test_shift_report_lists_references_reasons_and_credits() -> None:
         reference="R9",
         auto=True,
     )
-    pay.confirm_transfer(t, actor=supervisor, note="statement")
+    # A second checker confirms (ADR 0008: never the one who took it).
+    pay.confirm_transfer(t, actor=fin.staff("accountant"), note="statement")
     pay.record_payment(shift, patient, "cash", D("25.00"), actor=supervisor)  # left as credit
     orders.cancel_line(line, "EQUIPMENT_DOWN", supervisor, note="analyser down")
     report = pay.shift_summary(shift)

@@ -33,21 +33,21 @@ def _quantity(value: Decimal) -> str:
 # --- reference data -------------------------------------------------------------------------
 
 
-class DepartmentOut(Schema):
+class VisitDepartmentOut(Schema):
     id: int
     code: str
     name_ar: str
     name_en: str
 
 
-class RoomOut(Schema):
+class VisitRoomOut(Schema):
     id: int
     code: str
     name_ar: str
     name_en: str
 
 
-class DoctorOut(Schema):
+class VisitDoctorOut(Schema):
     id: int
     department_id: int
     name_ar: str
@@ -79,8 +79,8 @@ class ReasonOut(Schema):
 class VisitOptionsOut(Schema):
     """What the create-visit form chooses from."""
 
-    departments: list[DepartmentOut]
-    doctors: list[DoctorOut]
+    departments: list[VisitDepartmentOut]
+    doctors: list[VisitDoctorOut]
     cancel_reasons: list[ReasonOut]
     appointment_cancel_reasons: list[ReasonOut]
     follow_up_window_days: int
@@ -102,8 +102,8 @@ class VisitOut(Schema):
     patient: PatientBriefOut
     visit_type: VisitTypeCode
     status: VisitStatusCode
-    department: DepartmentOut | None
-    doctor: DoctorOut | None
+    department: VisitDepartmentOut | None
+    doctor: VisitDoctorOut | None
     payer: PayerRefOut | None = Field(..., description="null = self-pay (cash)")
     card_number: str
     follow_up_of_id: int | None
@@ -181,9 +181,9 @@ class QueueRowOut(Schema):
     visit_id: int
     visit_number: str
     patient: PatientBriefOut
-    department: DepartmentOut
-    doctor: DoctorOut | None
-    room: RoomOut | None
+    department: VisitDepartmentOut
+    doctor: VisitDoctorOut | None
+    room: VisitRoomOut | None
     queue_date: date
     token_no: int
     priority: int
@@ -306,9 +306,9 @@ class DisplayEntryOut(Schema):
     name_ar: str
     name_en: str
     status: QueueStatusCode
-    department: DepartmentOut
-    doctor: DoctorOut | None
-    room: RoomOut | None
+    department: VisitDepartmentOut
+    doctor: VisitDoctorOut | None
+    room: VisitRoomOut | None
     called_at: datetime | None
 
 
@@ -339,8 +339,8 @@ class AppointmentOut(Schema):
     patient: PatientBriefOut | None
     contact_name: str
     contact_phone: str
-    doctor: DoctorOut
-    department: DepartmentOut
+    doctor: VisitDoctorOut
+    department: VisitDepartmentOut
     starts_at: datetime
     ends_at: datetime
     status: AppointmentStatusCode
@@ -363,7 +363,7 @@ class AgendaItemOut(Schema):
 
 
 class DayAgendaOut(Schema):
-    doctor: DoctorOut
+    doctor: VisitDoctorOut
     day: date
     works: bool
     items: list[AgendaItemOut]

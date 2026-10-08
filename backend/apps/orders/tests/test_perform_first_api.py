@@ -89,3 +89,32 @@ def test_lines_of_two_visits_are_refused(d: Desk) -> None:
         "LINES_NOT_ONE_VISIT",
     )
     error(d.sup.api.post(URL, {"line_ids": [999999], "reason": "EMERGENCY"}), 404, "NOT_FOUND")
+
+
+def test_the_requester_of_the_exception_is_recorded(d: Desk) -> None:
+    """FEATURES 4.4 "who": the doctor who asked is kept apart from the authorizer."""
+    iv = kit.insured_visit(d.doctor.user)
+    people = ok(d.sup.api.get(f"{URL}/requesters?q=doc"))
+    assert [u["username"] for u in people] == ["doc"]
+    error(d.cashier.api.get(f"{URL}/requesters"), 403, "PERMISSION_DENIED")
+    error(
+        d.sup.api.post(
+            URL, {"line_ids": [iv.insured.pk], "reason": "EMERGENCY", "requested_by_id": 999999}
+        ),
+        404,
+        "NOT_FOUND",
+    )
+    auth = ok(
+        d.sup.api.post(
+            URL,
+            {
+                "line_ids": [iv.insured.pk],
+                "kind": "emergency",
+                "reason": "EMERGENCY",
+                "requested_by_id": d.doctor.user.pk,
+            },
+        ),
+        201,
+    )
+    assert auth["requested_by"]["username"] == "doc"
+    assert auth["authorized_by"]["username"] == "sup"

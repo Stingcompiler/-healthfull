@@ -1489,6 +1489,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/perform-first/requesters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active staff who may have asked for a perform-first exception */
+        get: operations["orders_list_perform_first_requesters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/perform-first/visits/{visit_id}": {
         parameters: {
             query?: never;
@@ -2758,8 +2775,8 @@ export interface components {
             contact_name: string;
             /** Contact Phone */
             contact_phone: string;
-            department: components["schemas"]["DepartmentOut"];
-            doctor: components["schemas"]["DoctorOut"];
+            department: components["schemas"]["VisitDepartmentOut"];
+            doctor: components["schemas"]["VisitDoctorOut"];
             /**
              * Ends At
              * Format: date-time
@@ -2896,6 +2913,11 @@ export interface components {
             note: string;
             /** Reason */
             reason: string;
+            /**
+             * Requested By Id
+             * @description The active user who asked for the exception (default: the authorizer)
+             */
+            requested_by_id?: number | null;
         };
         /**
          * BalanceOut
@@ -3387,7 +3409,7 @@ export interface components {
              * @description Patient share percent for this member (decimal string); null = payer rule
              */
             patient_percent_override: string | null;
-            payer: components["schemas"]["PayerOut"];
+            payer: components["schemas"]["PatientPayerOut"];
             /** Relation */
             relation: string;
             /** Valid From */
@@ -3733,7 +3755,7 @@ export interface components {
              * Format: date
              */
             day: string;
-            doctor: components["schemas"]["DoctorOut"];
+            doctor: components["schemas"]["VisitDoctorOut"];
             /** Items */
             items: components["schemas"]["AgendaItemOut"][];
             /** Works */
@@ -3773,14 +3795,29 @@ export interface components {
         };
         /** DepartmentOut */
         DepartmentOut: {
+            /** Active */
+            active: boolean;
             /** Code */
             code: string;
+            /**
+             * Doctor Count
+             * @description Active doctors
+             * @default 0
+             */
+            doctor_count: number;
             /** Id */
             id: number;
             /** Name Ar */
             name_ar: string;
             /** Name En */
             name_en: string;
+            /**
+             * Room Count
+             * @default 0
+             */
+            room_count: number;
+            /** Sort Order */
+            sort_order: number;
         };
         /** DepartmentPatch */
         DepartmentPatch: {
@@ -3816,13 +3853,13 @@ export interface components {
         DisplayEntryOut: {
             /** Called At */
             called_at: string | null;
-            department: components["schemas"]["DepartmentOut"];
-            doctor: components["schemas"]["DoctorOut"] | null;
+            department: components["schemas"]["VisitDepartmentOut"];
+            doctor: components["schemas"]["VisitDoctorOut"] | null;
             /** Name Ar */
             name_ar: string;
             /** Name En */
             name_en: string;
-            room: components["schemas"]["RoomOut"] | null;
+            room: components["schemas"]["VisitRoomOut"] | null;
             /**
              * Status
              * @enum {string}
@@ -3869,20 +3906,32 @@ export interface components {
         };
         /** DoctorOut */
         DoctorOut: {
+            /** Active */
+            active: boolean;
+            /** Consultation Service Code */
+            consultation_service_code: string | null;
+            /** Consultation Service Id */
+            consultation_service_id: number | null;
+            /** Department Code */
+            department_code: string;
             /** Department Id */
             department_id: number;
-            /** Has Consultation Fee */
-            has_consultation_fee: boolean;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
             /** Id */
             id: number;
-            /** Name Ar */
-            name_ar: string;
-            /** Name En */
-            name_en: string;
+            /** Schedule */
+            schedule: components["schemas"]["ScheduleSessionOut"][];
             /** Specialty Ar */
             specialty_ar: string;
             /** Specialty En */
             specialty_en: string;
+            /** User Id */
+            user_id: number;
+            /** Username */
+            username: string;
         };
         /** DoctorPatch */
         DoctorPatch: {
@@ -5084,6 +5133,21 @@ export interface components {
             /** Sex */
             sex?: ("male" | "female" | "unknown") | null;
         };
+        /** PatientPayerOut */
+        PatientPayerOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Requires Card Number */
+            requires_card_number: boolean;
+        };
         /**
          * PatientProfileOut
          * @description A file with what reception shows around it.
@@ -5837,8 +5901,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
-            department: components["schemas"]["DepartmentOut"];
-            doctor: components["schemas"]["DoctorOut"] | null;
+            department: components["schemas"]["VisitDepartmentOut"];
+            doctor: components["schemas"]["VisitDoctorOut"] | null;
             /** Done At */
             done_at: string | null;
             /** Id */
@@ -5856,7 +5920,7 @@ export interface components {
              * @description Consultation fee paid or authorized (or none due)
              */
             ready: boolean;
-            room: components["schemas"]["RoomOut"] | null;
+            room: components["schemas"]["VisitRoomOut"] | null;
             /** Started At */
             started_at: string | null;
             /**
@@ -5933,6 +5997,14 @@ export interface components {
             requires_note?: boolean | null;
             /** Sort Order */
             sort_order?: number | null;
+        };
+        /** ReasonCountOut */
+        ReasonCountOut: {
+            /** Code */
+            code: string;
+            /** Count */
+            count: number;
+            reason: components["schemas"]["BillingReasonOut"] | null;
         };
         /** ReasonIn */
         ReasonIn: {
@@ -6211,8 +6283,14 @@ export interface components {
         };
         /** RoomOut */
         RoomOut: {
+            /** Active */
+            active: boolean;
             /** Code */
             code: string;
+            /** Department Code */
+            department_code: string | null;
+            /** Department Id */
+            department_id: number | null;
             /** Id */
             id: number;
             /** Name Ar */
@@ -6662,6 +6740,11 @@ export interface components {
              * @example 15000.00
              */
             late_reversals: string;
+            /**
+             * Line Cancellations
+             * @description Unbilled lines the shift's cashier cancelled during the shift (FLOW 4)
+             */
+            line_cancellations: components["schemas"]["ReasonCountOut"][];
             movements: components["schemas"]["MovementsOut"];
             /** Pending */
             pending: components["schemas"]["ReportTransferOut"][];
@@ -6675,6 +6758,11 @@ export interface components {
             shift: components["schemas"]["ShiftOut"];
             /** Variance */
             variance: string | null;
+            /**
+             * Voided Drafts
+             * @description Draft invoices the shift's cashier voided during the shift
+             */
+            voided_drafts: components["schemas"]["VoidedDraftOut"][];
         };
         /** ShiftReviewIn */
         ShiftReviewIn: {
@@ -6757,6 +6845,16 @@ export interface components {
         TransferOut: {
             cashier: components["schemas"]["BillingUserRefOut"] | null;
             payment: components["schemas"]["PaymentOut"];
+            /**
+             * Reject Needs Open Shift
+             * @description Its shift is closed and the viewer has no open shift to book the reversal
+             */
+            reject_needs_open_shift: boolean;
+            /**
+             * Self Recorded
+             * @description The viewer took it or it is their shift's: another checker confirms it
+             */
+            self_recorded: boolean;
         };
         /** UpcomingParams */
         UpcomingParams: {
@@ -6992,6 +7090,17 @@ export interface components {
             /** Reason Code */
             reason_code: string;
         };
+        /** VisitDepartmentOut */
+        VisitDepartmentOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
         /** VisitDetailOut */
         VisitDetailOut: {
             /** Lines */
@@ -7000,6 +7109,23 @@ export interface components {
             /** Queue Ready */
             queue_ready: boolean;
             visit: components["schemas"]["VisitOut"];
+        };
+        /** VisitDoctorOut */
+        VisitDoctorOut: {
+            /** Department Id */
+            department_id: number;
+            /** Has Consultation Fee */
+            has_consultation_fee: boolean;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Specialty Ar */
+            specialty_ar: string;
+            /** Specialty En */
+            specialty_en: string;
         };
         /**
          * VisitIn
@@ -7081,9 +7207,9 @@ export interface components {
             /** Cancel Reasons */
             cancel_reasons: components["schemas"]["ReasonOut"][];
             /** Departments */
-            departments: components["schemas"]["DepartmentOut"][];
+            departments: components["schemas"]["VisitDepartmentOut"][];
             /** Doctors */
-            doctors: components["schemas"]["DoctorOut"][];
+            doctors: components["schemas"]["VisitDoctorOut"][];
             /** Follow Up Window Days */
             follow_up_window_days: number;
         };
@@ -7113,8 +7239,8 @@ export interface components {
              */
             created_at: string;
             created_by: components["schemas"]["UserRefOut"];
-            department: components["schemas"]["DepartmentOut"] | null;
-            doctor: components["schemas"]["DoctorOut"] | null;
+            department: components["schemas"]["VisitDepartmentOut"] | null;
+            doctor: components["schemas"]["VisitDoctorOut"] | null;
             /** Follow Up Of Id */
             follow_up_of_id: number | null;
             /** Id */
@@ -7156,8 +7282,32 @@ export interface components {
             /** Visit Type */
             visit_type: string;
         };
+        /** VisitRoomOut */
+        VisitRoomOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
         /** VoidIn */
         VoidIn: {
+            /** Note */
+            note: string;
+        };
+        /** VoidedDraftOut */
+        VoidedDraftOut: {
+            /**
+             * Amount
+             * @description Gross total of the draft when it was voided
+             * @example 15000.00
+             */
+            amount: string;
+            /** Invoice Id */
+            invoice_id: number;
             /** Note */
             note: string;
         };
@@ -13440,6 +13590,73 @@ export interface operations {
             };
         };
     };
+    orders_list_perform_first_requesters: {
+        parameters: {
+            query?: {
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingUserRefOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     orders_get_perform_first_visit: {
         parameters: {
             query?: never;
@@ -14092,7 +14309,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PayerOut"][];
+                    "application/json": components["schemas"]["PatientPayerOut"][];
                 };
             };
             /** @description Unauthorized */

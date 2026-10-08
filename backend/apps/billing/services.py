@@ -76,6 +76,7 @@ __all__ = [
     "credited_quantity",
     "drop_from_drafts",
     "invoice_position",
+    "invoice_positions",
     "open_invoices",
     "refresh_settlement",
     "remove_draft_line",
@@ -887,6 +888,39 @@ def invoice_position(invoice: Invoice) -> di.InvoicePosition:
     return di.invoice_position(lines, _approved_credits(invoice), allocations, rebills)
 
 
+def invoice_positions(invoices: Iterable[Invoice]) -> dict[int, di.InvoicePosition]:
+    """:func:`invoice_position` of several approved invoices in four queries, by invoice id
+    (read models listing many invoices at once, e.g. the cashier's lookup)."""
+    ids = [inv.pk for inv in invoices]
+    if not ids:
+        return {}
+    lines: dict[int, list[di.InvoiceLineDraft]] = defaultdict(list)
+    for il in InvoiceLine.objects.filter(invoice_id__in=ids, frozen=True).order_by(
+        "invoice_id", "line_no"
+    ):
+        lines[il.invoice_id].append(_line_draft(il))
+    credits: dict[int, list[di.CreditLineDraft]] = defaultdict(list)
+    for cl in CreditNoteLine.objects.filter(
+        credit_note__invoice_id__in=ids, credit_note__status=DocumentStatus.APPROVED
+    ).select_related("invoice_line"):
+        credits[cl.invoice_line.invoice_id].append(_credit_draft(cl, cl.invoice_line.line_no))
+    allocations: dict[int, list[Decimal]] = defaultdict(list)
+    for invoice_id, amount in Allocation.objects.filter(invoice_id__in=ids).values_list(
+        "invoice_id", "amount"
+    ):
+        allocations[invoice_id].append(amount)
+    rebills: dict[int, list[di.Rebill]] = defaultdict(list)
+    for invoice_id, position, amount in (
+        ClaimLine.objects.filter(invoice_line__invoice_id__in=ids, resolution=Resolution.REBILLED)
+        .exclude(claim__status=ClaimStatus.VOID)
+        .values_list("invoice_line__invoice_id", "invoice_line__line_no", "rejected_amount")
+    ):
+        rebills[invoice_id].append(di.Rebill(position, amount))
+    return {
+        pk: di.invoice_position(lines[pk], credits[pk], allocations[pk], rebills[pk]) for pk in ids
+    }
+
+
 def refresh_settlement(invoice: Invoice, *, at: datetime | None = None) -> di.InvoicePosition:
     """Bring each service line of an approved invoice in line with its patient outstanding.
 
@@ -907,15 +941,14 @@ def open_invoices(patient: Patient) -> list[tuple[Invoice, di.InvoicePosition]]:
     """Approved invoices with patient outstanding, oldest approval first, of every file of
     the person (a merged duplicate's invoices stay payable from the surviving file,
     FEATURES 1.4-1.5)."""
-    out = []
     files = _patients().person_file_ids(patient)
-    for inv in Invoice.objects.filter(
-        patient_id__in=files, status=DocumentStatus.APPROVED
-    ).order_by("approved_at", "id"):
-        position = invoice_position(inv)
-        if position.outstanding > 0:
-            out.append((inv, position))
-    return out
+    invoices = list(
+        Invoice.objects.filter(patient_id__in=files, status=DocumentStatus.APPROVED).order_by(
+            "approved_at", "id"
+        )
+    )
+    positions = invoice_positions(invoices)
+    return [(inv, positions[inv.pk]) for inv in invoices if positions[inv.pk].outstanding > 0]
 
 
 # --- credit notes ----------------------------------------------------------------------------
@@ -1074,10 +1107,51 @@ def approve_credit_note(
     * ``open_refund`` opens a refund request for the de-allocated money (FLOW 8), requested
       by ``refund_requested_by`` (default the approver).
 
+    * The person who drafted the note never approves it (``CREDIT_NOTE_SELF_APPROVAL``,
+      ADR 0008): a second holder of ``billing.approve_credit_note`` decides the credit.
+
     Raises:
         PermissionRequired: the actor lacks ``billing.approve_credit_note``.
-        DomainError: ``INVOICE_NOT_DRAFT`` (the note is not a draft), ``CREDIT_EXCEEDS_LINE``,
-            ``CREDIT_EXCEEDS_UNGIVEN``, ``CLAIM_LINE_LOCKED``.
+        DomainError: ``CREDIT_NOTE_SELF_APPROVAL``, ``INVOICE_NOT_DRAFT`` (the note is not a
+            draft), ``CREDIT_EXCEEDS_LINE``, ``CREDIT_EXCEEDS_UNGIVEN``, ``CLAIM_LINE_LOCKED``.
+    """
+    require_permission(actor, "billing.approve_credit_note")
+    drafted_by = CreditNote.objects.values_list("created_by_id", flat=True).get(pk=credit_note.pk)
+    if drafted_by == actor.pk:
+        raise DomainError(
+            "CREDIT_NOTE_SELF_APPROVAL",
+            "Another approver must approve the credit note you drafted",
+            credit_note_id=credit_note.pk,
+        )
+    return _approve_credit_note(
+        credit_note,
+        actor=actor,
+        line_cancel_reason=line_cancel_reason,
+        cancel_note=cancel_note,
+        rebill=rebill,
+        open_refund=open_refund,
+        service_line=service_line,
+        refund_requested_by=refund_requested_by,
+    )
+
+
+def _approve_credit_note(
+    credit_note: CreditNote,
+    *,
+    actor: User,
+    line_cancel_reason: ReasonCode | None,
+    cancel_note: str,
+    rebill: bool,
+    open_refund: bool,
+    service_line: ServiceLine | None,
+    refund_requested_by: User | None,
+) -> CreditOutcome:
+    """:func:`approve_credit_note` without the second-person rule.
+
+    Used only by :func:`credit_service_line`, the one-step cancellation of a billed line
+    (ARCHITECTURE 4.4 rule 5): there the note is generated by the cancellation itself and the
+    approver is the person who decided it; the cash that leaves still needs a second person
+    (``SELF_APPROVAL_NOT_ALLOWED`` on the refund).
     """
     require_permission(actor, "billing.approve_credit_note")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="approve credit note"):
@@ -1246,11 +1320,12 @@ def credit_service_line(
     cn = create_credit_note(
         il.invoice, [(il, quantity)], actor=actor, reason="SERVICE_CANCELLED", note=text
     )
-    return approve_credit_note(
+    return _approve_credit_note(
         cn,
         actor=approver or actor,
         line_cancel_reason=line_reason,
         cancel_note=note,
+        rebill=False,
         open_refund=open_refund,
         service_line=line,
         refund_requested_by=actor,

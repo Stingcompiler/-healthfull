@@ -40,12 +40,13 @@ from typing import Any
 
 import pghistory
 from django.db import IntegrityError, connection, transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
 from apps.billing import services as billing
 from apps.billing.models import CreditNote, DocumentStatus, Invoice, InvoiceLine
 from apps.core.models import Policy, ReasonCode, User
+from apps.core.permissions import roles_holding
 from apps.core.services import (
     holds_permission,
     next_number,
@@ -55,7 +56,7 @@ from apps.core.services import (
 )
 from apps.ledger import services as ledger
 from apps.orders import services as orders
-from apps.orders.models import ServiceLine
+from apps.orders.models import BillingStatus, ServiceLine
 from apps.patients import services as patients
 from apps.patients.models import Patient
 from apps.payments.models import (
@@ -98,6 +99,7 @@ __all__ = [
     "cancel_handover",
     "cash_handover",
     "cash_movements",
+    "center_receivers",
     "close_shift",
     "confirm_transfer",
     "credit_balance",
@@ -112,6 +114,7 @@ __all__ = [
     "pay_refund",
     "receive_handover",
     "record_payment",
+    "refund_source_available",
     "reject_refund",
     "reject_transfer",
     "request_refund",
@@ -854,11 +857,14 @@ def _effect_shift_id(entry_shift: Shift, actor: User) -> int | None:
 def confirm_transfer(payment: Payment, *, actor: User, note: str) -> Payment:
     """Confirm a pending transfer after checking the bank statement (FEATURES 6.3).
 
-    ``note`` says what was checked (invariant 4: reason, approver, time).
+    ``note`` says what was checked (invariant 4: reason, approver, time). The person who took
+    the payment, or the cashier of its shift, never confirms it (ADR 0008): the check against
+    the bank is a second person's.
 
     Raises:
         PermissionRequired: the actor lacks ``payments.confirm_transfer``.
-        DomainError: ``PAYMENT_NOT_PENDING``, ``REASON_REQUIRED``.
+        DomainError: ``SELF_CONFIRMATION_NOT_ALLOWED``, ``PAYMENT_NOT_PENDING``,
+            ``REASON_REQUIRED``.
     """
     require_permission(actor, "payments.confirm_transfer")
     text = note.strip()
@@ -871,6 +877,12 @@ def confirm_transfer(payment: Payment, *, actor: User, note: str) -> Payment:
         )
         if locked.reversal_of_id is not None:
             raise DomainError("PAYMENT_NOT_PENDING", "A reversal row is not a transfer")
+        if actor.pk in (locked.created_by_id, locked.shift.cashier_id):
+            raise DomainError(
+                "SELF_CONFIRMATION_NOT_ALLOWED",
+                "Another checker must confirm a transfer you took",
+                payment_id=locked.pk,
+            )
         now = timezone.now()
         new = dp.confirm(
             dp.PaymentMethod(locked.method),
@@ -1095,6 +1107,12 @@ def _source_available(credit_note: CreditNote, *, exclude: int | None = None) ->
     if exclude is not None:
         used = used.exclude(pk=exclude)
     return da.refund_source_available(deallocated, used.values_list("amount", flat=True))
+
+
+def refund_source_available(credit_note: CreditNote) -> Decimal:
+    """What may still be refunded from ``credit_note``: the credit it created less its live
+    refunds, never below zero (the rule :func:`request_refund` enforces)."""
+    return max(_source_available(credit_note), ZERO)
 
 
 def request_refund(
@@ -1325,6 +1343,20 @@ def can_receive_for_the_center(user: User) -> bool:
     return user.is_active and all(holds_permission(user, c) for c in HANDOVER_RECEIVER_PERMISSIONS)
 
 
+def center_receivers(*, exclude: User | None = None) -> list[User]:
+    """Active users who confirm cash for the center (7.6), by username.
+
+    Narrowed in one query to holders of a role granting each code (or superusers), then
+    checked one by one with :func:`can_receive_for_the_center`.
+    """
+    people = User.objects.filter(is_active=True)
+    for code in HANDOVER_RECEIVER_PERMISSIONS:
+        people = people.filter(Q(is_superuser=True) | Q(roles__code__in=roles_holding(code)))
+    if exclude is not None:
+        people = people.exclude(pk=exclude.pk)
+    return [u for u in people.distinct().order_by("username") if can_receive_for_the_center(u)]
+
+
 def cash_handover(
     shift: Shift,
     amount: Decimal,
@@ -1536,6 +1568,19 @@ class ReasonTotal:
     amount: Decimal
 
 
+@dataclass(frozen=True, slots=True)
+class ReasonCount:
+    reason: str
+    count: int
+
+
+@dataclass(frozen=True, slots=True)
+class VoidedDraft:
+    invoice_id: int
+    amount: Decimal
+    note: str
+
+
 def _money(value: object) -> Decimal:
     return Decimal(str(value))
 
@@ -1547,6 +1592,8 @@ class ShiftSummary:
     ``late_reversals`` and ``late_confirmations`` are transfers of earlier, closed shifts
     rejected or confirmed while this shift was the acting one. ``credit_notes`` and
     ``cancellations`` are the credit notes booked in this shift (by reason);
+    ``line_cancellations`` the unbilled lines the shift's cashier cancelled during the shift
+    (by line-cancel reason, FLOW 4) and ``voided_drafts`` the draft invoices they voided;
     ``credit_from_cancellations`` the patient money they turned into credit and
     ``credit_unallocated`` the money taken here and left as patient credit. A closed shift
     is served from the snapshot taken at close (``frozen``), never recomputed (invariant 3).
@@ -1569,6 +1616,8 @@ class ShiftSummary:
     refunds: tuple[ReasonTotal, ...] = ()
     credit_from_cancellations: Decimal = ZERO
     credit_unallocated: Decimal = ZERO
+    line_cancellations: tuple[ReasonCount, ...] = ()
+    voided_drafts: tuple[VoidedDraft, ...] = ()
     frozen: bool = False
 
     def to_json(self) -> dict[str, Any]:
@@ -1606,6 +1655,8 @@ class ShiftSummary:
             "cancellations": [[r.reason, r.count, str(r.amount)] for r in self.cancellations],
             "credit_from_cancellations": str(self.credit_from_cancellations),
             "credit_unallocated": str(self.credit_unallocated),
+            "line_cancellations": [[r.reason, r.count] for r in self.line_cancellations],
+            "voided_drafts": [[v.invoice_id, str(v.amount), v.note] for v in self.voided_drafts],
         }
 
     @classmethod
@@ -1646,6 +1697,12 @@ class ShiftSummary:
             ),
             credit_from_cancellations=_money(data.get("credit_from_cancellations", "0.00")),
             credit_unallocated=_money(data.get("credit_unallocated", "0.00")),
+            line_cancellations=tuple(
+                ReasonCount(str(r[0]), int(str(r[1]))) for r in rows("line_cancellations")
+            ),
+            voided_drafts=tuple(
+                VoidedDraft(int(str(r[0])), _money(r[1]), str(r[2])) for r in rows("voided_drafts")
+            ),
             frozen=True,
         )
 
@@ -1715,6 +1772,29 @@ def _summary(
         .values_list("reason_code__code", "n", "total")
         .order_by("reason_code__code")
     )
+    window = {"gte": shift.opened_at, **({"lte": shift.closed_at} if shift.closed_at else {})}
+    line_cancellations = tuple(
+        ReasonCount(code, count)
+        for code, count in ServiceLine.objects.filter(
+            cancelled_by_id=shift.cashier_id,
+            billing_status=BillingStatus.UNBILLED,
+            **{f"cancelled_at__{k}": v for k, v in window.items()},
+        )
+        .values_list("cancel_reason__code")
+        .annotate(n=Count("id"))
+        .values_list("cancel_reason__code", "n")
+        .order_by("cancel_reason__code")
+    )
+    voided_drafts = tuple(
+        VoidedDraft(pk, total, note)
+        for pk, total, note in Invoice.objects.filter(
+            status=DocumentStatus.VOID,
+            voided_by_id=shift.cashier_id,
+            **{f"voided_at__{k}": v for k, v in window.items()},
+        )
+        .order_by("voided_at", "id")
+        .values_list("id", "gross_total", "void_note")
+    )
     refunds = tuple(
         ReasonTotal(code, count, total)
         for code, count, total in Refund.objects.filter(shift=shift, status=RefundStatus.PAID)
@@ -1755,6 +1835,8 @@ def _summary(
         refunds=refunds,
         credit_from_cancellations=deallocated,
         credit_unallocated=max(unallocated, ZERO),
+        line_cancellations=line_cancellations,
+        voided_drafts=voided_drafts,
     )
 
 

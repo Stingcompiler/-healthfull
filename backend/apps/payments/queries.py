@@ -168,6 +168,15 @@ def _reason_totals(category: str, rows: Iterable[Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _reason_counts(rows: Iterable[Any]) -> list[dict[str, Any]]:
+    rows = list(rows)
+    found = _reasons("line_cancel", (r.reason for r in rows))
+    return [
+        {"reason": bq.reason_json(found.get(r.reason)), "code": r.reason or "", "count": r.count}
+        for r in rows
+    ]
+
+
 def report_json(shift: Shift) -> dict[str, Any]:
     """The report of one shift: live while open, the snapshot taken at close once closed."""
     summary = pay.shift_summary(shift)
@@ -212,6 +221,11 @@ def report_json(shift: Shift) -> dict[str, Any]:
         "cancellations": _reason_totals("credit_note", summary.cancellations),
         "credit_from_cancellations": _m(summary.credit_from_cancellations),
         "credit_unallocated": _m(summary.credit_unallocated),
+        "line_cancellations": _reason_counts(summary.line_cancellations),
+        "voided_drafts": [
+            {"invoice_id": v.invoice_id, "amount": _m(v.amount), "note": v.note}
+            for v in summary.voided_drafts
+        ],
         "handovers": [
             handover_json(h) for h in _handovers().filter(Q(shift=shift) | Q(to_shift=shift))
         ],
@@ -253,7 +267,6 @@ def _incoming(user: User) -> list[dict[str, Any]]:
 
 def handover_receivers(user: User) -> list[dict[str, Any]]:
     """Active people other than ``user`` who can confirm cash for the center (7.6)."""
-    people = User.objects.filter(is_active=True).exclude(pk=user.pk).order_by("username")
     return [
         {
             "id": u.pk,
@@ -261,8 +274,7 @@ def handover_receivers(user: User) -> list[dict[str, Any]]:
             "full_name_ar": u.full_name_ar,
             "full_name_en": u.full_name_en,
         }
-        for u in people
-        if pay.can_receive_for_the_center(u)
+        for u in pay.center_receivers(exclude=user)
     ]
 
 
@@ -517,12 +529,19 @@ def receipt(payment_id: int) -> dict[str, Any]:
 
 def transfers(
     *,
+    viewer: User,
     verification: str = Verification.PENDING,
     q: str | None = None,
     page: int = 1,
     page_size: int = 25,
 ) -> dict[str, Any]:
-    """Bank, QR and card payments by verification state, oldest pending first (FEATURES 6.4)."""
+    """Bank, QR and card payments by verification state, oldest pending first (FEATURES 6.4).
+
+    Each row says what stops ``viewer`` (ADR 0008): ``self_recorded`` (they took it or it is
+    their shift's, so another checker confirms it) and ``reject_needs_open_shift`` (its shift
+    is closed and the viewer has no open shift for the reversal, FEATURES 6.8).
+    """
+    viewer_open = pay.current_shift(viewer) is not None
     qs = _payments().filter(
         method__in=[str(x) for x in dp.REFERENCE_METHODS],
         reversal_of__isnull=True,
@@ -544,7 +563,13 @@ def transfers(
         )
     data = paginate(qs, page, page_size)
     data["items"] = [
-        {"payment": payment_json(p), "cashier": bq.user_json(p.created_by)} for p in data["items"]
+        {
+            "payment": payment_json(p),
+            "cashier": bq.user_json(p.created_by),
+            "self_recorded": viewer.pk in (p.created_by_id, p.shift.cashier_id),
+            "reject_needs_open_shift": p.shift.status == ShiftStatus.CLOSED and not viewer_open,
+        }
+        for p in data["items"]
     ]
     return data
 

@@ -371,7 +371,11 @@ def list_transfers(
     request: HttpRequest, params: Query[PageParams], verification: VerificationCode = "pending"
 ) -> Any:
     return queries.transfers(
-        verification=verification, q=params.q, page=params.page, page_size=params.page_size
+        viewer=_user(request),
+        verification=verification,
+        q=params.q,
+        page=params.page,
+        page_size=params.page_size,
     )
 
 

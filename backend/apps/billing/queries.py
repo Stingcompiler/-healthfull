@@ -197,11 +197,16 @@ def _visit_rows(patient_ids: Sequence[int]) -> dict[int, list[Visit]]:
     return out
 
 
-def _visit_outstanding(visit: Visit) -> Decimal:
-    total = ZERO
-    for inv in Invoice.objects.filter(visit=visit, status=DocumentStatus.APPROVED):
-        total += billing.invoice_position(inv).outstanding
-    return total
+def _visits_outstanding(visit_ids: Iterable[int]) -> dict[int, Decimal]:
+    """Patient outstanding of each visit's approved invoices, in one batch."""
+    invoices = list(
+        Invoice.objects.filter(visit_id__in=list(visit_ids), status=DocumentStatus.APPROVED)
+    )
+    positions = billing.invoice_positions(invoices)
+    out: dict[int, Decimal] = defaultdict(lambda: ZERO)
+    for inv in invoices:
+        out[inv.visit_id] += positions[inv.pk].outstanding
+    return out
 
 
 def visit_ref_json(v: Visit) -> dict[str, Any]:
@@ -223,6 +228,7 @@ def lookup(query: str, *, limit: int = 10) -> dict[str, Any]:
     visits the cashier may bill or collect for and the person's balance."""
     found = _find_patients(query, limit)
     by_patient = _visit_rows([p.pk for p in found])
+    outstanding = _visits_outstanding(v.pk for rows in by_patient.values() for v in rows)
     items = []
     for p in found:
         visits = []
@@ -234,7 +240,7 @@ def lookup(query: str, *, limit: int = 10) -> dict[str, Any]:
                     **ref,
                     "unbilled_count": int(getattr(v, "unbilled", 0)),
                     "draft_invoice_count": int(getattr(v, "drafts", 0)),
-                    "outstanding": _m(_visit_outstanding(v)),
+                    "outstanding": _m(outstanding[v.pk]),
                 }
             )
         items.append({"patient": patient_json(p), "visits": visits, "balance": balance_json(p)})
@@ -462,10 +468,8 @@ def _released(cn: CreditNote) -> Decimal:
 
 
 def credit_note_json(cn: CreditNote) -> dict[str, Any]:
-    pm = _payment_models()
-    refunds = list(pm.Refund.objects.filter(credit_note=cn).order_by("id"))
+    refunds = list(_payment_models().Refund.objects.filter(credit_note=cn).order_by("id"))
     released = _released(cn)
-    used = sum((r.amount for r in refunds if r.status != pm.RefundStatus.REJECTED), ZERO)
     return {
         "id": cn.pk,
         "number": cn.number,
@@ -484,7 +488,7 @@ def credit_note_json(cn: CreditNote) -> dict[str, Any]:
         "payer_total": _m(cn.payer_total),
         "patient_total": _m(cn.patient_total),
         "released": _m(released),
-        "refundable": _m(max(released - used, ZERO)),
+        "refundable": _m(_payments().refund_source_available(cn)),
         "lines": [
             {
                 "id": cl.pk,

@@ -148,7 +148,13 @@ def cashier_screens(p: Params) -> Json:
         cn = billing.create_credit_note(
             inv, [(_first_line(inv), 1)], actor=actor, reason="SERVICE_CANCELLED"
         )
-        billing.approve_credit_note(cn, actor=actor, open_refund=True)
+        # A second person approves the note (ADR 0008); the refund stays in the actor's name.
+        billing.approve_credit_note(
+            cn,
+            actor=p.user("approver", "accountant"),
+            open_refund=True,
+            refund_requested_by=actor,
+        )
     closed = (
         Shift.objects.filter(cashier=actor, status=ShiftStatus.CLOSED, review__isnull=True)
         .exclude(variance=ZERO)

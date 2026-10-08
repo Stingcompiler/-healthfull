@@ -148,6 +148,32 @@ def test_operation_ids_are_stable_and_unique(schema: dict[str, Any]) -> None:
     assert pinned <= set(ids), sorted(pinned - set(ids))
 
 
+def test_schema_class_names_are_unique() -> None:
+    """Two ninja ``Schema`` classes with one name become one OpenAPI component: the second
+    silently replaces the first in ``schema.d.ts`` and the frontend types the wrong shape
+    (the ``DepartmentOut`` of visits once replaced the admin one). Prefix the module."""
+    from collections import defaultdict
+
+    from ninja import Schema
+
+    import api.main  # noqa: F401  (imports every router and its schemas)
+
+    def walk(cls: type) -> list[type]:
+        out = []
+        for sub in cls.__subclasses__():
+            out.append(sub)
+            out.extend(walk(sub))
+        return out
+
+    by_name: dict[str, set[str]] = defaultdict(set)
+    for cls in walk(Schema):
+        module = cls.__module__
+        if module.startswith(("apps.", "api.")) and ".tests" not in module:
+            by_name[cls.__name__].add(f"{module}.{cls.__qualname__}")
+    clashes = {name: sorted(where) for name, where in by_name.items() if len(where) > 1}
+    assert not clashes, clashes
+
+
 #: Operations a signed-in user may call without a permission code. Anything else must carry
 #: ``@require_perm`` (a new endpoint that forgets it fails here instead of going unnoticed).
 OPEN_OPERATIONS = frozenset(

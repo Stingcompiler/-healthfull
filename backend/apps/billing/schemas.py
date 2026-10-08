@@ -15,8 +15,19 @@ from ninja import Field, Schema
 
 #: A money amount as the API sends it: two decimal places, e.g. "15000.00" (may be negative).
 MoneyStr = Annotated[str, Field(pattern=r"^-?[0-9]+\.[0-9]{2}$", examples=["15000.00"])]
-#: A money amount sent by the client: digits with an optional decimal part (Arabic-Indic too).
-MoneyIn = Annotated[str, Field(min_length=1, max_length=20, examples=["15000", "2500.50"])]
+#: A money amount sent by the client: digits with an optional decimal part (Arabic-Indic digits
+#: and the Arabic decimal separator too). The pattern refuses a third decimal (422) so it is
+#: never rounded away silently (ARCHITECTURE 4.3); everything else is judged by
+#: ``domain.money.money`` (``INVALID_AMOUNT``).
+MoneyIn = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=20,
+        pattern=r"^[^.\u066B]*(?:[.\u066B]\S{0,2})?\s*$",
+        examples=["15000", "2500.50"],
+    ),
+]
 
 LineState = Literal["requested", "invoiced", "paid", "performed", "cancelled"]
 DocStatus = Literal["draft", "approved", "void"]
