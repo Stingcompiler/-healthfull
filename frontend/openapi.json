@@ -7086,7 +7086,6 @@
         ],
         "summary": "Perform-first authorizations, newest first",
         "tags": [
-          "orders",
           "orders"
         ]
       },
@@ -7172,7 +7171,6 @@
         ],
         "summary": "Authorize open, unpaid lines of one visit to be performed before payment",
         "tags": [
-          "orders",
           "orders"
         ]
       }
@@ -7260,7 +7258,6 @@
         ],
         "summary": "A visit's open lines, marking those that may be authorized to go first",
         "tags": [
-          "orders",
           "orders"
         ]
       }
@@ -7358,7 +7355,6 @@
         ],
         "summary": "Withdraw an authorization for lines that have not started",
         "tags": [
-          "orders",
           "orders"
         ]
       }

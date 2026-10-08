@@ -30,7 +30,7 @@ from apps.orders import perform_first
 
 AuthorizationKindCode = Literal["insurance_approval", "emergency", "credit_account", "other"]
 
-perform_first_router = Router(tags=["orders"])
+perform_first_router = Router()  # tagged "orders" by the parent router
 
 _READ = {**ERROR_RESPONSES, 404: ErrorOut}
 
