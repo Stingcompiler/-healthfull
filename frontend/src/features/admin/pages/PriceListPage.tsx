@@ -114,7 +114,7 @@ export function PriceListPage() {
       </div>
       <QueryState loading={list.isPending} error={list.error} onRetry={() => void list.refetch()}>
         {data ? (
-          <div className="grid min-w-0 gap-4 xl:grid-cols-[18rem_1fr] xl:items-start">
+          <div className="grid min-w-0 gap-4 2xl:grid-cols-[18rem_1fr] 2xl:items-start">
             <VersionTimeline versions={data.versions} selected={versionId} onSelect={setSelected} />
             {version ? (
               <VersionItems key={version.id} version={version} />
@@ -172,7 +172,7 @@ function VersionTimeline({
         {t("prices.timeline")}
       </h2>
       {versions.length === 0 ? <p className="px-1 text-sm text-muted">{t("prices.noVersions")}</p> : null}
-      <ol className="flex flex-col gap-1" data-testid="version-timeline">
+      <ol className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-1" data-testid="version-timeline">
         {versions.map((v) => (
           <li key={v.id}>
             <button
