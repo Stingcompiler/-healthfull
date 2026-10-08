@@ -46,7 +46,7 @@ function makeSchema(maxById: Record<string, number>) {
     .object({
       reason: z.string().min(1, vmsg("validation.selectOption")),
       note: z.string().trim().max(1000),
-      qty: z.record(z.string(), z.string()),
+      qty: z.record(z.string(), z.string().optional()),
     })
     .superRefine((v, ctx) => {
       let total = 0;
@@ -97,7 +97,10 @@ function CreditNoteDialogOpen({
   const [schema] = useState(() =>
     makeSchema(Object.fromEntries(creditable.map((l) => [String(l.id), l.quantity - l.credited_quantity]))),
   );
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { reason: "", note: "", qty: {} } });
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { reason: "", note: "", qty: Object.fromEntries(creditable.map((l) => [String(l.id), ""])) },
+  });
   const { t: tCommon } = useTranslation();
   // The "at least one unit" issue sits on `qty` itself; its type is the record's entries.
   const qtyRoot = form.formState.errors.qty as { message?: unknown } | undefined;
