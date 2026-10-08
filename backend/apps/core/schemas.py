@@ -478,3 +478,37 @@ class PrintTemplateIn(Schema):
     footer_ar: str = Field("", max_length=1000)
     footer_en: str = Field("", max_length=1000)
     active: bool = True
+
+
+# --- List filters -------------------------------------------------------------------------
+
+
+class UserListParams(Schema):
+    page: int = Field(1, ge=1)
+    page_size: int = Field(25, ge=1, le=100)
+    q: str | None = Field(None, max_length=200)
+    role: RoleCode | None = None
+    active: bool | None = None
+
+
+class DepartmentListParams(Schema):
+    active: bool | None = None
+
+
+class RoomListParams(Schema):
+    department_id: int | None = None
+    active: bool | None = None
+
+
+class DoctorListParams(Schema):
+    department_id: int | None = None
+    active: bool | None = None
+
+
+class ReasonCodeListParams(Schema):
+    category: ReasonCategoryCode | None = None
+    active: bool | None = None
+
+
+class SequenceParams(Schema):
+    year: int | None = Field(None, ge=2000, le=2999)
