@@ -10,8 +10,9 @@
     visibility: hidden !important;
   }
 
-  [data-print-root],
-  [data-print-root] * {
+  /* Same :has() prefix as the rule above, so these win on specificity (both are !important). */
+  body:has([data-print-root]) [data-print-root],
+  body:has([data-print-root]) [data-print-root] * {
     visibility: visible !important;
   }
 
