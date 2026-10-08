@@ -10,7 +10,13 @@ import { expect, test } from "@playwright/test";
 
 import { FRONTEND_DIR } from "../../env";
 import { ANONYMOUS_STATE } from "../../fixtures/state";
-import { apiAs, disposeApiClients, login, paidVisit, setPrefs } from "../../helpers";
+import {
+  apiAs,
+  disposeApiClients,
+  login,
+  paidVisit,
+  setPrefs,
+} from "../../helpers";
 
 test.describe.configure({ timeout: 120_000 });
 test.use({ storageState: ANONYMOUS_STATE });
@@ -22,12 +28,19 @@ interface OpenApi {
 
 /** Every billing and payments operation of the API contract, except the module pings. */
 function moneyOperations(): { method: string; url: string; id: string }[] {
-  const spec = JSON.parse(readFileSync(path.join(FRONTEND_DIR, "openapi.json"), "utf8")) as OpenApi;
+  const spec = JSON.parse(
+    readFileSync(path.join(FRONTEND_DIR, "openapi.json"), "utf8"),
+  ) as OpenApi;
   const out: { method: string; url: string; id: string }[] = [];
   for (const [route, item] of Object.entries(spec.paths)) {
-    if (!/^\/api\/(billing|payments)\//.test(route) || route.endsWith("/ping")) continue;
+    if (!/^\/api\/(billing|payments)\//.test(route) || route.endsWith("/ping"))
+      continue;
     for (const [method, op] of Object.entries(item)) {
-      out.push({ method: method.toUpperCase(), url: route.replace(/\{[^}]+\}/g, "1"), id: op.operationId ?? route });
+      out.push({
+        method: method.toUpperCase(),
+        url: route.replace(/\{[^}]+\}/g, "1"),
+        id: op.operationId ?? route,
+      });
     }
   }
   return out;
@@ -47,14 +60,32 @@ function priceKeys(value: unknown, found: string[] = []): string[] {
 }
 
 test.describe("@clinic doctor has no billing access", () => {
-  test("the doctor holds no billing or payment permission and every money operation answers 403", async () => {
+  test("the doctor holds no billing or payment permission", async () => {
     const doctor = await apiAs("doctor");
     const me = await doctor.get<{ permissions: string[] }>("/api/auth/me");
-    expect(me.permissions.filter((p) => /^(billing|payments|claims)\./.test(p))).toEqual([]);
-    expect(me.permissions).toEqual(expect.arrayContaining(["clinical.view", "orders.create"]));
+    expect(
+      me.permissions.filter((p) => /^(billing|payments|claims)\./.test(p)),
+    ).toEqual([]);
+    expect(me.permissions).toEqual(
+      expect.arrayContaining(["clinical.view", "orders.create"]),
+    );
+  });
 
-    for (const op of moneyOperations()) {
-      const response = await doctor.send(op.method, op.url, op.method === "GET" ? {} : { data: {} });
+  // The billing and payments routers have only their pings until the cashier module lands
+  // (wave a, feat/a-cashier); an empty list must never pass silently.
+  test.fixme("every billing and payments operation answers 403 to a doctor", async () => {
+    const doctor = await apiAs("doctor");
+    const operations = moneyOperations();
+    expect(
+      operations.length,
+      "billing and payments operations in the API contract",
+    ).toBeGreaterThan(0);
+    for (const op of operations) {
+      const response = await doctor.send(
+        op.method,
+        op.url,
+        op.method === "GET" ? {} : { data: {} },
+      );
       expect(response.status(), `${op.id} ${op.method} ${op.url}`).toBe(403);
       const body = (await response.json()) as { code: string };
       expect(body.code, op.id).toBe("PERMISSION_DENIED");
@@ -67,7 +98,13 @@ test.describe("@clinic doctor has no billing access", () => {
     const visitId = ready.visit.id;
     const patientId = ready.patient.id;
     await doctor.post(`/api/orders/visits/${String(visitId)}/lines`, {
-      items: [{ service_id: (await doctor.get<{ id: number }[]>("/api/orders/catalog?q=LAB-CBC"))[0]?.id }],
+      items: [
+        {
+          service_id: (
+            await doctor.get<{ id: number }[]>("/api/orders/catalog?q=LAB-CBC")
+          )[0]?.id,
+        },
+      ],
     });
     for (const url of [
       "/api/clinical/worklist",
@@ -80,20 +117,31 @@ test.describe("@clinic doctor has no billing access", () => {
       expect(priceKeys(await doctor.get(url)), url).toEqual([]);
     }
     // Leave the dentist's queue empty for later specs.
-    const rows = await doctor.get<{ id: number; status: string }[]>("/api/clinical/worklist");
+    const rows = await doctor.get<{ id: number; status: string }[]>(
+      "/api/clinical/worklist",
+    );
     for (const row of rows.filter((r) => r.status === "waiting")) {
       for (const action of ["call", "start", "complete"]) {
-        await doctor.post(`/api/clinical/worklist/${String(row.id)}/action`, { action });
+        await doctor.post(`/api/clinical/worklist/${String(row.id)}/action`, {
+          action,
+        });
       }
     }
   });
 
-  test("the cashier screen is not in the doctor's menu and its data stays closed", async ({ page }) => {
+  test("the cashier screen is not in the doctor's menu and its data stays closed", async ({
+    page,
+  }) => {
     const leaked: string[] = [];
     page.on("response", (response) => {
       const url = new URL(response.url());
-      if (!/^\/api\/(billing|payments)\//.test(url.pathname) || url.pathname.endsWith("/ping")) return;
-      if (response.ok()) leaked.push(`${url.pathname} ${String(response.status())}`);
+      if (
+        !/^\/api\/(billing|payments)\//.test(url.pathname) ||
+        url.pathname.endsWith("/ping")
+      )
+        return;
+      if (response.ok())
+        leaked.push(`${url.pathname} ${String(response.status())}`);
     });
     await login(page, "doctor");
     await setPrefs(page, { theme: "light", lang: "en" });
