@@ -207,7 +207,10 @@ class Client implements ApiClient {
 /** A new logged-in client for `who`, not shared with other callers (dispose it yourself). */
 export async function newApiClient(who: SeedUser): Promise<ApiClient> {
   const user = resolveUser(who);
-  const context = await request.newContext({ baseURL: BASE_URL });
+  // An empty cookie jar: inside a test, request contexts otherwise start from the test's
+  // storageState, and logging in on top of the page user's session cookie flushes that
+  // session (the page is signed out mid-test).
+  const context = await request.newContext({ baseURL: BASE_URL, storageState: { cookies: [], origins: [] } });
   try {
     await apiLogin(context, user.username as SeedUser);
   } catch (error) {

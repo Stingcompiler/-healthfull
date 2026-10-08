@@ -185,7 +185,7 @@ def list_drug_classes(request: HttpRequest) -> Any:
 
 @clinical_router.get(
     "/patients/{patient_id}/allergies",
-    response={200: list[s.AllergyOut], **_READ},
+    response={200: list[s.PatientAllergyOut], **_READ},
     operation_id="clinical_list_allergies",
     summary="The person's allergy registry: active first, then resolved",
 )
@@ -197,7 +197,7 @@ def list_allergies(request: HttpRequest, patient_id: int) -> Any:
 
 @clinical_router.post(
     "/patients/{patient_id}/allergies",
-    response={201: s.AllergyOut, **_WRITE},
+    response={201: s.PatientAllergyOut, **_WRITE},
     operation_id="clinical_create_allergy",
     summary="Record an allergy (drug, drug class, food, environmental or other)",
     description="409 DRUG_CLASS_REQUIRED, DRUG_CLASS_INACTIVE, ALLERGEN_REQUIRED.",
@@ -220,7 +220,7 @@ def create_allergy(request: HttpRequest, patient_id: int, payload: s.AllergyIn) 
 
 @clinical_router.patch(
     "/allergies/{allergy_id}",
-    response={200: s.AllergyOut, **_WRITE},
+    response={200: s.PatientAllergyOut, **_WRITE},
     operation_id="clinical_update_allergy",
     summary="Resolve an allergy, mark it entered in error, or change severity, reaction, note",
     description="The allergen never changes; a wrong entry is marked entered_in_error.",

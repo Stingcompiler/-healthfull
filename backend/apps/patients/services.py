@@ -30,34 +30,47 @@ from typing import Any
 import pghistory
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db import IntegrityError, connection, transaction
-from django.db.models import Q, QuerySet
+from django.db.models import Prefetch, Q, QuerySet
 from django.forms.models import model_to_dict
 from django.utils import timezone
 
 from apps.catalog.models import Payer
-from apps.core.models import User
-from apps.core.services import next_number, require_permission
+from apps.core.models import ReasonCategory, ReasonCode, User
+from apps.core.services import next_number, require_permission, resolve_reason
 from apps.patients.models import Patient, PatientCoverage, PatientMerge, Sex
 from domain.errors import DomainError
 
 __all__ = [
     "DUPLICATE_NAME_SIMILARITY",
+    "AllergyView",
     "DuplicateCandidate",
     "PatientData",
+    "PatientProfile",
     "active_coverage",
+    "active_payers",
     "add_coverage",
+    "balance",
+    "coverages",
     "coverages_valid_on",
     "end_coverage",
+    "estimated_birth_date",
     "file_ids",
     "find_duplicates",
+    "merge_into",
     "merge_patients",
+    "merge_reason",
+    "merge_reasons",
+    "merges",
     "normalize_phone",
     "normalize_text",
     "person_file_ids",
+    "profile",
     "register_emergency",
     "register_patient",
     "resolve",
+    "search",
     "search_patients",
+    "update_coverage",
     "update_patient",
 ]
 
@@ -165,6 +178,12 @@ def _birth_date(data: PatientData, today: date) -> tuple[date | None, bool]:
     return None, False
 
 
+def estimated_birth_date(age_years: int, today: date) -> date:
+    """The birth date registration records for an age in years (``dob_is_estimated``)."""
+    dob, _ = _birth_date(PatientData(sex=Sex.MALE, age_years=age_years), today)
+    return dob if dob is not None else today  # an age always gives a date
+
+
 def _is_complete(patient: Patient) -> bool:
     """An emergency file is complete once sex, date of birth and a phone are known."""
     return (
@@ -223,26 +242,46 @@ def find_duplicates(
     return [DuplicateCandidate(f.patient, tuple(f.reasons), f.similarity) for f in ranked[:limit]]
 
 
-def search_patients(
-    query: str, *, limit: int = 25, include_inactive: bool = False
-) -> list[Patient]:
-    """Find patients by file number, phone or name, in Arabic or English (FEATURES 0.9).
+def search(
+    query: str = "", *, include_inactive: bool = False, incomplete_only: bool = False
+) -> QuerySet[Patient]:
+    """Patients matching ``query`` in serving order, for paged lists (FEATURES 0.9, 1.1).
 
+    * No query: every file, newest first (``incomplete_only``: emergency files still to
+      complete).
     * A file number (``PT-2026-000123``) matches exactly; a bare number also matches the
       end of file numbers and phone numbers.
     * Names match when every folded word appears in the folded name, or when the whole
       folded name is similar (trigram) for spelling variants beyond the folding.
-    Merged (inactive) files are left out unless ``include_inactive``.
+
+    Merged (inactive) files are left out unless ``include_inactive``. Each row carries its
+    active default coverage valid today in ``default_coverages`` (prefetched, a list of 0 or
+    1): an expired or not yet valid card is not shown as the patient's coverage.
     """
-    term = _clean(query)
-    if not term:
-        return []
     base = Patient.objects.all()
     if not include_inactive:
         base = base.filter(is_active=True)
+    if incomplete_only:
+        base = base.filter(is_incomplete=True)
+    today = timezone.localdate()
+    base = base.prefetch_related(
+        Prefetch(
+            "coverages",
+            queryset=PatientCoverage.objects.filter(is_default=True, active=True)
+            .filter(
+                Q(valid_from__isnull=True) | Q(valid_from__lte=today),
+                Q(valid_to__isnull=True) | Q(valid_to__gte=today),
+            )
+            .select_related("payer"),
+            to_attr="default_coverages",
+        )
+    )
+    term = _clean(query)
+    if not term:
+        return base.order_by("-created_at", "-id")
 
     if _FILE_NO_RE.match(term):
-        return list(base.filter(file_no__iexact=term)[:limit])
+        return base.filter(file_no__iexact=term).order_by("-created_at", "-id")
 
     digits = normalize_phone(term)
     letters = re.sub(r"[\d\s+()\-]", "", term)
@@ -250,17 +289,27 @@ def search_patients(
         q = Q(file_no__endswith=digits)
         if len(digits) >= 4:
             q |= Q(phone_norm__contains=digits) | Q(phone_alt_norm__contains=digits)
-        return list(base.filter(q).order_by("-created_at", "-id")[:limit])
+        return base.filter(q).order_by("-created_at", "-id")
 
     folded = normalize_text(term)
     words = [w for w in folded.split(" ") if w]
     every_word = Q()
     for word in words:
         every_word &= Q(search_name__contains=word)
-    qs: QuerySet[Patient] = base.annotate(sim=TrigramSimilarity("search_name", folded)).filter(
-        every_word | Q(sim__gte=SEARCH_SIMILARITY)
+    return (
+        base.annotate(sim=TrigramSimilarity("search_name", folded))
+        .filter(every_word | Q(sim__gte=SEARCH_SIMILARITY))
+        .order_by("-sim", "-created_at", "-id")
     )
-    return list(qs.order_by("-sim", "-created_at", "-id")[:limit])
+
+
+def search_patients(
+    query: str, *, limit: int = 25, include_inactive: bool = False
+) -> list[Patient]:
+    """The first ``limit`` matches of :func:`search` (an empty query finds nothing)."""
+    if not _clean(query):
+        return []
+    return list(search(query, include_inactive=include_inactive)[:limit])
 
 
 # --- registration ---------------------------------------------------------------------------
@@ -476,7 +525,12 @@ def _snapshot(patient: Patient) -> dict[str, Any]:
 
 
 def merge_patients(
-    source: Patient, target: Patient, *, actor: User, reason_note: str
+    source: Patient,
+    target: Patient,
+    *,
+    actor: User,
+    reason_note: str,
+    reason: ReasonCode | None = None,
 ) -> PatientMerge:
     """Merge a duplicate ``source`` file into ``target`` (FEATURES 1.4, supervisor only).
 
@@ -545,7 +599,12 @@ def merge_patients(
         )
 
         return PatientMerge.objects.create(
-            source=src, target=tgt, reason_note=note, source_snapshot=snapshot, merged_by=actor
+            source=src,
+            target=tgt,
+            reason=reason,
+            reason_note=note,
+            source_snapshot=snapshot,
+            merged_by=actor,
         )
 
 
@@ -637,3 +696,173 @@ def coverages_valid_on(patient: Patient, on: date) -> Sequence[PatientCoverage]:
         )
         .select_related("payer")
     )
+
+
+def coverages(patient: Patient, *, include_inactive: bool = False) -> list[PatientCoverage]:
+    """The file's coverages, the default first (ended ones only with ``include_inactive``)."""
+    qs = PatientCoverage.objects.filter(patient=patient).select_related("payer")
+    if not include_inactive:
+        qs = qs.filter(active=True)
+    return list(qs.order_by("-active", "-is_default", "-created_at", "-id"))
+
+
+def active_payers() -> QuerySet[Payer]:
+    """Payers a coverage can be recorded with (FEATURES 1.6)."""
+    return Payer.objects.filter(active=True).order_by("code")
+
+
+_COVERAGE_EDITABLE = (
+    "card_number",
+    "member_name",
+    "relation",
+    "valid_from",
+    "valid_to",
+    "patient_percent_override",
+    "is_default",
+)
+
+
+def update_coverage(coverage: PatientCoverage, *, actor: User, **changes: Any) -> PatientCoverage:
+    """Edit a coverage on file (a renewed card, new validity dates, another default).
+
+    The payer never changes: end the coverage and add the new payer instead. Visits keep
+    the payer and card they were opened with.
+
+    Raises:
+        DomainError: ``FIELD_NOT_EDITABLE``, ``COVERAGE_ENDED``, ``CARD_NUMBER_REQUIRED``,
+            ``INVALID_DATE_RANGE``, ``INVALID_PERCENT``, ``PATIENT_MERGED``.
+    """
+    unknown = sorted(set(changes) - set(_COVERAGE_EDITABLE))
+    if unknown:
+        raise DomainError("FIELD_NOT_EDITABLE", "These fields cannot be edited", fields=unknown)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit coverage"):
+        patient = Patient.objects.select_for_update().get(pk=coverage.patient_id)
+        if patient.merged_into_id is not None:
+            raise DomainError("PATIENT_MERGED", "This file was merged into another file")
+        locked = (
+            PatientCoverage.objects.select_for_update().select_related("payer").get(pk=coverage.pk)
+        )
+        if not locked.active:
+            raise DomainError("COVERAGE_ENDED", "This coverage has ended")
+        for name, value in changes.items():
+            if name in ("card_number", "relation"):
+                value = (value or "").strip()
+            elif name == "member_name":
+                value = _clean(value or "")
+            elif name == "is_default":
+                value = bool(value)
+            setattr(locked, name, value)
+        if locked.payer.requires_card_number and not locked.card_number:
+            raise DomainError("CARD_NUMBER_REQUIRED", "This payer requires a card number")
+        if locked.valid_from and locked.valid_to and locked.valid_to < locked.valid_from:
+            raise DomainError("INVALID_DATE_RANGE", "Coverage ends before it starts")
+        pct = locked.patient_percent_override
+        if pct is not None and not (Decimal(0) <= Decimal(pct) <= Decimal(100)):
+            raise DomainError("INVALID_PERCENT", "Patient percent must be between 0 and 100")
+        if locked.is_default:
+            for old in PatientCoverage.objects.filter(
+                patient=patient, is_default=True, active=True
+            ).exclude(pk=locked.pk):
+                old.is_default = False
+                old.save(update_fields=["is_default", "updated_at"])
+        locked.save()
+    return locked
+
+
+# --- profile, merge history and balance -----------------------------------------------------
+
+#: Merges recorded before merge reasons became reason codes kept the code at the head of the
+#: note as ``"<CODE>: <note>"``.
+_LEGACY_MERGE_NOTE_RE = re.compile(r"^([A-Z_]+): (.*)$", re.DOTALL)
+
+
+@dataclass(frozen=True, slots=True)
+class AllergyView:
+    """An active allergy as the patient card shows it."""
+
+    label_ar: str
+    label_en: str
+    severity: str
+
+
+@dataclass(frozen=True, slots=True)
+class PatientProfile:
+    patient: Patient
+    merged_into: Patient | None
+    allergies: list[AllergyView]
+    default_coverage: PatientCoverage | None
+
+
+def _allergy_view(allergy: Any) -> AllergyView:
+    if allergy.drug_class is not None:
+        return AllergyView(allergy.drug_class.name_ar, allergy.drug_class.name_en, allergy.severity)
+    if allergy.item is not None:
+        name = allergy.item.generic_name
+        return AllergyView(name, name, allergy.severity)
+    return AllergyView(allergy.substance, allergy.substance, allergy.severity)
+
+
+def profile(patient: Patient) -> PatientProfile:
+    """A file as reception sees it: the file, the file it was merged into, the person's
+    active allergies (prominent on the card, FEATURES 3.1) and the default coverage."""
+    fresh = Patient.objects.get(pk=patient.pk)
+    survivor = resolve(fresh)
+    summary = importlib.import_module("apps.clinical.services").patient_summary(survivor)
+    return PatientProfile(
+        patient=fresh,
+        merged_into=survivor if survivor.pk != fresh.pk else None,
+        allergies=[_allergy_view(a) for a in summary.allergies],
+        default_coverage=active_coverage(fresh),
+    )
+
+
+def merge_reasons() -> QuerySet[ReasonCode]:
+    """The active ``patient_merge`` reason codes a supervisor picks from (FEATURES 1.4, 13.5)."""
+    return ReasonCode.objects.filter(category=ReasonCategory.PATIENT_MERGE, active=True).order_by(
+        "sort_order", "code"
+    )
+
+
+def merge_into(
+    target: Patient, *, duplicate: Patient, actor: User, reason_code: str, note: str
+) -> PatientMerge:
+    """Merge ``duplicate`` into the surviving file ``target`` with a reason code and note.
+
+    The reason is a configurable ``patient_merge`` reason code (invariant 4); a merge always
+    needs a note as well.
+
+    Raises:
+        PermissionDenied: the actor lacks ``patients.merge``.
+        DomainError: ``REASON_UNKNOWN``, ``REASON_REQUIRED`` and those of
+            :func:`merge_patients`.
+    """
+    require_permission(actor, "patients.merge")
+    reason = resolve_reason(reason_code, ReasonCategory.PATIENT_MERGE, note)
+    text = note.strip()
+    if not text:
+        raise DomainError("REASON_REQUIRED", "A merge needs a reason")
+    return merge_patients(duplicate, target, actor=actor, reason_note=text, reason=reason)
+
+
+def merge_reason(merge: PatientMerge) -> tuple[str, str]:
+    """The reason code and free text of a merge (code ``""`` for an old free-text note)."""
+    if getattr(merge, "reason_id", None) is not None and merge.reason is not None:
+        return merge.reason.code, merge.reason_note
+    found = _LEGACY_MERGE_NOTE_RE.match(merge.reason_note)
+    if found:
+        return found.group(1), found.group(2)
+    return "", merge.reason_note
+
+
+def merges(patient: Patient) -> list[PatientMerge]:
+    """Merges into or out of this file, newest first (the history kept by FEATURES 1.4)."""
+    return list(
+        PatientMerge.objects.filter(Q(source=patient) | Q(target=patient))
+        .select_related("source", "target", "merged_by", "reason")
+        .order_by("-merged_at", "-id")
+    )
+
+
+def balance(patient: Patient) -> Any:
+    """The person's credit, pending transfer money and open invoices (FEATURES 1.5)."""
+    return importlib.import_module("apps.payments.services").patient_balance(patient)

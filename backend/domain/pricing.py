@@ -139,7 +139,7 @@ def unit_price(versions: Iterable[PriceVersion], item: ItemKey, on: date) -> Dec
 
 
 def validate_new_version(
-    existing: Iterable[PriceVersion], effective_from: date, today: date
+    existing: Iterable[PriceVersion], effective_from: date, today: date, *, priced: bool = True
 ) -> None:
     """A new version starts tomorrow or later, on a date no other version uses.
 
@@ -148,7 +148,9 @@ def validate_new_version(
     version is already effective today: invoices approved earlier today froze that version's
     prices, and two prices would then claim to be "the list effective that day" (invariant
     6). Only the first version of a list that has nothing effective yet may start today (no
-    invoice can have been priced from it).
+    invoice can have been priced from it). Such a version must come with prices (``priced``):
+    it is effective, so read-only, at once, and an empty one would leave every service of the
+    list without a price until a later version starts (``PRICE_VERSION_EMPTY``).
     """
     versions = list(existing)
     started = [v for v in versions if v.effective_from <= today]
@@ -156,6 +158,12 @@ def validate_new_version(
         raise DomainError(
             "PRICE_VERSION_BACKDATED",
             "A new price list version starts tomorrow at the earliest",
+            effective_from=effective_from.isoformat(),
+        )
+    if effective_from == today and not priced:
+        raise DomainError(
+            "PRICE_VERSION_EMPTY",
+            "A version starting today needs prices; copy another list or start tomorrow",
             effective_from=effective_from.isoformat(),
         )
     if any(v.effective_from == effective_from for v in versions):

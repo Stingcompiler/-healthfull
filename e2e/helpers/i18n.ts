@@ -23,7 +23,8 @@ function namespace(lang: Lang, ns: string): unknown {
 
 /**
  * `tr("en", "errors:INVALID_CREDENTIALS")`, `tr("ar", "auth:login.lockedTitle")`.
- * Interpolation: `tr("en", "auth:login.lockedUntil", { time: "10:15" })`.
+ * Interpolation: `tr("en", "auth:login.lockedUntil", { time: "10:15" })`; a `{{name, bidi}}`
+ * placeholder is isolated like the UI does it.
  */
 export function tr(lang: Lang, key: string, vars: Record<string, string> = {}): string {
   const [ns, dotted] = key.includes(":") ? (key.split(":", 2) as [string, string]) : ["common", key];
@@ -35,5 +36,11 @@ export function tr(lang: Lang, key: string, vars: Record<string, string> = {}): 
     node = (node as Record<string, unknown>)[part];
   }
   if (typeof node !== "string") throw new Error(`Translation ${lang}:${key} is not a string`);
-  return node.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name: string) => vars[name] ?? `{{${name}}}`);
+  // `{{value, bidi}}` wraps the value in First Strong Isolate ... Pop Directional Isolate, as the
+  // app's bidi formatter does (frontend/src/i18n/index.ts).
+  return node.replace(/\{\{\s*(\w+)\s*(?:,\s*(\w+)\s*)?\}\}/g, (match, name: string, format?: string) => {
+    const value = vars[name];
+    if (value === undefined) return match;
+    return format === "bidi" ? `\u2068${value}\u2069` : value;
+  });
 }

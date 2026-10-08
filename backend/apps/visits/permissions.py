@@ -76,6 +76,13 @@ register_permission(
 )
 
 register_permission(
+    "visits.finish_consultation",
+    label_ar="إنهاء الكشف (يُسجَّل الكشف منفَّذاً)",
+    label_en="Finish a consultation (marks the consultation performed)",
+    default_roles={DOCTOR, ADMIN},
+)
+
+register_permission(
     "visits.manage_appointments",
     label_ar="إدارة المواعيد",
     label_en="Manage appointments",

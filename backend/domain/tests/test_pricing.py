@@ -105,6 +105,17 @@ def test_new_version_date_rules() -> None:
     assert exc.value.code == "PRICE_VERSION_DATE_TAKEN"
 
 
+def test_a_version_starting_today_needs_prices() -> None:
+    """It is effective (and read-only) at once: an empty one leaves the list unpriced."""
+    today = date(2026, 10, 7)
+    with pytest.raises(DomainError) as exc:
+        validate_new_version([], today, today, priced=False)
+    assert exc.value.code == "PRICE_VERSION_EMPTY"
+    # A future version may start empty: it is edited until it starts.
+    validate_new_version([], date(2026, 10, 8), today, priced=False)
+    validate_new_version([], today, today, priced=True)
+
+
 # --- rounding -------------------------------------------------------------------------
 
 

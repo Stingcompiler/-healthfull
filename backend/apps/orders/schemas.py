@@ -13,7 +13,7 @@ from typing import Any, Literal
 from ninja import Field, Schema
 
 from apps.catalog.models import Service
-from apps.clinical.schemas import ResultOut, UserRefOut, result_out, user_ref
+from apps.clinical.schemas import ClinicUserRefOut, ResultOut, result_out, user_ref
 from apps.orders.services import DoctorLine
 
 OrderableKind = Literal["lab", "procedure", "drug", "consumable"]
@@ -189,7 +189,7 @@ class AllergyOverrideOut(Schema):
     allergy_id: int
     match: str
     reason: str
-    overridden_by: UserRefOut | None
+    overridden_by: ClinicUserRefOut | None
     overridden_at: datetime
 
 
@@ -199,7 +199,7 @@ class CancellationOut(Schema):
     label_en: str
     note: str
     cancelled_at: datetime | None
-    cancelled_by: UserRefOut | None
+    cancelled_by: ClinicUserRefOut | None
 
 
 class DoctorLineOut(Schema):
@@ -217,7 +217,7 @@ class DoctorLineOut(Schema):
     authorized: bool
     can_withdraw: bool
     note: str
-    ordered_by: UserRefOut | None
+    ordered_by: ClinicUserRefOut | None
     ordered_at: datetime
     prescription: PrescriptionOut | None
     allergy_overrides: list[AllergyOverrideOut]
@@ -287,7 +287,7 @@ class WithdrawIn(Schema):
     note: str = Field("", max_length=500)
 
 
-class ReasonOut(Schema):
+class WithdrawReasonOut(Schema):
     code: str
     label_ar: str
     label_en: str

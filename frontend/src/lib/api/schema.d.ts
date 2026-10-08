@@ -129,6 +129,177 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Service categories */
+        get: operations["catalog_list_categories"];
+        put?: never;
+        /**
+         * Add a service category
+         * @description 409 INVALID_CODE, CATEGORY_CODE_TAKEN.
+         */
+        post: operations["catalog_create_category"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename, reorder or (de)activate a category */
+        patch: operations["catalog_update_category"];
+        trace?: never;
+    };
+    "/api/catalog/coverage/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Split of an example line under a rule being edited (e.g. 10,000 at 70%)
+         * @description Saves nothing. 409 COVERAGE_RULE_INCOMPLETE, INVALID_COVERAGE_RULE.
+         */
+        post: operations["catalog_preview_coverage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/exclusions/{exclusion_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit an exclusion's note or switch it on or off */
+        patch: operations["catalog_update_exclusion"];
+        trace?: never;
+    };
+    "/api/catalog/payers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payers with contract dates and price list (paged) */
+        get: operations["catalog_list_payers"];
+        put?: never;
+        /**
+         * Add a payer with its contract information
+         * @description 409 INVALID_CODE, PAYER_CODE_TAKEN, PAYER_CONTRACT_DATES, PRICE_LIST_INACTIVE, INVALID_EMAIL.
+         */
+        post: operations["catalog_create_payer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/payers/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active payers for pickers (no contract or contact details) */
+        get: operations["catalog_list_payer_options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/payers/{payer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One payer with its coverage rules and exclusions */
+        get: operations["catalog_get_payer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a payer's contract, price list, contact or active flag */
+        patch: operations["catalog_update_payer"];
+        trace?: never;
+    };
+    "/api/catalog/payers/{payer_id}/exclusions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Exclude a service or kind of service: 100% to the patient
+         * @description 409 EXCLUSION_SCOPE_REQUIRED, COVERAGE_SCOPE_INVALID, EXCLUSION_DUPLICATE.
+         */
+        post: operations["catalog_create_exclusion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/payers/{payer_id}/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a coverage rule for a service, a kind of service, or the payer default
+         * @description 409 COVERAGE_SCOPE_INVALID, COVERAGE_RULE_DUPLICATE, COVERAGE_RULE_INCOMPLETE, INVALID_COVERAGE_RULE, INVALID_AMOUNT.
+         */
+        post: operations["catalog_create_coverage_rule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/catalog/ping": {
         parameters: {
             query?: never;
@@ -139,6 +310,205 @@ export interface paths {
         /** Check that the /api/catalog router is reachable */
         get: operations["catalog_get_ping"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/price-lists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Price lists with their version timelines (current and scheduled versions) */
+        get: operations["catalog_list_price_lists"];
+        put?: never;
+        /**
+         * Add a price list (prices come in dated versions)
+         * @description 409 INVALID_CODE, PRICE_LIST_CODE_TAKEN.
+         */
+        post: operations["catalog_create_price_list"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/price-lists/{price_list_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One price list with its version timeline */
+        get: operations["catalog_get_price_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename or (de)activate a price list
+         * @description 409 PRICE_LIST_DEFAULT_REQUIRED, PRICE_LIST_IN_USE (an active payer uses it).
+         */
+        patch: operations["catalog_update_price_list"];
+        trace?: never;
+    };
+    "/api/catalog/price-lists/{price_list_id}/bulk-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Before and after prices of a bulk percentage update (saves nothing)
+         * @description Same base version, rounding and date rules as bulk-update. 409 PRICE_VERSION_BACKDATED, PRICE_VERSION_DATE_TAKEN, NO_EFFECTIVE_PRICE_LIST, INVALID_PERCENT, INVALID_ROUNDING_STEP.
+         */
+        post: operations["catalog_preview_bulk_update"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/price-lists/{price_list_id}/bulk-update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a new dated version with prices changed by a percentage
+         * @description The base version never changes. Errors as bulk-preview.
+         */
+        post: operations["catalog_apply_bulk_update"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/price-lists/{price_list_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a dated version, copying the version effective then (or copy_from_id)
+         * @description Editable until it starts. 409 PRICE_VERSION_BACKDATED (before tomorrow, except a list's first version today), PRICE_VERSION_DATE_TAKEN, PRICE_LIST_INACTIVE.
+         */
+        post: operations["catalog_create_price_version"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a rule's kind, amounts, pre-approval flag, note or active flag
+         * @description New amounts apply to invoices approved from now on (invariant 2).
+         */
+        patch: operations["catalog_update_coverage_rule"];
+        trace?: never;
+    };
+    "/api/catalog/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog services by text, kind, department, category and active flag (paged) */
+        get: operations["catalog_list_services"];
+        put?: never;
+        /**
+         * Add a catalog service (its kind never changes)
+         * @description 409 INVALID_CODE, SERVICE_CODE_TAKEN, SERVICE_NAME_REQUIRED, DEPARTMENT_INACTIVE, CATEGORY_INACTIVE.
+         */
+        post: operations["catalog_create_service"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/services/{service_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One catalog service */
+        get: operations["catalog_get_service"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a service's names, department, category, description, order or active flag */
+        patch: operations["catalog_update_service"];
+        trace?: never;
+    };
+    "/api/catalog/versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One price list version (status, editable, item count) */
+        get: operations["catalog_get_price_version"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/versions/{version_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prices of one version, by text and kind (paged) */
+        get: operations["catalog_list_price_items"];
+        /**
+         * Set or remove prices of a version that has not started yet
+         * @description null removes a service. 409 PRICE_VERSION_LOCKED once the version is effective (create a new version), INVALID_PRICE, INVALID_AMOUNT, SERVICE_UNKNOWN.
+         */
+        put: operations["catalog_set_price_items"];
         post?: never;
         delete?: never;
         options?: never;
@@ -642,6 +1012,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/center": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The center's name, address and registration numbers */
+        get: operations["core_get_center_profile"];
+        /** Save the center profile printed on documents */
+        put: operations["core_update_center_profile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The center logo image (any signed-in user: it is printed on documents) */
+        get: operations["core_get_center_logo"];
+        put?: never;
+        /**
+         * Upload the center logo (PNG, JPEG, GIF or WebP, at most 1 MB)
+         * @description Stored under MEDIA_ROOT. 409 LOGO_TOO_LARGE, LOGO_INVALID_TYPE.
+         */
+        post: operations["core_upload_center_logo"];
+        /** Remove the center logo */
+        delete: operations["core_delete_center_logo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/departments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Departments with their room and active doctor counts (catalog reference data) */
+        get: operations["core_list_departments"];
+        put?: never;
+        /**
+         * Add a department
+         * @description 409 INVALID_CODE, DEPARTMENT_CODE_TAKEN.
+         */
+        post: operations["core_create_department"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/departments/{department_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename, reorder or (de)activate a department */
+        patch: operations["core_update_department"];
+        trace?: never;
+    };
+    "/api/core/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Doctors with department, specialty, consultation fee service and weekly hours */
+        get: operations["core_list_doctors"];
+        put?: never;
+        /**
+         * Give a user with the doctor role a clinical profile
+         * @description 409 DOCTOR_ROLE_REQUIRED, DOCTOR_PROFILE_EXISTS, DEPARTMENT_INACTIVE, CONSULTATION_SERVICE_INVALID.
+         */
+        post: operations["core_create_doctor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/doctors/{doctor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a doctor's department, specialty, fee service or active flag */
+        patch: operations["core_update_doctor"];
+        trace?: never;
+    };
+    "/api/core/doctors/{doctor_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace a doctor's weekly clinic hours
+         * @description Sessions of one weekday never overlap. 409 SCHEDULE_INVALID_SPAN, SCHEDULE_INVALID_SLOT, SCHEDULE_OVERLAP, SCHEDULE_TOO_LONG, ROOM_INACTIVE.
+         */
+        put: operations["core_set_doctor_schedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/permissions/matrix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every permission code and the roles that grant it */
+        get: operations["core_get_permission_matrix"];
+        /**
+         * Grant or revoke permissions per role, with a reason (audited)
+         * @description Only the cells sent change. 409 REASON_REQUIRED, PERMISSION_UNKNOWN, ROLE_UNKNOWN, MATRIX_CHANGE_CONFLICT, PERMISSION_PROTECTED (admin keeps core.manage_users and core.manage_roles).
+         */
+        put: operations["core_update_permission_matrix"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/core/ping": {
         parameters: {
             query?: never;
@@ -659,6 +1186,296 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Center-wide policy switches */
+        get: operations["core_get_policy"];
+        /**
+         * Save the policy switches (pay-first stays on: invariant 1)
+         * @description 422 VALIDATION_ERROR with details.fields for out-of-range values.
+         */
+        put: operations["core_update_policy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/print-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Header, footer and logo switch of every printed document per paper size */
+        get: operations["core_list_print_templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/print-templates/{document}/{paper}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save the header, footer and logo switch of one document on one paper size */
+        put: operations["core_save_print_template"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/reason-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reason codes by category (any signed-in user: every reason dialog reads them) */
+        get: operations["core_list_reason_codes"];
+        put?: never;
+        /**
+         * Add a reason code to a category
+         * @description 409 INVALID_CODE, REASON_CATEGORY_UNKNOWN, REASON_CODE_TAKEN.
+         */
+        post: operations["core_create_reason_code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/reason-codes/{reason_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit labels, note flag, order or active flag of a reason code
+         * @description 409 REASON_CATEGORY_EMPTY: each category keeps one active reason.
+         */
+        patch: operations["core_update_reason_code"];
+        trace?: never;
+    };
+    "/api/core/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Roles with how many active users hold each */
+        get: operations["core_list_roles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rooms, optionally of one department */
+        get: operations["core_list_rooms"];
+        put?: never;
+        /**
+         * Add a room
+         * @description 409 INVALID_CODE, ROOM_CODE_TAKEN, DEPARTMENT_INACTIVE.
+         */
+        post: operations["core_create_room"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/rooms/{room_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename, move or (de)activate a room */
+        patch: operations["core_update_room"];
+        trace?: never;
+    };
+    "/api/core/sequences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Document numbering counters of a year (last and next number per type) */
+        get: operations["core_list_sequences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff accounts, filtered by text, role and active flag (paged) */
+        get: operations["core_list_users"];
+        put?: never;
+        /**
+         * Create a staff account with roles and a temporary password
+         * @description The account must change its password at first login. 409 INVALID_USERNAME, USERNAME_TAKEN, ROLE_REQUIRED, ROLE_UNKNOWN, PASSWORD_INVALID (details.messages).
+         */
+        post: operations["core_create_user"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One staff account */
+        get: operations["core_get_user"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit names, phone, active flag and roles
+         * @description 409 SUPERUSER_PROTECTED, CANNOT_DEACTIVATE_SELF, ROLE_REQUIRED, LAST_ADMIN (the last active administrator cannot be deactivated or lose the admin role).
+         */
+        patch: operations["core_update_user"];
+        trace?: never;
+    };
+    "/api/core/users/{user_id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a temporary password; the user must change it at next login
+         * @description Ends the user's sessions. 409 SUPERUSER_PROTECTED, PASSWORD_INVALID.
+         */
+        post: operations["core_reset_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{user_id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clear a login lockout, with a reason (audited)
+         * @description 409 REASON_REQUIRED, SUPERUSER_PROTECTED, USER_NOT_LOCKED.
+         */
+        post: operations["core_unlock_user"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/patients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a patient sheet: validate every row and flag duplicates (nothing saved)
+         * @description Excel (.xlsx) or CSV, first sheet, header row in Arabic or English. 409 IMPORT_FILE_INVALID, IMPORT_FILE_TOO_LARGE, IMPORT_HEADERS_MISSING, IMPORT_NO_ROWS, IMPORT_TOO_MANY_ROWS.
+         */
+        post: operations["imports_preview_patients"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/patients/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An empty patient import sheet (.xlsx) with the header row
+         * @description The response is the .xlsx file itself (attachment).
+         */
+        get: operations["imports_get_patient_template"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/ping": {
         parameters: {
             query?: never;
@@ -668,6 +1485,80 @@ export interface paths {
         };
         /** Check that the /api/imports router is reachable */
         get: operations["imports_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An import job with its row counts */
+        get: operations["imports_get_job"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Drop a preview without importing
+         * @description 409 IMPORT_JOB_CLOSED.
+         */
+        post: operations["imports_cancel_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/{job_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register the valid rows (and, if asked, the possible duplicates)
+         * @description 409 IMPORT_JOB_CLOSED.
+         */
+        post: operations["imports_confirm_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/{job_id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The rows of an import in sheet order (paged, filtered by status) */
+        get: operations["imports_list_rows"];
         put?: never;
         post?: never;
         delete?: never;
@@ -868,6 +1759,132 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/patients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search patient files by name, phone or file number (paged)
+         * @description Arabic spelling variants are folded (أ/إ/آ, ة/ه, ى/ي, diacritics) and names also match by similarity. A file number matches exactly; digits match phone numbers and the end of file numbers. Without q: newest files first.
+         */
+        get: operations["patients_list_patients"];
+        put?: never;
+        /**
+         * Register a patient file
+         * @description 409 DUPLICATE_PATIENT with details.candidates [{id, file_no, reasons}] when similar files exist; send confirm_not_duplicate=true to register anyway. 409 NATIONAL_ID_TAKEN, NAME_REQUIRED, INVALID_DATE_OF_BIRTH, INVALID_AGE.
+         */
+        post: operations["patients_create_patient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/coverages/{coverage_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a coverage on file (card, validity, member share, default) */
+        patch: operations["patients_update_coverage"];
+        trace?: never;
+    };
+    "/api/patients/coverages/{coverage_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End a coverage on file (kept in history) */
+        post: operations["patients_end_coverage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Files that may be the same person (live duplicate warning) */
+        get: operations["patients_find_duplicates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/emergency": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Emergency registration with a name and sex only (flagged incomplete) */
+        post: operations["patients_register_emergency"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/merge-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The reason codes a supervisor gives for merging two files */
+        get: operations["patients_list_merge_reasons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/payers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active payers a coverage can be recorded with */
+        get: operations["patients_list_payers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/patients/ping": {
         parameters: {
             query?: never;
@@ -877,6 +1894,99 @@ export interface paths {
         };
         /** Check that the /api/patients router is reachable */
         get: operations["patients_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/{patient_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A patient file with its allergies and the file it was merged into */
+        get: operations["patients_get_patient"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a patient file (completes an emergency file) */
+        patch: operations["patients_update_patient"];
+        trace?: never;
+    };
+    "/api/patients/{patient_id}/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Patient credit, pending transfers and open invoices of the person */
+        get: operations["patients_get_balance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/{patient_id}/coverages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Coverages on file, the default first */
+        get: operations["patients_list_coverages"];
+        put?: never;
+        /**
+         * Record a payer on the patient's file
+         * @description 409 PAYER_INACTIVE, CARD_NUMBER_REQUIRED, INVALID_DATE_RANGE, INVALID_PERCENT.
+         */
+        post: operations["patients_create_coverage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/{patient_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge a duplicate file into this one (supervisor, with a reason)
+         * @description The duplicate stays as an inactive file pointing here; nothing is deleted and money does not move. 409 REASON_UNKNOWN, REASON_REQUIRED, REASON_NOTE_REQUIRED, MERGE_SAME_FILE, PATIENT_MERGED.
+         */
+        post: operations["patients_merge_patient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patients/{patient_id}/merges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Merges into or out of this file, newest first */
+        get: operations["patients_list_merges"];
         put?: never;
         post?: never;
         delete?: never;
@@ -953,6 +2063,195 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Visits, newest first: of a patient, a day, a department or a doctor (paged) */
+        get: operations["visits_list_visits"];
+        put?: never;
+        /**
+         * Open a visit with its consultation line and queue token
+         * @description A visit with the same doctor (or department) inside the follow-up window becomes a follow-up (free at 100% follow-up discount: no consultation line). 409 PATIENT_MERGED, DEPARTMENT_REQUIRED, DOCTOR_INACTIVE, COVERAGE_INVALID, CARD_NUMBER_REQUIRED, PAYER_CONTRACT_EXPIRED.
+         */
+        post: operations["visits_create_visit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Book a slot with a doctor (for a patient or a named caller)
+         * @description 409 APPOINTMENT_CONFLICT (details.appointments), OUTSIDE_SCHEDULE, INVALID_SLOT, APPOINTMENT_IN_PAST, PATIENT_OR_CONTACT_REQUIRED, DOCTOR_INACTIVE.
+         */
+        post: operations["visits_book_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/appointments/day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A doctor's day: free slots still ahead and every appointment
+         * @description Read-only: every holder of visits.view (doctors see their own day).
+         */
+        get: operations["visits_get_agenda"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/appointments/upcoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Booked appointments of a patient that have not ended yet */
+        get: operations["visits_list_upcoming_appointments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/appointments/{appointment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a booking's notes or caller details */
+        patch: operations["visits_update_appointment"];
+        trace?: never;
+    };
+    "/api/visits/appointments/{appointment_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a booking with a reason code and the caller's words
+         * @description 409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.
+         */
+        post: operations["visits_cancel_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/appointments/{appointment_id}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The patient arrived: open the visit from the booking
+         * @description A booking for a caller without a file needs patient_id. 409 APPOINTMENT_NOT_BOOKED, PATIENT_REQUIRED, APPOINTMENT_PATIENT_MISMATCH and the create-visit errors.
+         */
+        post: operations["visits_check_in_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/appointments/{appointment_id}/no-show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The patient did not come */
+        post: operations["visits_mark_appointment_no_show"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/appointments/{appointment_id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a booking to another slot (the old one is kept as rescheduled)
+         * @description 409 APPOINTMENT_NOT_BOOKED, APPOINTMENT_CONFLICT, OUTSIDE_SCHEDULE.
+         */
+        post: operations["visits_reschedule_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Departments, doctors, cancel reasons and the follow-up window */
+        get: operations["visits_get_options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/visits/ping": {
         parameters: {
             query?: never;
@@ -970,10 +2269,188 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/queue/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's tokens in serving order, paid or not (reception board) */
+        get: operations["visits_get_board"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/queue/call-next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Call the first paid waiting token of the department
+         * @description Emergencies first, then token order; unpaid tokens are skipped. 409 QUEUE_EMPTY.
+         */
+        post: operations["visits_call_next"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/queue/display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Waiting-room screen feed: paid tokens, abbreviated names */
+        get: operations["visits_get_display"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/queue/{entry_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Call, start, finish, mark no-show or requeue a token
+         * @description finish performs the consultation line and needs visits.finish_consultation (403). 409 QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY (fee neither paid nor authorized).
+         */
+        post: operations["visits_move_queue_entry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/queue/{entry_id}/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the 80 mm queue token slip prints */
+        get: operations["visits_get_token_slip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit with its service line states (no prices) and its queue token */
+        get: operations["visits_get_visit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/{visit_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel an open visit with a reason (paid lines go through a credit note)
+         * @description Open lines are cancelled; invoiced or paid lines get an approved credit note and the patient money becomes refundable credit (the actor needs billing.approve_credit_note then). 409 VISIT_NOT_OPEN, VISIT_HAS_PERFORMED_WORK, REASON_UNKNOWN, REASON_NOTE_REQUIRED.
+         */
+        post: operations["visits_cancel_visit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/{visit_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everything linked to the visit, oldest first
+         * @description Orders, results, dispenses, admission and closing for every reader; invoices, payments, credit notes and refunds only for holders of billing.view.
+         */
+        get: operations["visits_get_timeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActiveParams */
+        ActiveParams: {
+            /** Active */
+            active?: boolean | null;
+        };
+        /** AgendaItemOut */
+        AgendaItemOut: {
+            /** @description null = a free slot */
+            appointment: components["schemas"]["AppointmentOut"] | null;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /** AgendaParams */
+        AgendaParams: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Doctor Id */
+            doctor_id: number;
+        };
         /**
          * AllergyChipOut
          * @description An active allergy as a prominent chip (PatientCard).
@@ -1024,39 +2501,12 @@ export interface components {
         };
         /** AllergyOut */
         AllergyOut: {
-            /**
-             * Allergen Type
-             * @enum {string}
-             */
-            allergen_type: "drug" | "drug_class" | "food" | "environmental" | "other";
-            drug_class: components["schemas"]["DrugClassOut"] | null;
-            /** Id */
-            id: number;
             /** Label Ar */
             label_ar: string;
             /** Label En */
             label_en: string;
-            /** Note */
-            note: string;
-            /** Reaction */
-            reaction: string;
-            /**
-             * Recorded At
-             * Format: date-time
-             */
-            recorded_at: string;
-            /**
-             * Severity
-             * @enum {string}
-             */
-            severity: "mild" | "moderate" | "severe" | "life_threatening";
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "active" | "inactive" | "entered_in_error";
-            /** Substance */
-            substance: string;
+            /** Severity */
+            severity: string;
         };
         /** AllergyOverrideOut */
         AllergyOverrideOut: {
@@ -1069,7 +2519,7 @@ export interface components {
              * Format: date-time
              */
             overridden_at: string;
-            overridden_by: components["schemas"]["UserRefOut"] | null;
+            overridden_by: components["schemas"]["ClinicUserRefOut"] | null;
             /** Reason */
             reason: string;
         };
@@ -1084,11 +2534,246 @@ export interface components {
             /** Status */
             status?: ("active" | "inactive" | "entered_in_error") | null;
         };
+        /**
+         * AppointmentCancelIn
+         * @description Cancel with an ``appointment_cancel`` reason code (invariant 4) and the caller's words.
+         */
+        AppointmentCancelIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason Code */
+            reason_code: string;
+        };
+        /** AppointmentIn */
+        AppointmentIn: {
+            /**
+             * Contact Name
+             * @default
+             */
+            contact_name: string;
+            /**
+             * Contact Phone
+             * @default
+             */
+            contact_phone: string;
+            /** Doctor Id */
+            doctor_id: number;
+            /**
+             * Ends At
+             * @description Default: the schedule's slot length
+             */
+            ends_at?: string | null;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Patient Id */
+            patient_id?: number | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /** AppointmentOut */
+        AppointmentOut: {
+            /** Cancel Note */
+            cancel_note: string;
+            cancel_reason: components["schemas"]["ReasonOut"] | null;
+            /** Contact Name */
+            contact_name: string;
+            /** Contact Phone */
+            contact_phone: string;
+            department: components["schemas"]["DepartmentOut"];
+            doctor: components["schemas"]["DoctorOut"];
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Id */
+            id: number;
+            /** Notes */
+            notes: string;
+            patient: components["schemas"]["PatientBriefOut"] | null;
+            /** Rescheduled From Id */
+            rescheduled_from_id: number | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "booked" | "arrived" | "cancelled" | "no_show" | "rescheduled";
+            /**
+             * Visit Id
+             * @description The visit opened at check-in
+             */
+            visit_id: number | null;
+        };
+        /** AppointmentPatch */
+        AppointmentPatch: {
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * BalanceOut
+         * @description The person's money position (FEATURES 1.5); decimal strings in SDG.
+         */
+        BalanceOut: {
+            /**
+             * Credit
+             * @description Patient credit (negative: the patient owes it)
+             */
+            credit: string;
+            /** Invoices */
+            invoices: components["schemas"]["OpenInvoiceOut"][];
+            /**
+             * Net
+             * @description outstanding - credit; positive: the patient owes
+             */
+            net: string;
+            /**
+             * Outstanding
+             * @description Patient share still owed on approved invoices
+             */
+            outstanding: string;
+            /**
+             * Pending
+             * @description Unallocated transfer money awaiting verification
+             */
+            pending: string;
+            /**
+             * Spendable
+             * @description Credit that may be spent or refunded now
+             */
+            spendable: string;
+        };
+        /** BoardParams */
+        BoardParams: {
+            /** Department Id */
+            department_id?: number | null;
+            /** Doctor Id */
+            doctor_id?: number | null;
+            /**
+             * Include Finished
+             * @default false
+             */
+            include_finished: boolean;
+        };
+        /**
+         * BulkPreviewOut
+         * @description Built from ``services.BulkPreview``.
+         */
+        BulkPreviewOut: {
+            base_version: components["schemas"]["VersionOut"];
+            /** Changed Count */
+            changed_count: number;
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /** Percent */
+            percent: string;
+            /** Rows */
+            rows: components["schemas"]["BulkPreviewRowOut"][];
+        };
+        /**
+         * BulkPreviewRowOut
+         * @description Built from ``services.BulkPreviewRow``.
+         */
+        BulkPreviewRowOut: {
+            /** Changed */
+            changed: boolean;
+            /**
+             * New Price
+             * @example 15000.00
+             */
+            new_price: string;
+            /**
+             * Old Price
+             * @example 15000.00
+             */
+            old_price: string;
+            /** Service Code */
+            service_code: string;
+            /** Service Id */
+            service_id: number;
+            /**
+             * Service Kind
+             * @enum {string}
+             */
+            service_kind: "consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed";
+            /** Service Name Ar */
+            service_name_ar: string;
+            /** Service Name En */
+            service_name_en: string;
+        };
+        /** BulkUpdateIn */
+        BulkUpdateIn: {
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /**
+             * Kinds
+             * @description Only these kinds change
+             */
+            kinds?: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed")[] | null;
+            /**
+             * Mode
+             * @default half_up
+             * @enum {string}
+             */
+            mode: "half_up" | "up" | "down";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Percent
+             * @description e.g. 10 for +10%, -5 for -5%
+             * @example 10
+             * @example -5.5
+             */
+            percent: string;
+            /** Service Ids */
+            service_ids?: number[] | null;
+            /**
+             * Step
+             * @description Round new prices to a multiple of this
+             * @default 0.01
+             * @example 15000
+             * @example 2500.50
+             */
+            step: string;
+        };
+        /** CallNextIn */
+        CallNextIn: {
+            /** Department Id */
+            department_id: number;
+            /** Doctor Id */
+            doctor_id?: number | null;
+        };
         /** CancellationOut */
         CancellationOut: {
             /** Cancelled At */
             cancelled_at: string | null;
-            cancelled_by: components["schemas"]["UserRefOut"] | null;
+            cancelled_by: components["schemas"]["ClinicUserRefOut"] | null;
             /** Label Ar */
             label_ar: string;
             /** Label En */
@@ -1113,12 +2798,190 @@ export interface components {
              */
             q: string;
         };
+        /** CategoryIn */
+        CategoryIn: {
+            /** Code */
+            code: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** CategoryOut */
+        CategoryOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /** CategoryPatch */
+        CategoryPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Name Ar */
+            name_ar?: string | null;
+            /** Name En */
+            name_en?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** CenterOut */
+        CenterOut: {
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+        };
+        /** CenterProfileIn */
+        CenterProfileIn: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Digits
+             * @default latin
+             * @enum {string}
+             */
+            digits: "latin" | "arabic";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Registration No
+             * @default
+             */
+            registration_no: string;
+            /**
+             * Tax No
+             * @default
+             */
+            tax_no: string;
+        };
+        /** CenterProfileOut */
+        CenterProfileOut: {
+            /** Address */
+            address: string;
+            /**
+             * Digits
+             * @enum {string}
+             */
+            digits: "latin" | "arabic";
+            /** Has Logo */
+            has_logo: boolean;
+            /**
+             * Logo Url
+             * @description Changes whenever the logo changes
+             */
+            logo_url: string | null;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+            /** Registration No */
+            registration_no: string;
+            /** Tax No */
+            tax_no: string;
+            /** Updated At */
+            updated_at: string | null;
+        };
         /** ChangePasswordIn */
         ChangePasswordIn: {
             /** New Password */
             new_password: string;
             /** Old Password */
             old_password: string;
+        };
+        /**
+         * CheckInIn
+         * @description Open the visit of a booking on arrival (a caller without a file names one).
+         */
+        CheckInIn: {
+            /**
+             * Card Number
+             * @default
+             */
+            card_number: string;
+            /**
+             * Chief Complaint
+             * @default
+             */
+            chief_complaint: string;
+            /** Coverage Id */
+            coverage_id?: number | null;
+            /** Patient Id */
+            patient_id?: number | null;
+            /**
+             * Use Default Coverage
+             * @default true
+             */
+            use_default_coverage: boolean;
+        };
+        /** ClinicPatientOut */
+        ClinicPatientOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** Dob Is Estimated */
+            dob_is_estimated: boolean;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Is Incomplete */
+            is_incomplete: boolean;
+            /** Phone */
+            phone: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "male" | "female";
+        };
+        /** ClinicPayerRefOut */
+        ClinicPayerRefOut: {
+            /** Code */
+            code: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** ClinicUserRefOut */
+        ClinicUserRefOut: {
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
         };
         /** ConditionIn */
         ConditionIn: {
@@ -1165,6 +3028,316 @@ export interface components {
             note?: string | null;
             /** Status */
             status?: ("active" | "inactive" | "entered_in_error") | null;
+        };
+        /** ConfirmIn */
+        ConfirmIn: {
+            /**
+             * Include Duplicates
+             * @description Also register the rows flagged as possible duplicates
+             * @default false
+             */
+            include_duplicates: boolean;
+        };
+        /**
+         * CoverageBriefOut
+         * @description The default coverage shown beside a patient's name.
+         */
+        CoverageBriefOut: {
+            /** Card Number */
+            card_number: string;
+            /** Id */
+            id: number;
+            /** Payer Code */
+            payer_code: string;
+            /** Payer Id */
+            payer_id: number;
+            /** Payer Name Ar */
+            payer_name_ar: string;
+            /** Payer Name En */
+            payer_name_en: string;
+        };
+        /** CoverageIn */
+        CoverageIn: {
+            /**
+             * Card Number
+             * @default
+             */
+            card_number: string;
+            /**
+             * Is Default
+             * @default true
+             */
+            is_default: boolean;
+            /**
+             * Member Name
+             * @default
+             */
+            member_name: string;
+            /** Patient Percent Override */
+            patient_percent_override?: number | string | null;
+            /** Payer Id */
+            payer_id: number;
+            /**
+             * Relation
+             * @default
+             */
+            relation: string;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid To */
+            valid_to?: string | null;
+        };
+        /** CoverageListParams */
+        CoverageListParams: {
+            /**
+             * Include Inactive
+             * @default false
+             */
+            include_inactive: boolean;
+        };
+        /** CoverageOut */
+        CoverageOut: {
+            /** Active */
+            active: boolean;
+            /** Card Number */
+            card_number: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Is Default */
+            is_default: boolean;
+            /** Member Name */
+            member_name: string;
+            /** Patient Id */
+            patient_id: number;
+            /**
+             * Patient Percent Override
+             * @description Patient share percent for this member (decimal string); null = payer rule
+             */
+            patient_percent_override: string | null;
+            payer: components["schemas"]["PayerOut"];
+            /** Relation */
+            relation: string;
+            /** Valid From */
+            valid_from: string | null;
+            /** Valid To */
+            valid_to: string | null;
+        };
+        /** CoveragePatch */
+        CoveragePatch: {
+            /** Card Number */
+            card_number?: string | null;
+            /** Is Default */
+            is_default?: boolean | null;
+            /** Member Name */
+            member_name?: string | null;
+            /** Patient Percent Override */
+            patient_percent_override?: number | string | null;
+            /** Relation */
+            relation?: string | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid To */
+            valid_to?: string | null;
+        };
+        /** CoveragePreviewIn */
+        CoveragePreviewIn: {
+            /** Ceiling Amount */
+            ceiling_amount?: string | null;
+            /** Copay Amount */
+            copay_amount?: string | null;
+            /**
+             * Gross
+             * @description Example line amount
+             * @default 10000
+             * @example 15000
+             * @example 2500.50
+             */
+            gross: string;
+            /** Payer Percent */
+            payer_percent?: string | null;
+            /**
+             * Rule Kind
+             * @enum {string}
+             */
+            rule_kind: "percentage" | "copay" | "ceiling";
+        };
+        /** CoveragePreviewOut */
+        CoveragePreviewOut: {
+            /**
+             * Gross
+             * @example 15000.00
+             */
+            gross: string;
+            /**
+             * Patient Share
+             * @example 15000.00
+             */
+            patient_share: string;
+            /**
+             * Payer Share
+             * @example 15000.00
+             */
+            payer_share: string;
+        };
+        /** CoverageRuleIn */
+        CoverageRuleIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Ceiling Amount */
+            ceiling_amount?: string | null;
+            /** Copay Amount */
+            copay_amount?: string | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Payer Percent */
+            payer_percent?: string | null;
+            /**
+             * Requires Pre Approval
+             * @default false
+             */
+            requires_pre_approval: boolean;
+            /**
+             * Rule Kind
+             * @enum {string}
+             */
+            rule_kind: "percentage" | "copay" | "ceiling";
+            /**
+             * Service Id
+             * @description Scope: one service
+             */
+            service_id?: number | null;
+            /**
+             * Service Kind
+             * @description Scope: a kind of service
+             */
+            service_kind?: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed") | null;
+        };
+        /** CoverageRuleOut */
+        CoverageRuleOut: {
+            /** Active */
+            active: boolean;
+            /** Ceiling Amount */
+            ceiling_amount: string | null;
+            /** Copay Amount */
+            copay_amount: string | null;
+            /** Id */
+            id: number;
+            /** Note */
+            note: string;
+            /** Payer Percent */
+            payer_percent: string | null;
+            /** Requires Pre Approval */
+            requires_pre_approval: boolean;
+            /**
+             * Rule Kind
+             * @enum {string}
+             */
+            rule_kind: "percentage" | "copay" | "ceiling";
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "service" | "kind" | "default";
+            /** Service Code */
+            service_code: string | null;
+            /** Service Id */
+            service_id: number | null;
+            /**
+             * Service Kind
+             * @description Scope when no service
+             */
+            service_kind: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed") | null;
+            /** Service Name Ar */
+            service_name_ar: string | null;
+            /** Service Name En */
+            service_name_en: string | null;
+        };
+        /** CoverageRulePatch */
+        CoverageRulePatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Ceiling Amount */
+            ceiling_amount?: string | null;
+            /** Copay Amount */
+            copay_amount?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Payer Percent */
+            payer_percent?: string | null;
+            /** Requires Pre Approval */
+            requires_pre_approval?: boolean | null;
+            /** Rule Kind */
+            rule_kind?: ("percentage" | "copay" | "ceiling") | null;
+        };
+        /** DayAgendaOut */
+        DayAgendaOut: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            doctor: components["schemas"]["DoctorOut"];
+            /** Items */
+            items: components["schemas"]["AgendaItemOut"][];
+            /** Works */
+            works: boolean;
+        };
+        /** DepartmentIn */
+        DepartmentIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** DepartmentListParams */
+        DepartmentListParams: {
+            /** Active */
+            active?: boolean | null;
+        };
+        /** DepartmentOut */
+        DepartmentOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** DepartmentPatch */
+        DepartmentPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Name Ar */
+            name_ar?: string | null;
+            /** Name En */
+            name_en?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
         };
         /** DepartmentRefOut */
         DepartmentRefOut: {
@@ -1221,9 +3394,60 @@ export interface components {
              * Format: date-time
              */
             recorded_at: string;
-            recorded_by: components["schemas"]["UserRefOut"] | null;
+            recorded_by: components["schemas"]["ClinicUserRefOut"] | null;
             /** Text */
             text: string;
+        };
+        /**
+         * DisplayEntryOut
+         * @description A token on the waiting-room screen: abbreviated name only.
+         */
+        DisplayEntryOut: {
+            /** Called At */
+            called_at: string | null;
+            department: components["schemas"]["DepartmentOut"];
+            doctor: components["schemas"]["DoctorOut"] | null;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            room: components["schemas"]["RoomOut"] | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "waiting" | "called" | "in_progress" | "done" | "no_show" | "cancelled";
+            /** Token No */
+            token_no: number;
+        };
+        /** DisplayParams */
+        DisplayParams: {
+            /** Department Id */
+            department_id?: number | null;
+        };
+        /** DoctorIn */
+        DoctorIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Consultation Service Id */
+            consultation_service_id?: number | null;
+            /** Department Id */
+            department_id: number;
+            /**
+             * Specialty Ar
+             * @default
+             */
+            specialty_ar: string;
+            /**
+             * Specialty En
+             * @default
+             */
+            specialty_en: string;
+            /** User Id */
+            user_id: number;
         };
         /**
          * DoctorLineOut
@@ -1255,7 +3479,7 @@ export interface components {
              * Format: date-time
              */
             ordered_at: string;
-            ordered_by: components["schemas"]["UserRefOut"] | null;
+            ordered_by: components["schemas"]["ClinicUserRefOut"] | null;
             prescription: components["schemas"]["PrescriptionOut"] | null;
             /** Quantity */
             quantity: string;
@@ -1271,6 +3495,43 @@ export interface components {
             status: "requested" | "paid" | "in_progress" | "done" | "cancelled";
             /** Visit Id */
             visit_id: number;
+        };
+        /** DoctorListParams */
+        DoctorListParams: {
+            /** Active */
+            active?: boolean | null;
+            /** Department Id */
+            department_id?: number | null;
+        };
+        /** DoctorOut */
+        DoctorOut: {
+            /** Department Id */
+            department_id: number;
+            /** Has Consultation Fee */
+            has_consultation_fee: boolean;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Specialty Ar */
+            specialty_ar: string;
+            /** Specialty En */
+            specialty_en: string;
+        };
+        /** DoctorPatch */
+        DoctorPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Consultation Service Id */
+            consultation_service_id?: number | null;
+            /** Department Id */
+            department_id?: number | null;
+            /** Specialty Ar */
+            specialty_ar?: string | null;
+            /** Specialty En */
+            specialty_en?: string | null;
         };
         /** DoctorRefOut */
         DoctorRefOut: {
@@ -1322,6 +3583,75 @@ export interface components {
             /** Strength */
             strength: string;
         };
+        /** DuplicateOut */
+        DuplicateOut: {
+            patient: components["schemas"]["PatientListOut"];
+            /** Reasons */
+            reasons: ("phone" | "national_id" | "name_dob")[];
+            /**
+             * Similarity
+             * @description Name similarity 0-1 (name_dob matches)
+             */
+            similarity: number;
+        };
+        /**
+         * DuplicateParams
+         * @description What the registration form has typed so far (live duplicate warning, FEATURES 1.3).
+         */
+        DuplicateParams: {
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /**
+             * Exclude Id
+             * @description The file being edited
+             */
+            exclude_id?: number | null;
+            /**
+             * Full Name Ar
+             * @default
+             */
+            full_name_ar: string;
+            /**
+             * Full Name En
+             * @default
+             */
+            full_name_en: string;
+            /**
+             * National Id
+             * @default
+             */
+            national_id: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Phone Alt
+             * @default
+             */
+            phone_alt: string;
+        };
+        /**
+         * EmergencyIn
+         * @description Emergency registration with a name (or a placeholder) and sex only (FEATURES 1.2).
+         */
+        EmergencyIn: {
+            /** Age Years */
+            age_years?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "male" | "female" | "unknown";
+        };
         /**
          * ErrorOut
          * @description Body of every non-2xx response.
@@ -1369,6 +3699,44 @@ export interface components {
             quantity: number;
             /** Service Id */
             service_id: number;
+        };
+        /** ExclusionIn */
+        ExclusionIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Service Id */
+            service_id?: number | null;
+            /** Service Kind */
+            service_kind?: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed") | null;
+        };
+        /** ExclusionOut */
+        ExclusionOut: {
+            /** Active */
+            active: boolean;
+            /** Id */
+            id: number;
+            /** Note */
+            note: string;
+            /** Service Code */
+            service_code: string | null;
+            /** Service Id */
+            service_id: number | null;
+            /** Service Kind */
+            service_kind: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed") | null;
+            /** Service Name Ar */
+            service_name_ar: string | null;
+            /** Service Name En */
+            service_name_en: string | null;
+        };
+        /** ExclusionPatch */
+        ExclusionPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Note */
+            note?: string | null;
         };
         /** FrequencyOut */
         FrequencyOut: {
@@ -1446,12 +3814,181 @@ export interface components {
             /** Q */
             q: string;
         };
+        /** ImportJobOut */
+        ImportJobOut: {
+            /** Confirmed At */
+            confirmed_at: string | null;
+            confirmed_by: components["schemas"]["UserRefOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Duplicate Rows */
+            duplicate_rows: number;
+            /** Error Rows */
+            error_rows: number;
+            /** Id */
+            id: number;
+            /** Imported Rows */
+            imported_rows: number;
+            /** Kind */
+            kind: string;
+            /** Original Filename */
+            original_filename: string;
+            /** Skipped Rows */
+            skipped_rows: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "uploaded" | "validated" | "confirmed" | "failed" | "cancelled";
+            /** Total Rows */
+            total_rows: number;
+            uploaded_by: components["schemas"]["UserRefOut"];
+            /** Valid Rows */
+            valid_rows: number;
+        };
+        /**
+         * ImportPatientDataOut
+         * @description A row as read from the sheet (empty strings for empty cells).
+         */
+        ImportPatientDataOut: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /** Age Years */
+            age_years?: number | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /**
+             * Emergency Contact Name
+             * @default
+             */
+            emergency_contact_name: string;
+            /**
+             * Emergency Contact Phone
+             * @default
+             */
+            emergency_contact_phone: string;
+            /**
+             * Full Name Ar
+             * @default
+             */
+            full_name_ar: string;
+            /**
+             * Full Name En
+             * @default
+             */
+            full_name_en: string;
+            /**
+             * National Id
+             * @default
+             */
+            national_id: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Phone Alt
+             * @default
+             */
+            phone_alt: string;
+            /**
+             * Sex
+             * @default
+             */
+            sex: string;
+        };
+        /** ImportRowOut */
+        ImportRowOut: {
+            data: components["schemas"]["ImportPatientDataOut"];
+            /** Errors */
+            errors: components["schemas"]["RowErrorOut"][];
+            /**
+             * Result Id
+             * @description The patient file created from the row
+             */
+            result_id: number | null;
+            /**
+             * Row No
+             * @description The row number in the sheet (1 = header)
+             */
+            row_no: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped";
+            /** Warnings */
+            warnings: components["schemas"]["RowHintOut"][];
+        };
+        /**
+         * LineOut
+         * @description A service line of the visit with its display state; never a price.
+         */
+        LineOut: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Order Source */
+            order_source: string;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            /** Quantity */
+            quantity: string;
+            /** Service Code */
+            service_code: string;
+            /** Service Name Ar */
+            service_name_ar: string;
+            /** Service Name En */
+            service_name_en: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "requested" | "invoiced" | "paid" | "performed" | "cancelled";
+        };
         /** LoginIn */
         LoginIn: {
             /** Password */
             password: string;
             /** Username */
             username: string;
+        };
+        /** MatrixChangeIn */
+        MatrixChangeIn: {
+            /** Allowed */
+            allowed: boolean;
+            /** Code */
+            code: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin";
+        };
+        /** MatrixChangeOut */
+        MatrixChangeOut: {
+            /** Allowed */
+            allowed: boolean;
+            /** Code */
+            code: string;
+            /** Role */
+            role: string;
         };
         /** MeOut */
         MeOut: {
@@ -1515,6 +4052,57 @@ export interface components {
             /** Visit Id */
             visit_id: number;
         };
+        /**
+         * MergeIn
+         * @description Merge ``duplicate_id`` into this (surviving) file (FEATURES 1.4).
+         */
+        MergeIn: {
+            /** Duplicate Id */
+            duplicate_id: number;
+            /** Note */
+            note: string;
+            /**
+             * Reason Code
+             * @description A patient_merge reason code
+             */
+            reason_code: string;
+        };
+        /** MergeOut */
+        MergeOut: {
+            /** Id */
+            id: number;
+            /**
+             * Merged At
+             * Format: date-time
+             */
+            merged_at: string;
+            merged_by: components["schemas"]["UserRefOut"];
+            /** Note */
+            note: string;
+            /** @description null for merges recorded before codes */
+            reason: components["schemas"]["MergeReasonOut"] | null;
+            /**
+             * Reason Code
+             * @description Merge reason code; empty for older free-text notes
+             */
+            reason_code: string;
+            source: components["schemas"]["PatientRefOut"];
+            target: components["schemas"]["PatientRefOut"];
+        };
+        /**
+         * MergeReasonOut
+         * @description A configurable ``patient_merge`` reason code (FEATURES 13.5).
+         */
+        MergeReasonOut: {
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Requires Note */
+            requires_note: boolean;
+        };
         /** NoteIn */
         NoteIn: {
             /**
@@ -1547,7 +4135,7 @@ export interface components {
         NoteOut: {
             /** Assessment */
             assessment: string;
-            author: components["schemas"]["UserRefOut"] | null;
+            author: components["schemas"]["ClinicUserRefOut"] | null;
             /** Complaint */
             complaint: string;
             /**
@@ -1590,6 +4178,15 @@ export interface components {
             history?: string | null;
             /** Plan */
             plan?: string | null;
+        };
+        /** OpenInvoiceOut */
+        OpenInvoiceOut: {
+            /** Invoice Id */
+            invoice_id: number;
+            /** Number */
+            number: string;
+            /** Outstanding */
+            outstanding: string;
         };
         /** OrderIn */
         OrderIn: {
@@ -1722,12 +4319,147 @@ export interface components {
             /** Name En */
             name_en: string;
         };
-        /** PatientBriefOut */
+        /** Page[ImportRowOut] */
+        Page_ImportRowOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ImportRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[PatientListOut] */
+        Page_PatientListOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["PatientListOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[PayerListOut] */
+        Page_PayerListOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["PayerListOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[PriceItemOut] */
+        Page_PriceItemOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["PriceItemOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ServiceOut] */
+        Page_ServiceOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ServiceOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[UserOut] */
+        Page_UserOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["UserOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[VisitOut] */
+        Page_VisitOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["VisitOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** PatientAllergyOut */
+        PatientAllergyOut: {
+            /**
+             * Allergen Type
+             * @enum {string}
+             */
+            allergen_type: "drug" | "drug_class" | "food" | "environmental" | "other";
+            drug_class: components["schemas"]["DrugClassOut"] | null;
+            /** Id */
+            id: number;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Note */
+            note: string;
+            /** Reaction */
+            reaction: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "mild" | "moderate" | "severe" | "life_threatening";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "inactive" | "entered_in_error";
+            /** Substance */
+            substance: string;
+        };
+        /**
+         * PatientBriefOut
+         * @description The patient on a visit, queue token or appointment.
+         */
         PatientBriefOut: {
             /** Date Of Birth */
             date_of_birth: string | null;
-            /** Dob Is Estimated */
-            dob_is_estimated: boolean;
             /** File No */
             file_no: string;
             /** Full Name Ar */
@@ -1744,32 +4476,552 @@ export interface components {
              * Sex
              * @enum {string}
              */
+            sex: "male" | "female" | "unknown";
+        };
+        /**
+         * PatientIn
+         * @description Registration (FEATURES 1.1). Either name is enough; ``age_years`` estimates the birth
+         *     date when it is not known.
+         */
+        PatientIn: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /** Age Years */
+            age_years?: number | null;
+            /**
+             * Confirm Not Duplicate
+             * @description Register even though the duplicate check found similar files
+             * @default false
+             */
+            confirm_not_duplicate: boolean;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /**
+             * Emergency Contact Name
+             * @default
+             */
+            emergency_contact_name: string;
+            /**
+             * Emergency Contact Phone
+             * @default
+             */
+            emergency_contact_phone: string;
+            /**
+             * Full Name Ar
+             * @default
+             */
+            full_name_ar: string;
+            /**
+             * Full Name En
+             * @default
+             */
+            full_name_en: string;
+            /**
+             * National Id
+             * @default
+             */
+            national_id: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Phone Alt
+             * @default
+             */
+            phone_alt: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
             sex: "male" | "female";
+        };
+        /**
+         * PatientListOut
+         * @description A row of the patient list and of the duplicate warning.
+         */
+        PatientListOut: {
+            /** @description Active default coverage on file; null = self-pay */
+            coverage?: components["schemas"]["CoverageBriefOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** Dob Is Estimated */
+            dob_is_estimated: boolean;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Incomplete */
+            is_incomplete: boolean;
+            /** Merged Into Id */
+            merged_into_id: number | null;
+            /** Phone */
+            phone: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "male" | "female" | "unknown";
+        };
+        /**
+         * PatientOut
+         * @description A whole patient file (FEATURES 1.1).
+         */
+        PatientOut: {
+            /** Address */
+            address: string;
+            /** @description Active default coverage on file; null = self-pay */
+            coverage?: components["schemas"]["CoverageBriefOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** Dob Is Estimated */
+            dob_is_estimated: boolean;
+            /** Emergency Contact Name */
+            emergency_contact_name: string;
+            /** Emergency Contact Phone */
+            emergency_contact_phone: string;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Incomplete */
+            is_incomplete: boolean;
+            /** Merged Into Id */
+            merged_into_id: number | null;
+            /** National Id */
+            national_id: string;
+            /** Notes */
+            notes: string;
+            /** Phone */
+            phone: string;
+            /** Phone Alt */
+            phone_alt: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "male" | "female" | "unknown";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * PatientPatch
+         * @description Edit demographics; completes an emergency file once sex, birth date and phone exist.
+         */
+        PatientPatch: {
+            /** Address */
+            address?: string | null;
+            /** Age Years */
+            age_years?: number | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Dob Is Estimated */
+            dob_is_estimated?: boolean | null;
+            /** Emergency Contact Name */
+            emergency_contact_name?: string | null;
+            /** Emergency Contact Phone */
+            emergency_contact_phone?: string | null;
+            /** Full Name Ar */
+            full_name_ar?: string | null;
+            /** Full Name En */
+            full_name_en?: string | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Phone Alt */
+            phone_alt?: string | null;
+            /** Sex */
+            sex?: ("male" | "female" | "unknown") | null;
+        };
+        /**
+         * PatientProfileOut
+         * @description A file with what reception shows around it.
+         */
+        PatientProfileOut: {
+            /**
+             * Allergies
+             * @description Active allergies of the person; empty = none recorded
+             */
+            allergies: components["schemas"]["AllergyOut"][];
+            /** @description The surviving file when this one was merged away */
+            merged_into: components["schemas"]["PatientRefOut"] | null;
+            patient: components["schemas"]["PatientOut"];
+        };
+        /**
+         * PatientRefOut
+         * @description A file named by its number (merge history, merged-into links).
+         */
+        PatientRefOut: {
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+        };
+        /** PatientSearchParams */
+        PatientSearchParams: {
+            /**
+             * Include Inactive
+             * @description Also list merged (inactive) files
+             * @default false
+             */
+            include_inactive: boolean;
+            /**
+             * Incomplete
+             * @description Only emergency files still to complete
+             * @default false
+             */
+            incomplete: boolean;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
         };
         /** PatientSummaryOut */
         PatientSummaryOut: {
             /** Active Medications */
             active_medications: components["schemas"]["MedicationOut"][];
             /** Allergies */
-            allergies: components["schemas"]["AllergyOut"][];
+            allergies: components["schemas"]["PatientAllergyOut"][];
             /** Allergies Recorded */
             allergies_recorded: boolean;
             /** Conditions */
             conditions: components["schemas"]["ConditionOut"][];
             /** Latest Results */
             latest_results: components["schemas"]["ResultOut"][];
-            patient: components["schemas"]["PatientBriefOut"];
+            patient: components["schemas"]["ClinicPatientOut"];
             /** Recent Visits */
             recent_visits: components["schemas"]["VisitBriefOut"][];
+        };
+        /** PayerIn */
+        PayerIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Claim Period
+             * @default monthly
+             * @enum {string}
+             */
+            claim_period: "weekly" | "biweekly" | "monthly" | "quarterly";
+            /** Code */
+            code: string;
+            /**
+             * Contact Name
+             * @default
+             */
+            contact_name: string;
+            /** Contract End */
+            contract_end?: string | null;
+            /**
+             * Contract No
+             * @default
+             */
+            contract_no: string;
+            /** Contract Start */
+            contract_start?: string | null;
+            /**
+             * Email
+             * @default
+             */
+            email: string;
+            /**
+             * Kind
+             * @default insurance
+             * @enum {string}
+             */
+            kind: "insurance" | "company" | "government" | "ngo" | "other";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /** Price List Id */
+            price_list_id?: number | null;
+            /**
+             * Requires Card Number
+             * @default true
+             */
+            requires_card_number: boolean;
+        };
+        /** PayerListOut */
+        PayerListOut: {
+            /** Active */
+            active: boolean;
+            /**
+             * Claim Period
+             * @enum {string}
+             */
+            claim_period: "weekly" | "biweekly" | "monthly" | "quarterly";
+            /** Code */
+            code: string;
+            /** Contract End */
+            contract_end: string | null;
+            /** Contract No */
+            contract_no: string;
+            /** Contract Start */
+            contract_start: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "insurance" | "company" | "government" | "ngo" | "other";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Price List Code */
+            price_list_code: string | null;
+            /** Price List Id */
+            price_list_id: number | null;
+            /** Requires Card Number */
+            requires_card_number: boolean;
+        };
+        /** PayerListParams */
+        PayerListParams: {
+            /** Active */
+            active?: boolean | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+        };
+        /** PayerOut */
+        PayerOut: {
+            /** Active */
+            active: boolean;
+            /** Address */
+            address: string;
+            /**
+             * Claim Period
+             * @enum {string}
+             */
+            claim_period: "weekly" | "biweekly" | "monthly" | "quarterly";
+            /** Code */
+            code: string;
+            /** Contact Name */
+            contact_name: string;
+            /** Contract End */
+            contract_end: string | null;
+            /** Contract No */
+            contract_no: string;
+            /** Contract Start */
+            contract_start: string | null;
+            /** Coverage Rules */
+            coverage_rules: components["schemas"]["CoverageRuleOut"][];
+            /** Email */
+            email: string;
+            /** Exclusions */
+            exclusions: components["schemas"]["ExclusionOut"][];
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "insurance" | "company" | "government" | "ngo" | "other";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Notes */
+            notes: string;
+            /** Phone */
+            phone: string;
+            /** Price List Code */
+            price_list_code: string | null;
+            /** Price List Id */
+            price_list_id: number | null;
+            /** Requires Card Number */
+            requires_card_number: boolean;
+        };
+        /** PayerPatch */
+        PayerPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Address */
+            address?: string | null;
+            /** Claim Period */
+            claim_period?: ("weekly" | "biweekly" | "monthly" | "quarterly") | null;
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Contract End */
+            contract_end?: string | null;
+            /** Contract No */
+            contract_no?: string | null;
+            /** Contract Start */
+            contract_start?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Kind */
+            kind?: ("insurance" | "company" | "government" | "ngo" | "other") | null;
+            /** Name Ar */
+            name_ar?: string | null;
+            /** Name En */
+            name_en?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Price List Id */
+            price_list_id?: number | null;
+            /** Requires Card Number */
+            requires_card_number?: boolean | null;
         };
         /** PayerRefOut */
         PayerRefOut: {
             /** Code */
             code: string;
+            /** Id */
+            id: number;
             /** Name Ar */
             name_ar: string;
             /** Name En */
             name_en: string;
+        };
+        /**
+         * PayerSummaryOut
+         * @description What any catalog reader may see of a payer (no contract or contact details).
+         */
+        PayerSummaryOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "insurance" | "company" | "government" | "ngo" | "other";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Requires Card Number */
+            requires_card_number: boolean;
+        };
+        /** PermissionMatrixIn */
+        PermissionMatrixIn: {
+            /** Changes */
+            changes: components["schemas"]["MatrixChangeIn"][];
+            /** Reason */
+            reason: string;
+        };
+        /** PermissionMatrixOut */
+        PermissionMatrixOut: {
+            /**
+             * Changed
+             * @description Cells whose grant flipped (on update only)
+             */
+            changed?: components["schemas"]["MatrixChangeOut"][];
+            /** Permissions */
+            permissions: components["schemas"]["PermissionRowOut"][];
+            /** Roles */
+            roles: components["schemas"]["RoleOut"][];
+        };
+        /** PermissionRowOut */
+        PermissionRowOut: {
+            /** App */
+            app: string;
+            /** Code */
+            code: string;
+            /** Default Roles */
+            default_roles: string[];
+            /**
+             * Granted Roles
+             * @description Roles that grant the code now
+             */
+            granted_roles: string[];
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /**
+             * Overridden Roles
+             * @description Roles whose cell differs from default
+             */
+            overridden_roles: string[];
+            /**
+             * Protected Roles
+             * @description Roles that can never lose the code
+             */
+            protected_roles: string[];
         };
         /**
          * PingOut
@@ -1781,6 +5033,65 @@ export interface components {
              * @description Name of the module router that answered
              */
             module: string;
+        };
+        /** PolicyIn */
+        PolicyIn: {
+            /** Allow Partial Payment */
+            allow_partial_payment: boolean;
+            /** Discount Limit Percent */
+            discount_limit_percent: {
+                [key: string]: number;
+            };
+            /** Follow Up Discount Percent */
+            follow_up_discount_percent: number | string;
+            /** Follow Up Window Days */
+            follow_up_window_days: number;
+            /**
+             * Partial Dispense Remainder
+             * @enum {string}
+             */
+            partial_dispense_remainder: "defer" | "refund";
+            /** Pending Transfer Alert Days */
+            pending_transfer_alert_days: number;
+            /** Perform First Roles */
+            perform_first_roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[];
+            /** Session Idle Minutes */
+            session_idle_minutes: number;
+            /** Show Estimated Cost */
+            show_estimated_cost: boolean;
+        };
+        /** PolicyOut */
+        PolicyOut: {
+            /** Allow Partial Payment */
+            allow_partial_payment: boolean;
+            /**
+             * Default Pay First
+             * @description Always true (invariant 1); read-only
+             */
+            default_pay_first: boolean;
+            /** Discount Limit Percent */
+            discount_limit_percent: {
+                [key: string]: number;
+            };
+            /** Follow Up Discount Percent */
+            follow_up_discount_percent: string;
+            /** Follow Up Window Days */
+            follow_up_window_days: number;
+            /**
+             * Partial Dispense Remainder
+             * @enum {string}
+             */
+            partial_dispense_remainder: "defer" | "refund";
+            /** Pending Transfer Alert Days */
+            pending_transfer_alert_days: number;
+            /** Perform First Roles */
+            perform_first_roles: string[];
+            /** Session Idle Minutes */
+            session_idle_minutes: number;
+            /** Show Estimated Cost */
+            show_estimated_cost: boolean;
+            /** Updated At */
+            updated_at: string | null;
         };
         /** PreferencesPatch */
         PreferencesPatch: {
@@ -1870,6 +5181,164 @@ export interface components {
             /** Quantity */
             quantity: number | null;
         };
+        /** PriceChangeIn */
+        PriceChangeIn: {
+            /** Service Id */
+            service_id: number;
+            /**
+             * Unit Price
+             * @description null removes the service
+             */
+            unit_price: string | null;
+        };
+        /** PriceChangesIn */
+        PriceChangesIn: {
+            /** Items */
+            items: components["schemas"]["PriceChangeIn"][];
+        };
+        /** PriceItemOut */
+        PriceItemOut: {
+            /** Service Active */
+            service_active: boolean;
+            /** Service Code */
+            service_code: string;
+            /** Service Id */
+            service_id: number;
+            /**
+             * Service Kind
+             * @enum {string}
+             */
+            service_kind: "consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed";
+            /** Service Name Ar */
+            service_name_ar: string;
+            /** Service Name En */
+            service_name_en: string;
+            /**
+             * Unit Price
+             * @example 15000.00
+             */
+            unit_price: string;
+        };
+        /** PriceListIn */
+        PriceListIn: {
+            /** Code */
+            code: string;
+            /**
+             * Kind
+             * @default payer
+             * @enum {string}
+             */
+            kind: "cash" | "payer";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /**
+         * PriceListOut
+         * @description A price list with its version timeline, newest first (``services.PriceListRow``).
+         */
+        PriceListOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Current Version Id */
+            current_version_id: number | null;
+            /** Id */
+            id: number;
+            /** Is Default */
+            is_default: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "cash" | "payer";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Next Version Id */
+            next_version_id: number | null;
+            /** Payer Codes */
+            payer_codes: string[];
+            /** Versions */
+            versions: components["schemas"]["VersionOut"][];
+        };
+        /** PriceListPatch */
+        PriceListPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Name Ar */
+            name_ar?: string | null;
+            /** Name En */
+            name_en?: string | null;
+        };
+        /** PrintTemplateIn */
+        PrintTemplateIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Footer Ar
+             * @default
+             */
+            footer_ar: string;
+            /**
+             * Footer En
+             * @default
+             */
+            footer_en: string;
+            /**
+             * Header Ar
+             * @default
+             */
+            header_ar: string;
+            /**
+             * Header En
+             * @default
+             */
+            header_en: string;
+            /**
+             * Show Logo
+             * @default true
+             */
+            show_logo: boolean;
+        };
+        /** PrintTemplateOut */
+        PrintTemplateOut: {
+            /** Active */
+            active: boolean;
+            /**
+             * Document
+             * @enum {string}
+             */
+            document: "invoice" | "receipt" | "prescription" | "lab_result" | "claim_export" | "shift_report";
+            /** Footer Ar */
+            footer_ar: string;
+            /** Footer En */
+            footer_en: string;
+            /** Header Ar */
+            header_ar: string;
+            /** Header En */
+            header_en: string;
+            /**
+             * Paper
+             * @enum {string}
+             */
+            paper: "a4" | "thermal_80";
+            /**
+             * Saved
+             * @description False: defaults, never saved
+             */
+            saved: boolean;
+            /** Show Logo */
+            show_logo: boolean;
+            /** Updated At */
+            updated_at: string | null;
+        };
         /** QueueActionIn */
         QueueActionIn: {
             /**
@@ -1895,7 +5364,7 @@ export interface components {
             done_at: string | null;
             /** Id */
             id: number;
-            patient: components["schemas"]["PatientBriefOut"];
+            patient: components["schemas"]["ClinicPatientOut"];
             /** Priority */
             priority: number;
             /**
@@ -1913,6 +5382,133 @@ export interface components {
             /** Token No */
             token_no: number;
             visit: components["schemas"]["VisitBriefOut"];
+        };
+        /** QueueMoveIn */
+        QueueMoveIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "call" | "start" | "finish" | "no_show" | "requeue";
+        };
+        /**
+         * QueueRowOut
+         * @description A token on the reception board.
+         */
+        QueueRowOut: {
+            /**
+             * Billed
+             * @description The visit has invoiced or paid open lines (see VisitOut.billed)
+             */
+            billed: boolean;
+            /** Called At */
+            called_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            department: components["schemas"]["DepartmentOut"];
+            doctor: components["schemas"]["DoctorOut"] | null;
+            /** Done At */
+            done_at: string | null;
+            /** Id */
+            id: number;
+            patient: components["schemas"]["PatientBriefOut"];
+            /** Priority */
+            priority: number;
+            /**
+             * Queue Date
+             * Format: date
+             */
+            queue_date: string;
+            /**
+             * Ready
+             * @description Consultation fee paid or authorized (or none due)
+             */
+            ready: boolean;
+            room: components["schemas"]["RoomOut"] | null;
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "waiting" | "called" | "in_progress" | "done" | "no_show" | "cancelled";
+            /** Token No */
+            token_no: number;
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** ReasonCodeIn */
+        ReasonCodeIn: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject";
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /**
+             * Requires Note
+             * @default false
+             */
+            requires_note: boolean;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** ReasonCodeListParams */
+        ReasonCodeListParams: {
+            /** Active */
+            active?: boolean | null;
+            /** Category */
+            category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject") | null;
+        };
+        /** ReasonCodeOut */
+        ReasonCodeOut: {
+            /** Active */
+            active: boolean;
+            /** Category */
+            category: string;
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Requires Note */
+            requires_note: boolean;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /** ReasonCodePatch */
+        ReasonCodePatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Label Ar */
+            label_ar?: string | null;
+            /** Label En */
+            label_en?: string | null;
+            /** Requires Note */
+            requires_note?: boolean | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** ReasonIn */
+        ReasonIn: {
+            /** Reason */
+            reason: string;
         };
         /** ReasonOut */
         ReasonOut: {
@@ -1975,7 +5571,7 @@ export interface components {
             kind: "internal" | "external";
             /** Reason */
             reason: string;
-            referred_by: components["schemas"]["UserRefOut"] | null;
+            referred_by: components["schemas"]["ClinicUserRefOut"] | null;
             /**
              * Status
              * @enum {string}
@@ -1995,6 +5591,21 @@ export interface components {
             departments: components["schemas"]["DepartmentRefOut"][];
             /** Doctors */
             doctors: components["schemas"]["DoctorRefOut"][];
+        };
+        /** RescheduleIn */
+        RescheduleIn: {
+            /** Ends At */
+            ends_at?: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /** ResetPasswordIn */
+        ResetPasswordIn: {
+            /** New Password */
+            new_password: string;
         };
         /**
          * ResultOut
@@ -2051,6 +5662,449 @@ export interface components {
             /** Value */
             value: string;
         };
+        /** RoleOut */
+        RoleOut: {
+            /** Code */
+            code: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * User Count
+             * @description Active users holding the role
+             */
+            user_count: number;
+        };
+        /** RoomIn */
+        RoomIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Department Id */
+            department_id?: number | null;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** RoomListParams */
+        RoomListParams: {
+            /** Active */
+            active?: boolean | null;
+            /** Department Id */
+            department_id?: number | null;
+        };
+        /** RoomOut */
+        RoomOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** RoomPatch */
+        RoomPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Department Id */
+            department_id?: number | null;
+            /** Name Ar */
+            name_ar?: string | null;
+            /** Name En */
+            name_en?: string | null;
+        };
+        /** RowErrorOut */
+        RowErrorOut: {
+            /**
+             * Code
+             * @description An errors-namespace code (NAME_REQUIRED, INVALID_SEX...)
+             */
+            code: string;
+            /** Field */
+            field: string;
+        };
+        /**
+         * RowHintOut
+         * @description A possible duplicate: an existing file (phone, national_id, name_dob) or an earlier row.
+         */
+        RowHintOut: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "phone" | "national_id" | "name_dob" | "in_file";
+            /** File No */
+            file_no?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Patient Id */
+            patient_id?: number | null;
+            /** Row No */
+            row_no?: number | null;
+        };
+        /** RowParams */
+        RowParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+            /**
+             * Status
+             * @description problems = errors and duplicates
+             */
+            status?: ("problems" | "valid" | "error" | "duplicate" | "imported" | "skipped") | null;
+        };
+        /** ScheduleIn */
+        ScheduleIn: {
+            /** Sessions */
+            sessions: components["schemas"]["ScheduleSessionIn"][];
+        };
+        /** ScheduleSessionIn */
+        ScheduleSessionIn: {
+            /**
+             * End Time
+             * Format: time
+             */
+            end_time: string;
+            /** Room Id */
+            room_id?: number | null;
+            /**
+             * Slot Minutes
+             * @default 15
+             */
+            slot_minutes: number;
+            /**
+             * Start Time
+             * Format: time
+             */
+            start_time: string;
+            /**
+             * Weekday
+             * @description 0 = Monday ... 6 = Sunday
+             */
+            weekday: number;
+        };
+        /** ScheduleSessionOut */
+        ScheduleSessionOut: {
+            /**
+             * End Time
+             * Format: time
+             */
+            end_time: string;
+            /** Id */
+            id: number;
+            /** Room Code */
+            room_code: string | null;
+            /** Room Id */
+            room_id: number | null;
+            /** Slot Minutes */
+            slot_minutes: number;
+            /**
+             * Start Time
+             * Format: time
+             */
+            start_time: string;
+            /**
+             * Weekday
+             * @description 0 = Monday ... 6 = Sunday
+             */
+            weekday: number;
+        };
+        /** SequenceOut */
+        SequenceOut: {
+            /** Code */
+            code: string;
+            /** Last Number */
+            last_number: string | null;
+            /** Last Value */
+            last_value: number;
+            /** Next Number */
+            next_number: string;
+        };
+        /** SequenceParams */
+        SequenceParams: {
+            /** Year */
+            year?: number | null;
+        };
+        /** SequencesOut */
+        SequencesOut: {
+            /** Items */
+            items: components["schemas"]["SequenceOut"][];
+            /** Year */
+            year: number;
+            /** Years */
+            years: number[];
+        };
+        /** ServiceIn */
+        ServiceIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Category Id */
+            category_id?: number | null;
+            /** Code */
+            code: string;
+            /** Department Id */
+            department_id?: number | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed";
+            /**
+             * Name Ar
+             * @default
+             */
+            name_ar: string;
+            /**
+             * Name En
+             * @default
+             */
+            name_en: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** ServiceListParams */
+        ServiceListParams: {
+            /** Active */
+            active?: boolean | null;
+            /** Category Id */
+            category_id?: number | null;
+            /** Department Id */
+            department_id?: number | null;
+            /** Kind */
+            kind?: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed") | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+        };
+        /** ServiceOut */
+        ServiceOut: {
+            /** Active */
+            active: boolean;
+            /** Category Code */
+            category_code: string | null;
+            /** Category Id */
+            category_id: number | null;
+            /** Code */
+            code: string;
+            /** Department Code */
+            department_code: string | null;
+            /** Department Id */
+            department_id: number | null;
+            /** Description */
+            description: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /** ServicePatch */
+        ServicePatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Category Id */
+            category_id?: number | null;
+            /** Department Id */
+            department_id?: number | null;
+            /** Description */
+            description?: string | null;
+            /** Name Ar */
+            name_ar?: string | null;
+            /** Name En */
+            name_en?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** TemplateParams */
+        TemplateParams: {
+            /**
+             * Language
+             * @default en
+             * @enum {string}
+             */
+            language: "ar" | "en";
+        };
+        /**
+         * TimelineOut
+         * @description One event of the visit timeline (FEATURES 2.4).
+         */
+        TimelineOut: {
+            actor: components["schemas"]["UserRefOut"] | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Detail */
+            detail: {
+                [key: string]: unknown;
+            };
+            /** Kind */
+            kind: string;
+            /** Ref Id */
+            ref_id: number;
+        };
+        /**
+         * TokenSlipOut
+         * @description What the 80 mm token slip prints (FEATURES 2.6).
+         */
+        TokenSlipOut: {
+            /** Ahead */
+            ahead: number;
+            center: components["schemas"]["CenterOut"];
+            entry: components["schemas"]["QueueRowOut"];
+        };
+        /** UpcomingParams */
+        UpcomingParams: {
+            /** Patient Id */
+            patient_id: number;
+        };
+        /** UserIn */
+        UserIn: {
+            /**
+             * Full Name Ar
+             * @default
+             */
+            full_name_ar: string;
+            /**
+             * Full Name En
+             * @default
+             */
+            full_name_en: string;
+            /**
+             * Password
+             * @description Temporary password
+             */
+            password: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /** Roles */
+            roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[];
+            /** Username */
+            username: string;
+        };
+        /** UserListParams */
+        UserListParams: {
+            /** Active */
+            active?: boolean | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+            /** Role */
+            role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin") | null;
+        };
+        /** UserOut */
+        UserOut: {
+            /**
+             * Date Joined
+             * Format: date-time
+             */
+            date_joined: string;
+            /** Doctor Profile Id */
+            doctor_profile_id: number | null;
+            /** Failed Login Count */
+            failed_login_count: number;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Superuser */
+            is_superuser: boolean;
+            /** Last Login */
+            last_login: string | null;
+            /**
+             * Locked
+             * @description Login is refused until locked_until
+             */
+            locked: boolean;
+            /** Locked Until */
+            locked_until: string | null;
+            /** Must Change Password */
+            must_change_password: boolean;
+            /** Phone */
+            phone: string;
+            /**
+             * Roles
+             * @description Role codes, sorted
+             */
+            roles: string[];
+            /** Username */
+            username: string;
+        };
+        /** UserPatch */
+        UserPatch: {
+            /** Full Name Ar */
+            full_name_ar?: string | null;
+            /** Full Name En */
+            full_name_en?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Phone */
+            phone?: string | null;
+            /** Roles */
+            roles?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[] | null;
+        };
         /** UserRefOut */
         UserRefOut: {
             /** Id */
@@ -2059,6 +6113,87 @@ export interface components {
             name_ar: string;
             /** Name En */
             name_en: string;
+        };
+        /** VersionIn */
+        VersionIn: {
+            /**
+             * Copy From Id
+             * @description Version (of any list) to copy; default: this list's version effective then
+             */
+            copy_from_id?: number | null;
+            /**
+             * Effective From
+             * Format: date
+             * @description Tomorrow at the earliest (today for a first)
+             */
+            effective_from: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** VersionItemParams */
+        VersionItemParams: {
+            /** Kind */
+            kind?: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed") | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+        };
+        /**
+         * VersionOut
+         * @description One version on a price list's timeline (built from ``services.VersionRow``).
+         */
+        VersionOut: {
+            /** Based On Effective From */
+            based_on_effective_from: string | null;
+            /** Based On Id */
+            based_on_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string | null;
+            /**
+             * Editable
+             * @description Prices change only before the version starts
+             */
+            editable: boolean;
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /** Id */
+            id: number;
+            /** Item Count */
+            item_count: number;
+            /** Note */
+            note: string;
+            /**
+             * Percent Change
+             * @description Bulk change on based_on, e.g. 10.00
+             */
+            percent_change: string | null;
+            /** Price List Id */
+            price_list_id: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "past" | "current" | "scheduled";
         };
         /** VisitBriefOut */
         VisitBriefOut: {
@@ -2075,6 +6210,162 @@ export interface components {
             id: number;
             /** Number */
             number: string;
+            payer: components["schemas"]["ClinicPayerRefOut"] | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed" | "cancelled";
+            /**
+             * Visit Type
+             * @enum {string}
+             */
+            visit_type: "new" | "follow_up" | "emergency" | "pharmacy_sale" | "inpatient";
+        };
+        /**
+         * VisitCancelIn
+         * @description Cancel with a ``visit_cancel`` reason code (FEATURES 2.7, invariant 4).
+         */
+        VisitCancelIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason Code */
+            reason_code: string;
+        };
+        /** VisitDetailOut */
+        VisitDetailOut: {
+            /** Lines */
+            lines: components["schemas"]["LineOut"][];
+            queue_entry: components["schemas"]["QueueRowOut"] | null;
+            /** Queue Ready */
+            queue_ready: boolean;
+            visit: components["schemas"]["VisitOut"];
+        };
+        /**
+         * VisitIn
+         * @description Open a visit (FEATURES 2.1). The consultation line and queue token are automatic.
+         */
+        VisitIn: {
+            /**
+             * Card Number
+             * @default
+             */
+            card_number: string;
+            /**
+             * Chief Complaint
+             * @default
+             */
+            chief_complaint: string;
+            /**
+             * Coverage Id
+             * @description A coverage on file; null = see below
+             */
+            coverage_id?: number | null;
+            /** Department Id */
+            department_id?: number | null;
+            /** Doctor Id */
+            doctor_id?: number | null;
+            /** Patient Id */
+            patient_id: number;
+            /**
+             * Use Default Coverage
+             * @description Without coverage_id: the default coverage on file (false = cash)
+             * @default true
+             */
+            use_default_coverage: boolean;
+            /**
+             * Visit Type
+             * @default new
+             * @enum {string}
+             */
+            visit_type: "new" | "follow_up" | "emergency";
+        };
+        /** VisitListParams */
+        VisitListParams: {
+            /**
+             * Day
+             * @description Visits opened that day
+             */
+            day?: string | null;
+            /** Department Id */
+            department_id?: number | null;
+            /** Doctor Id */
+            doctor_id?: number | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /**
+             * Patient Id
+             * @description Every visit of the person (merged files)
+             */
+            patient_id?: number | null;
+            /** Q */
+            q?: string | null;
+            /** Status */
+            status?: ("open" | "closed" | "cancelled") | null;
+        };
+        /**
+         * VisitOptionsOut
+         * @description What the create-visit form chooses from.
+         */
+        VisitOptionsOut: {
+            /** Appointment Cancel Reasons */
+            appointment_cancel_reasons: components["schemas"]["ReasonOut"][];
+            /** Cancel Reasons */
+            cancel_reasons: components["schemas"]["ReasonOut"][];
+            /** Departments */
+            departments: components["schemas"]["DepartmentOut"][];
+            /** Doctors */
+            doctors: components["schemas"]["DoctorOut"][];
+            /** Follow Up Window Days */
+            follow_up_window_days: number;
+        };
+        /** VisitOut */
+        VisitOut: {
+            /** Appointment Id */
+            appointment_id: number | null;
+            /**
+             * Billed
+             * @description Open lines on an approved invoice: cancelling credits them, so only a holder of billing.approve_credit_note can cancel
+             */
+            billed: boolean;
+            /** Cancel Note */
+            cancel_note: string;
+            cancel_reason: components["schemas"]["ReasonOut"] | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /** Card Number */
+            card_number: string;
+            /** Chief Complaint */
+            chief_complaint: string;
+            /** Closed At */
+            closed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["UserRefOut"];
+            department: components["schemas"]["DepartmentOut"] | null;
+            doctor: components["schemas"]["DoctorOut"] | null;
+            /** Follow Up Of Id */
+            follow_up_of_id: number | null;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            patient: components["schemas"]["PatientBriefOut"];
+            /** @description null = self-pay (cash) */
             payer: components["schemas"]["PayerRefOut"] | null;
             /**
              * Status
@@ -2138,7 +6429,7 @@ export interface components {
              * Format: date-time
              */
             recorded_at: string;
-            recorded_by: components["schemas"]["UserRefOut"] | null;
+            recorded_by: components["schemas"]["ClinicUserRefOut"] | null;
             /** Respiratory Rate */
             respiratory_rate: number | null;
             /** Spo2 Percent */
@@ -2147,6 +6438,13 @@ export interface components {
             temperature_c: string | null;
             /** Weight Kg */
             weight_kg: string | null;
+        };
+        /** WaitingRoomOut */
+        WaitingRoomOut: {
+            /** Serving */
+            serving: components["schemas"]["DisplayEntryOut"][];
+            /** Waiting */
+            waiting: components["schemas"]["DisplayEntryOut"][];
         };
         /** WithdrawIn */
         WithdrawIn: {
@@ -2157,6 +6455,17 @@ export interface components {
             note: string;
             /** Reason Code */
             reason_code: string;
+        };
+        /** WithdrawReasonOut */
+        WithdrawReasonOut: {
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Requires Note */
+            requires_note: boolean;
         };
         /**
          * WorkspaceOut
@@ -2171,7 +6480,7 @@ export interface components {
             diagnoses: components["schemas"]["DiagnosisOut"][];
             /** Notes */
             notes: components["schemas"]["NoteOut"][];
-            patient: components["schemas"]["PatientBriefOut"];
+            patient: components["schemas"]["ClinicPatientOut"];
             /** Queue Entry Id */
             queue_entry_id: number | null;
             /** Queue Status */
@@ -2490,6 +6799,801 @@ export interface operations {
             };
         };
     };
+    catalog_list_categories: {
+        parameters: {
+            query?: {
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_create_category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_update_category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_preview_coverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoveragePreviewIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoveragePreviewOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_update_exclusion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exclusion_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusionPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExclusionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_list_payers: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PayerListOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_create_payer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayerIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayerOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_list_payer_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayerSummaryOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_get_payer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayerOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_update_payer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayerPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayerOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_create_exclusion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusionIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExclusionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_create_coverage_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverageRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageRuleOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     catalog_get_ping: {
         parameters: {
             query?: never;
@@ -2519,6 +7623,1000 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_list_price_lists: {
+        parameters: {
+            query?: {
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceListOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_create_price_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceListOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_get_price_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                price_list_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceListOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_update_price_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                price_list_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceListOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_preview_bulk_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                price_list_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkPreviewOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_apply_bulk_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                price_list_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_create_price_version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                price_list_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_update_coverage_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverageRulePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageRuleOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_list_services: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                kind?: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed") | null;
+                department_id?: number | null;
+                category_id?: number | null;
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ServiceOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_create_service: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_get_service: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_update_service: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServicePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_get_price_version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_list_price_items: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                kind?: ("consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed") | null;
+            };
+            header?: never;
+            path: {
+                version_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PriceItemOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    catalog_set_price_items: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceChangesIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2587,7 +8685,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AllergyOut"];
+                    "application/json": components["schemas"]["PatientAllergyOut"];
                 };
             };
             /** @description Unauthorized */
@@ -3233,7 +9331,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AllergyOut"][];
+                    "application/json": components["schemas"]["PatientAllergyOut"][];
                 };
             };
             /** @description Unauthorized */
@@ -3295,7 +9393,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AllergyOut"];
+                    "application/json": components["schemas"]["PatientAllergyOut"];
                 };
             };
             /** @description Unauthorized */
@@ -4346,6 +10444,911 @@ export interface operations {
             };
         };
     };
+    core_get_center_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterProfileOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_center_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterProfileIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterProfileOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_get_center_logo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The logo image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": string;
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_upload_center_logo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * File
+                     * Format: binary
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterProfileOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_delete_center_logo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterProfileOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_departments: {
+        parameters: {
+            query?: {
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_create_department: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_department: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                department_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_doctors: {
+        parameters: {
+            query?: {
+                department_id?: number | null;
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_create_doctor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoctorIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_doctor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoctorPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_set_doctor_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_get_permission_matrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionMatrixOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_permission_matrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PermissionMatrixIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionMatrixOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     core_get_ping: {
         parameters: {
             query?: never;
@@ -4384,6 +11387,1304 @@ export interface operations {
             };
         };
     };
+    core_get_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_print_templates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintTemplateOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_save_print_template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document: "invoice" | "receipt" | "prescription" | "lab_result" | "claim_export" | "shift_report";
+                paper: "a4" | "thermal_80";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrintTemplateIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintTemplateOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_reason_codes: {
+        parameters: {
+            query?: {
+                category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject") | null;
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReasonCodeOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_create_reason_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCodeIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReasonCodeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_reason_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reason_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCodePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReasonCodeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_rooms: {
+        parameters: {
+            query?: {
+                department_id?: number | null;
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_create_room: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_room: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_sequences: {
+        parameters: {
+            query?: {
+                year?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SequencesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_users: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin") | null;
+                active?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_UserOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_create_user: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_get_user: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_user: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_reset_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_unlock_user: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_preview_patients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * File
+                     * Format: binary
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_get_patient_template: {
+        parameters: {
+            query?: {
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     imports_get_ping: {
         parameters: {
             query?: never;
@@ -4413,6 +12714,266 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_get_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_cancel_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_confirm_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_list_rows: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description problems = errors and duplicates */
+                status?: ("problems" | "valid" | "error" | "duplicate" | "imported" | "skipped") | null;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ImportRowOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4998,7 +13559,524 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ReasonOut"][];
+                    "application/json": components["schemas"]["WithdrawReasonOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_list_patients: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description Also list merged (inactive) files */
+                include_inactive?: boolean;
+                /** @description Only emergency files still to complete */
+                incomplete?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PatientListOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_create_patient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatientIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_update_coverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                coverage_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoveragePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_end_coverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                coverage_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_find_duplicates: {
+        parameters: {
+            query?: {
+                full_name_ar?: string;
+                full_name_en?: string;
+                phone?: string;
+                phone_alt?: string;
+                date_of_birth?: string | null;
+                national_id?: string;
+                /** @description The file being edited */
+                exclude_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_register_emergency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmergencyIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_list_merge_reasons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergeReasonOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_list_payers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayerOut"][];
                 };
             };
             /** @description Unauthorized */
@@ -5068,6 +14146,453 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_get_patient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientProfileOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_update_patient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatientPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_get_balance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_list_coverages: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_create_coverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverageIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_merge_patient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_list_merges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergeOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5229,6 +14754,735 @@ export interface operations {
             };
         };
     };
+    visits_list_visits: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description Every visit of the person (merged files) */
+                patient_id?: number | null;
+                /** @description Visits opened that day */
+                day?: string | null;
+                department_id?: number | null;
+                doctor_id?: number | null;
+                status?: ("open" | "closed" | "cancelled") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_VisitOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_create_visit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisitIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_book_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppointmentIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_agenda: {
+        parameters: {
+            query: {
+                doctor_id: number;
+                day: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayAgendaOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_list_upcoming_appointments: {
+        parameters: {
+            query: {
+                patient_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_update_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppointmentPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_cancel_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppointmentCancelIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_check_in_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_mark_appointment_no_show: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_reschedule_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitOptionsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     visits_get_ping: {
         parameters: {
             query?: never;
@@ -5258,6 +15512,509 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_board: {
+        parameters: {
+            query?: {
+                department_id?: number | null;
+                doctor_id?: number | null;
+                include_finished?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueRowOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_call_next: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CallNextIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueRowOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_display: {
+        parameters: {
+            query?: {
+                department_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitingRoomOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_move_queue_entry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueueMoveIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueRowOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_token_slip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenSlipOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_visit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_cancel_visit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisitCancelIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_timeline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimelineOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

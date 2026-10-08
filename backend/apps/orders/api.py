@@ -181,7 +181,7 @@ def estimate_cost(request: HttpRequest, visit_id: int, payload: s.EstimateIn) ->
 
 @orders_router.get(
     "/withdraw-reasons",
-    response={200: list[s.ReasonOut], **_READ},
+    response={200: list[s.WithdrawReasonOut], **_READ},
     operation_id="orders_list_withdraw_reasons",
     summary="Reasons a doctor chooses from to withdraw an order",
 )

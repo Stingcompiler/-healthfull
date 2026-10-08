@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { KeyRound, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Palette, Search } from "lucide-react";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -43,11 +43,23 @@ const SEARCH_SHORTCUT = "mod+k";
 /** Phone tab bar cells: up to this many modules, otherwise four modules plus "More". */
 const TAB_BAR_CELLS = 5;
 
+/** Records the quick search (Ctrl/⌘+K) finds besides pages, e.g. patient files (FEATURES 0.9). */
+export interface QuickSearchSource {
+  /** Renders `CommandGroup`s for the typed text; `onDone` closes the menu after a pick. */
+  Results: ComponentType<{ query: string; onDone: () => void }>;
+  /** Top-bar trigger text, e.g. "Search patients or pages…". */
+  triggerLabel: string;
+  /** Placeholder of the command input. */
+  placeholder: string;
+}
+
 export interface AppShellProps {
   /** Navigation entries the current user may see (already permission-filtered). */
   nav: readonly NavItem[];
   /** Replaces the default quick-search trigger in the top bar. */
   search?: ReactNode;
+  /** Extra records the quick search finds (patients); without it only pages are searched. */
+  quickSearch?: QuickSearchSource;
   children: ReactNode;
 }
 
@@ -58,7 +70,7 @@ export interface AppShellProps {
  *          tablets have no hover); the choice is remembered on the device
  *   < md   top bar with drawer menu + bottom navigation
  */
-export function AppShell({ nav, search, children }: AppShellProps) {
+export function AppShell({ nav, search, quickSearch, children }: AppShellProps) {
   const { t } = useTranslation(["common", "nav"]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -176,6 +188,7 @@ export function AppShell({ nav, search, children }: AppShellProps) {
           <div className="flex min-w-0 flex-1 items-center">
             {search ?? (
               <QuickSearchTrigger
+                label={quickSearch?.triggerLabel}
                 onOpen={() => {
                   setCommandOpen(true);
                 }}
@@ -254,12 +267,12 @@ export function AppShell({ nav, search, children }: AppShellProps) {
         </SheetContent>
       </Sheet>
 
-      <CommandMenu open={commandOpen} onOpenChange={setCommandOpen} items={nav} />
+      <CommandMenu open={commandOpen} onOpenChange={setCommandOpen} items={nav} source={quickSearch} />
     </div>
   );
 }
 
-function QuickSearchTrigger({ onOpen }: { onOpen: () => void }) {
+function QuickSearchTrigger({ onOpen, label }: { onOpen: () => void; label?: string }) {
   const { t } = useTranslation();
   return (
     <>
@@ -276,7 +289,7 @@ function QuickSearchTrigger({ onOpen }: { onOpen: () => void }) {
         )}
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
-        <span className="flex-1 truncate text-start">{t("search.globalPlaceholder")}</span>
+        <span className="flex-1 truncate text-start">{label ?? t("search.globalPlaceholder")}</span>
         <KbdCombo combo={SEARCH_SHORTCUT} />
       </button>
     </>
@@ -479,24 +492,36 @@ function CommandMenu({
   open,
   onOpenChange,
   items,
+  source,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: readonly NavItem[];
+  source?: QuickSearchSource;
 }) {
   const { t } = useTranslation(["common", "nav"]);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [query, setQuery] = useState("");
+  const placeholder = source?.placeholder ?? t("search.commandPlaceholder");
+  const Results = source?.Results;
+  const changeOpen = (next: boolean) => {
+    if (!next) setQuery("");
+    onOpenChange(next);
+  };
   return (
-    <CommandDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title={t("search.open")}
-      description={t("search.commandPlaceholder")}
-    >
-      <CommandInput placeholder={t("search.commandPlaceholder")} />
+    <CommandDialog open={open} onOpenChange={changeOpen} title={t("search.open")} description={placeholder}>
+      <CommandInput placeholder={placeholder} value={query} onValueChange={setQuery} />
       <CommandList>
         <CommandEmpty>{t("search.noResults")}</CommandEmpty>
+        {Results ? (
+          <Results
+            query={query}
+            onDone={() => {
+              changeOpen(false);
+            }}
+          />
+        ) : null}
         <CommandGroup heading={t("search.pages")}>
           {items.map((item) => {
             const Icon = item.icon;
@@ -506,7 +531,7 @@ function CommandMenu({
                 key={item.id}
                 value={`${label} ${item.to}`}
                 onSelect={() => {
-                  onOpenChange(false);
+                  changeOpen(false);
                   void navigate({ to: item.to });
                 }}
               >

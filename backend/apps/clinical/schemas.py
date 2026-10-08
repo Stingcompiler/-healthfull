@@ -50,7 +50,7 @@ class DepartmentRefOut(Schema):
     name_en: str
 
 
-class UserRefOut(Schema):
+class ClinicUserRefOut(Schema):
     id: int
     name_ar: str
     name_en: str
@@ -63,7 +63,7 @@ class DoctorRefOut(Schema):
     name_en: str
 
 
-class PayerRefOut(Schema):
+class ClinicPayerRefOut(Schema):
     code: str
     name_ar: str
     name_en: str
@@ -104,7 +104,7 @@ class AllergyChipOut(Schema):
     severity: SeverityCode
 
 
-class PatientBriefOut(Schema):
+class ClinicPatientOut(Schema):
     id: int
     file_no: str
     full_name_ar: str
@@ -125,7 +125,7 @@ class VisitBriefOut(Schema):
     chief_complaint: str
     department: DepartmentRefOut | None
     doctor: DoctorRefOut | None
-    payer: PayerRefOut | None
+    payer: ClinicPayerRefOut | None
 
 
 def allergy_labels(allergy: Allergy) -> tuple[str, str]:
@@ -194,7 +194,7 @@ class QueueEntryOut(Schema):
     started_at: datetime | None
     done_at: datetime | None
     visit: VisitBriefOut
-    patient: PatientBriefOut
+    patient: ClinicPatientOut
     allergies: list[AllergyChipOut]
     allergies_recorded: bool
 
@@ -234,7 +234,7 @@ class DrugClassOut(Schema):
     name_en: str
 
 
-class AllergyOut(Schema):
+class PatientAllergyOut(Schema):
     id: int
     allergen_type: AllergenTypeCode
     drug_class: DrugClassOut | None
@@ -441,8 +441,8 @@ def medication_out(line: Any) -> dict[str, Any]:
 
 
 class PatientSummaryOut(Schema):
-    patient: PatientBriefOut
-    allergies: list[AllergyOut]
+    patient: ClinicPatientOut
+    allergies: list[PatientAllergyOut]
     allergies_recorded: bool
     conditions: list[ConditionOut]
     active_medications: list[MedicationOut]
@@ -468,7 +468,7 @@ class DiagnosisOut(Schema):
     text: str
     kind: DiagnosisKindCode
     certainty: CertaintyCode
-    recorded_by: UserRefOut | None
+    recorded_by: ClinicUserRefOut | None
     recorded_at: datetime
 
 
@@ -487,7 +487,7 @@ def diagnosis_out(diagnosis: Any) -> dict[str, Any]:
 class NoteOut(Schema):
     id: int
     visit_id: int
-    author: UserRefOut | None
+    author: ClinicUserRefOut | None
     complaint: str
     history: str
     examination: str
@@ -614,7 +614,7 @@ class VitalsOut(Schema):
     blood_glucose_mg_dl: int | None
     pain_score: int | None
     note: str
-    recorded_by: UserRefOut | None
+    recorded_by: ClinicUserRefOut | None
     recorded_at: datetime
 
 
@@ -657,7 +657,7 @@ class ReferralOut(Schema):
     clinical_summary: str
     urgency: UrgencyCode
     status: ReferralStatusCode
-    referred_by: UserRefOut | None
+    referred_by: ClinicUserRefOut | None
     created_at: datetime
 
 
@@ -686,7 +686,7 @@ class WorkspaceOut(Schema):
     """One visit as its doctor works on it: the header, queue state and clinical record."""
 
     visit: VisitBriefOut
-    patient: PatientBriefOut
+    patient: ClinicPatientOut
     queue_entry_id: int | None
     queue_status: QueueStatusCode | None
     allergies: list[AllergyChipOut]

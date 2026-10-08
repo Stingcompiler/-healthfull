@@ -156,3 +156,18 @@ def make_user(db: None) -> Callable[..., Any]:
         return user
 
     return _make
+
+
+def router_operations(prefix: str) -> set[tuple[str, str, str, str | None]]:
+    """``(method, path, operation id, required permission)`` of every operation of one module
+    router (``"/core"``), so a module test pins its whole API surface exactly."""
+    from api.main import api
+
+    return {
+        (method, path, str(op.operation_id), getattr(op.view_func, "required_permission", None))
+        for router_prefix, router in api._routers
+        if router_prefix == prefix
+        for path, path_view in router.path_operations.items()
+        for op in path_view.operations
+        for method in op.methods
+    }

@@ -29,7 +29,10 @@
     "adminSettings": "Center settings",
     "adminImports": "Imports",
     "adminSystem": "System status",
-    "design": "Design system"
+    "design": "Design system",
+    "adminPolicies": "Policies",
+    "adminDepartments": "Departments & doctors",
+    "adminReasonCodes": "Reason lists"
   },
   "short": {
     "dashboard": "Home",
@@ -52,7 +55,10 @@
     "adminSettings": "Settings",
     "adminImports": "Imports",
     "adminSystem": "System",
-    "design": "Design"
+    "design": "Design",
+    "adminPolicies": "Policies",
+    "adminDepartments": "Doctors",
+    "adminReasonCodes": "Reasons"
   },
   "shell": {
     "menu": "Menu",

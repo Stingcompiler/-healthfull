@@ -247,7 +247,10 @@ found are listed at the end.
 - Decision: a new version starts tomorrow or later, on a date no other version of that list
   uses (`PRICE_VERSION_BACKDATED`, `PRICE_VERSION_DATE_TAKEN`). One exception: the first
   version of a list that has nothing effective yet may start today, because no invoice can
-  have been priced from it. Prices of a version can be edited only before it starts
+  have been priced from it. Such a same-day first version must come with prices, copied
+  from a version of another list (`copy_from_id`), because it is read-only at once: an empty
+  one would leave every payer on the list without prices until a later version starts
+  (`PRICE_VERSION_EMPTY`). Prices of a version can be edited only before it starts
   (`PRICE_VERSION_LOCKED`).
 - Why: invariant 6. Backdating, or a second version starting today, would change which price
   was "the list effective that day" after invoices of that day froze it.

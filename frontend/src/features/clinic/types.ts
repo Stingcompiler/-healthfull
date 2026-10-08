@@ -6,10 +6,10 @@ type S = components["schemas"];
 export type QueueEntry = S["QueueEntryOut"];
 export type QueueAction = S["QueueActionIn"]["action"];
 export type Workspace = S["WorkspaceOut"];
-export type PatientBrief = S["PatientBriefOut"];
+export type PatientBrief = S["ClinicPatientOut"];
 export type VisitBrief = S["VisitBriefOut"];
 export type PatientSummary = S["PatientSummaryOut"];
-export type Allergy = S["AllergyOut"];
+export type Allergy = S["PatientAllergyOut"];
 export type AllergyInput = S["AllergyIn"];
 export type AllergyPatch = S["AllergyPatch"];
 export type AllergyChip = S["AllergyChipOut"];
@@ -44,7 +44,7 @@ export type OrderItemInput = S["OrderItemIn"];
 export type PrescriptionInput = S["PrescriptionIn"];
 export type DoctorLine = S["DoctorLineOut"];
 export type DoctorStatus = DoctorLine["status"];
-export type WithdrawReason = S["ReasonOut"];
+export type WithdrawReason = S["WithdrawReasonOut"];
 export type Route = S["PrescriptionIn"]["route"];
 
 /** One allergy match in a 409 ALLERGY_CONFLICT (details.alerts). */

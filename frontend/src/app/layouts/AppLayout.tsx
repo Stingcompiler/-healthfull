@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { safeRedirectTarget } from "@/app/guards";
 import { visibleNav } from "@/app/nav";
 import { AppShell } from "@/components/AppShell";
+import { usePatientQuickSearch } from "@/features/patients/quick-search";
 import { useMe } from "@/lib/auth/hooks";
 
 /**
@@ -50,9 +51,10 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 export function AppLayout() {
   const { data: me } = useMe();
   const nav = useMemo(() => visibleNav(me ?? null), [me]);
+  const quickSearch = usePatientQuickSearch();
   return (
     <AuthGuard>
-      <AppShell nav={nav}>
+      <AppShell nav={nav} quickSearch={quickSearch}>
         <Outlet />
       </AppShell>
     </AuthGuard>
