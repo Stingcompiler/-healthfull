@@ -40,11 +40,14 @@ export function OrdersTab({
   visitId,
   patientId,
   open,
+  active = true,
   onDraftChange,
 }: {
   visitId: number;
   patientId: number;
   open: boolean;
+  /** The tab is showing (it stays mounted while hidden); its shortcuts work only then. */
+  active?: boolean;
   /** Tells the page how many draft items are not placed (finishing the consultation warns). */
   onDraftChange?: (count: number) => void;
 }) {
@@ -99,7 +102,7 @@ export function OrdersTab({
   // Never behind this tab's dialogs (the override dialog has its own Ctrl/Cmd+Enter).
   const dialogOpen = alerts !== null || favoriteOpen || withdrawing !== null;
   useShortcut(PLACE_SHORTCUT, () => void place(), {
-    enabled: canOrder && draft.length > 0 && !dialogOpen,
+    enabled: active && canOrder && draft.length > 0 && !dialogOpen,
     allowInInputs: true,
   });
 
@@ -116,7 +119,7 @@ export function OrdersTab({
             </h2>
           </div>
           <div className="grid gap-4 @3xl:grid-cols-2">
-            <CatalogPicker onPick={(service) => add([draftFromService(service)])} />
+            <CatalogPicker active={active} onPick={(service) => add([draftFromService(service)])} />
             <OrderSetPicker onPick={(set) => add(draftsFromOrderSet(set))} />
           </div>
 

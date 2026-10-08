@@ -22,7 +22,14 @@ const KINDS: readonly (OrderableKind | null)[] = [null, "lab", "procedure", "dru
  * Search the orderable catalog (no prices) as a combobox: ArrowUp/ArrowDown pick a row, Enter
  * adds the highlighted one (never a row left from the previous query), "/" focuses the search.
  */
-export function CatalogPicker({ onPick }: { onPick: (service: OrderableService) => void }) {
+export function CatalogPicker({
+  onPick,
+  active = true,
+}: {
+  onPick: (service: OrderableService) => void;
+  /** Whether the picker is on screen ("/" focuses it only then). */
+  active?: boolean;
+}) {
   const { t } = useTranslation("clinic");
   const language = useLanguage();
   const [query, setQuery] = useState("");
@@ -32,7 +39,7 @@ export function CatalogPicker({ onPick }: { onPick: (service: OrderableService) 
   const results = term ? (catalog.data ?? []) : [];
   const focusSearch = () => document.getElementById(SEARCH_ID)?.focus();
 
-  useShortcut("/", focusSearch);
+  useShortcut("/", focusSearch, { enabled: active });
 
   const pick = (service: OrderableService) => {
     onPick(service);

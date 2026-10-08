@@ -181,7 +181,13 @@ export function VisitWorkspacePage() {
             <NoteTab workspace={ws} onDirtyChange={setNoteDirty} />
           </TabsContent>
           <TabsContent value="orders" forceMount className="data-[state=inactive]:hidden">
-            <OrdersTab visitId={ws.visit.id} patientId={ws.patient.id} open={open} onDraftChange={setDraftCount} />
+            <OrdersTab
+              visitId={ws.visit.id}
+              patientId={ws.patient.id}
+              open={open}
+              active={tab === "orders"}
+              onDraftChange={setDraftCount}
+            />
           </TabsContent>
           <TabsContent value="results">
             <ResultsTab patientId={ws.patient.id} active={tab === "results"} />
