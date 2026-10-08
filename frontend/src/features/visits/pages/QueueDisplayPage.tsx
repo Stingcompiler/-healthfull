@@ -80,7 +80,7 @@ export function QueueDisplayPage() {
         </div>
       </header>
 
-      <div className="grid flex-1 gap-4 p-4 md:grid-cols-[3fr_2fr] md:gap-6 md:p-8">
+      <div className="grid flex-1 content-start gap-4 p-4 md:grid-cols-[3fr_2fr] md:gap-6 md:p-8">
         <section aria-labelledby="display-now" className="flex min-w-0 flex-col gap-4">
           <h2 id="display-now" className="flex items-center gap-2 text-xl font-bold md:text-3xl">
             <Megaphone className="size-6 md:size-8" aria-hidden="true" />

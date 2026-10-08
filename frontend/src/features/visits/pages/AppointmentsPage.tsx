@@ -121,7 +121,7 @@ export function AppointmentsPage() {
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="agenda-day">{t("appointments.day")}</Label>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="outline"
@@ -137,7 +137,7 @@ export function AppointmentsPage() {
               id="agenda-day"
               type="date"
               dir="ltr"
-              className="w-44"
+              className="w-auto min-w-0 flex-1 sm:w-44 sm:flex-none"
               value={day}
               onChange={(e) => {
                 if (e.target.value) setDay(e.target.value);
