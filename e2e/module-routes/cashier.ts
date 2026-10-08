@@ -15,6 +15,7 @@ import {
   fixture,
   orderLines,
   paidVisit,
+  pay,
   type PaidVisitResult,
 } from "../helpers";
 import { appRoute, type AppRoute } from "../route-kit";
@@ -57,6 +58,18 @@ async function deskVisit(): Promise<string> {
   return `/cashier?visit=${String(visit.id)}`;
 }
 
+/**
+ * A visit whose invoice is paid by a transfer still pending: the invoice lists the payment with
+ * its "Pending verification" badge (the longest payment row at 375).
+ */
+async function deskTransferVisit(): Promise<string> {
+  const { patient } = await createPatient();
+  const { visit } = await createVisit({ patient });
+  await approveInvoice({ visit });
+  await pay({ visit, method: "bank_transfer", sender_name: "Osman Ali" });
+  return `/cashier?visit=${String(visit.id)}`;
+}
+
 /** The first loaded row of a cashier queue: a card on phones, a table row from md up. */
 function firstRow(page: Page, cardTestId: string): Locator {
   return page
@@ -71,6 +84,10 @@ export const routes: readonly AppRoute[] = [
   appRoute("cashier-desk-visit", "/cashier", {
     resolve: deskVisit,
     ready: (page) => page.getByTestId("payment-panel"),
+  }),
+  appRoute("cashier-desk-transfer", "/cashier", {
+    resolve: deskTransferVisit,
+    ready: (page) => page.getByTestId("approved-invoice").locator('[data-status="pending_verification"]').first(),
   }),
   // The admin's open shift: report, a handover to the safe in transit, the close form.
   appRoute("cashier-shift", "/cashier/shift", {

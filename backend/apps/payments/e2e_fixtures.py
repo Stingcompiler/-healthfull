@@ -120,6 +120,30 @@ def _paid_invoice(actor: str) -> Invoice:
     return Invoice.objects.get(pk=made["invoice"]["id"])
 
 
+def _pending_transfer(actor: User, shift: Shift) -> Payment:
+    """The pending bank transfer (sender and date) of ``shift``, taken once by ``actor``."""
+    transfer = Payment.objects.filter(
+        shift=shift, verification=Verification.PENDING, reversal_of__isnull=True
+    ).first()
+    if transfer is not None:
+        return transfer
+    made = run_nested("patient", {"as": "reception"})
+    visit = run_nested("visit", {"patient": made["patient"]["id"], "as": "reception"})
+    vid = visit["visit"]["id"]
+    run_nested("approve_invoice", {"visit": vid, "as": actor.username})
+    paid = run_nested(
+        "pay",
+        {
+            "visit": vid,
+            "method": "bank_transfer",
+            "sender_name": "Osman Ali",
+            "transfer_date": timezone.localdate().isoformat(),
+            "as": actor.username,
+        },
+    )
+    return Payment.objects.get(pk=paid["payment"]["id"])
+
+
 def _first_line(invoice: Invoice) -> int:
     return int(invoice.lines.order_by("line_no").values_list("pk", flat=True)[0])
 
@@ -128,7 +152,8 @@ def _first_line(invoice: Invoice) -> int:
     "cashier_screens",
     summary=(
         "Populated cashier screens for the responsive matrix, built once (idempotent, as "
-        "`admin`): a closed shift with a variance awaiting review, the open shift with a "
+        "`admin`): a closed shift with a variance awaiting review and a transfer still "
+        "pending, the open shift with a "
         "handover to the safe in transit and a pending transfer (sender and date), a draft "
         "credit note and a requested refund. Returns the shift ids and the transfer."
     ),
@@ -168,30 +193,14 @@ def cashier_screens(p: Params) -> Json:
             current = payments.current_shift(actor)
         if current is None:  # pragma: no cover - paid_visit always opens the shift
             raise DomainError("SHIFT_NOT_OPEN", "The screens fixture found no open shift")
+        # A transfer still pending when its shift closes: the queue shows its closed shift.
+        _pending_transfer(actor, current)
         expected = payments.expected_cash(current)
         closed = payments.close_shift(
             current, expected - Decimal("100.00"), actor=actor, reason="COUNTING_ERROR"
         )
     shift = payments.current_shift(actor) or payments.open_shift(actor, SCREENS_FLOAT)
-    transfer = Payment.objects.filter(
-        shift=shift, verification=Verification.PENDING, reversal_of__isnull=True
-    ).first()
-    if transfer is None:
-        made = run_nested("patient", {"as": "reception"})
-        visit = run_nested("visit", {"patient": made["patient"]["id"], "as": "reception"})
-        vid = visit["visit"]["id"]
-        run_nested("approve_invoice", {"visit": vid, "as": actor.username})
-        paid = run_nested(
-            "pay",
-            {
-                "visit": vid,
-                "method": "bank_transfer",
-                "sender_name": "Osman Ali",
-                "transfer_date": timezone.localdate().isoformat(),
-                "as": actor.username,
-            },
-        )
-        transfer = Payment.objects.get(pk=paid["payment"]["id"])
+    transfer = _pending_transfer(actor, shift)
     if not CashHandover.objects.filter(
         shift=shift, received_at__isnull=True, cancelled_at__isnull=True
     ).exists():
