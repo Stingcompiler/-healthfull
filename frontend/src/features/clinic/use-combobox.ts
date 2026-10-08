@@ -14,16 +14,29 @@ export interface ComboboxOptions<T> {
    */
   settled: boolean;
   onPick: (item: T) => void;
+  /** Escape with text in the box: clear the query and term (which also closes the list). */
+  onEscape?: () => void;
   /** The highlight goes back to the first row when this changes (default: the term). */
   resetKey?: string;
 }
 
 /**
  * A search box with a result list as an ARIA combobox: ArrowUp/ArrowDown move the highlighted
- * option, Enter adds it, and Enter never takes a row of an earlier query (typed fast, or a filter
- * just changed). Returns props for the input, the list and each option.
+ * option, Enter adds it, Escape clears the box and closes the list, and Enter never takes a row of
+ * an earlier query (typed fast, or a filter just changed). The input points at the list
+ * (aria-controls) only while the list is on screen. Returns props for the input, the list and
+ * each option.
  */
-export function useCombobox<T>({ query, term, search, results, settled, onPick, resetKey }: ComboboxOptions<T>) {
+export function useCombobox<T>({
+  query,
+  term,
+  search,
+  results,
+  settled,
+  onPick,
+  onEscape,
+  resetKey,
+}: ComboboxOptions<T>) {
   const listId = useId();
   const key = resetKey ?? term;
   const [highlight, setHighlight] = useState({ key, index: 0 });
@@ -37,6 +50,12 @@ export function useCombobox<T>({ query, term, search, results, settled, onPick, 
   const expanded = results.length > 0;
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      if (!query && !term) return;
+      event.preventDefault();
+      onEscape?.();
+      return;
+    }
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       if (!expanded) return;
       event.preventDefault();
@@ -63,7 +82,7 @@ export function useCombobox<T>({ query, term, search, results, settled, onPick, 
       role: "combobox",
       "aria-autocomplete": "list" as const,
       "aria-expanded": expanded,
-      "aria-controls": listId,
+      "aria-controls": expanded ? listId : undefined,
       "aria-activedescendant": expanded && fresh ? optionId(active) : undefined,
       onKeyDown,
     },

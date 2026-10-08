@@ -156,7 +156,8 @@ export function VitalsSection({
         >
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
             {ORDER.map((f) => (
-              <div key={f} className="flex min-w-0 flex-col gap-1.5">
+              // Labels that wrap to two lines must not push their input out of line with the row.
+              <div key={f} className="flex min-w-0 flex-col justify-end gap-1.5">
                 <Label htmlFor={`vital-${f}`} className="text-xs">
                   {t(`vitals.field.${f}`)}
                 </Label>

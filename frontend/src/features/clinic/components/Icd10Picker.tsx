@@ -46,6 +46,10 @@ export function Icd10Picker({
     results,
     settled: search.isSuccess && !search.isPlaceholderData && !search.isFetching,
     onPick: pick,
+    onEscape: () => {
+      setQuery("");
+      setTerm("");
+    },
   });
 
   return (

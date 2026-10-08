@@ -1,4 +1,4 @@
-import { Calculator, X } from "lucide-react";
+import { Calculator, ShieldAlert, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,7 +16,7 @@ import { pickName } from "@/lib/names";
 import { useFrequencies, usePrescriptionPreview } from "../api";
 import type { DraftItem, DraftRx } from "../draft";
 import { KIND_ICONS } from "../kind-icons";
-import type { PrescriptionPreviewInput, Route } from "../types";
+import type { AllergyAlert, PrescriptionPreviewInput, Route } from "../types";
 
 const ROUTES: readonly Route[] = [
   "oral",
@@ -37,18 +37,21 @@ export function DraftItemEditor({
   item,
   onChange,
   onRemove,
-  highlighted = false,
+  allergyMatches = [],
 }: {
   item: DraftItem;
   onChange: (next: DraftItem) => void;
   onRemove: () => void;
-  highlighted?: boolean;
+  /** Active allergies this drug matches: the card turns red and names them. */
+  allergyMatches?: readonly AllergyAlert[];
 }) {
   const { t } = useTranslation("clinic");
   const language = useLanguage();
   const Icon = KIND_ICONS[item.kind];
   const name = pickName({ ar: item.nameAr, en: item.nameEn }, language);
   const idBase = `draft-${item.key}`;
+  const highlighted = allergyMatches.length > 0;
+  const allergens = [...new Set(allergyMatches.map((a) => pickName({ ar: a.allergen_ar, en: a.allergen }, language)))];
 
   return (
     <li
@@ -59,14 +62,28 @@ export function DraftItemEditor({
       }
       data-testid="draft-item"
       data-service-code={item.code}
+      data-allergy={highlighted ? "true" : undefined}
     >
       <div className="flex min-w-0 items-start gap-2">
         <Icon className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold break-words text-fg">{name}</div>
           <div className="text-xs text-muted">
-            <bdi>{item.code}</bdi> · {t(`kind.${item.kind}`)}
+            <bdi>{item.code}</bdi>
+            {" · "}
+            {t(`kind.${item.kind}`)}
           </div>
+          {highlighted ? (
+            <p
+              className="mt-1 flex items-start gap-1.5 text-xs font-semibold text-danger-fg"
+              data-testid="draft-allergy"
+            >
+              <ShieldAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 break-words">
+                {t("orders.allergyMatch", { allergens: allergens.join(language === "ar" ? "، " : ", ") })}
+              </span>
+            </p>
+          ) : null}
         </div>
         <Button size="icon-sm" variant="ghost" onClick={onRemove} aria-label={t("orders.removeItem", { name })}>
           <X aria-hidden="true" />
@@ -122,6 +139,7 @@ function PrescriptionFields({
   const translateError = useTranslateError();
   const setRx = (patch: Partial<DraftRx>) => onChange({ ...item, rx: { ...rx, ...patch } });
   const unit = pickName({ ar: item.unitAr, en: item.unitEn }, language);
+  const frequencyLabel = rx.frequencyCode ? t(`frequency.${rx.frequencyCode}`, { defaultValue: rx.frequencyCode }) : "";
 
   // Debounce a string (a new object every render would never settle).
   const key = useDebouncedValue(
@@ -146,7 +164,8 @@ function PrescriptionFields({
 
   return (
     <div className="flex flex-col gap-3" data-testid="rx-builder">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      {/* Sized by the card (container), not the viewport: the tab sits beside the summary. */}
+      <div className="grid grid-cols-2 gap-3 @xl:grid-cols-[6rem_minmax(0,2fr)_5rem_minmax(0,1.5fr)]">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={`${idBase}-dose`} className="text-xs">
             {unit ? t("rx.doseIn", { unit }) : t("rx.dose")}
@@ -165,8 +184,20 @@ function PrescriptionFields({
             {t("rx.frequency")}
           </Label>
           <Select value={rx.frequencyCode} onValueChange={(v) => setRx({ frequencyCode: v })}>
-            <SelectTrigger id={`${idBase}-freq`} data-testid="rx-frequency">
-              <SelectValue placeholder={t("rx.chooseFrequency")} />
+            <SelectTrigger
+              id={`${idBase}-freq`}
+              data-testid="rx-frequency"
+              title={rx.frequencyCode ? frequencyLabel : undefined}
+            >
+              {/* A narrow card shows the code (the label stays for screen readers); a wide one both. */}
+              <SelectValue placeholder={t("rx.chooseFrequency")}>
+                {rx.frequencyCode ? (
+                  <span className="min-w-0 truncate">
+                    <bdi className="tabular font-semibold">{rx.frequencyCode}</bdi>
+                    <span className="@max-xl:sr-only"> · {frequencyLabel}</span>
+                  </span>
+                ) : undefined}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(frequencies.data ?? []).map((f) => (
@@ -245,9 +276,13 @@ function PrescriptionFields({
           {preview.isError && canPreview ? (
             <span className="text-danger-fg">{translateError(preview.error)}</span>
           ) : item.quantity.trim() ? (
-            <Badge variant="soft">{t("rx.quantityGiven", { count: Number(item.quantity) || 0, unit })}</Badge>
+            <Badge variant="soft">
+              {t(unit ? "rx.quantityGiven" : "rx.quantityGivenNoUnit", { count: Number(item.quantity) || 0, unit })}
+            </Badge>
           ) : computed !== null ? (
-            <Badge variant="soft">{t("rx.quantityComputed", { count: computed, unit })}</Badge>
+            <Badge variant="soft">
+              {t(unit ? "rx.quantityComputed" : "rx.quantityComputedNoUnit", { count: computed, unit })}
+            </Badge>
           ) : (
             <span className="text-muted">{t("rx.quantityNeeded")}</span>
           )}

@@ -9,7 +9,7 @@
     "loadError": "Your queue could not be loaded.",
     "emptyTitle": "Nobody is waiting for you",
     "emptyDescription": "Patients appear here once their consultation is paid or authorized.",
-    "activeHeading": "Waiting and with you ({{count}})",
+    "activeHeading": "Waiting and in consultation ({{count}})",
     "noneWaiting": "Nobody is waiting right now.",
     "seenHeading": "Seen today ({{count}})",
     "token": "Token",
@@ -27,7 +27,12 @@
     "unsavedNote": "The note has changes that are not saved.",
     "unsignedNote": "Your note is saved as a draft but not signed.",
     "unplacedOrders_one": "{{count}} order in the draft is not placed.",
-    "unplacedOrders_other": "{{count}} orders in the draft are not placed."
+    "unplacedOrders_other": "{{count}} orders in the draft are not placed.",
+    "callNamed": "Call {{name}}, token {{token, bidi}}",
+    "startNamed": "Start consultation with {{name}}, token {{token, bidi}}",
+    "openNamed": "Open the visit of {{name}}, token {{token, bidi}}",
+    "calledAt": "Called",
+    "arrivedAt": "Arrived"
   },
   "queueStatus": {
     "waiting": "Waiting",
@@ -172,7 +177,10 @@
     "none": "No diagnosis recorded yet.",
     "resultCount_one": "{{count}} ICD-10 match",
     "resultCount_other": "{{count}} ICD-10 matches",
-    "clearCodeNamed": "Remove code {{code, bidi}}"
+    "clearCodeNamed": "Remove code {{code, bidi}}",
+    "removeNamed": "Remove diagnosis {{name}}",
+    "removeTitle": "Remove this diagnosis?",
+    "removedToast": "Diagnosis removed."
   },
   "referral": {
     "title": "Referrals",
@@ -205,7 +213,9 @@
     "createdToast": "Referral issued.",
     "saveError": "The referral was not issued.",
     "cancel": "Cancel referral",
-    "cancelTitle": "Cancel this referral?"
+    "cancelTitle": "Cancel this referral?",
+    "cancelledToast": "Referral cancelled.",
+    "cancelledBecause": "Cancelled: {{reason}}"
   },
   "allergy": {
     "title": "Allergies",
@@ -224,7 +234,7 @@
     "drugClass": "Drug class",
     "choose": "Choose…",
     "substance": "Drug or substance",
-    "reaction": "Reaction",
+    "reaction": "Reaction (symptoms)",
     "severityLabel": "Severity",
     "severity": {
       "mild": "Mild",
@@ -261,7 +271,7 @@
     "icd10": "ICD-10 code",
     "name": "Name (optional with a code)",
     "since": "Since",
-    "resolve": "Resolved",
+    "resolve": "Mark resolved",
     "addedToast": "Condition recorded.",
     "saveError": "The condition was not recorded."
   },
@@ -300,7 +310,10 @@
     "withdrawnToast": "Order withdrawn.",
     "results": "Catalog matches",
     "resultCount_one": "{{count}} match",
-    "resultCount_other": "{{count}} matches"
+    "resultCount_other": "{{count}} matches",
+    "placeEmpty": "Place orders",
+    "allergyMatch": "Matches allergy: {{allergens}}",
+    "allergyFlag": "Allergy"
   },
   "rx": {
     "dose": "Dose",
@@ -312,11 +325,13 @@
     "instructions": "Instructions",
     "asNeeded": "As needed",
     "quantityOverride": "Quantity (optional)",
-    "quantityComputed": "To dispense: {{count}} {{unit}} (calculated)",
-    "quantityGiven": "To dispense: {{count}} {{unit}} (entered)",
+    "quantityComputed": "To dispense: {{count}} × {{unit}} (calculated)",
+    "quantityGiven": "To dispense: {{count}} × {{unit}} (entered)",
     "quantityNeeded": "Enter dose, frequency and days, or a quantity.",
     "days_one": "{{count}} day",
-    "days_other": "{{count}} days"
+    "days_other": "{{count}} days",
+    "quantityComputedNoUnit": "To dispense: {{count}} (calculated)",
+    "quantityGivenNoUnit": "To dispense: {{count}} (entered)"
   },
   "frequency": {
     "OD": "once a day",

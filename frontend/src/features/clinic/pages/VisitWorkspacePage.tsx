@@ -1,5 +1,5 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { CheckCheck, ClipboardList, FileText, FlaskConical, History, Play, Stethoscope } from "lucide-react";
+import { CheckCheck, ClipboardList, FileText, FlaskConical, History, Megaphone, Play, Stethoscope } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { KbdCombo } from "@/components/Kbd";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isApiError } from "@/lib/api/errors";
 import { useCurrentUser } from "@/lib/auth/hooks";
@@ -112,6 +113,8 @@ export function VisitWorkspacePage() {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* A half-written note or unplaced draft orders are not lost by leaving the page. */}
+      <UnsavedChangesGuard when={noteDirty || draftCount > 0} />
       <PageHeader
         eyebrow={
           <Link to="/clinic" className="inline-flex items-center gap-1 hover:text-fg hover:underline">
@@ -119,7 +122,9 @@ export function VisitWorkspacePage() {
             {t("workspace.backToQueue")}
           </Link>
         }
-        title={name}
+        // The patient's name and file number lead the summary card just below; the header names
+        // the task instead of repeating them (the browser tab still carries the name).
+        title={t("workspace.title")}
         documentTitle={`${t("workspace.title")} · ${name}`}
         description={
           <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -242,7 +247,7 @@ function QueueActions({
           onClick={() => void run(status === "waiting" ? "call" : "start").catch(() => undefined)}
           data-testid="queue-start"
         >
-          <Play aria-hidden="true" />
+          {status === "waiting" ? <Megaphone aria-hidden="true" /> : <Play aria-hidden="true" />}
           {status === "waiting" ? t("queue.call") : t("queue.start")}
         </Button>
       ) : null}

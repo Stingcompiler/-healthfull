@@ -33,8 +33,11 @@ export function OrderLineCard({ line, onWithdraw }: { line: DoctorLine; onWithdr
         meta={
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <bdi>{line.service_code}</bdi>
-              <span>· {t(`kind.${line.kind}`)}</span>
+              <span>
+                <bdi>{line.service_code}</bdi>
+                {" · "}
+                {t(`kind.${line.kind}`)}
+              </span>
               {line.status === "in_progress" ? (
                 <Badge variant="info" data-testid="line-in-progress">
                   <Loader aria-hidden="true" />

@@ -102,7 +102,7 @@ export function ConditionManager({
                     variant="ghost"
                     onClick={() =>
                       update.mutate(
-                        { id: c.id, body: { status: "inactive" } },
+                        { id: c.id, body: { status: "inactive", reason: "" } },
                         { onError: (e) => toast.error(translateError(e)) },
                       )
                     }

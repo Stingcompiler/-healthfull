@@ -29,6 +29,9 @@ export const clinicKeys = {
   history: (patientId: number) => ["clinic", "history", patientId] as const,
   results: (patientId: number) => ["clinic", "results", patientId] as const,
   allergies: (patientId: number) => ["clinic", "allergies", patientId] as const,
+  /** Under the allergies key: recording or resolving an allergy refreshes the warnings too. */
+  allergyAlerts: (patientId: number, serviceIds: readonly number[]) =>
+    ["clinic", "allergies", patientId, "alerts", serviceIds] as const,
   conditions: (patientId: number) => ["clinic", "conditions", patientId] as const,
   drugClasses: ["clinic", "drug-classes"] as const,
   icd10: (q: string) => ["clinic", "icd10", q] as const,
@@ -147,6 +150,24 @@ export function useAllergies(patientId: number, enabled: boolean) {
     queryFn: () =>
       unwrap(api.GET("/api/clinical/patients/{patient_id}/allergies", { params: { path: { patient_id: patientId } } })),
     enabled,
+  });
+}
+
+/**
+ * Allergy matches of drugs being written, before the order is placed (a warning; placing still
+ * answers 409 ALLERGY_CONFLICT). `serviceIds` should be sorted so the key is stable.
+ */
+export function useAllergyAlerts(patientId: number | undefined, serviceIds: readonly number[]) {
+  return useQuery({
+    queryKey: clinicKeys.allergyAlerts(patientId ?? 0, serviceIds),
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/clinical/patients/{patient_id}/allergy-alerts", {
+          params: { path: { patient_id: patientId ?? 0 }, query: { service_ids: [...serviceIds] } },
+        }),
+      ),
+    enabled: patientId !== undefined && serviceIds.length > 0,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -273,8 +294,13 @@ export function useCreateDiagnosis(visitId: number) {
 export function useDeleteDiagnosis(visitId: number) {
   const invalidate = useInvalidateWorkspace(visitId);
   return useMutation({
-    mutationFn: (id: number) =>
-      unwrap(api.DELETE("/api/clinical/diagnoses/{diagnosis_id}", { params: { path: { diagnosis_id: id } } })),
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      unwrap(
+        api.DELETE("/api/clinical/diagnoses/{diagnosis_id}", {
+          params: { path: { diagnosis_id: id } },
+          body: { reason },
+        }),
+      ),
     onSuccess: invalidate,
   });
 }
@@ -309,8 +335,13 @@ export function useCreateReferral(visitId: number) {
 export function useCancelReferral(visitId: number) {
   const invalidate = useInvalidateWorkspace(visitId);
   return useMutation({
-    mutationFn: (id: number) =>
-      unwrap(api.POST("/api/clinical/referrals/{referral_id}/cancel", { params: { path: { referral_id: id } } })),
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      unwrap(
+        api.POST("/api/clinical/referrals/{referral_id}/cancel", {
+          params: { path: { referral_id: id } },
+          body: { reason },
+        }),
+      ),
     onSuccess: invalidate,
   });
 }

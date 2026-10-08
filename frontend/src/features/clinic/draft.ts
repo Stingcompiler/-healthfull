@@ -70,35 +70,45 @@ export function draftFromService(service: OrderableService): DraftItem {
   };
 }
 
+/**
+ * A saved set back as draft items. A drug keeps its route, dose quantity and as-needed flag;
+ * when its quantity can be counted (dose quantity and duration, not as needed) it is left to
+ * the server again, so it follows dose x frequency x duration if the doctor edits them.
+ */
 export function draftsFromOrderSet(set: OrderSet): DraftItem[] {
   return set.items
     .filter((it): it is typeof it & { kind: OrderableKind } =>
       ["lab", "procedure", "drug", "consumable"].includes(it.kind),
     )
-    .map((it) => ({
-      key: nextKey(),
-      serviceId: it.service_id,
-      code: it.service_code,
-      kind: it.kind,
-      nameAr: it.name_ar,
-      nameEn: it.name_en,
-      unitAr: "",
-      unitEn: "",
-      quantity: it.quantity,
-      computedQuantity: null,
-      note: it.kind === "drug" ? "" : it.instructions,
-      rx:
-        it.kind === "drug"
+    .map((it) => {
+      const drug = it.kind === "drug";
+      const counted = drug && !it.as_needed && Boolean(it.dose_quantity) && it.duration_days != null;
+      return {
+        key: nextKey(),
+        serviceId: it.service_id,
+        code: it.service_code,
+        kind: it.kind,
+        nameAr: it.name_ar,
+        nameEn: it.name_en,
+        unitAr: "",
+        unitEn: "",
+        quantity: counted ? "" : it.quantity,
+        computedQuantity: null,
+        note: drug ? "" : it.instructions,
+        rx: drug
           ? {
               ...EMPTY_RX,
               dose: it.dose,
-              doseQuantity: "",
+              doseQuantity: it.dose_quantity ?? "",
+              route: it.route ?? EMPTY_RX.route,
               frequencyCode: it.frequency_code,
               durationDays: it.duration_days ? String(it.duration_days) : "",
+              asNeeded: it.as_needed,
               instructions: it.instructions,
             }
           : null,
-    }));
+      };
+    });
 }
 
 function doseText(item: DraftItem, language: Language): string {
@@ -147,8 +157,11 @@ export function toFavorite(name: string, items: readonly DraftItem[], language: 
       service_id: item.serviceId,
       quantity: positiveInt(item.quantity) ?? item.computedQuantity ?? 1,
       dose: item.rx ? doseText(item, language).slice(0, 60) : "",
+      dose_quantity: item.rx ? item.rx.doseQuantity.trim() || null : null,
+      route: item.rx ? item.rx.route : null,
       frequency_code: item.rx?.frequencyCode ?? "",
       duration_days: item.rx ? positiveInt(item.rx.durationDays) : null,
+      as_needed: item.rx?.asNeeded ?? false,
       instructions: (item.rx ? item.rx.instructions : item.note).trim().slice(0, 300),
     })),
   };

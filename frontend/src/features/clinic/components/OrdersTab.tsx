@@ -16,7 +16,7 @@ import { useShortcut } from "@/lib/hooks/use-shortcut";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 
-import { useCreateLines, useVisitLines, useWithdrawLine, useWithdrawReasons } from "../api";
+import { useAllergyAlerts, useCreateLines, useVisitLines, useWithdrawLine, useWithdrawReasons } from "../api";
 import { draftFromService, draftsFromOrderSet, toOrderItem, type DraftItem } from "../draft";
 import { allergyConflict } from "../lib";
 import type { AllergyAlert, DoctorLine } from "../types";
@@ -62,6 +62,9 @@ export function OrdersTab({
   const [draft, setDraft] = useState<DraftItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<AllergyAlert[] | null>(null);
+  // The matches the server refused at placing: they stay marked on their draft items after the
+  // override dialog is dismissed, until the item is removed or the orders are placed.
+  const [conflicts, setConflicts] = useState<AllergyAlert[]>([]);
   const [favoriteOpen, setFavoriteOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState<DoctorLine | null>(null);
   const reasons = useWithdrawReasons(withdrawing !== null);
@@ -86,6 +89,7 @@ export function OrdersTab({
       });
       setDraft([]);
       setAlerts(null);
+      setConflicts([]);
       toast.success(t("orders.placedToast", { count: draft.length }));
     } catch (e) {
       // With an override reason the dialog is open: it shows the error itself.
@@ -93,6 +97,7 @@ export function OrdersTab({
       const conflict = allergyConflict(e);
       if (conflict) {
         setAlerts(conflict);
+        setConflicts(conflict);
         return;
       }
       setError(translateError(e));
@@ -106,7 +111,15 @@ export function OrdersTab({
     allowInInputs: true,
   });
 
-  const flagged = new Set((alerts ?? []).map((a) => a.service_id));
+  // Drugs matching an allergy are marked as soon as they are added (a warning from the server's
+  // own matcher); placing them still needs an override reason.
+  const drugIds = [...new Set(draft.filter((d) => d.rx).map((d) => d.serviceId))].sort((a, b) => a - b);
+  const liveAlerts = useAllergyAlerts(canOrder ? patientId : undefined, drugIds);
+  const matches = new Map<number, AllergyAlert[]>();
+  for (const alert of [...(liveAlerts.data ?? []), ...conflicts]) {
+    const known = matches.get(alert.service_id) ?? [];
+    if (!known.some((a) => a.allergy_id === alert.allergy_id)) matches.set(alert.service_id, [...known, alert]);
+  }
 
   return (
     <div className="@container flex flex-col gap-4">
@@ -119,7 +132,11 @@ export function OrdersTab({
             </h2>
           </div>
           <div className="grid gap-4 @3xl:grid-cols-2">
-            <CatalogPicker active={active} onPick={(service) => add([draftFromService(service)])} />
+            <CatalogPicker
+              active={active}
+              patientId={patientId}
+              onPick={(service) => add([draftFromService(service)])}
+            />
             <OrderSetPicker onPick={(set) => add(draftsFromOrderSet(set))} />
           </div>
 
@@ -134,7 +151,7 @@ export function OrdersTab({
                   <DraftItemEditor
                     key={item.key}
                     item={item}
-                    highlighted={flagged.has(item.serviceId)}
+                    allergyMatches={matches.get(item.serviceId) ?? []}
                     onChange={(next) => setDraft((prev) => prev.map((d) => (d.key === next.key ? next : d)))}
                     onRemove={() => setDraft((prev) => prev.filter((d) => d.key !== item.key))}
                   />
@@ -170,7 +187,7 @@ export function OrdersTab({
                 data-testid="place-orders"
               >
                 <Send aria-hidden="true" />
-                {t("orders.place", { count: draft.length })}
+                {draft.length > 0 ? t("orders.place", { count: draft.length }) : t("orders.placeEmpty")}
                 <KbdCombo combo={PLACE_SHORTCUT} className="max-md:hidden" />
               </Button>
             </div>

@@ -68,4 +68,32 @@ describe("useCombobox", () => {
     hook.rerender({ ...props, resetKey: "para|drug", results: ["paracetamol", "paraffin", "x"] });
     expect(hook.result.current.active).toBe(0);
   });
+
+  it("points at the list only while it is on screen", () => {
+    const { hook, props } = setup({});
+    expect(hook.result.current.inputProps["aria-controls"]).toBe(hook.result.current.listProps.id);
+    hook.rerender({ ...props, results: [] });
+    expect(hook.result.current.inputProps["aria-controls"]).toBeUndefined();
+    expect(hook.result.current.inputProps["aria-expanded"]).toBe(false);
+  });
+
+  it("Escape clears the box, and does nothing on an empty one", () => {
+    const onEscape = vi.fn();
+    const { hook, props } = setup({ onEscape });
+    const prevented = vi.fn();
+    const event = { key: "Escape", preventDefault: prevented } as unknown as KeyboardEvent<HTMLInputElement>;
+    act(() => {
+      hook.result.current.inputProps.onKeyDown(event);
+    });
+    expect(onEscape).toHaveBeenCalledTimes(1);
+    expect(prevented).toHaveBeenCalled();
+    hook.rerender({ ...props, onEscape, query: "", term: "", results: [] });
+    const idlePrevented = vi.fn();
+    const idle = { key: "Escape", preventDefault: idlePrevented } as unknown as KeyboardEvent<HTMLInputElement>;
+    act(() => {
+      hook.result.current.inputProps.onKeyDown(idle);
+    });
+    expect(onEscape).toHaveBeenCalledTimes(1);
+    expect(idlePrevented).not.toHaveBeenCalled();
+  });
 });

@@ -9,7 +9,7 @@
     "loadError": "تعذر تحميل طابورك.",
     "emptyTitle": "لا أحد في انتظارك",
     "emptyDescription": "يظهر المرضى هنا بعد دفع رسوم الكشف أو التصريح بها.",
-    "activeHeading": "في الانتظار ومعك ({{count}})",
+    "activeHeading": "قيد الانتظار والكشف ({{count}})",
     "noneWaiting": "لا أحد في الانتظار الآن.",
     "seenHeading": "تم الكشف عليهم اليوم ({{count}})",
     "token": "الرقم",
@@ -18,7 +18,7 @@
     "open": "فتح",
     "complete": "إنهاء الكشف",
     "completeTitle": "إنهاء هذا الكشف؟",
-    "completeDescription": "يخرج المريض من طابورك. تبقى الزيارة مفتوحة ليفوتر الكاشير طلباتك وتصل النتائج.",
+    "completeDescription": "يخرج المريض من طابورك. تبقى الزيارة مفتوحة ليُصدر الكاشير فاتورة طلباتك وتصل النتائج.",
     "movedToast": {
       "done": "انتهى الكشف.",
       "moved": "تم تحديث الطابور."
@@ -31,7 +31,12 @@
     "unplacedOrders_two": "طلبان في المسودة لم يُرسلا.",
     "unplacedOrders_few": "{{count}} طلبات في المسودة لم تُرسل.",
     "unplacedOrders_many": "{{count}} طلباً في المسودة لم يُرسل.",
-    "unplacedOrders_other": "{{count}} طلب في المسودة لم يُرسل."
+    "unplacedOrders_other": "{{count}} طلب في المسودة لم يُرسل.",
+    "callNamed": "نداء {{name}}، الرقم {{token, bidi}}",
+    "startNamed": "بدء الكشف على {{name}}، الرقم {{token, bidi}}",
+    "openNamed": "فتح زيارة {{name}}، الرقم {{token, bidi}}",
+    "calledAt": "نُودي",
+    "arrivedAt": "وصل"
   },
   "queueStatus": {
     "waiting": "في الانتظار",
@@ -123,13 +128,13 @@
       "spo2_percent": "تشبع الأكسجين (٪)",
       "weight_kg": "الوزن (كجم)",
       "height_cm": "الطول (سم)",
-      "blood_glucose_mg_dl": "السكر (ملغ/دسل)",
+      "blood_glucose_mg_dl": "السكر (ملغ/دل)",
       "pain_score": "الألم (0-10)"
     },
     "pulseValue": "{{value}} /دقيقة",
     "rrValue": "{{value}} /دقيقة",
     "heightValue": "{{value}} سم",
-    "glucoseValue": "{{value}} ملغ/دسل",
+    "glucoseValue": "{{value}} ملغ/دل",
     "painValue": "{{value}} من 10"
   },
   "note": {
@@ -180,7 +185,10 @@
     "resultCount_few": "{{count}} رموز ICD-10 مطابقة",
     "resultCount_many": "{{count}} رمزاً من ICD-10 مطابقاً",
     "resultCount_other": "{{count}} رمز ICD-10 مطابق",
-    "clearCodeNamed": "إزالة الرمز {{code, bidi}}"
+    "clearCodeNamed": "إزالة الرمز {{code, bidi}}",
+    "removeNamed": "حذف التشخيص {{name}}",
+    "removeTitle": "حذف هذا التشخيص؟",
+    "removedToast": "تم حذف التشخيص."
   },
   "referral": {
     "title": "الإحالات",
@@ -213,7 +221,9 @@
     "createdToast": "تم إصدار الإحالة.",
     "saveError": "لم تصدر الإحالة.",
     "cancel": "إلغاء الإحالة",
-    "cancelTitle": "إلغاء هذه الإحالة؟"
+    "cancelTitle": "إلغاء هذه الإحالة؟",
+    "cancelledToast": "أُلغيت الإحالة.",
+    "cancelledBecause": "أُلغيت: {{reason}}"
   },
   "allergy": {
     "title": "الحساسية",
@@ -232,7 +242,7 @@
     "drugClass": "المجموعة الدوائية",
     "choose": "اختر…",
     "substance": "الدواء أو المادة",
-    "reaction": "التفاعل",
+    "reaction": "الأعراض (رد الفعل التحسسي)",
     "severityLabel": "الشدة",
     "severity": {
       "mild": "خفيفة",
@@ -240,23 +250,23 @@
       "severe": "شديدة",
       "life_threatening": "مهددة للحياة"
     },
-    "resolve": "تعليم كزائلة",
-    "error": "تعليم كإدخال خاطئ",
+    "resolve": "زالت الحساسية",
+    "error": "سُجلت بالخطأ",
     "reactivate": "إعادة التفعيل",
     "addedToast": "تم تسجيل الحساسية.",
     "saveError": "لم تُسجل الحساسية.",
-    "resolveNamed": "تعليم حساسية {{name}} كزائلة",
-    "errorNamed": "تعليم حساسية {{name}} كإدخال خاطئ",
+    "resolveNamed": "زالت حساسية {{name}}",
+    "errorNamed": "حساسية {{name}} سُجلت بالخطأ",
     "reactivateNamed": "إعادة تفعيل حساسية {{name}}",
     "statusToast": {
-      "inactive": "عُلّمت الحساسية كزائلة.",
-      "entered_in_error": "عُلّمت الحساسية كإدخال خاطئ.",
+      "inactive": "سُجّل أن الحساسية زالت.",
+      "entered_in_error": "سُجّل أن الحساسية أُدخلت بالخطأ.",
       "active": "عادت الحساسية فعالة."
     },
     "confirm": {
-      "resolveTitle": "تعليم حساسية {{name}} كزائلة؟",
+      "resolveTitle": "هل زالت حساسية {{name}}؟",
       "resolveDescription": "لن تنبهك بعد الآن عند وصف دواء مطابق. يمكنك إعادة تفعيلها لاحقاً.",
-      "errorTitle": "تعليم حساسية {{name}} كإدخال خاطئ؟",
+      "errorTitle": "هل سُجلت حساسية {{name}} بالخطأ؟",
       "errorDescription": "استخدم هذا فقط إذا سُجلت الحساسية بالخطأ. تخرج من السجل ويتوقف تنبيهها، ويبقى أثرها في التاريخ."
     }
   },
@@ -269,7 +279,7 @@
     "icd10": "رمز ICD-10",
     "name": "الاسم (اختياري مع الرمز)",
     "since": "منذ",
-    "resolve": "زال",
+    "resolve": "تعليم كمُعالَج",
     "addedToast": "تم تسجيل المرض.",
     "saveError": "لم يُسجل المرض."
   },
@@ -277,7 +287,7 @@
     "lab": "فحص معمل",
     "procedure": "إجراء",
     "drug": "دواء",
-    "consumable": "مستهلكات"
+    "consumable": "مستلزم"
   },
   "orders": {
     "newOrder": "طلب جديد",
@@ -312,7 +322,10 @@
     "resultCount_two": "نتيجتان",
     "resultCount_few": "{{count}} نتائج",
     "resultCount_many": "{{count}} نتيجة",
-    "resultCount_other": "{{count}} نتيجة"
+    "resultCount_other": "{{count}} نتيجة",
+    "placeEmpty": "إرسال الطلبات",
+    "allergyMatch": "يطابق حساسية مسجلة: {{allergens}}",
+    "allergyFlag": "حساسية"
   },
   "rx": {
     "dose": "الجرعة",
@@ -324,15 +337,17 @@
     "instructions": "التعليمات",
     "asNeeded": "عند الحاجة",
     "quantityOverride": "الكمية (اختياري)",
-    "quantityComputed": "للصرف: {{count}} {{unit}} (محسوبة)",
-    "quantityGiven": "للصرف: {{count}} {{unit}} (أدخلتها يدوياً)",
+    "quantityComputed": "للصرف: {{count}} × {{unit}} (محسوبة)",
+    "quantityGiven": "للصرف: {{count}} × {{unit}} (أدخلتها يدوياً)",
     "quantityNeeded": "أدخل الجرعة والتكرار والأيام، أو الكمية.",
     "days_zero": "أقل من يوم",
     "days_one": "يوم واحد",
     "days_two": "يومان",
     "days_few": "{{count}} أيام",
     "days_many": "{{count}} يوماً",
-    "days_other": "{{count}} يوم"
+    "days_other": "{{count}} يوم",
+    "quantityComputedNoUnit": "للصرف: {{count}} (محسوبة)",
+    "quantityGivenNoUnit": "للصرف: {{count}} (أدخلتها يدوياً)"
   },
   "frequency": {
     "OD": "مرة يومياً",

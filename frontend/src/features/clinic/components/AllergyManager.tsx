@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { AlertCard } from "@/components/AlertCard";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ReasonDialog } from "@/components/ReasonDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -80,8 +81,8 @@ export function AllergyManager({
 
   const [changing, setChanging] = useState<{ allergy: Allergy; status: AllergyStatus } | null>(null);
 
-  const setStatus = (id: number, status: AllergyStatus) =>
-    update.mutateAsync({ id, body: { status } }).then(() => {
+  const setStatus = (id: number, status: AllergyStatus, reason = "") =>
+    update.mutateAsync({ id, body: { status, reason } }).then(() => {
       toast.success(t(`allergy.statusToast.${status}`));
     });
 
@@ -249,28 +250,36 @@ export function AllergyManager({
           </div>
         </div>
         <ConfirmDialog
-          open={changing !== null}
+          open={changing?.status === "inactive"}
           onOpenChange={(o) => {
             if (!o) setChanging(null);
           }}
           destructive
           title={
-            changing
-              ? t(`allergy.confirm.${changing.status === "inactive" ? "resolve" : "error"}Title`, {
-                  name: allergyLabel(changing.allergy, language),
-                })
-              : undefined
+            changing ? t("allergy.confirm.resolveTitle", { name: allergyLabel(changing.allergy, language) }) : undefined
           }
-          description={
-            changing
-              ? t(`allergy.confirm.${changing.status === "inactive" ? "resolve" : "error"}Description`)
-              : undefined
-          }
-          confirmLabel={changing?.status === "inactive" ? t("allergy.resolve") : t("allergy.error")}
+          description={t("allergy.confirm.resolveDescription")}
+          confirmLabel={t("allergy.resolve")}
           onConfirm={async () => {
             if (!changing) return;
             await setStatus(changing.allergy.id, changing.status);
             setChanging(null);
+          }}
+        />
+        {/* Marking an allergy in error stops its prescribing alerts: the reason is recorded. */}
+        <ReasonDialog
+          open={changing?.status === "entered_in_error"}
+          onOpenChange={(o) => {
+            if (!o) setChanging(null);
+          }}
+          destructive
+          title={changing ? t("allergy.confirm.errorTitle", { name: allergyLabel(changing.allergy, language) }) : ""}
+          description={t("allergy.confirm.errorDescription")}
+          reasons={[]}
+          confirmLabel={t("allergy.error")}
+          onSubmit={async ({ note }) => {
+            if (!changing) return;
+            await setStatus(changing.allergy.id, changing.status, note);
           }}
         />
       </DialogContent>

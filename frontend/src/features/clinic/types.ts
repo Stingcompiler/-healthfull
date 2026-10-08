@@ -47,12 +47,5 @@ export type DoctorStatus = DoctorLine["status"];
 export type WithdrawReason = S["WithdrawReasonOut"];
 export type Route = S["PrescriptionIn"]["route"];
 
-/** One allergy match in a 409 ALLERGY_CONFLICT (details.alerts). */
-export interface AllergyAlert {
-  service_id: number;
-  allergy_id: number;
-  match: string;
-  severity: string;
-  allergen: string;
-  allergen_ar: string;
-}
+/** One allergy match: a 409 ALLERGY_CONFLICT (details.alerts) or the allergy-alerts warning. */
+export type AllergyAlert = S["AllergyAlertOut"];

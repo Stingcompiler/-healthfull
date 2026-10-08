@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { AlertCard } from "@/components/AlertCard";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DateText } from "@/components/DateText";
+import { ReasonDialog } from "@/components/ReasonDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { usePermission } from "@/lib/auth/hooks";
+import { useCurrentUser, usePermission } from "@/lib/auth/hooks";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 
@@ -45,6 +45,7 @@ export function ReferralSection({
 }) {
   const { t } = useTranslation("clinic");
   const language = useLanguage();
+  const me = useCurrentUser();
   const canRefer = usePermission("clinical.refer") && open;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelling, setCancelling] = useState<Referral | null>(null);
@@ -86,7 +87,12 @@ export function ReferralSection({
                 <DateText value={r.created_at} className="ms-auto text-xs text-muted" />
               </div>
               <p className="break-words whitespace-pre-line text-fg-muted">{r.reason}</p>
-              {canRefer && r.status === "issued" ? (
+              {r.status === "cancelled" && r.cancel_reason ? (
+                <p className="text-xs break-words text-muted">
+                  {t("referral.cancelledBecause", { reason: r.cancel_reason })}
+                </p>
+              ) : null}
+              {canRefer && r.status === "issued" && r.referred_by?.id === me?.id ? (
                 <div className="flex justify-end">
                   <Button size="sm" variant="ghost" onClick={() => setCancelling(r)}>
                     <XCircle aria-hidden="true" />
@@ -99,17 +105,18 @@ export function ReferralSection({
         </ul>
       )}
       {canRefer ? <ReferralDialog visitId={visitId} open={dialogOpen} onOpenChange={setDialogOpen} /> : null}
-      <ConfirmDialog
+      <ReasonDialog
         open={cancelling !== null}
         onOpenChange={(o) => {
           if (!o) setCancelling(null);
         }}
         title={t("referral.cancelTitle")}
+        reasons={[]}
         destructive
         confirmLabel={t("referral.cancel")}
-        onConfirm={async () => {
-          if (cancelling) await cancel.mutateAsync(cancelling.id);
-          setCancelling(null);
+        onSubmit={async ({ note }) => {
+          if (cancelling) await cancel.mutateAsync({ id: cancelling.id, reason: note });
+          toast.success(t("referral.cancelledToast"));
         }}
       />
     </section>

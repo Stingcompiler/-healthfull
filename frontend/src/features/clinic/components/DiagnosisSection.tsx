@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { AlertCard } from "@/components/AlertCard";
+import { ReasonDialog } from "@/components/ReasonDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ export function DiagnosisSection({
   const [kind, setKind] = useState<Kind>(diagnoses.length === 0 ? "primary" : "secondary");
   const [certainty, setCertainty] = useState<Certainty>("provisional");
   const [error, setError] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<Diagnosis | null>(null);
 
   const add = () => {
     setError(null);
@@ -92,13 +94,9 @@ export function DiagnosisSection({
                 <Button
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={t("diagnosis.remove")}
+                  aria-label={t("diagnosis.removeNamed", { name: d.icd10?.code ?? d.text })}
                   title={t("diagnosis.remove")}
-                  onClick={() =>
-                    remove.mutate(d.id, {
-                      onError: (e) => toast.error(translateError(e)),
-                    })
-                  }
+                  onClick={() => setRemoving(d)}
                 >
                   <Trash2 aria-hidden="true" />
                 </Button>
@@ -109,6 +107,31 @@ export function DiagnosisSection({
       ) : (
         <p className="text-sm text-muted">{t("diagnosis.none")}</p>
       )}
+
+      <ReasonDialog
+        open={removing !== null}
+        onOpenChange={(o) => {
+          if (!o) setRemoving(null);
+        }}
+        title={t("diagnosis.removeTitle")}
+        reasons={[]}
+        destructive
+        confirmLabel={t("diagnosis.remove")}
+        onSubmit={async ({ note }) => {
+          if (removing) await remove.mutateAsync({ id: removing.id, reason: note });
+          toast.success(t("diagnosis.removedToast"));
+        }}
+      >
+        {removing ? (
+          <p className="rounded-control bg-subtle px-3 py-2 text-sm break-words text-fg">
+            {removing.icd10 ? <bdi className="tabular font-semibold">{removing.icd10.code}</bdi> : null}
+            {removing.icd10 ? " " : null}
+            {removing.icd10 ? pickName({ ar: removing.icd10.title_ar, en: removing.icd10.title_en }, language) : null}
+            {removing.icd10 && removing.text ? " · " : null}
+            {removing.text}
+          </p>
+        ) : null}
+      </ReasonDialog>
 
       {canRecord ? (
         <div className="flex flex-col gap-3 rounded-control bg-subtle p-3" data-testid="diagnosis-form">

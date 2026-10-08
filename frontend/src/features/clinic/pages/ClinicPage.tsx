@@ -17,7 +17,7 @@ import { useLanguage } from "@/lib/i18n-hooks";
 import { useCallNext, useQueueAction, useWorklist } from "../api";
 import { QueryError } from "../components/QueryError";
 import { QueueStatusBadge } from "../components/QueueStatusBadge";
-import { toPatientCard } from "../lib";
+import { patientName, toPatientCard } from "../lib";
 import type { QueueEntry } from "../types";
 
 const CALL_NEXT_SHORTCUT = "alt+n";
@@ -121,6 +121,8 @@ function QueueCard({ entry }: { entry: QueueEntry }) {
   const translateError = useTranslateError();
   const navigate = useNavigate();
   const visitPath = { to: "/clinic/visits/$visitId", params: { visitId: String(entry.visit.id) } } as const;
+  // Each card's buttons name their patient, so a screen reader's button list tells them apart.
+  const who = { name: patientName(entry.patient, language), token: String(entry.token_no) };
 
   const start = () => {
     action.mutate(
@@ -144,6 +146,7 @@ function QueueCard({ entry }: { entry: QueueEntry }) {
         <QueueStatusBadge status={entry.status} />
         <span className="text-xs text-muted">{t(`visitType.${entry.visit.visit_type}`)}</span>
         <span className="ms-auto text-xs text-muted">
+          {entry.called_at ? t("queue.calledAt") : t("queue.arrivedAt")}{" "}
           <DateText value={entry.called_at ?? entry.created_at} format="time" />
         </span>
       </div>
@@ -158,13 +161,16 @@ function QueueCard({ entry }: { entry: QueueEntry }) {
                 variant={entry.status === "called" ? "default" : "outline"}
                 onClick={start}
                 loading={action.isPending}
+                aria-label={t(entry.status === "waiting" ? "queue.callNamed" : "queue.startNamed", who)}
               >
                 {entry.status === "waiting" ? <Megaphone aria-hidden="true" /> : <Play aria-hidden="true" />}
                 {entry.status === "waiting" ? t("queue.call") : t("queue.start")}
               </Button>
             ) : null}
             <Button size="sm" variant={entry.status === "in_progress" ? "default" : "ghost"} asChild>
-              <Link {...visitPath}>{t("queue.open")}</Link>
+              <Link {...visitPath} aria-label={t("queue.openNamed", who)}>
+                {t("queue.open")}
+              </Link>
             </Button>
           </>
         }

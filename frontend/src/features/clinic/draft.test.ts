@@ -70,7 +70,16 @@ describe("order drafts", () => {
     ];
     const favorite = toFavorite("Fever", items, "en");
     expect(favorite).toMatchObject({ name_ar: "", name_en: "Fever" });
-    expect(favorite.items[1]).toMatchObject({ service_id: 7, quantity: 21, frequency_code: "TID", duration_days: 7 });
+    expect(favorite.items[1]).toMatchObject({
+      service_id: 7,
+      quantity: 21,
+      dose_quantity: "1",
+      route: "oral",
+      frequency_code: "TID",
+      duration_days: 7,
+      as_needed: false,
+    });
+    expect(favorite.items[0]).toMatchObject({ dose_quantity: null, route: null, as_needed: false });
 
     const set: OrderSet = {
       id: 1,
@@ -87,15 +96,69 @@ describe("order drafts", () => {
           name_en: "Amoxicillin 500",
           quantity: "21",
           dose: "1 capsule",
+          dose_quantity: "1",
+          route: "oral",
           frequency_code: "TID",
           duration_days: 7,
+          as_needed: false,
           instructions: "",
         },
       ],
     };
     const [loaded] = draftsFromOrderSet(set);
-    expect(loaded?.quantity).toBe("21");
-    expect(loaded?.rx?.frequencyCode).toBe("TID");
+    // Countable again: the quantity follows dose x frequency x duration, not the saved number.
+    expect(loaded?.quantity).toBe("");
+    expect(loaded?.rx).toMatchObject({ frequencyCode: "TID", doseQuantity: "1", durationDays: "7" });
+  });
+
+  it("keeps an IV drug's route and an as-needed drug's quantity through a favorite", () => {
+    if (!amoxicillin.drug) throw new Error("the fixture is a drug");
+    const ceftriaxone: OrderableService = {
+      ...amoxicillin,
+      id: 9,
+      code: "DRG-CEFTRI1G",
+      name_ar: "سيفترياكسون 1 غ",
+      name_en: "Ceftriaxone 1 g",
+      drug: { ...amoxicillin.drug, base_unit_name_en: "vial", classes: [] },
+    };
+    const paracetamol: OrderableService = { ...ceftriaxone, id: 10, code: "DRG-PARA" };
+    const iv = draftFromService(ceftriaxone);
+    const prn = draftFromService(paracetamol);
+    if (!iv.rx || !prn.rx) throw new Error("drug drafts have a prescription");
+    const items = [
+      { ...iv, computedQuantity: 10, rx: { ...iv.rx, route: "iv" as const, frequencyCode: "Q12H", durationDays: "5" } },
+      { ...prn, quantity: "10", rx: { ...prn.rx, asNeeded: true, frequencyCode: "Q6H" } },
+    ];
+    const favorite = toFavorite("Pneumonia", items, "en");
+    const saved: OrderSet = {
+      id: 2,
+      name_ar: "",
+      name_en: "Pneumonia",
+      personal: true,
+      department_id: null,
+      items: favorite.items.map((it, i) => ({
+        service_id: it.service_id,
+        service_code: i === 0 ? "DRG-CEFTRI1G" : "DRG-PARA",
+        kind: "drug",
+        name_ar: "",
+        name_en: "",
+        quantity: String(it.quantity),
+        dose: it.dose,
+        dose_quantity: it.dose_quantity == null ? null : String(it.dose_quantity),
+        route: it.route ?? null,
+        frequency_code: it.frequency_code,
+        duration_days: it.duration_days ?? null,
+        as_needed: it.as_needed,
+        instructions: it.instructions,
+      })),
+    };
+    const [ivBack, prnBack] = draftsFromOrderSet(saved);
+    expect(ivBack?.rx).toMatchObject({ route: "iv", doseQuantity: "1", frequencyCode: "Q12H", durationDays: "5" });
+    expect(ivBack?.quantity).toBe("");
+    if (!ivBack) throw new Error("the IV drug comes back");
+    expect(toOrderItem(ivBack, "en").prescription?.route).toBe("iv");
+    expect(prnBack?.rx?.asNeeded).toBe(true);
+    expect(prnBack?.quantity).toBe("10");
   });
 });
 
