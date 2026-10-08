@@ -20,6 +20,11 @@ import {
 test.describe.configure({ timeout: 120_000 });
 test.afterAll(disposeApiClients);
 
+async function signIn(page: Page, lang: Lang, theme: "light" | "dark" | "warm"): Promise<void> {
+  await login(page, "reception");
+  await setPrefs(page, { theme, lang });
+}
+
 interface Named {
   id: number;
   code: string;
@@ -52,11 +57,10 @@ for (const v of VIEWPORTS) {
     const { patient } = await createPatient({ full_name_ar: "مريم عثمان علي", full_name_en: "Mariam Osman Ali" });
     const gen = await department("GEN");
     await page.setViewportSize({ width: v.width, height: v.height });
-    await setPrefs(page, { theme: "light", lang: v.lang });
-    await login(page, "reception");
+    await signIn(page, v.lang, "light");
     await page.goto(`/patients/${String(patient.id)}`);
 
-    await page.getByRole("button", { name: tr(v.lang, "patients:profile.newVisit") }).click();
+    await page.getByRole("button", { name: tr(v.lang, "patients:profile.newVisit") }).first().click();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByTestId("picked-patient")).toContainText(patient.file_no);
     await chooseOption(page, tr(v.lang, "visits:create.department"), v.lang === "ar" ? gen.name_ar : gen.name_en);
@@ -72,7 +76,8 @@ for (const v of VIEWPORTS) {
     await expect(slip.getByTestId("token-number")).toHaveText(/\S/);
     await expect(slip.getByTestId("token-slip")).toContainText(patient.file_no);
     await expectNoHorizontalScroll(page);
-    await slip.getByRole("button", { name: tr(v.lang, "common:actions.close") }).click();
+    await page.keyboard.press("Escape");
+    await expect(slip).toHaveCount(0);
 
     // The visit is on the file with its timeline.
     const visit = page.getByTestId("visit-item").first();
@@ -92,8 +97,7 @@ test("@patients board calls the paid token and the waiting room shows it", async
   const token = ready.queue_entry?.token_no;
   expect(token).toBeDefined();
 
-  await setPrefs(page, { theme: "dark", lang: "en" });
-  await login(page, "reception");
+  await signIn(page, "en", "dark");
   await page.goto("/queue");
   await chooseOption(page, tr("en", "visits:board.department"), gen.name_en);
   await expect(page.getByText(ready.patient.file_no).first()).toBeVisible();

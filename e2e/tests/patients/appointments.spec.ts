@@ -9,6 +9,11 @@ import { createPatient, disposeApiClients, expectNoHorizontalScroll, login, setP
 test.describe.configure({ timeout: 120_000 });
 test.afterAll(disposeApiClients);
 
+async function signIn(page: Page, lang: Lang, theme: "light" | "dark" | "warm"): Promise<void> {
+  await login(page, "reception");
+  await setPrefs(page, { theme, lang });
+}
+
 async function openDoctorTomorrow(page: Page, lang: Lang): Promise<void> {
   await page.goto("/appointments");
   await expect(page.locator("#main h1")).toHaveText(tr(lang, "visits:appointments.title"));
@@ -24,8 +29,7 @@ for (const v of [
   test(`@patients book an appointment and check in (${v.lang}, ${String(v.width)}px)`, async ({ page }) => {
     const { patient } = await createPatient({ full_name_ar: "رحاب الصادق", full_name_en: "Rehab Alsadig", sex: "female" });
     await page.setViewportSize({ width: v.width, height: v.height });
-    await setPrefs(page, { theme: v.theme, lang: v.lang });
-    await login(page, "reception");
+    await signIn(page, v.lang, v.theme);
     await openDoctorTomorrow(page, v.lang);
 
     const slot = page.getByTestId("free-slot").first();
@@ -50,7 +54,8 @@ for (const v of [
 
     const slip = page.getByRole("dialog");
     await expect(slip.getByTestId("token-slip")).toContainText(patient.file_no);
-    await slip.getByRole("button", { name: tr(v.lang, "common:actions.close") }).click();
+    await page.keyboard.press("Escape");
+    await expect(slip).toHaveCount(0);
     await expect(card).toHaveAttribute("data-status", "arrived");
 
     // The new visit is on the patient's file, linked to nothing else yet.
@@ -60,8 +65,7 @@ for (const v of [
 }
 
 test("@patients reschedule and cancel an appointment for a caller without a file", async ({ page }) => {
-  await setPrefs(page, { theme: "warm", lang: "ar" });
-  await login(page, "reception");
+  await signIn(page, "ar", "warm");
   await openDoctorTomorrow(page, "ar");
   await page.getByTestId("free-slot").first().getByRole("button").click();
   const dialog = page.getByRole("dialog");

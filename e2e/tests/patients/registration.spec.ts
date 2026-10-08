@@ -17,6 +17,11 @@ import {
 test.describe.configure({ timeout: 90_000 });
 test.afterAll(disposeApiClients);
 
+async function signIn(page: Page, lang: Lang, theme: "light" | "dark" | "warm"): Promise<void> {
+  await login(page, "reception");
+  await setPrefs(page, { theme, lang });
+}
+
 function uniquePhone(): string {
   return `09${String(Date.now()).slice(-8)}`;
 }
@@ -37,8 +42,7 @@ const CASES: { lang: Lang; width: number; height: number; nameAr: string; nameEn
 for (const c of CASES) {
   test(`@patients register a patient (${c.lang}, ${String(c.width)}px)`, async ({ page }) => {
     await page.setViewportSize({ width: c.width, height: c.height });
-    await setPrefs(page, { theme: c.lang === "ar" ? "light" : "dark", lang: c.lang });
-    await login(page, "reception");
+    await signIn(page, c.lang, c.lang === "ar" ? "light" : "dark");
     await openNewPatient(page, c.lang);
 
     if (c.nameAr) await page.getByLabel(tr(c.lang, "patients:form.nameAr")).fill(c.nameAr);
@@ -59,8 +63,7 @@ for (const c of CASES) {
 test("@patients duplicate warning offers the existing file", async ({ page }) => {
   const phone = uniquePhone();
   const { patient: existing } = await createPatient({ full_name_ar: "حسن الطاهر", phone, sex: "male" });
-  await setPrefs(page, { theme: "light", lang: "en" });
-  await login(page, "reception");
+  await signIn(page, "en", "light");
   await openNewPatient(page, "en");
 
   await page.getByLabel(tr("en", "patients:form.nameEn")).fill("Hassan Altahir");
@@ -82,8 +85,7 @@ test("@patients duplicate warning offers the existing file", async ({ page }) =>
 test("@patients duplicate warning can be overridden for another person", async ({ page }) => {
   const phone = uniquePhone();
   await createPatient({ full_name_ar: "نور الدين بابكر", phone, sex: "male" });
-  await setPrefs(page, { theme: "warm", lang: "ar" });
-  await login(page, "reception");
+  await signIn(page, "ar", "warm");
   await openNewPatient(page, "ar");
   await page.getByLabel(tr("ar", "patients:form.nameAr")).fill("نور الدين بابكر الابن");
   await page.getByLabel(tr("ar", "patients:form.phone"), { exact: true }).fill(phone);
@@ -95,8 +97,7 @@ test("@patients duplicate warning can be overridden for another person", async (
 });
 
 test("@patients emergency registration, then completion", async ({ page }) => {
-  await setPrefs(page, { theme: "light", lang: "ar" });
-  await login(page, "reception");
+  await signIn(page, "ar", "light");
   await page.goto("/patients");
   await page.getByRole("button", { name: tr("ar", "patients:emergency.open") }).click();
   const dialog = page.getByRole("dialog");
@@ -104,7 +105,7 @@ test("@patients emergency registration, then completion", async ({ page }) => {
   await dialog.getByRole("button", { name: tr("ar", "patients:emergency.submit") }).click();
 
   await expect(page).toHaveURL(/\/patients\/\d+$/);
-  await expect(page.getByText(tr("ar", "patients:profile.incompleteTitle"))).toBeVisible();
+  await expect(page.getByText(tr("ar", "patients:profile.incompleteTitle")).first()).toBeVisible();
 
   await page.getByRole("button", { name: tr("ar", "patients:edit.completeOpen") }).click();
   const edit = page.getByRole("dialog");
