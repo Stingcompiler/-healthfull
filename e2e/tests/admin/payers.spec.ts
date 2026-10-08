@@ -58,7 +58,7 @@ test.describe("@admin payers", () => {
     // Leave without saving: the rule is unchanged.
     await dialog.getByRole("button", { name: tr("en", "actions.cancel") }).click();
     await expect(dialog).toBeHidden();
-    await expect(main.getByText(tr("en", "admin:payers.summary.percentage", { percent: "70.00" })).first()).toBeVisible();
+    await expect(main.getByText(tr("en", "admin:payers.summary.percentage", { percent: "70%" })).first()).toBeVisible();
 
     // A second default rule is refused with a translated message (nothing is saved).
     await page.getByRole("button", { name: tr("en", "admin:payers.addRule") }).click();

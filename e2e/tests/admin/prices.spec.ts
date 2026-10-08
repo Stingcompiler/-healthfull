@@ -19,10 +19,21 @@ function centerDate(days: number): string {
   }).format(shifted);
 }
 
-async function newVersion(page: Page, date: string): Promise<void> {
+/** A new version from `date`; a list's first version may start empty (`copy: "empty"`) or, by
+ * default, from the current prices of the cash list (pre-selected). */
+async function newVersion(page: Page, date: string, copy: "default" | "empty" = "default"): Promise<void> {
   await page.getByRole("button", { name: tr("en", "admin:prices.newVersion") }).click();
   const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
   await dialog.getByLabel(tr("en", "admin:prices.effectiveFrom")).fill(date);
+  const copyFrom = dialog.getByRole("combobox", { name: tr("en", "admin:prices.copyFrom") });
+  if (copy === "empty") {
+    await copyFrom.click();
+    await page.getByRole("option", { name: tr("en", "admin:prices.startEmpty") }).click();
+  } else if ((await copyFrom.count()) > 0) {
+    // The cash list is pre-selected once the lists have loaded.
+    await expect(copyFrom).not.toContainText(tr("en", "admin:prices.startEmpty"));
+  }
   await dialog.getByRole("button", { name: tr("en", "actions.save") }).click();
   await expect(page.getByText(tr("en", "admin:prices.versionCreated")).first()).toBeVisible();
   await expect(dialog).toBeHidden();
@@ -35,6 +46,7 @@ test.describe("@admin catalog and prices", () => {
   const stamp = String(Date.now()).slice(-6);
   const serviceCode = `E2E-XRAY-${stamp}`;
   const listCode = `E2EPL${stamp}`;
+  const todayListCode = `E2ETD${stamp}`;
 
   test("create a service, a price list and a priced version; bulk +10% makes a new dated version", async ({
     page,
@@ -53,24 +65,43 @@ test.describe("@admin catalog and prices", () => {
     await page.getByRole("searchbox").fill(serviceCode);
     await expect(page.locator("main").getByText("Chest X-ray e2e").first()).toBeVisible();
 
-    // 2. A new price list; its first version may start today (and is then locked).
-    await page.goto("/administration/price-lists");
-    await page.getByRole("button", { name: tr("en", "admin:prices.addList") }).click();
+    const newList = async (code: string, nameEn: string) => {
+      await page.goto("/administration/price-lists");
+      await page.getByRole("button", { name: tr("en", "admin:prices.addList") }).click();
+      dialog = page.getByRole("dialog");
+      await dialog.getByLabel(tr("en", "admin:common.code")).fill(code);
+      await dialog.getByLabel(tr("en", "admin:common.nameEn")).fill(nameEn);
+      await dialog.getByLabel(tr("en", "admin:common.nameAr")).fill("عقد تجريبي");
+      await dialog.getByRole("button", { name: tr("en", "actions.save") }).click();
+      await expect(page).toHaveURL(/\/administration\/price-lists\/\d+$/);
+      await expect(page.locator("#main h1")).toHaveText(nameEn);
+    };
+
+    // 2. A new price list can go live today, but only with prices: an empty same-day version
+    // would be locked at once with nothing in it. It copies the cash list's current prices.
+    await newList(todayListCode, "E2E contract today");
+    await page.getByRole("button", { name: tr("en", "admin:prices.newVersion") }).click();
     dialog = page.getByRole("dialog");
-    await dialog.getByLabel(tr("en", "admin:common.code")).fill(listCode);
-    await dialog.getByLabel(tr("en", "admin:common.nameEn")).fill("E2E contract");
-    await dialog.getByLabel(tr("en", "admin:common.nameAr")).fill("عقد تجريبي");
+    await dialog.getByLabel(tr("en", "admin:prices.effectiveFrom")).fill(centerDate(0));
+    await dialog.getByRole("combobox", { name: tr("en", "admin:prices.copyFrom") }).click();
+    await page.getByRole("option", { name: tr("en", "admin:prices.startEmpty") }).click();
     await dialog.getByRole("button", { name: tr("en", "actions.save") }).click();
-    await expect(page).toHaveURL(/\/administration\/price-lists\/\d+$/);
-    await expect(page.locator("#main h1")).toHaveText("E2E contract");
-
+    await expect(dialog.getByText(tr("en", "admin:prices.copyRequiredToday"))).toBeVisible();
+    await dialog.getByRole("button", { name: tr("en", "actions.cancel") }).click();
     await newVersion(page, centerDate(0));
+    const today = page.getByTestId(`version-${centerDate(0)}`);
+    await expect(today).toContainText(tr("en", "admin:prices.status.current"));
+    await expect(today).not.toContainText(tr("en", "admin:prices.items_other", { count: "0" }));
     await expect(page.getByText(tr("en", "admin:prices.lockedTitle"))).toBeVisible();
+    await expect(page.getByTestId(/^price-/)).toHaveCount(0); // read-only: prices are text
 
-    // 3. A version from tomorrow is editable: give the new service a price.
-    await newVersion(page, centerDate(1));
+    // 3. Another new list starts empty from tomorrow; that version is editable.
+    await newList(listCode, "E2E contract");
+    await newVersion(page, centerDate(1), "empty");
     await expect(page.getByTestId(`version-${centerDate(1)}`)).toHaveAttribute("aria-current", "true");
-    await page.getByRole("button", { name: tr("en", "admin:prices.addService") }).click();
+    // The empty version explains itself and offers the same action as the toolbar.
+    await expect(page.getByText(tr("en", "admin:empty.priceItems.title"))).toBeVisible();
+    await page.getByRole("button", { name: tr("en", "admin:prices.addService") }).first().click();
     dialog = page.getByRole("dialog");
     await dialog.getByRole("searchbox").fill(serviceCode);
     await dialog.getByRole("combobox", { name: tr("en", "admin:prices.service") }).click();
@@ -106,7 +137,7 @@ test.describe("@admin catalog and prices", () => {
     await expect(created).toBeVisible();
     await expect(created).toHaveAttribute("aria-current", "true");
     await expect(created).toContainText(tr("en", "admin:prices.status.scheduled"));
-    await expect(created).toContainText("10.00%");
+    await expect(created).toContainText(tr("en", "admin:prices.percentChange", { value: "+10%" }));
     await expect(page.getByTestId(`price-${serviceCode}`)).toHaveValue("16500.00");
 
     // The base version keeps its price (a bulk update never edits an existing version).
