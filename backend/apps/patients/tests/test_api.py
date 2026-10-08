@@ -140,7 +140,17 @@ def test_merge_needs_supervisor_and_reason(client_as, clerk) -> None:
     reception = client_as("receptionist")
     _error(reception.post(f"/api/patients/{keep.pk}/merge", payload), 403, "PERMISSION_DENIED")
 
+    _error(reception.get("/api/patients/merge-reasons"), 403, "PERMISSION_DENIED")
+
     manager = client_as("manager")
+    reasons = manager.get("/api/patients/merge-reasons").json()
+    assert "DUPLICATE_REGISTRATION" in [r["code"] for r in reasons]
+    assert all(r["label_ar"] and r["label_en"] for r in reasons)
+    _error(
+        manager.post(f"/api/patients/{keep.pk}/merge", {**payload, "reason_code": "NOPE"}),
+        409,
+        "REASON_UNKNOWN",
+    )
     _error(
         manager.post(f"/api/patients/{keep.pk}/merge", {**payload, "note": "  "}),
         409,
@@ -154,6 +164,8 @@ def test_merge_needs_supervisor_and_reason(client_as, clerk) -> None:
     merged = manager.post(f"/api/patients/{keep.pk}/merge", payload)
     assert merged.status_code == 201, merged.content
     assert merged.json()["reason_code"] == "DUPLICATE_REGISTRATION"
+    assert merged.json()["reason"]["label_en"]
+    assert merged.json()["note"] == "same"
     assert merged.json()["source"]["id"] == dup.pk
     assert PatientMerge.objects.filter(source=dup, target=keep).exists()
 

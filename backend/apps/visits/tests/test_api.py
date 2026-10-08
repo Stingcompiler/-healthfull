@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 from django.utils import timezone
 
+from apps.core.models import UserRole
 from apps.core.tests import builders as b
 from apps.orders.models import ServiceLine
 from apps.visits import services as vs
@@ -133,6 +134,39 @@ def test_cancel_visit_with_reason(client_as, fee_doctor, clerk) -> None:
     )
 
 
+def test_reception_sees_and_cannot_cancel_a_billed_visit(client_as, clerk, fee_doctor) -> None:
+    """Review: the front desk was offered 'Cancel visit' on paid visits and always got 403.
+
+    The rows now say ``billed``; a receptionist (no billing.approve_credit_note) is refused
+    without any change, and a cashier supervisor cancels it with the credit note.
+    """
+    visit = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
+    reception = client_as("receptionist")
+    dept = fee_doctor.department_id
+    [row] = reception.get(f"/api/visits/queue/board?department_id={dept}").json()
+    assert row["billed"] is False
+    assert reception.get(f"/api/visits/{visit.pk}").json()["visit"]["billed"] is False
+
+    _settle(ServiceLine.objects.get(visit=visit))
+    [row] = reception.get(f"/api/visits/queue/board?department_id={dept}").json()
+    assert row["billed"] is True
+    listed = reception.get(f"/api/visits?patient_id={visit.patient_id}").json()
+    assert listed["items"][0]["billed"] is True
+
+    response = reception.post(f"/api/visits/{visit.pk}/cancel", {"reason_code": "PATIENT_LEFT"})
+    body = _error(response, 403, "PERMISSION_DENIED")
+    assert body["details"]["permission"] == "billing.approve_credit_note"
+    visit.refresh_from_db()
+    assert visit.status == "open"
+    assert ServiceLine.objects.get(visit=visit).billing_status == "settled"
+
+    supervisor = client_as("cashier_supervisor")
+    done = supervisor.post(f"/api/visits/{visit.pk}/cancel", {"reason_code": "PATIENT_LEFT"})
+    assert done.status_code == 200, done.content
+    assert done.json()["visit"]["status"] == "cancelled"
+    assert ServiceLine.objects.get(visit=visit).billing_status == "credited"
+
+
 def test_cancel_needs_permission(client_as, clerk, fee_doctor) -> None:
     visit = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
     api = client_as("nurse")
@@ -190,9 +224,20 @@ def test_board_call_next_and_moves(client_as, clerk, fee_doctor) -> None:
     entry_id = called.json()["id"]
     started = api.post(f"/api/visits/queue/{entry_id}/move", {"action": "start"}).json()
     assert started["status"] == "in_progress"
+    # Finishing performs the fee line: the doctor's act, never the front desk's.
+    _error(
+        api.post(f"/api/visits/queue/{entry_id}/move", {"action": "finish"}),
+        403,
+        "PERMISSION_DENIED",
+    )
+    assert ServiceLine.objects.get(visit=paid).fulfilment_status == "pending"
+    assert QueueEntry.objects.get(pk=entry_id).status == "in_progress"
+    api = client_as("doctor")
     finished = api.post(f"/api/visits/queue/{entry_id}/move", {"action": "finish"}).json()
     assert finished["status"] == "done"
-    assert ServiceLine.objects.get(visit=paid).fulfilment_status == "performed"
+    line = ServiceLine.objects.get(visit=paid)
+    assert line.fulfilment_status == "performed"
+    assert UserRole.objects.filter(user=line.performed_by, role__code="doctor").exists()
     _error(
         api.post(f"/api/visits/queue/{entry_id}/move", {"action": "call"}),
         409,
@@ -201,9 +246,37 @@ def test_board_call_next_and_moves(client_as, clerk, fee_doctor) -> None:
     assert api.post(f"/api/visits/queue/{entry_id}/move", {"action": "x"}).status_code == 422
 
 
+def test_finish_by_reception_or_nurse_is_refused(client_as, clerk, fee_doctor) -> None:
+    """Review: a receptionist could finish a consultation and so perform the doctor's fee."""
+    visit = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
+    _settle(ServiceLine.objects.get(visit=visit))
+    entry = QueueEntry.objects.get(visit=visit)
+    vs.start_consultation(vs.call_patient(entry, actor=clerk), actor=clerk)
+    for role in ("receptionist", "nurse"):
+        response = client_as(role).post(f"/api/visits/queue/{entry.pk}/move", {"action": "finish"})
+        body = _error(response, 403, "PERMISSION_DENIED")
+        assert body["details"]["permission"] == "visits.finish_consultation"
+    line = ServiceLine.objects.get(visit=visit)
+    assert (line.fulfilment_status, line.performed_by_id) == ("pending", None)
+
+
+def test_token_slip_does_not_count_unpaid_tokens_ahead(client_as, clerk, fee_doctor) -> None:
+    """Review: the slip counted unpaid tokens that call_next skips."""
+    unpaid = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
+    paid = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
+    mine = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
+    _settle(ServiceLine.objects.get(visit=paid))
+    entry = QueueEntry.objects.get(visit=mine)
+    body = client_as("receptionist").get(f"/api/visits/queue/{entry.pk}/token").json()
+    assert body["entry"]["token_no"] == 3
+    assert body["ahead"] == 1
+    assert unpaid.pk != paid.pk
+
+
 def test_token_slip(client_as, clerk, fee_doctor) -> None:
     first = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
     second = vs.create_visit(patient=b.patient(), actor=clerk, doctor=fee_doctor)
+    _settle(ServiceLine.objects.get(visit=first))
     entry = QueueEntry.objects.get(visit=second)
     body = client_as("receptionist").get(f"/api/visits/queue/{entry.pk}/token").json()
     assert body["entry"]["token_no"] == 2
@@ -296,16 +369,17 @@ def test_appointment_book_conflict_reschedule_cancel(client_as, fee_doctor) -> N
     upcoming = api.get(f"/api/visits/appointments/upcoming?patient_id={pat.pk}").json()
     assert [a["id"] for a in upcoming] == [moved.json()["id"]]
 
-    _error(
-        api.post(f"/api/visits/appointments/{moved.json()['id']}/cancel", {"note": " "}),
-        409,
-        "REASON_REQUIRED",
-    )
-    cancelled = api.post(
-        f"/api/visits/appointments/{moved.json()['id']}/cancel", {"note": "travelling"}
-    ).json()
-    assert cancelled["status"] == "cancelled"
-    assert cancelled["cancel_note"] == "travelling"
+    cancel_url = f"/api/visits/appointments/{moved.json()['id']}/cancel"
+    options = api.get("/api/visits/options").json()
+    assert "PATIENT_REQUEST" in [r["code"] for r in options["appointment_cancel_reasons"]]
+    _error(api.post(cancel_url, {"reason_code": ""}), 409, "REASON_REQUIRED")
+    _error(api.post(cancel_url, {"reason_code": "PATIENT_LEFT"}), 409, "REASON_UNKNOWN")
+    _error(api.post(cancel_url, {"reason_code": "OTHER", "note": " "}), 409, "REASON_NOTE_REQUIRED")
+    cancelled = api.post(cancel_url, {"reason_code": "PATIENT_REQUEST", "note": "travelling"})
+    assert cancelled.status_code == 200, cancelled.content
+    assert cancelled.json()["status"] == "cancelled"
+    assert cancelled.json()["cancel_note"] == "travelling"
+    assert cancelled.json()["cancel_reason"]["code"] == "PATIENT_REQUEST"
 
 
 def test_check_in_converts_appointment_to_visit(client_as, fee_doctor, make_user) -> None:
@@ -331,11 +405,27 @@ def test_check_in_converts_appointment_to_visit(client_as, fee_doctor, make_user
     )
 
 
-def test_appointments_need_permission(client_as, fee_doctor) -> None:
+def test_doctor_reads_the_appointment_day_but_cannot_book(client_as, fee_doctor) -> None:
+    """Review: the read-only day view needed manage_appointments, so doctors got 403."""
+    start = _schedule(fee_doctor)
     api = client_as("doctor")
-    day = timezone.localdate().isoformat()
+    day = start.date().isoformat()
+    agenda = api.get(f"/api/visits/appointments/day?doctor_id={fee_doctor.pk}&day={day}")
+    assert agenda.status_code == 200, agenda.content
+    assert agenda.json()["works"] is True
     _error(
-        api.get(f"/api/visits/appointments/day?doctor_id={fee_doctor.pk}&day={day}"),
+        api.post(
+            "/api/visits/appointments",
+            {"doctor_id": fee_doctor.pk, "starts_at": start.isoformat(), "contact_name": "X"},
+        ),
+        403,
+        "PERMISSION_DENIED",
+    )
+    _error(
+        client_as("cashier").post(
+            "/api/visits/appointments",
+            {"doctor_id": fee_doctor.pk, "starts_at": start.isoformat(), "contact_name": "X"},
+        ),
         403,
         "PERMISSION_DENIED",
     )

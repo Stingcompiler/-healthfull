@@ -51,7 +51,7 @@ from apps.core.models import (
     Room,
     User,
 )
-from apps.core.services import next_number, resolve_reason
+from apps.core.services import next_number, require_permission, resolve_reason
 from apps.orders.models import BillingStatus, FulfilmentStatus, OrderSource, ServiceLine
 from apps.patients import services as patient_services
 from apps.patients.models import Patient, PatientCoverage
@@ -410,6 +410,22 @@ def cancel_visit(
 # --- queue ----------------------------------------------------------------------------------
 
 
+def billed_lines(visit_ref: Any) -> Exists:
+    """The visit has open lines on an approved invoice (invoiced or paid).
+
+    Cancelling such a visit credits those lines, so it needs a holder of
+    ``billing.approve_credit_note`` (FEATURES 2.7); the reception screens show it before the
+    clerk tries.
+    """
+    return Exists(
+        ServiceLine.objects.filter(
+            visit_id=visit_ref,
+            billing_status__in=[BillingStatus.INVOICED, BillingStatus.SETTLED],
+            fulfilment_status__in=[FulfilmentStatus.PENDING, FulfilmentStatus.IN_PROGRESS],
+        )
+    )
+
+
 def _unpaid_consultation() -> Exists:
     return Exists(
         ServiceLine.objects.filter(
@@ -437,7 +453,7 @@ def queue(
     qs = (
         QueueEntry.objects.filter(queue_date=on or timezone.localdate(), status__in=statuses)
         .select_related("visit", "visit__patient")
-        .annotate(blocked=_unpaid_consultation())
+        .annotate(blocked=_unpaid_consultation(), billed=billed_lines(OuterRef("visit_id")))
     )
     if department is not None:
         qs = qs.filter(department=department)
@@ -681,22 +697,37 @@ def reschedule_appointment(
         )
 
 
-def cancel_appointment(appointment: Appointment, *, actor: User, note: str = "") -> Appointment:
-    """Cancel a booking with the reason the caller gave (invariant 4: reason, who, when).
+def cancel_appointment(
+    appointment: Appointment,
+    *,
+    actor: User,
+    reason_code: ReasonCode | str | None = None,
+    note: str = "",
+) -> Appointment:
+    """Cancel a booking with an ``appointment_cancel`` reason code and the caller's words
+    (invariant 4: reason, who, when).
 
     Raises:
-        DomainError: ``APPOINTMENT_NOT_BOOKED``, ``REASON_REQUIRED``.
+        DomainError: ``APPOINTMENT_NOT_BOOKED``, ``REASON_REQUIRED``, ``REASON_UNKNOWN``,
+            ``REASON_NOTE_REQUIRED``.
     """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="cancel appointment"):
         locked = _booked(appointment)
-        if not note.strip():
-            raise DomainError("REASON_REQUIRED", "Say why the appointment is cancelled")
+        reason = resolve_reason(reason_code, ReasonCategory.APPOINTMENT_CANCEL, note)
         locked.status = AppointmentStatus.CANCELLED
         locked.cancelled_at = timezone.now()
         locked.cancelled_by = actor
+        locked.cancel_reason = reason
         locked.cancel_note = note.strip()[:300]
         locked.save(
-            update_fields=["status", "cancelled_at", "cancelled_by", "cancel_note", "updated_at"]
+            update_fields=[
+                "status",
+                "cancelled_at",
+                "cancelled_by",
+                "cancel_reason",
+                "cancel_note",
+                "updated_at",
+            ]
         )
     return locked
 
@@ -1232,11 +1263,13 @@ class VisitOptions:
     departments: list[Department]
     doctors: list[DoctorProfile]
     cancel_reasons: list[ReasonCode]
+    appointment_cancel_reasons: list[ReasonCode]
     follow_up_window_days: int
 
 
 def visit_options() -> VisitOptions:
-    """Active departments and doctors, visit cancellation reasons and the follow-up window."""
+    """Active departments and doctors, visit and appointment cancellation reasons and the
+    follow-up window."""
     return VisitOptions(
         departments=list(Department.objects.filter(active=True).order_by("sort_order", "code")),
         doctors=list(
@@ -1248,6 +1281,11 @@ def visit_options() -> VisitOptions:
             ReasonCode.objects.filter(category=ReasonCategory.VISIT_CANCEL, active=True).order_by(
                 "sort_order", "code"
             )
+        ),
+        appointment_cancel_reasons=list(
+            ReasonCode.objects.filter(
+                category=ReasonCategory.APPOINTMENT_CANCEL, active=True
+            ).order_by("sort_order", "code")
         ),
         follow_up_window_days=Policy.load().follow_up_window_days,
     )
@@ -1262,7 +1300,7 @@ def _visit_rows() -> QuerySet[Visit]:
         "follow_up_of",
         "cancel_reason",
         "created_by",
-    )
+    ).annotate(billed=billed_lines(OuterRef("pk")))
 
 
 def visit_list(
@@ -1320,7 +1358,7 @@ def visit_view(visit: Visit) -> VisitView:
     entry = (
         _entry_rows()
         .filter(visit=fresh)
-        .annotate(blocked=_unpaid_consultation())
+        .annotate(blocked=_unpaid_consultation(), billed=billed_lines(OuterRef("visit_id")))
         .exclude(status=QueueStatus.CANCELLED)
         .order_by("-queue_date", "-id")
         .first()
@@ -1406,7 +1444,12 @@ def call_next(
 
 def board_row(entry_id: int) -> QueueEntry:
     """One queue entry as the board lists it (annotated with ``blocked``)."""
-    return _entry_rows().filter(pk=entry_id).annotate(blocked=_unpaid_consultation()).get()
+    return (
+        _entry_rows()
+        .filter(pk=entry_id)
+        .annotate(blocked=_unpaid_consultation(), billed=billed_lines(OuterRef("visit_id")))
+        .get()
+    )
 
 
 _QUEUE_ACTIONS = {
@@ -1422,6 +1465,7 @@ def move_entry(entry: QueueEntry, action: str, *, actor: User) -> QueueEntry:
     """Apply a board action (call, start, finish, no_show, requeue) and return the row.
 
     Raises:
+        PermissionRequired: ``finish`` by an actor without ``visits.finish_consultation``.
         DomainError: ``QUEUE_TRANSITION_INVALID``, ``QUEUE_NOT_READY``.
     """
     step = _QUEUE_ACTIONS.get(action)
@@ -1429,6 +1473,10 @@ def move_entry(entry: QueueEntry, action: str, *, actor: User) -> QueueEntry:
         raise DomainError(
             "QUEUE_TRANSITION_INVALID", "Unknown queue action", status=entry.status, to=action
         )
+    if action == "finish":
+        # Finishing performs the consultation fee line: the doctor's act (FLOW step 3), not
+        # the front desk's.
+        require_permission(actor, "visits.finish_consultation")
     return board_row(step(entry, actor=actor).pk)
 
 
@@ -1492,7 +1540,7 @@ class TokenSlip:
     """What the 80 mm token slip prints (FEATURES 2.6)."""
 
     entry: QueueEntry
-    #: Tokens still waiting or called that are served before this one.
+    #: Paid tokens still waiting or called that are served before this one.
     ahead: int
     center: CenterProfile
 
@@ -1503,8 +1551,11 @@ def token_slip(entry: QueueEntry) -> TokenSlip:
         department_id=fresh.department_id,
         queue_date=fresh.queue_date,
         status__in=ACTIVE_QUEUE_STATUSES,
-    )
-    candidates = [dq.QueueCandidate(e.pk, e.token_no, e.priority, e.status, True) for e in same_day]
+    ).annotate(blocked=_unpaid_consultation())
+    # Unpaid tokens are skipped by call_next, so they are not ahead of anyone.
+    candidates = [
+        dq.QueueCandidate(e.pk, e.token_no, e.priority, e.status, _ready(e)) for e in same_day
+    ]
     return TokenSlip(
         entry=fresh, ahead=dq.tokens_ahead(candidates, fresh.pk), center=CenterProfile.load()
     )
@@ -1538,7 +1589,7 @@ class DayAgenda:
 
 def _appointment_rows() -> QuerySet[Appointment]:
     return Appointment.objects.select_related(
-        "patient", "department", "doctor__user", "converted_visit"
+        "patient", "department", "doctor__user", "converted_visit", "cancel_reason"
     )
 
 

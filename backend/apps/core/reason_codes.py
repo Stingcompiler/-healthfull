@@ -1,6 +1,7 @@
 """Default reason lists (FEATURES 13.5), seeded by migration ``0007_seed_reason_codes``.
 
-The migration holds a frozen copy of this list; ``apps/core/tests/test_seeds.py`` keeps the
+Categories added later are seeded by the migrations named in ``LATER_SEEDS``. The migrations
+hold frozen copies of this list; ``apps/core/tests/test_seeds.py`` keeps the
 two in sync. ``ensure_reason_codes()`` re-creates missing rows (for transactional tests,
 which truncate migration-seeded tables); rows that exist are left untouched, so a center's
 edits survive.
@@ -100,7 +101,29 @@ REASON_CODES: tuple[ReasonDef, ...] = (
     ReasonDef("sample_reject", "INSUFFICIENT", "كمية غير كافية", "Insufficient volume"),
     ReasonDef("sample_reject", "MISLABELED", "خطأ في الملصق", "Mislabeled"),
     ReasonDef("sample_reject", "OTHER", "سبب آخر", "Other", True),
+    # Patient file merge (FEATURES 1.4). Seeded by migration 0009.
+    ReasonDef("patient_merge", "DUPLICATE_REGISTRATION", "تسجيل مكرر", "Registered twice"),
+    ReasonDef(
+        "patient_merge",
+        "EMERGENCY_IDENTIFIED",
+        "تم التعرف على مريض طوارئ",
+        "Emergency file identified",
+    ),
+    ReasonDef(
+        "patient_merge", "SPELLING_VARIANT", "اختلاف في كتابة الاسم", "Name spelled differently"
+    ),
+    ReasonDef("patient_merge", "OTHER", "سبب آخر", "Other", True),
+    # Appointment cancellation (FEATURES 2.5). Seeded by migration 0009.
+    ReasonDef("appointment_cancel", "PATIENT_REQUEST", "بطلب من المريض", "Patient asked"),
+    ReasonDef("appointment_cancel", "DOCTOR_UNAVAILABLE", "الطبيب غير متاح", "Doctor unavailable"),
+    ReasonDef("appointment_cancel", "BOOKED_IN_ERROR", "حجز بالخطأ", "Booked in error"),
+    ReasonDef("appointment_cancel", "OTHER", "سبب آخر", "Other", True),
 )
+
+#: Codes added after ``0007_seed_reason_codes``, with the migration that seeds them.
+LATER_SEEDS: dict[str, tuple[str, ...]] = {
+    "0009_reason_categories_merge_appointment": ("patient_merge", "appointment_cancel"),
+}
 
 
 def ensure_reason_codes() -> int:

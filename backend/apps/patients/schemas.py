@@ -19,7 +19,6 @@ from domain.money import money
 
 SexCode = Literal["male", "female", "unknown"]
 KnownSex = Literal["male", "female"]
-MergeReason = Literal["DUPLICATE_REGISTRATION", "EMERGENCY_IDENTIFIED", "SPELLING_VARIANT", "OTHER"]
 DuplicateReason = Literal["phone", "national_id", "name_dob"]
 
 
@@ -234,11 +233,20 @@ class DuplicateOut(Schema):
 # --- merge ----------------------------------------------------------------------------------
 
 
+class MergeReasonOut(Schema):
+    """A configurable ``patient_merge`` reason code (FEATURES 13.5)."""
+
+    code: str
+    label_ar: str
+    label_en: str
+    requires_note: bool
+
+
 class MergeIn(Schema):
     """Merge ``duplicate_id`` into this (surviving) file (FEATURES 1.4)."""
 
     duplicate_id: int
-    reason_code: MergeReason
+    reason_code: str = Field(..., max_length=40, description="A patient_merge reason code")
     note: str = Field(..., max_length=500)
 
 
@@ -247,6 +255,7 @@ class MergeOut(Schema):
     source: PatientRefOut
     target: PatientRefOut
     reason_code: str = Field(..., description="Merge reason code; empty for older free-text notes")
+    reason: MergeReasonOut | None = Field(..., description="null for merges recorded before codes")
     note: str
     merged_by: UserRefOut
     merged_at: datetime

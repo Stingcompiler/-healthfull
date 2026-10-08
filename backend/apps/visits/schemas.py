@@ -82,6 +82,7 @@ class VisitOptionsOut(Schema):
     departments: list[DepartmentOut]
     doctors: list[DoctorOut]
     cancel_reasons: list[ReasonOut]
+    appointment_cancel_reasons: list[ReasonOut]
     follow_up_window_days: int
 
 
@@ -114,6 +115,17 @@ class VisitOut(Schema):
     cancelled_at: datetime | None
     cancel_reason: ReasonOut | None
     cancel_note: str
+    billed: bool = Field(
+        ...,
+        description=(
+            "Open lines on an approved invoice: cancelling credits them, so only a holder of "
+            "billing.approve_credit_note can cancel"
+        ),
+    )
+
+    @staticmethod
+    def resolve_billed(obj: Any) -> bool:
+        return bool(getattr(obj, "billed", False))
 
 
 class LineOut(Schema):
@@ -177,6 +189,9 @@ class QueueRowOut(Schema):
     priority: int
     status: QueueStatusCode
     ready: bool = Field(..., description="Consultation fee paid or authorized (or none due)")
+    billed: bool = Field(
+        ..., description="The visit has invoiced or paid open lines (see VisitOut.billed)"
+    )
     created_at: datetime
     called_at: datetime | None
     started_at: datetime | None
@@ -193,6 +208,10 @@ class QueueRowOut(Schema):
     @staticmethod
     def resolve_ready(obj: Any) -> bool:
         return not bool(getattr(obj, "blocked", False))
+
+    @staticmethod
+    def resolve_billed(obj: Any) -> bool:
+        return bool(getattr(obj, "billed", False))
 
 
 class VisitDetailOut(Schema):
@@ -328,6 +347,7 @@ class AppointmentOut(Schema):
     rescheduled_from_id: int | None
     notes: str
     visit_id: int | None = Field(..., description="The visit opened at check-in")
+    cancel_reason: ReasonOut | None
     cancel_note: str
 
     @staticmethod
@@ -380,7 +400,10 @@ class RescheduleIn(Schema):
 
 
 class AppointmentCancelIn(Schema):
-    note: str = Field(..., max_length=300)
+    """Cancel with an ``appointment_cancel`` reason code (invariant 4) and the caller's words."""
+
+    reason_code: str = Field(..., max_length=40)
+    note: str = Field("", max_length=300)
 
 
 class CheckInIn(Schema):

@@ -32,6 +32,7 @@ from apps.patients.schemas import (
     EmergencyIn,
     MergeIn,
     MergeOut,
+    MergeReasonOut,
     PatientIn,
     PatientListOut,
     PatientOut,
@@ -178,7 +179,8 @@ def update_patient(request: HttpRequest, patient_id: int, payload: PatientPatch)
     summary="Merge a duplicate file into this one (supervisor, with a reason)",
     description=(
         "The duplicate stays as an inactive file pointing here; nothing is deleted and money "
-        "does not move. 409 REASON_REQUIRED, MERGE_SAME_FILE, PATIENT_MERGED."
+        "does not move. 409 REASON_UNKNOWN, REASON_REQUIRED, REASON_NOTE_REQUIRED, "
+        "MERGE_SAME_FILE, PATIENT_MERGED."
     ),
 )
 @require_perm("patients.merge")
@@ -191,6 +193,17 @@ def merge_patient(request: HttpRequest, patient_id: int, payload: MergeIn) -> St
         note=payload.note,
     )
     return Status(201, merge)
+
+
+@patients_router.get(
+    "/merge-reasons",
+    response={200: list[MergeReasonOut], **_READ},
+    operation_id="patients_list_merge_reasons",
+    summary="The reason codes a supervisor gives for merging two files",
+)
+@require_perm("patients.merge")
+def list_merge_reasons(request: HttpRequest) -> list[Any]:
+    return list(services.merge_reasons())
 
 
 @patients_router.get(

@@ -226,7 +226,7 @@ def test_appointment_day_merges_free_slots_and_bookings(clerk, doctor) -> None:
     gone = vs.book_appointment(
         doctor=doctor, starts_at=_at(1, 9, 40), actor=clerk, contact_name="X"
     )
-    vs.cancel_appointment(gone, actor=clerk, note="called to cancel")
+    vs.cancel_appointment(gone, actor=clerk, reason_code="PATIENT_REQUEST", note="called to cancel")
 
     agenda = vs.appointment_day(doctor, day)
     assert agenda.works is True
@@ -256,14 +256,30 @@ def test_appointment_day_hides_past_free_slots(clerk, doctor) -> None:
 def test_cancel_appointment_needs_a_reason(clerk, doctor) -> None:
     appt = vs.book_appointment(doctor=doctor, starts_at=_at(1, 9), actor=clerk, contact_name="A")
     with pytest.raises(DomainError) as exc:
-        vs.cancel_appointment(appt, actor=clerk, note="  ")
+        vs.cancel_appointment(appt, actor=clerk, note="patient travelled")
     assert exc.value.code == "REASON_REQUIRED"
+    with pytest.raises(DomainError) as exc:
+        vs.cancel_appointment(appt, actor=clerk, reason_code="LINE_ERROR")
+    assert exc.value.code == "REASON_UNKNOWN"
+    with pytest.raises(DomainError) as exc:  # a visit_cancel code is not an appointment reason
+        vs.cancel_appointment(appt, actor=clerk, reason_code="PATIENT_LEFT")
+    assert exc.value.code == "REASON_UNKNOWN"
+    with pytest.raises(DomainError) as exc:
+        vs.cancel_appointment(appt, actor=clerk, reason_code="OTHER", note="  ")
+    assert exc.value.code == "REASON_NOTE_REQUIRED"
     assert Appointment.objects.get(pk=appt.pk).status == "booked"
-    done = vs.cancel_appointment(appt, actor=clerk, note="patient travelled")
+    done = vs.cancel_appointment(
+        appt, actor=clerk, reason_code="PATIENT_REQUEST", note="patient travelled"
+    )
     assert (done.status, done.cancel_note, done.cancelled_by) == (
         "cancelled",
         "patient travelled",
         clerk,
+    )
+    assert done.cancel_reason is not None
+    assert (done.cancel_reason.category, done.cancel_reason.code) == (
+        "appointment_cancel",
+        "PATIENT_REQUEST",
     )
 
 
@@ -280,7 +296,7 @@ def test_update_appointment_details(clerk, doctor) -> None:
     with pytest.raises(DomainError) as exc:
         vs.update_appointment(appt, actor=clerk, contact_name=" ")
     assert exc.value.code == "PATIENT_OR_CONTACT_REQUIRED"
-    vs.cancel_appointment(appt, actor=clerk, note="x")
+    vs.cancel_appointment(appt, actor=clerk, reason_code="BOOKED_IN_ERROR")
     with pytest.raises(DomainError) as exc:
         vs.update_appointment(appt, actor=clerk, notes="late")
     assert exc.value.code == "APPOINTMENT_NOT_BOOKED"

@@ -35,14 +35,13 @@ from django.forms.models import model_to_dict
 from django.utils import timezone
 
 from apps.catalog.models import Payer
-from apps.core.models import User
-from apps.core.services import next_number, require_permission
+from apps.core.models import ReasonCategory, ReasonCode, User
+from apps.core.services import next_number, require_permission, resolve_reason
 from apps.patients.models import Patient, PatientCoverage, PatientMerge, Sex
 from domain.errors import DomainError
 
 __all__ = [
     "DUPLICATE_NAME_SIMILARITY",
-    "MERGE_REASONS",
     "AllergyView",
     "DuplicateCandidate",
     "PatientData",
@@ -59,6 +58,7 @@ __all__ = [
     "merge_into",
     "merge_patients",
     "merge_reason",
+    "merge_reasons",
     "merges",
     "normalize_phone",
     "normalize_text",
@@ -248,19 +248,24 @@ def search(
       folded name is similar (trigram) for spelling variants beyond the folding.
 
     Merged (inactive) files are left out unless ``include_inactive``. Each row carries its
-    active default coverage in ``default_coverages`` (prefetched, a list of 0 or 1).
+    active default coverage valid today in ``default_coverages`` (prefetched, a list of 0 or
+    1): an expired or not yet valid card is not shown as the patient's coverage.
     """
     base = Patient.objects.all()
     if not include_inactive:
         base = base.filter(is_active=True)
     if incomplete_only:
         base = base.filter(is_incomplete=True)
+    today = timezone.localdate()
     base = base.prefetch_related(
         Prefetch(
             "coverages",
-            queryset=PatientCoverage.objects.filter(is_default=True, active=True).select_related(
-                "payer"
-            ),
+            queryset=PatientCoverage.objects.filter(is_default=True, active=True)
+            .filter(
+                Q(valid_from__isnull=True) | Q(valid_from__lte=today),
+                Q(valid_to__isnull=True) | Q(valid_to__gte=today),
+            )
+            .select_related("payer"),
             to_attr="default_coverages",
         )
     )
@@ -513,7 +518,12 @@ def _snapshot(patient: Patient) -> dict[str, Any]:
 
 
 def merge_patients(
-    source: Patient, target: Patient, *, actor: User, reason_note: str
+    source: Patient,
+    target: Patient,
+    *,
+    actor: User,
+    reason_note: str,
+    reason: ReasonCode | None = None,
 ) -> PatientMerge:
     """Merge a duplicate ``source`` file into ``target`` (FEATURES 1.4, supervisor only).
 
@@ -582,7 +592,12 @@ def merge_patients(
         )
 
         return PatientMerge.objects.create(
-            source=src, target=tgt, reason_note=note, source_snapshot=snapshot, merged_by=actor
+            source=src,
+            target=tgt,
+            reason=reason,
+            reason_note=note,
+            source_snapshot=snapshot,
+            merged_by=actor,
         )
 
 
@@ -749,15 +764,9 @@ def update_coverage(coverage: PatientCoverage, *, actor: User, **changes: Any) -
 
 # --- profile, merge history and balance -----------------------------------------------------
 
-#: Reasons a supervisor gives for merging two files (FEATURES 1.4). Stored at the head of the
-#: merge note as ``"<CODE>: <note>"``.
-MERGE_REASONS = (
-    "DUPLICATE_REGISTRATION",
-    "EMERGENCY_IDENTIFIED",
-    "SPELLING_VARIANT",
-    "OTHER",
-)
-_MERGE_NOTE_RE = re.compile(r"^([A-Z_]+): (.*)$", re.DOTALL)
+#: Merges recorded before merge reasons became reason codes kept the code at the head of the
+#: note as ``"<CODE>: <note>"``.
+_LEGACY_MERGE_NOTE_RE = re.compile(r"^([A-Z_]+): (.*)$", re.DOTALL)
 
 
 @dataclass(frozen=True, slots=True)
@@ -800,10 +809,20 @@ def profile(patient: Patient) -> PatientProfile:
     )
 
 
+def merge_reasons() -> QuerySet[ReasonCode]:
+    """The active ``patient_merge`` reason codes a supervisor picks from (FEATURES 1.4, 13.5)."""
+    return ReasonCode.objects.filter(category=ReasonCategory.PATIENT_MERGE, active=True).order_by(
+        "sort_order", "code"
+    )
+
+
 def merge_into(
     target: Patient, *, duplicate: Patient, actor: User, reason_code: str, note: str
 ) -> PatientMerge:
     """Merge ``duplicate`` into the surviving file ``target`` with a reason code and note.
+
+    The reason is a configurable ``patient_merge`` reason code (invariant 4); a merge always
+    needs a note as well.
 
     Raises:
         PermissionDenied: the actor lacks ``patients.merge``.
@@ -811,23 +830,19 @@ def merge_into(
             :func:`merge_patients`.
     """
     require_permission(actor, "patients.merge")
-    if reason_code not in MERGE_REASONS:
-        raise DomainError(
-            "REASON_UNKNOWN",
-            "Unknown merge reason",
-            category="patient_merge",
-            reason_code=reason_code,
-        )
+    reason = resolve_reason(reason_code, ReasonCategory.PATIENT_MERGE, note)
     text = note.strip()
     if not text:
         raise DomainError("REASON_REQUIRED", "A merge needs a reason")
-    return merge_patients(duplicate, target, actor=actor, reason_note=f"{reason_code}: {text}")
+    return merge_patients(duplicate, target, actor=actor, reason_note=text, reason=reason)
 
 
 def merge_reason(merge: PatientMerge) -> tuple[str, str]:
-    """The reason code and free text of a merge (code ``""`` for a free-text note)."""
-    found = _MERGE_NOTE_RE.match(merge.reason_note)
-    if found and found.group(1) in MERGE_REASONS:
+    """The reason code and free text of a merge (code ``""`` for an old free-text note)."""
+    if getattr(merge, "reason_id", None) is not None and merge.reason is not None:
+        return merge.reason.code, merge.reason_note
+    found = _LEGACY_MERGE_NOTE_RE.match(merge.reason_note)
+    if found:
         return found.group(1), found.group(2)
     return "", merge.reason_note
 
@@ -836,7 +851,7 @@ def merges(patient: Patient) -> list[PatientMerge]:
     """Merges into or out of this file, newest first (the history kept by FEATURES 1.4)."""
     return list(
         PatientMerge.objects.filter(Q(source=patient) | Q(target=patient))
-        .select_related("source", "target", "merged_by")
+        .select_related("source", "target", "merged_by", "reason")
         .order_by("-merged_at", "-id")
     )
 

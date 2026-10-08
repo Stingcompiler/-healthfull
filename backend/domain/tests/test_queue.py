@@ -71,7 +71,7 @@ def test_unpaid_and_called_entries_are_never_called_next() -> None:
 
 
 @given(candidates, st.integers(1, 10_000))
-def test_tokens_ahead_counts_waiting_entries_served_first(
+def test_tokens_ahead_counts_ready_waiting_entries_served_first(
     entries: list[QueueCandidate], probe: int
 ) -> None:
     target = next((e for e in entries if e.entry_id == probe), None)
@@ -82,10 +82,18 @@ def test_tokens_ahead_counts_waiting_entries_served_first(
         1
         for e in entries
         if e.entry_id != probe
+        and e.ready
         and e.status in ("waiting", "called")
         and serving_key(e) < serving_key(target)
     )
     assert tokens_ahead(entries, probe) == expected
+
+
+def test_unpaid_tokens_are_not_ahead() -> None:
+    unpaid = QueueCandidate(1, 1, 0, "waiting", False)
+    paid = QueueCandidate(2, 2, 0, "waiting", True)
+    mine = QueueCandidate(3, 3, 0, "waiting", False)
+    assert tokens_ahead([unpaid, paid, mine], 3) == 1
 
 
 # --- abbreviate_name ------------------------------------------------------------------------

@@ -55,7 +55,11 @@ def next_to_call(entries: Iterable[QueueCandidate]) -> QueueCandidate | None:
 
 
 def tokens_ahead(entries: Iterable[QueueCandidate], entry_id: int) -> int:
-    """How many waiting or called entries are served before ``entry_id`` (0 if unknown)."""
+    """How many ready waiting or called entries are served before ``entry_id`` (0 if unknown).
+
+    Entries that are not ready (consultation fee unpaid) are skipped by :func:`next_to_call`,
+    so they are not ahead of anyone.
+    """
     items = list(entries)
     target = next((e for e in items if e.entry_id == entry_id), None)
     if target is None:
@@ -64,7 +68,10 @@ def tokens_ahead(entries: Iterable[QueueCandidate], entry_id: int) -> int:
     return sum(
         1
         for e in items
-        if e.entry_id != entry_id and e.status in _AHEAD_STATUSES and serving_key(e) < key
+        if e.entry_id != entry_id
+        and e.ready
+        and e.status in _AHEAD_STATUSES
+        and serving_key(e) < key
     )
 
 

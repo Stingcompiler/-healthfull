@@ -221,7 +221,10 @@ def call_next(request: HttpRequest, payload: CallNextIn) -> Any:
     response={200: QueueRowOut, **_WRITE},
     operation_id="visits_move_queue_entry",
     summary="Call, start, finish, mark no-show or requeue a token",
-    description="409 QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY (fee neither paid nor authorized).",
+    description=(
+        "finish performs the consultation line and needs visits.finish_consultation (403). "
+        "409 QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY (fee neither paid nor authorized)."
+    ),
 )
 @require_perm("visits.manage_queue")
 def move_queue_entry(request: HttpRequest, entry_id: int, payload: QueueMoveIn) -> Any:
@@ -260,8 +263,9 @@ def get_token_slip(request: HttpRequest, entry_id: int) -> Any:
     response={200: DayAgendaOut, **_READ},
     operation_id="visits_get_agenda",
     summary="A doctor's day: free slots still ahead and every appointment",
+    description="Read-only: every holder of visits.view (doctors see their own day).",
 )
-@require_perm("visits.manage_appointments")
+@require_perm("visits.view")
 def get_agenda(request: HttpRequest, params: Query[AgendaParams]) -> Any:
     return services.appointment_day(
         get_object_or_404(DoctorProfile, pk=params.doctor_id), params.day
@@ -343,15 +347,20 @@ def reschedule_appointment(
     "/appointments/{int:appointment_id}/cancel",
     response={200: AppointmentOut, **_WRITE},
     operation_id="visits_cancel_appointment",
-    summary="Cancel a booking with the caller's reason",
-    description="409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED.",
+    summary="Cancel a booking with a reason code and the caller's words",
+    description=(
+        "409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED."
+    ),
 )
 @require_perm("visits.manage_appointments")
 def cancel_appointment(
     request: HttpRequest, appointment_id: int, payload: AppointmentCancelIn
 ) -> Any:
     return services.cancel_appointment(
-        get_object_or_404(Appointment, pk=appointment_id), actor=_actor(request), note=payload.note
+        get_object_or_404(Appointment, pk=appointment_id),
+        actor=_actor(request),
+        reason_code=payload.reason_code,
+        note=payload.note,
     )
 
 

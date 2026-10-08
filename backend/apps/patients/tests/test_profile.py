@@ -56,6 +56,34 @@ def test_search_queryset_pages_and_filters(clerk) -> None:
     assert found[0].default_coverages == [cov]  # type: ignore[attr-defined]
 
 
+def test_search_rows_leave_out_an_expired_default_coverage(clerk) -> None:
+    """Review: the list's coverage ignored validity, so an expired card showed at reception."""
+    from django.utils import timezone
+
+    today = timezone.localdate()
+    p = _register(clerk, full_name_en="Expired Card Holder")
+    cov = ps.add_coverage(
+        p,
+        payer=b.payer(requires_card_number=False),
+        actor=clerk,
+        valid_from=today - timedelta(days=400),
+        valid_to=today - timedelta(days=1),
+    )
+    assert cov.is_default
+    assert cov.active
+    [row] = list(ps.search(p.file_no))
+    assert row.default_coverages == []  # type: ignore[attr-defined]
+    future = ps.add_coverage(
+        p, payer=b.payer(requires_card_number=False), actor=clerk, valid_from=today + timedelta(1)
+    )
+    assert future.is_default
+    [row] = list(ps.search(p.file_no))
+    assert row.default_coverages == []  # type: ignore[attr-defined]
+    ps.update_coverage(future, actor=clerk, valid_from=today)
+    [row] = list(ps.search(p.file_no))
+    assert row.default_coverages == [future]  # type: ignore[attr-defined]
+
+
 def test_search_skips_merged_files_unless_asked(clerk, supervisor) -> None:
     keep = _register(clerk, full_name_ar="سلمى عوض")
     dup = _register(clerk, full_name_ar="سلمي عوض")
@@ -176,7 +204,9 @@ def test_merge_into_records_code_and_note(clerk, supervisor) -> None:
     )
     assert merge.source == dup
     assert merge.target == keep
-    assert merge.reason_note == "DUPLICATE_REGISTRATION: registered twice at reception"
+    assert merge.reason_note == "registered twice at reception"
+    assert merge.reason is not None
+    assert (merge.reason.category, merge.reason.code) == ("patient_merge", "DUPLICATE_REGISTRATION")
     assert ps.merge_reason(merge) == ("DUPLICATE_REGISTRATION", "registered twice at reception")
     assert ps.merges(keep) == [merge]
     assert ps.merges(dup) == [merge]
@@ -184,9 +214,46 @@ def test_merge_into_records_code_and_note(clerk, supervisor) -> None:
 
 def test_merge_reason_of_a_free_text_note() -> None:
     class Row:
+        reason_id = None
         reason_note = "same person"
 
+    class Legacy:
+        reason_id = None
+        reason_note = "SPELLING_VARIANT: same person"
+
     assert ps.merge_reason(Row()) == ("", "same person")  # type: ignore[arg-type]
+    assert ps.merge_reason(Legacy()) == ("SPELLING_VARIANT", "same person")  # type: ignore[arg-type]
+
+
+def test_merge_reasons_are_configurable_reason_codes(clerk, supervisor) -> None:
+    from apps.core.models import ReasonCode
+
+    codes = [r.code for r in ps.merge_reasons()]
+    assert {"DUPLICATE_REGISTRATION", "EMERGENCY_IDENTIFIED", "SPELLING_VARIANT", "OTHER"} <= set(
+        codes
+    )
+    ReasonCode.objects.create(
+        category="patient_merge", code="FAMILY_FILE", label_ar="ملف عائلي", label_en="Family file"
+    )
+    ReasonCode.objects.filter(category="patient_merge", code="SPELLING_VARIANT").update(
+        active=False
+    )
+    assert "FAMILY_FILE" in [r.code for r in ps.merge_reasons()]
+    keep = _register(clerk, full_name_ar="سلمى بابكر")
+    dup = _register(clerk, full_name_ar="سلمى بابكر")
+    with pytest.raises(DomainError) as exc:
+        ps.merge_into(
+            keep, duplicate=dup, actor=supervisor, reason_code="SPELLING_VARIANT", note="x"
+        )
+    assert exc.value.code == "REASON_UNKNOWN"
+    with pytest.raises(DomainError) as exc:
+        ps.merge_into(keep, duplicate=dup, actor=supervisor, reason_code="OTHER", note=" ")
+    assert exc.value.code == "REASON_NOTE_REQUIRED"
+    merge = ps.merge_into(
+        keep, duplicate=dup, actor=supervisor, reason_code="FAMILY_FILE", note="one family file"
+    )
+    assert merge.reason is not None
+    assert merge.reason.code == "FAMILY_FILE"
 
 
 # --- balance --------------------------------------------------------------------------------
