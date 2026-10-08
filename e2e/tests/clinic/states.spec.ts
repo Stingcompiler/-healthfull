@@ -6,8 +6,12 @@
  * The general matrix (tests/responsive.spec.ts) runs as the admin, whose clinic queue is empty.
  * Filter with `make e2e E2E_GREP=@clinic`.
  */
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+
 import { expect, test, type Page } from "@playwright/test";
 
+import { SCREENS_DIR } from "../../env";
 import { ANONYMOUS_STATE } from "../../fixtures/state";
 import {
   apiAs,
@@ -108,6 +112,30 @@ async function check(page: Page, name: string): Promise<void> {
   await snap(page, name);
 }
 
+/**
+ * A modal state: the overlay and the dialog are fixed to the viewport, so a full-page capture
+ * would show them over a scrolled slice of the page. Capture what the doctor sees instead,
+ * under the same file name scheme as `snap`.
+ */
+async function checkDialog(
+  page: Page,
+  name: string,
+  theme: Theme,
+  lang: Lang,
+): Promise<void> {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await expectNoHorizontalScroll(page);
+  const size = page.viewportSize();
+  const viewport = size ? `${String(size.width)}x${String(size.height)}` : "auto";
+  mkdirSync(SCREENS_DIR, { recursive: true });
+  await page.screenshot({
+    path: path.join(SCREENS_DIR, `${name}-${viewport}-${theme}-${lang}.png`),
+    animations: "disabled",
+    caret: "hide",
+    scale: "css",
+  });
+}
+
 for (const viewport of VIEWPORTS) {
   for (const { theme, lang } of COMBOS) {
     test(`@clinic @responsive doctor states ${String(viewport.width)} ${theme} ${lang}`, async ({
@@ -148,14 +176,14 @@ for (const viewport of VIEWPORTS) {
       await page.getByTestId("place-orders").click();
       const dialog = page.getByTestId("allergy-override-dialog");
       await expect(dialog).toBeVisible();
-      await check(page, "clinic-visit-override");
+      await checkDialog(page, "clinic-visit-override", theme, lang);
       await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden();
 
       // The allergy manager.
       await page.getByTestId("manage-allergies").click();
       await expect(page.getByTestId("allergy-form")).toBeVisible();
-      await check(page, "clinic-visit-allergies");
+      await checkDialog(page, "clinic-visit-allergies", theme, lang);
       await page.keyboard.press("Escape");
 
       expect(
