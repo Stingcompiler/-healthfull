@@ -1,6 +1,387 @@
 {
   "components": {
     "schemas": {
+      "AllergyChipOut": {
+        "description": "An active allergy as a prominent chip (PatientCard).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "mild",
+              "moderate",
+              "severe",
+              "life_threatening"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label_ar",
+          "label_en",
+          "severity"
+        ],
+        "title": "AllergyChipOut",
+        "type": "object"
+      },
+      "AllergyIn": {
+        "properties": {
+          "allergen_type": {
+            "enum": [
+              "drug",
+              "drug_class",
+              "food",
+              "environmental",
+              "other"
+            ],
+            "title": "Allergen Type",
+            "type": "string"
+          },
+          "drug_class_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drug Class Id"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Note",
+            "type": "string"
+          },
+          "reaction": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Reaction",
+            "type": "string"
+          },
+          "severity": {
+            "default": "moderate",
+            "enum": [
+              "mild",
+              "moderate",
+              "severe",
+              "life_threatening"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "substance": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Substance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "allergen_type"
+        ],
+        "title": "AllergyIn",
+        "type": "object"
+      },
+      "AllergyOut": {
+        "properties": {
+          "allergen_type": {
+            "enum": [
+              "drug",
+              "drug_class",
+              "food",
+              "environmental",
+              "other"
+            ],
+            "title": "Allergen Type",
+            "type": "string"
+          },
+          "drug_class": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DrugClassOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reaction": {
+            "title": "Reaction",
+            "type": "string"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "mild",
+              "moderate",
+              "severe",
+              "life_threatening"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "inactive",
+              "entered_in_error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "substance": {
+            "title": "Substance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "allergen_type",
+          "drug_class",
+          "substance",
+          "label_ar",
+          "label_en",
+          "reaction",
+          "severity",
+          "status",
+          "note",
+          "recorded_at"
+        ],
+        "title": "AllergyOut",
+        "type": "object"
+      },
+      "AllergyOverrideOut": {
+        "properties": {
+          "allergy_id": {
+            "title": "Allergy Id",
+            "type": "integer"
+          },
+          "match": {
+            "title": "Match",
+            "type": "string"
+          },
+          "overridden_at": {
+            "format": "date-time",
+            "title": "Overridden At",
+            "type": "string"
+          },
+          "overridden_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "allergy_id",
+          "match",
+          "reason",
+          "overridden_by",
+          "overridden_at"
+        ],
+        "title": "AllergyOverrideOut",
+        "type": "object"
+      },
+      "AllergyPatch": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "reaction": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reaction"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "mild",
+                  "moderate",
+                  "severe",
+                  "life_threatening"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "inactive",
+                  "entered_in_error"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "AllergyPatch",
+        "type": "object"
+      },
+      "CancellationOut": {
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "cancelled_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Code"
+          }
+        },
+        "required": [
+          "reason_code",
+          "label_ar",
+          "label_en",
+          "note",
+          "cancelled_at",
+          "cancelled_by"
+        ],
+        "title": "CancellationOut",
+        "type": "object"
+      },
+      "CatalogParams": {
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "lab",
+                  "procedure",
+                  "drug",
+                  "consumable"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "limit": {
+            "default": 30,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "q": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Q",
+            "type": "string"
+          }
+        },
+        "title": "CatalogParams",
+        "type": "object"
+      },
       "ChangePasswordIn": {
         "properties": {
           "new_password": {
@@ -21,6 +402,560 @@
           "new_password"
         ],
         "title": "ChangePasswordIn",
+        "type": "object"
+      },
+      "ConditionIn": {
+        "properties": {
+          "icd10_code": {
+            "anyOf": [
+              {
+                "maxLength": 10,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icd10 Code"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Note",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          }
+        },
+        "title": "ConditionIn",
+        "type": "object"
+      },
+      "ConditionOut": {
+        "properties": {
+          "icd10": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Icd10Out"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "inactive",
+              "entered_in_error"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "icd10",
+          "name",
+          "since",
+          "status",
+          "note",
+          "recorded_at"
+        ],
+        "title": "ConditionOut",
+        "type": "object"
+      },
+      "ConditionPatch": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "inactive",
+                  "entered_in_error"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "ConditionPatch",
+        "type": "object"
+      },
+      "DepartmentRefOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "DepartmentRefOut",
+        "type": "object"
+      },
+      "DiagnosisIn": {
+        "properties": {
+          "certainty": {
+            "default": "provisional",
+            "enum": [
+              "provisional",
+              "confirmed"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          },
+          "icd10_code": {
+            "anyOf": [
+              {
+                "maxLength": 10,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icd10 Code"
+          },
+          "kind": {
+            "default": "primary",
+            "enum": [
+              "primary",
+              "secondary"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note Id"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "title": "DiagnosisIn",
+        "type": "object"
+      },
+      "DiagnosisOut": {
+        "properties": {
+          "certainty": {
+            "enum": [
+              "provisional",
+              "confirmed"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          },
+          "icd10": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Icd10Out"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "primary",
+              "secondary"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "recorded_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "icd10",
+          "text",
+          "kind",
+          "certainty",
+          "recorded_by",
+          "recorded_at"
+        ],
+        "title": "DiagnosisOut",
+        "type": "object"
+      },
+      "DoctorLineOut": {
+        "description": "One order of a visit as its doctor sees it (FEATURES 3.7). No prices.",
+        "properties": {
+          "allergy_overrides": {
+            "items": {
+              "$ref": "#/components/schemas/AllergyOverrideOut"
+            },
+            "title": "Allergy Overrides",
+            "type": "array"
+          },
+          "authorized": {
+            "title": "Authorized",
+            "type": "boolean"
+          },
+          "can_withdraw": {
+            "title": "Can Withdraw",
+            "type": "boolean"
+          },
+          "cancellation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CancellationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "lab",
+              "procedure",
+              "drug",
+              "consumable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "ordered_at": {
+            "format": "date-time",
+            "title": "Ordered At",
+            "type": "string"
+          },
+          "ordered_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prescription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrescriptionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResultOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "service_code": {
+            "title": "Service Code",
+            "type": "string"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "requested",
+              "paid",
+              "in_progress",
+              "done",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "visit_id",
+          "service_id",
+          "service_code",
+          "kind",
+          "name_ar",
+          "name_en",
+          "quantity",
+          "status",
+          "authorized",
+          "can_withdraw",
+          "note",
+          "ordered_by",
+          "ordered_at",
+          "prescription",
+          "allergy_overrides",
+          "cancellation",
+          "result"
+        ],
+        "title": "DoctorLineOut",
+        "type": "object"
+      },
+      "DoctorRefOut": {
+        "properties": {
+          "department_id": {
+            "title": "Department Id",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "department_id",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "DoctorRefOut",
+        "type": "object"
+      },
+      "DrugClassOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "DrugClassOut",
+        "type": "object"
+      },
+      "DrugClassRefOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "DrugClassRefOut",
+        "type": "object"
+      },
+      "DrugInfoOut": {
+        "properties": {
+          "base_unit_code": {
+            "title": "Base Unit Code",
+            "type": "string"
+          },
+          "base_unit_name_ar": {
+            "title": "Base Unit Name Ar",
+            "type": "string"
+          },
+          "base_unit_name_en": {
+            "title": "Base Unit Name En",
+            "type": "string"
+          },
+          "brand_name": {
+            "title": "Brand Name",
+            "type": "string"
+          },
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/DrugClassRefOut"
+            },
+            "title": "Classes",
+            "type": "array"
+          },
+          "form": {
+            "title": "Form",
+            "type": "string"
+          },
+          "generic_name": {
+            "title": "Generic Name",
+            "type": "string"
+          },
+          "strength": {
+            "title": "Strength",
+            "type": "string"
+          }
+        },
+        "required": [
+          "generic_name",
+          "brand_name",
+          "form",
+          "strength",
+          "base_unit_code",
+          "base_unit_name_ar",
+          "base_unit_name_en",
+          "classes"
+        ],
+        "title": "DrugInfoOut",
         "type": "object"
       },
       "ErrorOut": {
@@ -49,6 +984,31 @@
           "details"
         ],
         "title": "ErrorOut",
+        "type": "object"
+      },
+      "FrequencyOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "per_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Day"
+          }
+        },
+        "required": [
+          "code",
+          "per_day"
+        ],
+        "title": "FrequencyOut",
         "type": "object"
       },
       "HealthOut": {
@@ -86,6 +1046,137 @@
           "time"
         ],
         "title": "HealthOut",
+        "type": "object"
+      },
+      "HistoryLineOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "service_code": {
+            "title": "Service Code",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "requested",
+              "paid",
+              "in_progress",
+              "done",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "service_code",
+          "name_ar",
+          "name_en",
+          "kind",
+          "quantity",
+          "status"
+        ],
+        "title": "HistoryLineOut",
+        "type": "object"
+      },
+      "HistoryVisitOut": {
+        "properties": {
+          "diagnoses": {
+            "items": {
+              "$ref": "#/components/schemas/DiagnosisOut"
+            },
+            "title": "Diagnoses",
+            "type": "array"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/NoteOut"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "visit": {
+            "$ref": "#/components/schemas/VisitBriefOut"
+          }
+        },
+        "required": [
+          "visit",
+          "diagnoses",
+          "notes",
+          "lines"
+        ],
+        "title": "HistoryVisitOut",
+        "type": "object"
+      },
+      "Icd10Out": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "title_ar": {
+            "title": "Title Ar",
+            "type": "string"
+          },
+          "title_en": {
+            "title": "Title En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "title_en",
+          "title_ar"
+        ],
+        "title": "Icd10Out",
+        "type": "object"
+      },
+      "Icd10SearchParams": {
+        "properties": {
+          "limit": {
+            "default": 20,
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "q": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Q",
+            "type": "string"
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "title": "Icd10SearchParams",
         "type": "object"
       },
       "LoginIn": {
@@ -196,6 +1287,738 @@
         "title": "MeOut",
         "type": "object"
       },
+      "MedicationOut": {
+        "description": "A recent drug order (FEATURES 3.1 active medications). No prices.",
+        "properties": {
+          "dose": {
+            "title": "Dose",
+            "type": "string"
+          },
+          "duration_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Days"
+          },
+          "frequency_code": {
+            "title": "Frequency Code",
+            "type": "string"
+          },
+          "line_id": {
+            "title": "Line Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "ordered_at": {
+            "format": "date-time",
+            "title": "Ordered At",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "service_code": {
+            "title": "Service Code",
+            "type": "string"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "line_id",
+          "visit_id",
+          "service_code",
+          "name_ar",
+          "name_en",
+          "quantity",
+          "dose",
+          "frequency_code",
+          "duration_days",
+          "ordered_at"
+        ],
+        "title": "MedicationOut",
+        "type": "object"
+      },
+      "NoteIn": {
+        "properties": {
+          "assessment": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Assessment",
+            "type": "string"
+          },
+          "complaint": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Complaint",
+            "type": "string"
+          },
+          "examination": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Examination",
+            "type": "string"
+          },
+          "history": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "History",
+            "type": "string"
+          },
+          "plan": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Plan",
+            "type": "string"
+          }
+        },
+        "title": "NoteIn",
+        "type": "object"
+      },
+      "NoteOut": {
+        "properties": {
+          "assessment": {
+            "title": "Assessment",
+            "type": "string"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "complaint": {
+            "title": "Complaint",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "examination": {
+            "title": "Examination",
+            "type": "string"
+          },
+          "history": {
+            "title": "History",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          },
+          "signed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed At"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "signed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "visit_id",
+          "author",
+          "complaint",
+          "history",
+          "examination",
+          "assessment",
+          "plan",
+          "status",
+          "signed_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "NoteOut",
+        "type": "object"
+      },
+      "NotePatch": {
+        "properties": {
+          "assessment": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment"
+          },
+          "complaint": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complaint"
+          },
+          "examination": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Examination"
+          },
+          "history": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "History"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan"
+          }
+        },
+        "title": "NotePatch",
+        "type": "object"
+      },
+      "OrderIn": {
+        "properties": {
+          "allergy_override_reason": {
+            "default": "",
+            "description": "Why a drug is ordered despite a matching allergy (409 ALLERGY_CONFLICT without it; details.alerts lists the matches).",
+            "maxLength": 1000,
+            "title": "Allergy Override Reason",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderItemIn"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "OrderIn",
+        "type": "object"
+      },
+      "OrderItemIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "pre_approval_ref": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Pre Approval Ref",
+            "type": "string"
+          },
+          "prescription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrescriptionIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "maximum": 10000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "title": "OrderItemIn",
+        "type": "object"
+      },
+      "OrderSetIn": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderSetItemIn"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "name_ar": {
+            "default": "",
+            "maxLength": 150,
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "default": "",
+            "maxLength": 150,
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "OrderSetIn",
+        "type": "object"
+      },
+      "OrderSetItemIn": {
+        "properties": {
+          "dose": {
+            "default": "",
+            "maxLength": 60,
+            "title": "Dose",
+            "type": "string"
+          },
+          "duration_days": {
+            "anyOf": [
+              {
+                "maximum": 365,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Days"
+          },
+          "frequency_code": {
+            "default": "",
+            "maxLength": 20,
+            "title": "Frequency Code",
+            "type": "string"
+          },
+          "instructions": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Instructions",
+            "type": "string"
+          },
+          "quantity": {
+            "default": 1,
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "title": "OrderSetItemIn",
+        "type": "object"
+      },
+      "OrderSetItemOut": {
+        "properties": {
+          "dose": {
+            "title": "Dose",
+            "type": "string"
+          },
+          "duration_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Days"
+          },
+          "frequency_code": {
+            "title": "Frequency Code",
+            "type": "string"
+          },
+          "instructions": {
+            "title": "Instructions",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "service_code": {
+            "title": "Service Code",
+            "type": "string"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "service_id",
+          "service_code",
+          "kind",
+          "name_ar",
+          "name_en",
+          "quantity",
+          "dose",
+          "frequency_code",
+          "duration_days",
+          "instructions"
+        ],
+        "title": "OrderSetItemOut",
+        "type": "object"
+      },
+      "OrderSetOut": {
+        "properties": {
+          "department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderSetItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "personal": {
+            "title": "Personal",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en",
+          "personal",
+          "department_id",
+          "items"
+        ],
+        "title": "OrderSetOut",
+        "type": "object"
+      },
+      "OrderableServiceOut": {
+        "description": "A catalog service a doctor may order. Never a price (FEATURES 3.8).",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "department_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "drug": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DrugInfoOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "lab",
+              "procedure",
+              "drug",
+              "consumable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "kind",
+          "name_ar",
+          "name_en",
+          "department_code",
+          "drug"
+        ],
+        "title": "OrderableServiceOut",
+        "type": "object"
+      },
+      "PatientBriefOut": {
+        "properties": {
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "dob_is_estimated": {
+            "title": "Dob Is Estimated",
+            "type": "boolean"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_incomplete": {
+            "title": "Is Incomplete",
+            "type": "boolean"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "sex": {
+            "enum": [
+              "male",
+              "female"
+            ],
+            "title": "Sex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "file_no",
+          "full_name_ar",
+          "full_name_en",
+          "sex",
+          "date_of_birth",
+          "dob_is_estimated",
+          "phone",
+          "is_incomplete"
+        ],
+        "title": "PatientBriefOut",
+        "type": "object"
+      },
+      "PatientSummaryOut": {
+        "properties": {
+          "active_medications": {
+            "items": {
+              "$ref": "#/components/schemas/MedicationOut"
+            },
+            "title": "Active Medications",
+            "type": "array"
+          },
+          "allergies": {
+            "items": {
+              "$ref": "#/components/schemas/AllergyOut"
+            },
+            "title": "Allergies",
+            "type": "array"
+          },
+          "allergies_recorded": {
+            "title": "Allergies Recorded",
+            "type": "boolean"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionOut"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "latest_results": {
+            "items": {
+              "$ref": "#/components/schemas/ResultOut"
+            },
+            "title": "Latest Results",
+            "type": "array"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientBriefOut"
+          },
+          "recent_visits": {
+            "items": {
+              "$ref": "#/components/schemas/VisitBriefOut"
+            },
+            "title": "Recent Visits",
+            "type": "array"
+          }
+        },
+        "required": [
+          "patient",
+          "allergies",
+          "allergies_recorded",
+          "conditions",
+          "active_medications",
+          "recent_visits",
+          "latest_results"
+        ],
+        "title": "PatientSummaryOut",
+        "type": "object"
+      },
+      "PayerRefOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "PayerRefOut",
+        "type": "object"
+      },
       "PingOut": {
         "description": "Body of ``GET /api/<module>/ping``: proves the module router is mounted.",
         "properties": {
@@ -246,6 +2069,1231 @@
           }
         },
         "title": "PreferencesPatch",
+        "type": "object"
+      },
+      "PrescriptionIn": {
+        "properties": {
+          "as_needed": {
+            "default": false,
+            "title": "As Needed",
+            "type": "boolean"
+          },
+          "dose": {
+            "default": "",
+            "maxLength": 60,
+            "title": "Dose",
+            "type": "string"
+          },
+          "dose_quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,7}|(?=[\\d.]{1,11}0*$)\\d{0,7}\\.\\d{0,3}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dose Quantity"
+          },
+          "duration_days": {
+            "anyOf": [
+              {
+                "maximum": 365,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Days"
+          },
+          "frequency_code": {
+            "default": "",
+            "maxLength": 20,
+            "title": "Frequency Code",
+            "type": "string"
+          },
+          "instructions": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Instructions",
+            "type": "string"
+          },
+          "route": {
+            "default": "oral",
+            "enum": [
+              "oral",
+              "iv",
+              "im",
+              "sc",
+              "topical",
+              "inhaled",
+              "rectal",
+              "ophthalmic",
+              "otic",
+              "nasal",
+              "other"
+            ],
+            "title": "Route",
+            "type": "string"
+          }
+        },
+        "title": "PrescriptionIn",
+        "type": "object"
+      },
+      "PrescriptionOut": {
+        "properties": {
+          "as_needed": {
+            "title": "As Needed",
+            "type": "boolean"
+          },
+          "dose": {
+            "title": "Dose",
+            "type": "string"
+          },
+          "dose_quantity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dose Quantity"
+          },
+          "duration_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Days"
+          },
+          "frequency_code": {
+            "title": "Frequency Code",
+            "type": "string"
+          },
+          "frequency_per_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Per Day"
+          },
+          "instructions": {
+            "title": "Instructions",
+            "type": "string"
+          },
+          "route": {
+            "enum": [
+              "oral",
+              "iv",
+              "im",
+              "sc",
+              "topical",
+              "inhaled",
+              "rectal",
+              "ophthalmic",
+              "otic",
+              "nasal",
+              "other"
+            ],
+            "title": "Route",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dose",
+          "dose_quantity",
+          "route",
+          "frequency_code",
+          "frequency_per_day",
+          "duration_days",
+          "as_needed",
+          "instructions"
+        ],
+        "title": "PrescriptionOut",
+        "type": "object"
+      },
+      "PrescriptionPreviewIn": {
+        "properties": {
+          "as_needed": {
+            "default": false,
+            "title": "As Needed",
+            "type": "boolean"
+          },
+          "dose_quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,7}|(?=[\\d.]{1,11}0*$)\\d{0,7}\\.\\d{0,3}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dose Quantity"
+          },
+          "duration_days": {
+            "anyOf": [
+              {
+                "maximum": 365,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Days"
+          },
+          "frequency_code": {
+            "default": "",
+            "maxLength": 20,
+            "title": "Frequency Code",
+            "type": "string"
+          }
+        },
+        "title": "PrescriptionPreviewIn",
+        "type": "object"
+      },
+      "PrescriptionPreviewOut": {
+        "properties": {
+          "frequency_code": {
+            "title": "Frequency Code",
+            "type": "string"
+          },
+          "frequency_per_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Per Day"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "required": [
+          "frequency_code",
+          "frequency_per_day",
+          "quantity"
+        ],
+        "title": "PrescriptionPreviewOut",
+        "type": "object"
+      },
+      "QueueActionIn": {
+        "properties": {
+          "action": {
+            "enum": [
+              "call",
+              "start",
+              "complete",
+              "no_show",
+              "requeue"
+            ],
+            "title": "Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "QueueActionIn",
+        "type": "object"
+      },
+      "QueueEntryOut": {
+        "properties": {
+          "allergies": {
+            "items": {
+              "$ref": "#/components/schemas/AllergyChipOut"
+            },
+            "title": "Allergies",
+            "type": "array"
+          },
+          "allergies_recorded": {
+            "title": "Allergies Recorded",
+            "type": "boolean"
+          },
+          "called_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Called At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "done_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Done At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientBriefOut"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "queue_date": {
+            "format": "date",
+            "title": "Queue Date",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "waiting",
+              "called",
+              "in_progress",
+              "done",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "token_no": {
+            "title": "Token No",
+            "type": "integer"
+          },
+          "visit": {
+            "$ref": "#/components/schemas/VisitBriefOut"
+          }
+        },
+        "required": [
+          "id",
+          "token_no",
+          "priority",
+          "status",
+          "queue_date",
+          "created_at",
+          "called_at",
+          "started_at",
+          "done_at",
+          "visit",
+          "patient",
+          "allergies",
+          "allergies_recorded"
+        ],
+        "title": "QueueEntryOut",
+        "type": "object"
+      },
+      "ReasonOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "requires_note": {
+            "title": "Requires Note",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "label_ar",
+          "label_en",
+          "requires_note"
+        ],
+        "title": "ReasonOut",
+        "type": "object"
+      },
+      "ReferralIn": {
+        "properties": {
+          "clinical_summary": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Clinical Summary",
+            "type": "string"
+          },
+          "external_facility": {
+            "default": "",
+            "maxLength": 200,
+            "title": "External Facility",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "internal",
+              "external"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "to_department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Department Id"
+          },
+          "to_doctor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Doctor Id"
+          },
+          "urgency": {
+            "default": "routine",
+            "enum": [
+              "routine",
+              "urgent",
+              "emergency"
+            ],
+            "title": "Urgency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "reason"
+        ],
+        "title": "ReferralIn",
+        "type": "object"
+      },
+      "ReferralOut": {
+        "properties": {
+          "clinical_summary": {
+            "title": "Clinical Summary",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "external_facility": {
+            "title": "External Facility",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "internal",
+              "external"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "referred_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "issued",
+              "completed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "to_department": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DepartmentRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_doctor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DoctorRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "urgency": {
+            "enum": [
+              "routine",
+              "urgent",
+              "emergency"
+            ],
+            "title": "Urgency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "to_department",
+          "to_doctor",
+          "external_facility",
+          "reason",
+          "clinical_summary",
+          "urgency",
+          "status",
+          "referred_by",
+          "created_at"
+        ],
+        "title": "ReferralOut",
+        "type": "object"
+      },
+      "ReferralTargetsOut": {
+        "properties": {
+          "departments": {
+            "items": {
+              "$ref": "#/components/schemas/DepartmentRefOut"
+            },
+            "title": "Departments",
+            "type": "array"
+          },
+          "doctors": {
+            "items": {
+              "$ref": "#/components/schemas/DoctorRefOut"
+            },
+            "title": "Doctors",
+            "type": "array"
+          }
+        },
+        "required": [
+          "departments",
+          "doctors"
+        ],
+        "title": "ReferralTargetsOut",
+        "type": "object"
+      },
+      "ResultOut": {
+        "description": "An approved lab result as the doctor sees it (FEATURES 3.7, 9.4).",
+        "properties": {
+          "amended": {
+            "title": "Amended",
+            "type": "boolean"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "comment": {
+            "title": "Comment",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "line_id": {
+            "title": "Line Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "test_code": {
+            "title": "Test Code",
+            "type": "string"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/ResultValueOut"
+            },
+            "title": "Values",
+            "type": "array"
+          },
+          "version_no": {
+            "title": "Version No",
+            "type": "integer"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "line_id",
+          "visit_id",
+          "test_code",
+          "name_ar",
+          "name_en",
+          "version_no",
+          "amended",
+          "approved_at",
+          "comment",
+          "values"
+        ],
+        "title": "ResultOut",
+        "type": "object"
+      },
+      "ResultParams": {
+        "properties": {
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visit Id"
+          }
+        },
+        "title": "ResultParams",
+        "type": "object"
+      },
+      "ResultValueOut": {
+        "properties": {
+          "flag": {
+            "title": "Flag",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "parameter_code": {
+            "title": "Parameter Code",
+            "type": "string"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parameter_code",
+          "name_ar",
+          "name_en",
+          "value",
+          "unit",
+          "reference",
+          "flag"
+        ],
+        "title": "ResultValueOut",
+        "type": "object"
+      },
+      "UserRefOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "UserRefOut",
+        "type": "object"
+      },
+      "VisitBriefOut": {
+        "properties": {
+          "chief_complaint": {
+            "title": "Chief Complaint",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DepartmentRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "doctor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DoctorRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "payer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PayerRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "open",
+              "closed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "visit_type": {
+            "enum": [
+              "new",
+              "follow_up",
+              "emergency",
+              "pharmacy_sale",
+              "inpatient"
+            ],
+            "title": "Visit Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "visit_type",
+          "status",
+          "created_at",
+          "chief_complaint",
+          "department",
+          "doctor",
+          "payer"
+        ],
+        "title": "VisitBriefOut",
+        "type": "object"
+      },
+      "VitalsIn": {
+        "properties": {
+          "blood_glucose_mg_dl": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blood Glucose Mg Dl"
+          },
+          "bp_diastolic": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bp Diastolic"
+          },
+          "bp_systolic": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bp Systolic"
+          },
+          "height_cm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,4}|(?=[\\d.]{1,6}0*$)\\d{0,4}\\.\\d{0,1}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Cm"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "pain_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pain Score"
+          },
+          "pulse_bpm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pulse Bpm"
+          },
+          "respiratory_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Respiratory Rate"
+          },
+          "spo2_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spo2 Percent"
+          },
+          "temperature_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,5}0*$)\\d{0,3}\\.\\d{0,1}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature C"
+          },
+          "weight_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Kg"
+          }
+        },
+        "title": "VitalsIn",
+        "type": "object"
+      },
+      "VitalsOut": {
+        "properties": {
+          "blood_glucose_mg_dl": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blood Glucose Mg Dl"
+          },
+          "bp_diastolic": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bp Diastolic"
+          },
+          "bp_systolic": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bp Systolic"
+          },
+          "height_cm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Cm"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "pain_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pain Score"
+          },
+          "pulse_bpm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pulse Bpm"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "recorded_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "respiratory_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Respiratory Rate"
+          },
+          "spo2_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spo2 Percent"
+          },
+          "temperature_c": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature C"
+          },
+          "weight_kg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Kg"
+          }
+        },
+        "required": [
+          "id",
+          "temperature_c",
+          "pulse_bpm",
+          "respiratory_rate",
+          "bp_systolic",
+          "bp_diastolic",
+          "spo2_percent",
+          "weight_kg",
+          "height_cm",
+          "blood_glucose_mg_dl",
+          "pain_score",
+          "note",
+          "recorded_by",
+          "recorded_at"
+        ],
+        "title": "VitalsOut",
+        "type": "object"
+      },
+      "WithdrawIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason_code"
+        ],
+        "title": "WithdrawIn",
+        "type": "object"
+      },
+      "WorkspaceOut": {
+        "description": "One visit as its doctor works on it: the header, queue state and clinical record.",
+        "properties": {
+          "diagnoses": {
+            "items": {
+              "$ref": "#/components/schemas/DiagnosisOut"
+            },
+            "title": "Diagnoses",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/NoteOut"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientBriefOut"
+          },
+          "queue_entry_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Entry Id"
+          },
+          "queue_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "waiting",
+                  "called",
+                  "in_progress",
+                  "done",
+                  "no_show",
+                  "cancelled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Status"
+          },
+          "referrals": {
+            "items": {
+              "$ref": "#/components/schemas/ReferralOut"
+            },
+            "title": "Referrals",
+            "type": "array"
+          },
+          "visit": {
+            "$ref": "#/components/schemas/VisitBriefOut"
+          },
+          "vitals": {
+            "items": {
+              "$ref": "#/components/schemas/VitalsOut"
+            },
+            "title": "Vitals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "visit",
+          "patient",
+          "queue_entry_id",
+          "queue_status",
+          "notes",
+          "diagnoses",
+          "vitals",
+          "referrals"
+        ],
+        "title": "WorkspaceOut",
         "type": "object"
       }
     },
@@ -713,6 +3761,1494 @@
         ]
       }
     },
+    "/api/clinical/allergies/{allergy_id}": {
+      "patch": {
+        "description": "The allergen never changes; a wrong entry is marked entered_in_error.",
+        "operationId": "clinical_update_allergy",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "allergy_id",
+            "required": true,
+            "schema": {
+              "title": "Allergy Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllergyPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllergyOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Resolve an allergy, mark it entered in error, or change severity, reaction, note",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/conditions/{condition_id}": {
+      "patch": {
+        "operationId": "clinical_update_condition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "condition_id",
+            "required": true,
+            "schema": {
+              "title": "Condition Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConditionPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Resolve a chronic condition, mark it entered in error, or change its note",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/diagnoses/{diagnosis_id}": {
+      "delete": {
+        "description": "409 VISIT_NOT_OPEN, DIAGNOSIS_NOT_AUTHOR. The audit history keeps the row.",
+        "operationId": "clinical_delete_diagnosis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diagnosis_id",
+            "required": true,
+            "schema": {
+              "title": "Diagnosis Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Withdraw a diagnosis recorded in error (its author, while the visit is open)",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/drug-classes": {
+      "get": {
+        "operationId": "clinical_list_drug_classes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DrugClassOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Active drug classes, for recording a class allergy",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/icd10": {
+      "get": {
+        "operationId": "clinical_search_icd10",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Icd10Out"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "ICD-10 lookup by code prefix (dot optional) or by words of the title (ar/en)",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/notes/{note_id}": {
+      "patch": {
+        "description": "409 NOTE_SIGNED (write a new note), NOTE_NOT_AUTHOR.",
+        "operationId": "clinical_update_note",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Change the actor's own draft note",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/notes/{note_id}/sign": {
+      "post": {
+        "description": "409 NOTE_SIGNED, NOTE_NOT_AUTHOR, NOTE_EMPTY.",
+        "operationId": "clinical_sign_note",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Sign a draft note; a signed note never changes",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/order-sets": {
+      "get": {
+        "operationId": "clinical_list_order_sets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrderSetOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Shared order sets of the doctor's department and the doctor's own favorites",
+        "tags": [
+          "clinical"
+        ]
+      },
+      "post": {
+        "description": "409 NAME_REQUIRED, ORDER_EMPTY, SERVICE_INACTIVE.",
+        "operationId": "clinical_create_favorite",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderSetOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Save a group of orders as one of the doctor's favorites",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/order-sets/{order_set_id}": {
+      "delete": {
+        "description": "409 ORDER_SET_NOT_OWNER, ORDER_SET_INACTIVE.",
+        "operationId": "clinical_delete_favorite",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_set_id",
+            "required": true,
+            "schema": {
+              "title": "Order Set Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Remove one of the doctor's favorites",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/patients/{patient_id}/allergies": {
+      "get": {
+        "operationId": "clinical_list_allergies",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AllergyOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The person's allergy registry: active first, then resolved",
+        "tags": [
+          "clinical"
+        ]
+      },
+      "post": {
+        "description": "409 DRUG_CLASS_REQUIRED, ALLERGEN_REQUIRED.",
+        "operationId": "clinical_create_allergy",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllergyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllergyOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Record an allergy (drug, drug class, food, environmental or other)",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/patients/{patient_id}/conditions": {
+      "get": {
+        "operationId": "clinical_list_conditions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConditionOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The person's chronic conditions: active first, then resolved",
+        "tags": [
+          "clinical"
+        ]
+      },
+      "post": {
+        "description": "409 CONDITION_NAME_REQUIRED, ICD10_UNKNOWN.",
+        "operationId": "clinical_create_condition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConditionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Record a chronic condition by ICD-10 code, by name, or both",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/patients/{patient_id}/history": {
+      "get": {
+        "operationId": "clinical_list_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryVisitOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The person's visits, newest first, with diagnoses, notes and orders",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/patients/{patient_id}/results": {
+      "get": {
+        "description": "Only approved results show; drafts never reach a doctor (FEATURES 9.4).",
+        "operationId": "clinical_list_results",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "visit_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visit Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ResultOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Approved lab results of the person (or of one visit), newest first",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/patients/{patient_id}/summary": {
+      "get": {
+        "operationId": "clinical_get_patient_summary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientSummaryOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "What a doctor sees on opening a file: allergies, chronic conditions, active medications, last 5 visits, latest approved results",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
     "/api/clinical/ping": {
       "get": {
         "operationId": "clinical_get_ping",
@@ -755,6 +5291,878 @@
           }
         ],
         "summary": "Check that the /api/clinical router is reachable",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/referral-targets": {
+      "get": {
+        "operationId": "clinical_get_referral_targets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralTargetsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Departments and doctors a patient can be referred to inside the center",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/referrals/{referral_id}/cancel": {
+      "post": {
+        "description": "409 REFERRAL_CLOSED.",
+        "operationId": "clinical_cancel_referral",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referral_id",
+            "required": true,
+            "schema": {
+              "title": "Referral Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Cancel an issued referral",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/visits/{visit_id}/diagnoses": {
+      "post": {
+        "description": "409 ICD10_UNKNOWN, DIAGNOSIS_REQUIRED, NOTE_NOT_ON_VISIT, VISIT_NOT_OPEN.",
+        "operationId": "clinical_create_diagnosis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Record a diagnosis: an ICD-10 code, free text, or both",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/visits/{visit_id}/notes": {
+      "post": {
+        "description": "409 VISIT_NOT_OPEN.",
+        "operationId": "clinical_create_note",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Start a draft clinical note: complaint, history, examination, assessment, plan",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/visits/{visit_id}/referrals": {
+      "post": {
+        "description": "409 DEPARTMENT_REQUIRED, FACILITY_REQUIRED, REASON_REQUIRED, VISIT_NOT_OPEN.",
+        "operationId": "clinical_create_referral",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferralIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Referral note to another department or an external facility",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/visits/{visit_id}/vitals": {
+      "post": {
+        "description": "409 VITALS_EMPTY, VITALS_OUT_OF_RANGE, BP_INCOMPLETE, VISIT_NOT_OPEN.",
+        "operationId": "clinical_create_vitals",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VitalsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VitalsOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Record vital signs (every measure optional, at least one)",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/visits/{visit_id}/workspace": {
+      "get": {
+        "operationId": "clinical_get_workspace",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A visit as its doctor works on it: header, queue state, notes, diagnoses, vitals and referrals",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/worklist": {
+      "get": {
+        "description": "Paid (or authorized) visits assigned to the doctor or unassigned in the doctor's department: waiting, called and with the doctor first, then the ones seen today. Empty for a user without a doctor profile.",
+        "operationId": "clinical_list_worklist",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QueueEntryOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Today's queue of the logged-in doctor: ready patients in serving order",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/worklist/call-next": {
+      "post": {
+        "description": "409 DOCTOR_PROFILE_REQUIRED, QUEUE_EMPTY.",
+        "operationId": "clinical_call_next",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueEntryOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Call the first waiting patient of the doctor's queue",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/worklist/{entry_id}/action": {
+      "post": {
+        "description": "Completing performs the consultation line; the visit stays open for its orders. 409 DOCTOR_PROFILE_REQUIRED, QUEUE_OTHER_DOCTOR, QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY.",
+        "operationId": "clinical_queue_action",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "title": "Entry Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueEntryOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Call, start, complete, mark no-show or requeue one of the doctor's patients",
         "tags": [
           "clinical"
         ]
@@ -934,6 +6342,293 @@
         ]
       }
     },
+    "/api/orders/catalog": {
+      "get": {
+        "description": "Search by code prefix or words of the Arabic or English name.",
+        "operationId": "orders_list_catalog",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 100,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "lab",
+                    "procedure",
+                    "drug",
+                    "consumable"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrderableServiceOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Services a doctor may order (lab, procedure, drug, consumable), without prices",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/frequencies": {
+      "get": {
+        "operationId": "orders_list_frequencies",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FrequencyOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Prescription frequency codes and their doses per day",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/lines/{line_id}/withdraw": {
+      "post": {
+        "description": "A billed order is cancelled by a credit note at billing (409 CREDIT_NOTE_REQUIRED). Also 409 LINE_NOT_CLINICAL, LINE_ALREADY_CANCELLED, LINE_ALREADY_PERFORMED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
+        "operationId": "orders_withdraw_line",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "title": "Line Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorLineOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Withdraw an order that has not reached the cashier, with a reason",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
     "/api/orders/ping": {
       "get": {
         "operationId": "orders_get_ping",
@@ -976,6 +6671,346 @@
           }
         ],
         "summary": "Check that the /api/orders router is reachable",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/prescription-preview": {
+      "post": {
+        "description": "quantity is null when it cannot be counted (as needed, no dose quantity, no duration). 409 UNKNOWN_FREQUENCY, FREQUENCY_MISMATCH, INVALID_PRESCRIPTION.",
+        "operationId": "orders_preview_prescription",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionPreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrescriptionPreviewOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The quantity a prescription would order: ceil(dose x doses per day x days)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/visits/{visit_id}/lines": {
+      "get": {
+        "operationId": "orders_list_visit_lines",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorLineOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A visit's orders in the doctor's view: status per line, approved results inline",
+        "tags": [
+          "orders"
+        ]
+      },
+      "post": {
+        "description": "A drug with dose quantity, frequency and duration gets its quantity computed; an as-needed one needs a quantity. A drug matching an active allergy is refused with 409 ALLERGY_CONFLICT (details.alerts: service_id, allergy_id, match, severity, allergen, allergen_ar) unless allergy_override_reason is given; the override is stored with who and when. Also 409 VISIT_NOT_OPEN, SERVICE_INACTIVE, QUANTITY_REQUIRED, PRESCRIPTION_NOT_DRUG, UNKNOWN_FREQUENCY, FREQUENCY_MISMATCH, INVALID_PRESCRIPTION.",
+        "operationId": "orders_create_lines",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorLineOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Order lab tests, procedures and drugs on a visit",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/withdraw-reasons": {
+      "get": {
+        "operationId": "orders_list_withdraw_reasons",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReasonOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Reasons a doctor chooses from to withdraw an order",
         "tags": [
           "orders"
         ]

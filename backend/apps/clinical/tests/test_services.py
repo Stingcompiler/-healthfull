@@ -97,7 +97,14 @@ def test_allergy_alert_on_drug_class(doctor_user, visit, amoxicillin, penicillin
     )
     alerts = cs.allergy_alerts(visit.patient, [amoxicillin.service])
     assert alerts == [
-        cs.AllergyAlert(amoxicillin.service_id, allergy.pk, "drug_class", "severe", "Penicillins")
+        cs.AllergyAlert(
+            amoxicillin.service_id,
+            allergy.pk,
+            "drug_class",
+            "severe",
+            "Penicillins",
+            penicillins.name_ar,
+        )
     ]
     # Other drugs and non-drug services raise nothing.
     assert cs.allergy_alerts(visit.patient, [b.item().service, b.service("lab")]) == []

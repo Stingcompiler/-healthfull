@@ -98,7 +98,9 @@ def test_call_next_start_and_complete(clinic) -> None:
     later = queued(profile)
     assert [e.pk for e in cs.doctor_queue(user)] == [later.pk, entry.pk]
     assert [e.pk for e in cs.doctor_queue(user, include_done=False)] == [later.pk]
-    assert cs.visit_queue_entry(entry.visit).pk == entry.pk
+    current = cs.visit_queue_entry(entry.visit)
+    assert current is not None
+    assert current.pk == entry.pk
 
 
 def test_queue_actions_are_for_my_own_queue(clinic, make_user) -> None:

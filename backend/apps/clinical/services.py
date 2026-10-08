@@ -76,36 +76,49 @@ __all__ = [
     "QUEUE_ACTIONS",
     "VITAL_RANGES",
     "AllergyAlert",
+    "Frequency",
     "HistoryEntry",
     "PatientSummary",
+    "ReferralTargets",
+    "VisitWorkspace",
+    "Worklist",
     "active_allergies",
     "add_diagnosis",
     "add_nursing_note",
     "allergies_recorded",
     "allergy_alerts",
+    "allergy_registry",
     "approved_results",
     "call_next",
     "cancel_referral",
     "complete_referral",
+    "condition_registry",
+    "create_favorite",
     "create_order_set",
     "create_referral",
     "deactivate_order_set",
+    "doctor_order_sets",
     "doctor_profile",
     "doctor_queue",
     "drug_classes",
     "estimated_cost",
+    "frequencies",
+    "icd10_by_code",
     "order_lines",
     "order_set_items",
     "order_sets_for",
     "patient_history",
     "patient_summary",
+    "place_orders",
     "prepare_order_items",
     "prescription_quantity",
+    "preview_prescription",
     "queue_action",
     "reassign_patient",
     "record_allergy",
     "record_condition",
     "record_vitals",
+    "referral_targets",
     "remove_diagnosis",
     "save_note",
     "search_icd10",
@@ -115,6 +128,8 @@ __all__ = [
     "update_allergy",
     "update_condition",
     "visit_queue_entry",
+    "visit_workspace",
+    "worklist",
 ]
 
 #: Plausible ranges (inclusive) per vital sign; the database has the same backstop.
@@ -161,6 +176,7 @@ class AllergyAlert:
     match: str  # "item", "drug_class" or "substance"
     severity: str
     allergen: str
+    allergen_ar: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -169,6 +185,7 @@ class AllergyAlert:
             "match": self.match,
             "severity": self.severity,
             "allergen": self.allergen,
+            "allergen_ar": self.allergen_ar or self.allergen,
         }
 
 
@@ -299,8 +316,15 @@ def allergy_alerts(patient: Patient, services: Iterable[Service]) -> list[Allerg
                     or (allergy.drug_class.name_en if allergy.drug_class else "")
                     or (allergy.item.generic_name if allergy.item else "")
                 )
+                allergen_ar = (
+                    allergy.substance
+                    or (allergy.drug_class.name_ar if allergy.drug_class else "")
+                    or allergen
+                )
                 alerts.append(
-                    AllergyAlert(service_id, allergy.pk, match, allergy.severity, allergen)
+                    AllergyAlert(
+                        service_id, allergy.pk, match, allergy.severity, allergen, allergen_ar
+                    )
                 )
     return alerts
 
@@ -310,6 +334,45 @@ def prescription_quantity(
 ) -> int:
     """Base units to dispense: dose x frequency x days, rounded up (FEATURES 3.5)."""
     return dp.dispense_quantity(dose_quantity, frequency_per_day, duration_days)
+
+
+@dataclass(frozen=True, slots=True)
+class Frequency:
+    """A prescription frequency code and its doses per day (``None``: single or as needed)."""
+
+    code: str
+    per_day: Decimal | None
+
+
+def frequencies() -> list[Frequency]:
+    """The frequency codes the prescription builder offers, in the domain's order."""
+    return [Frequency(code, per_day) for code, per_day in dp.FREQUENCIES.items()]
+
+
+def preview_prescription(
+    *,
+    dose_quantity: Decimal | None,
+    frequency_code: str = "",
+    frequency_per_day: Decimal | None = None,
+    duration_days: int | None = None,
+    as_needed: bool = False,
+) -> dp.Prescription:
+    """The doses per day and the quantity a prescription would order (FEATURES 3.5).
+
+    The prescription builder shows it before the order is placed; :func:`order_lines` computes
+    the same quantity again when the order is placed. ``quantity`` is ``None`` when it
+    cannot be counted (as needed, a single dose without a dose quantity, no duration).
+
+    Raises:
+        DomainError: ``UNKNOWN_FREQUENCY``, ``FREQUENCY_MISMATCH``, ``INVALID_PRESCRIPTION``.
+    """
+    return dp.resolve(
+        dose_quantity=dose_quantity,
+        frequency_code=frequency_code,
+        frequency_per_day=frequency_per_day,
+        duration_days=duration_days,
+        as_needed=as_needed,
+    )
 
 
 def _decimal_or_none(value: Any, name: str) -> Decimal | None:
@@ -437,6 +500,24 @@ def order_lines(
                 for line in by_service.get(alert.service_id, [])
             )
     return lines
+
+
+def place_orders(
+    visit: Visit,
+    items: Sequence[Mapping[str, Any]],
+    *,
+    actor: User,
+    allergy_override_reason: str = "",
+) -> list[Any]:
+    """:func:`order_lines`, answered in the doctor's view of the new lines
+    (``orders.services.DoctorLine``: status, never prices)."""
+    created = {
+        ln.pk
+        for ln in order_lines(
+            visit, items, actor=actor, allergy_override_reason=allergy_override_reason
+        )
+    }
+    return [d for d in _orders().doctor_lines(visit) if d.line.pk in created]
 
 
 # --- chronic conditions ---------------------------------------------------------------------
@@ -592,6 +673,20 @@ def remove_diagnosis(diagnosis: Diagnosis, *, actor: User) -> None:
         if locked.recorded_by_id != actor.pk:
             raise DomainError("DIAGNOSIS_NOT_AUTHOR", "Only who recorded a diagnosis removes it")
         locked.delete()
+
+
+def icd10_by_code(code: str | None) -> Icd10Code | None:
+    """The active ICD-10 row of a code (case-insensitive), ``None`` for no code.
+
+    Raises:
+        DomainError: ``ICD10_UNKNOWN``.
+    """
+    if not code or not code.strip():
+        return None
+    found = Icd10Code.objects.filter(code__iexact=code.strip(), active=True).first()
+    if found is None:
+        raise DomainError("ICD10_UNKNOWN", "Unknown ICD-10 code", icd10=code)
+    return found
 
 
 def search_icd10(query: str, *, limit: int = 20) -> list[Icd10Code]:
@@ -798,6 +893,43 @@ def order_set_items(order_set: OrderSet) -> list[dict[str, Any]]:
     return out
 
 
+def doctor_order_sets(user: User) -> list[OrderSet]:
+    """The order sets a doctor chooses from: shared ones (of the doctor's department or of
+    every department) and the doctor's own favorites, with their items (FEATURES 3.6)."""
+    profile = doctor_profile(user)
+    return list(
+        order_sets_for(user, department=profile.department if profile else None)
+        .prefetch_related("items__service")
+        .order_by("sort_order", "name_en", "id")
+    )
+
+
+def create_favorite(
+    *, name_ar: str, name_en: str, items: Sequence[Mapping[str, Any]], actor: User
+) -> OrderSet:
+    """Save orders as one of the actor's favorites (FEATURES 3.6). Items name their
+    ``service_id``; the other fields are those of :func:`create_order_set`.
+
+    Raises:
+        DomainError: ``SERVICE_INACTIVE`` (unknown service), the errors of
+            :func:`create_order_set`.
+    """
+    found = Service.objects.in_bulk([it["service_id"] for it in items])
+    resolved: list[dict[str, Any]] = []
+    for raw in items:
+        service = found.get(raw["service_id"])
+        if service is None:
+            raise DomainError(
+                "SERVICE_INACTIVE", "The service is unknown", service=raw["service_id"]
+            )
+        entry = {k: v for k, v in raw.items() if k != "service_id" and v is not None}
+        resolved.append({**entry, "service": service})
+    created = create_order_set(
+        name_ar=name_ar, name_en=name_en, items=resolved, actor=actor, personal=True
+    )
+    return OrderSet.objects.prefetch_related("items__service").get(pk=created.pk)
+
+
 def deactivate_order_set(order_set: OrderSet, *, actor: User) -> OrderSet:
     """Remove one of the actor's favorites (FEATURES 3.6). Shared sets are administered
     centrally, never from the doctor's screen.
@@ -840,7 +972,7 @@ def doctor_queue(user: User, *, include_done: bool = True) -> list[QueueEntry]:
     entries = list(
         visit_services.queue(statuses=statuses)
         .filter(mine)
-        .select_related("visit__department", "visit__payer", "doctor__user")
+        .select_related("visit__department", "visit__payer", "visit__doctor__user", "doctor__user")
     )
     active = [e for e in entries if e.status != QueueStatus.DONE]
     done = sorted(
@@ -849,6 +981,29 @@ def doctor_queue(user: User, *, include_done: bool = True) -> list[QueueEntry]:
         reverse=True,
     )
     return active + done
+
+
+@dataclass(frozen=True, slots=True)
+class Worklist:
+    """The doctor's queue with each patient's active allergies (FEATURES 2.3, 3.2)."""
+
+    entries: list[QueueEntry]
+    allergies: dict[int, list[Allergy]]
+    recorded: set[int]
+
+
+def worklist(user: User, *, include_done: bool = True) -> Worklist:
+    """:func:`doctor_queue` plus, per patient file, the active allergies of the person
+    (every merged file) and whether any allergy entry was ever recorded."""
+    entries = doctor_queue(user, include_done=include_done)
+    patients = {e.visit.patient_id: e.visit.patient for e in entries}
+    allergies: dict[int, list[Allergy]] = {}
+    recorded: set[int] = set()
+    for pid, patient in patients.items():
+        allergies[pid] = active_allergies(patient)
+        if allergies[pid] or allergies_recorded(patient):
+            recorded.add(pid)
+    return Worklist(entries=entries, allergies=allergies, recorded=recorded)
 
 
 #: Doctor actions on a queue entry and the ``visits.services`` move each one makes.
@@ -908,6 +1063,70 @@ def visit_queue_entry(visit: Visit) -> QueueEntry | None:
     entries = QueueEntry.objects.filter(visit=visit).order_by("-created_at", "-id")
     active = entries.filter(status__in=ACTIVE_QUEUE_STATUSES).first()
     return active or entries.first()
+
+
+@dataclass(frozen=True, slots=True)
+class VisitWorkspace:
+    """One visit as its doctor works on it (FEATURES 3.3, 3.4, 3.9). No prices."""
+
+    visit: Visit
+    queue_entry: QueueEntry | None
+    notes: list[ClinicalNote] = field(default_factory=list)
+    diagnoses: list[Diagnosis] = field(default_factory=list)
+    vitals: list[Vitals] = field(default_factory=list)
+    referrals: list[Referral] = field(default_factory=list)
+
+
+def visit_workspace(visit: Visit) -> VisitWorkspace:
+    """The visit with its queue entry, notes (oldest first), diagnoses (primary first),
+    vitals (newest first) and referrals (newest first)."""
+    loaded = Visit.objects.select_related("patient", "department", "doctor__user", "payer").get(
+        pk=visit.pk
+    )
+    return VisitWorkspace(
+        visit=loaded,
+        queue_entry=visit_queue_entry(loaded),
+        notes=list(
+            ClinicalNote.objects.filter(visit=loaded)
+            .select_related("author")
+            .order_by("created_at", "id")
+        ),
+        diagnoses=list(
+            Diagnosis.objects.filter(visit=loaded)
+            .select_related("icd10", "recorded_by")
+            .order_by("kind", "recorded_at", "id")
+        ),
+        vitals=list(
+            Vitals.objects.filter(visit=loaded)
+            .select_related("recorded_by")
+            .order_by("-recorded_at", "-id")
+        ),
+        referrals=list(
+            Referral.objects.filter(visit=loaded)
+            .select_related("to_department", "to_doctor__user", "referred_by")
+            .order_by("-created_at", "-id")
+        ),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class ReferralTargets:
+    """Where a doctor may refer a patient inside the center (FEATURES 3.9)."""
+
+    departments: list[Department]
+    doctors: list[DoctorProfile]
+
+
+def referral_targets() -> ReferralTargets:
+    """Active departments and active doctors, for an internal referral."""
+    return ReferralTargets(
+        departments=list(Department.objects.filter(active=True).order_by("sort_order", "code")),
+        doctors=list(
+            DoctorProfile.objects.filter(active=True, user__is_active=True)
+            .select_related("user", "department")
+            .order_by("department__sort_order", "department__code", "user__username")
+        ),
+    )
 
 
 # --- nursing notes --------------------------------------------------------------------------
@@ -971,7 +1190,7 @@ def patient_summary(patient: Patient, *, medication_days: int = 30) -> PatientSu
         ),
         recent_visits=list(
             Visit.objects.filter(patient_id__in=ids)
-            .select_related("department", "doctor__user")
+            .select_related("department", "doctor__user", "payer")
             .order_by("-created_at", "-id")[:5]
         ),
         active_medications=list(
@@ -992,6 +1211,31 @@ def patient_summary(patient: Patient, *, medication_days: int = 30) -> PatientSu
             .order_by("-approved_at", "-id")[:10]
         ),
     )
+
+
+def allergy_registry(patient: Patient) -> list[Allergy]:
+    """Every allergy entry of the person (every merged file) except entries made in error:
+    active first, then resolved ones, newest first (FEATURES 3.2)."""
+    who = patient_services.resolve(patient)
+    rows = (
+        Allergy.objects.filter(patient_id__in=patient_services.file_ids(who))
+        .exclude(status=RecordStatus.ERROR)
+        .select_related("drug_class", "item")
+        .order_by("-recorded_at", "-id")
+    )
+    return sorted(rows, key=lambda a: a.status != RecordStatus.ACTIVE)
+
+
+def condition_registry(patient: Patient) -> list[ChronicCondition]:
+    """Every chronic condition of the person except entries made in error, active first."""
+    who = patient_services.resolve(patient)
+    rows = (
+        ChronicCondition.objects.filter(patient_id__in=patient_services.file_ids(who))
+        .exclude(status=RecordStatus.ERROR)
+        .select_related("icd10")
+        .order_by("-recorded_at", "-id")
+    )
+    return sorted(rows, key=lambda c: c.status != RecordStatus.ACTIVE)
 
 
 def active_allergies(patient: Patient) -> list[Allergy]:
@@ -1035,7 +1279,7 @@ def patient_history(patient: Patient, *, limit: int = 20) -> list[HistoryEntry]:
     visits = list(
         Visit.objects.filter(patient_id__in=patient_services.file_ids(who))
         .exclude(status=VisitStatus.CANCELLED)
-        .select_related("department", "doctor__user")
+        .select_related("department", "doctor__user", "payer")
         .order_by("-created_at", "-id")[: max(1, min(limit, 100))]
     )
     ids = [v.pk for v in visits]

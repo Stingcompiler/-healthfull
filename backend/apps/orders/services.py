@@ -99,6 +99,7 @@ __all__ = [
     "sync_settlement",
     "whole_quantity",
     "withdraw_order",
+    "withdraw_reasons",
     "worklist",
     "worklist_lines",
 ]
@@ -973,9 +974,9 @@ def orderable_services(
 ) -> list[Service]:
     """Active catalog services a doctor may order, by code prefix or words of the name.
 
-    Words match the Arabic or English name folded like patient search (hamza, ta marbuta,
-    case). Drugs carry their stock item (form, strength, base unit, classes) for the
-    prescription builder. Never prices (FEATURES 3.8).
+    Words match the Arabic or English name, or a drug's generic or brand name, folded like
+    patient search (hamza, ta marbuta, case). Drugs carry their stock item (form, strength,
+    base unit, classes) for the prescription builder. Never prices (FEATURES 3.8).
 
     Raises:
         DomainError: ``INVALID_KIND`` for a kind outside :data:`ORDERABLE_KINDS`.
@@ -993,10 +994,18 @@ def orderable_services(
         words = [w for w in patient_services.normalize_text(term).split(" ") if w]
         name_match = Q()
         for word in words:
-            name_match &= Q(ar__contains=word) | Q(en__contains=word)
-        qs = qs.annotate(ar=NormalizeText("name_ar"), en=NormalizeText("name_en")).filter(
-            Q(code__istartswith=term.replace(" ", "")) | name_match
-        )
+            name_match &= (
+                Q(ar__contains=word)
+                | Q(en__contains=word)
+                | Q(drug_generic__contains=word)
+                | Q(drug_brand__contains=word)
+            )
+        qs = qs.annotate(
+            ar=NormalizeText("name_ar"),
+            en=NormalizeText("name_en"),
+            drug_generic=NormalizeText("stock_item__generic_name"),
+            drug_brand=NormalizeText("stock_item__brand_name"),
+        ).filter(Q(code__istartswith=term.replace(" ", "")) | name_match)
     return list(
         qs.select_related("department", "stock_item")
         .prefetch_related("stock_item__drug_classes")
@@ -1030,8 +1039,15 @@ def doctor_lines(visit: Visit) -> list[DoctorLine]:
 
     lines = list(
         ServiceLine.objects.filter(visit=visit, kind__in=ORDERABLE_KINDS)
-        .select_related("service", "authorization", "prescription", "ordered_by", "cancel_reason")
-        .prefetch_related("allergy_overrides", "dispense_lines")
+        .select_related(
+            "service",
+            "authorization",
+            "prescription",
+            "ordered_by",
+            "cancel_reason",
+            "cancelled_by",
+        )
+        .prefetch_related("allergy_overrides__overridden_by", "dispense_lines")
         .order_by("id")
     )
     results = {
@@ -1039,7 +1055,7 @@ def doctor_lines(visit: Visit) -> list[DoctorLine]:
         for v in ResultVersion.objects.filter(
             result_set__service_line__in=lines, status=ResultStatus.APPROVED
         )
-        .select_related("result_set")
+        .select_related("result_set__test__service", "result_set__service_line")
         .prefetch_related("values__parameter")
     }
     return [
@@ -1082,6 +1098,15 @@ def withdraw_order(line: ServiceLine, *, reason: str, note: str, actor: User) ->
         )
     cancel_line(line, reason, actor, note=note, open_refund=False)
     return doctor_line(line)
+
+
+def withdraw_reasons() -> list[ReasonCode]:
+    """The active line cancellation reasons a withdrawal chooses from (FEATURES 4.2)."""
+    return list(
+        ReasonCode.objects.filter(category="line_cancel", active=True).order_by(
+            "sort_order", "code"
+        )
+    )
 
 
 def worklist_lines(kinds: Sequence[str], *, department: int | None = None) -> list[ServiceLine]:
