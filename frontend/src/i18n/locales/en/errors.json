@@ -141,6 +141,8 @@
   "ALREADY_QUEUED": "This visit is already in the queue.",
   "QUEUE_TRANSITION_INVALID": "This queue step is not allowed from the patient's current status.",
   "QUEUE_NOT_READY": "The consultation fee is not paid and has no authorization. Send the patient to the cashier first.",
+  "QUEUE_EMPTY": "Nobody with a paid consultation is waiting in this clinic.",
+  "COVERAGE_ENDED": "This coverage has ended and can no longer be edited. Add a new coverage instead.",
   "INVALID_SLOT": "The appointment must end after it starts.",
   "OUTSIDE_SCHEDULE": "The doctor does not work at that time. Choose a time within the doctor's schedule.",
   "APPOINTMENT_CONFLICT": "The doctor already has an appointment at that time. Choose another time.",
