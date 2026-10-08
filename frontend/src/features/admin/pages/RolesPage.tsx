@@ -8,7 +8,6 @@ import { z } from "zod";
 
 import { TextareaField } from "@/components/form";
 import { SearchInput } from "@/components/SearchInput";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -339,9 +338,10 @@ function RoleLists({ roles, groups, granted, toggle, pending, label }: CellProps
           </details>
         );
       })}
-      <Badge variant="neutral" className="self-start">
+      <p className="flex items-start gap-1.5 text-xs text-muted">
+        <Lock className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
         {t("roles.protectedHint")}
-      </Badge>
+      </p>
     </div>
   );
 }
