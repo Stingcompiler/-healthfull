@@ -10,6 +10,7 @@ export const nav: NavItem[] = [
     icon: Wallet,
     group: "finance",
     order: 50,
-    permission: "payments.take_payment",
+    // Cashiers, supervisors, accountants and managers each use some cashier screens.
+    permission: ["payments.take_payment", "payments.view", "billing.view", "orders.authorize_perform_first"],
   },
 ];

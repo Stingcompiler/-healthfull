@@ -1,0 +1,74 @@
+import "./print.css";
+
+import { Printer } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+
+export type PrintFormat = "thermal" | "a4";
+
+const PAGE_RULES: Record<PrintFormat, string> = {
+  thermal: "@page { size: 80mm auto; margin: 4mm; }",
+  a4: "@page { size: A4; margin: 15mm; }",
+};
+
+/**
+ * A printable document: a format switch (80 mm thermal roll or A4), a print button, and the
+ * paper itself. The paper always uses the light theme, as printed on white.
+ */
+export function PrintFrame({ children, toolbar }: { children: (format: PrintFormat) => ReactNode; toolbar?: ReactNode }) {
+  const { t } = useTranslation(["cashier", "common"]);
+  const [format, setFormat] = useState<PrintFormat>("thermal");
+  return (
+    <div className="flex min-w-0 flex-col gap-4">
+      <style>{PAGE_RULES[format]}</style>
+      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <Tabs
+          value={format}
+          onValueChange={(v) => {
+            setFormat(v as PrintFormat);
+          }}
+        >
+          <TabsList aria-label={t("print.format")}>
+            <TabsTrigger value="thermal" data-testid="format-thermal">
+              {t("print.thermal")}
+            </TabsTrigger>
+            <TabsTrigger value="a4" data-testid="format-a4">
+              {t("print.a4")}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex flex-wrap items-center gap-2">
+          {toolbar}
+          <Button
+            onClick={() => {
+              window.print();
+            }}
+            data-testid="print"
+          >
+            <Printer aria-hidden="true" />
+            {t("common:actions.print")}
+          </Button>
+        </div>
+      </div>
+      <div className="flex min-w-0 justify-center">
+        <article
+          data-print-root
+          data-print-format={format}
+          data-theme="light"
+          className={cn(
+            "min-w-0 bg-surface text-fg shadow-card",
+            format === "thermal"
+              ? "w-full max-w-[80mm] p-3 text-[12px] leading-snug"
+              : "w-full max-w-[210mm] p-6 text-sm md:p-10",
+          )}
+        >
+          {children(format)}
+        </article>
+      </div>
+    </div>
+  );
+}

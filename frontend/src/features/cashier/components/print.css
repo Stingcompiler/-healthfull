@@ -1,0 +1,33 @@
+/*
+ * Printing of cashier documents (receipt, invoice, FEATURES 0.10 / 6.9): only the element
+ * marked data-print-root is printed; the app shell and the screen controls are hidden. The
+ * page size (80 mm thermal roll or A4) is set by the page itself with an @page rule.
+ */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  [data-print-root],
+  [data-print-root] * {
+    visibility: visible !important;
+  }
+
+  [data-print-root] {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  [data-print-root][data-print-format="thermal"] {
+    width: 72mm !important;
+  }
+
+  [data-print-root][data-print-format="a4"] {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
