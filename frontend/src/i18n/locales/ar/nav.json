@@ -29,7 +29,10 @@
     "adminSettings": "إعدادات المركز",
     "adminImports": "الاستيراد",
     "adminSystem": "حالة النظام",
-    "design": "دليل التصميم"
+    "design": "دليل التصميم",
+    "adminPolicies": "السياسات",
+    "adminDepartments": "الأقسام والأطباء",
+    "adminReasonCodes": "قوائم الأسباب"
   },
   "short": {
     "dashboard": "الرئيسية",
@@ -52,7 +55,10 @@
     "adminSettings": "الإعدادات",
     "adminImports": "الاستيراد",
     "adminSystem": "النظام",
-    "design": "التصميم"
+    "design": "التصميم",
+    "adminPolicies": "السياسات",
+    "adminDepartments": "الأطباء",
+    "adminReasonCodes": "الأسباب"
   },
   "shell": {
     "menu": "القائمة",
