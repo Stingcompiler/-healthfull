@@ -7,12 +7,13 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+import pgtrigger
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models import Q
 
-from apps.core.db import choice_check, quantity_field, track_history
+from apps.core.db import append_only, choice_check, quantity_field, track_history
 
 
 @track_history()
@@ -113,6 +114,48 @@ class Allergy(models.Model):
 
     def __str__(self) -> str:
         return f"{self.patient_id}: {self.substance or self.drug_class_id or self.item_id}"
+
+
+class AllergyMatch(models.TextChoices):
+    ITEM = "item", "Same drug"
+    DRUG_CLASS = "drug_class", "Same drug class"
+    SUBSTANCE = "substance", "Named substance"
+
+
+class AllergyOverride(models.Model):
+    """A prescriber's documented decision to order a drug despite a matching allergy.
+
+    Invariant 4: an override records its reason, who made it and when. One row per ordered
+    line and matching allergy; append-only (the row is the audit record).
+    """
+
+    service_line = models.ForeignKey(
+        "orders.ServiceLine", on_delete=models.PROTECT, related_name="allergy_overrides"
+    )
+    allergy = models.ForeignKey(Allergy, on_delete=models.PROTECT, related_name="overrides")
+    match = models.CharField(max_length=20, choices=AllergyMatch.choices)
+    reason = models.TextField()
+    overridden_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    overridden_at = models.DateTimeField()
+
+    class Meta:
+        verbose_name = "allergy override"
+        ordering: ClassVar[list[str]] = ["service_line", "id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            choice_check("match", AllergyMatch, "clinical_allergyoverride_match_valid"),
+            models.CheckConstraint(
+                condition=~Q(reason=""), name="clinical_allergyoverride_has_reason"
+            ),
+            models.UniqueConstraint(
+                fields=["service_line", "allergy"], name="clinical_allergyoverride_unique"
+            ),
+        ]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [append_only()]
+
+    def __str__(self) -> str:
+        return f"override line {self.service_line_id} allergy {self.allergy_id}"
 
 
 @track_history()

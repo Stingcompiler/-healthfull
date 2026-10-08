@@ -11,7 +11,7 @@ import pytest
 from django.utils import timezone
 
 from apps.clinical import services as cs
-from apps.clinical.models import Icd10Code
+from apps.clinical.models import AllergyOverride, Icd10Code
 from apps.core.tests import builders as b
 from apps.orders.models import ServiceLine
 from apps.patients import services as ps
@@ -138,35 +138,118 @@ def test_record_allergy_validation(doctor_user, visit) -> None:
         assert exc.value.code == code
 
 
-def test_ordering_a_flagged_drug_needs_acknowledgement(
+def test_ordering_a_flagged_drug_is_a_conflict_without_a_reason(
     doctor_user, visit, amoxicillin, penicillins
 ) -> None:
     cs.record_allergy(
         visit.patient, actor=doctor_user, allergen_type="drug_class", drug_class=penicillins
     )
-    with pytest.raises(DomainError) as exc:
-        cs.order_lines(visit, [{"service": amoxicillin.service}], actor=doctor_user)
-    assert exc.value.code == "ALLERGY_ALERT"
+    for reason in ("", "   "):
+        with pytest.raises(DomainError) as exc:
+            cs.order_lines(
+                visit,
+                [{"service": amoxicillin.service}],
+                actor=doctor_user,
+                allergy_override_reason=reason,
+            )
+        assert exc.value.code == "ALLERGY_CONFLICT"
     assert exc.value.details["alerts"][0]["match"] == "drug_class"
     assert not ServiceLine.objects.filter(visit=visit).exists()
+    assert not AllergyOverride.objects.exists()
     with pytest.raises(DomainError) as exc:
         cs.order_lines(visit, [], actor=doctor_user)
     assert exc.value.code == "ORDER_EMPTY"
 
 
-def test_acknowledged_order_creates_lines(doctor_user, visit, amoxicillin, penicillins) -> None:
-    cs.record_allergy(
+def test_overridden_order_records_reason_approver_and_time(
+    doctor_user, visit, amoxicillin, penicillins
+) -> None:
+    allergy = cs.record_allergy(
         visit.patient, actor=doctor_user, allergen_type="drug_class", drug_class=penicillins
     )
-    cs.order_lines(
+    cbc = b.service("lab")
+    before = timezone.now()
+    lines = cs.order_lines(
         visit,
-        [{"service": amoxicillin.service, "quantity": Decimal(10)}],
+        [{"service": amoxicillin.service, "quantity": Decimal(10)}, {"service": cbc.pk}],
         actor=doctor_user,
-        acknowledge_allergies=True,
+        allergy_override_reason="  tolerated amoxicillin last year  ",
     )
-    line = ServiceLine.objects.get(visit=visit)
-    assert line.service == amoxicillin.service
-    assert line.billing_status == "unbilled"
+    drug = ServiceLine.objects.get(visit=visit, service=amoxicillin.service)
+    assert drug.billing_status == "unbilled"
+    assert [ln.service_id for ln in lines] == [amoxicillin.service_id, cbc.pk]
+    override = AllergyOverride.objects.get()
+    assert override.service_line == drug
+    assert override.allergy == allergy
+    assert override.match == "drug_class"
+    assert override.reason == "tolerated amoxicillin last year"
+    assert override.overridden_by == doctor_user
+    assert override.overridden_at >= before
+    # The override is the audit record: it never changes.
+    b.db_rejects(
+        lambda: AllergyOverride.objects.filter(pk=override.pk).update(reason="x"), "APPEND_ONLY"
+    )
+    # A reason with no conflict records nothing.
+    cs.order_lines(visit, [{"service": cbc}], actor=doctor_user, allergy_override_reason="n/a")
+    assert AllergyOverride.objects.count() == 1
+
+
+def test_prescription_fills_the_quantity(doctor_user, visit, amoxicillin) -> None:
+    (line,) = cs.order_lines(
+        visit,
+        [
+            {
+                "service": amoxicillin.service,
+                "prescription": {
+                    "dose": "1 capsule",
+                    "dose_quantity": Decimal(1),
+                    "frequency_code": "tid",
+                    "duration_days": 7,
+                },
+            }
+        ],
+        actor=doctor_user,
+    )
+    assert line.quantity == Decimal(21)
+    assert line.prescription.frequency_code == "TID"
+    assert line.prescription.frequency_per_day == Decimal(3)
+    # A stated quantity wins (a whole pack); an uncountable course needs one.
+    (packed,) = cs.order_lines(
+        visit,
+        [
+            {
+                "service": amoxicillin.service,
+                "quantity": 30,
+                "prescription": {"dose": "1", "dose_quantity": 1, "frequency_code": "TID"},
+            }
+        ],
+        actor=doctor_user,
+    )
+    assert packed.quantity == Decimal(30)
+    cases: list[tuple[dict[str, Any], str]] = [
+        ({"dose": "1", "dose_quantity": 1, "frequency_code": "PRN"}, "QUANTITY_REQUIRED"),
+        ({"dose": "1", "frequency_code": "WHENEVER", "duration_days": 2}, "UNKNOWN_FREQUENCY"),
+        (
+            {"dose": "1", "dose_quantity": 1, "frequency_code": "TID", "frequency_per_day": 2},
+            "FREQUENCY_MISMATCH",
+        ),
+        (
+            {"dose": "1", "dose_quantity": 1, "frequency_per_day": 1, "duration_days": 999},
+            "INVALID_PRESCRIPTION",
+        ),
+        ({"dose": "1", "dose_quantity": 1.5, "frequency_code": "OD"}, "INVALID_PRESCRIPTION"),
+    ]
+    for rx, code in cases:
+        with pytest.raises(DomainError) as exc:
+            cs.order_lines(
+                visit, [{"service": amoxicillin.service, "prescription": rx}], actor=doctor_user
+            )
+        assert exc.value.code == code, rx
+    with pytest.raises(DomainError) as exc:
+        cs.order_lines(
+            visit, [{"service": b.service("lab"), "prescription": {"dose": "1"}}], actor=doctor_user
+        )
+    assert exc.value.code == "PRESCRIPTION_NOT_DRUG"
 
 
 def test_prescription_quantity() -> None:

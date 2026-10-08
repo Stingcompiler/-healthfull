@@ -2,8 +2,12 @@
 
 * Allergy and chronic condition registry; prescribing a drug whose stock item matches an
   active allergy (the same item, one of its drug classes, or a described substance in its
-  name) raises ``ALLERGY_ALERT`` with the matches until the doctor acknowledges it
-  (FEATURES 3.2). Orders go through ``orders.services.create_service_lines``.
+  name) is refused with ``ALLERGY_CONFLICT`` and the matches unless the prescriber gives an
+  override reason, which is stored with who and when (``AllergyOverride``, FEATURES 3.2,
+  invariant 4). Orders go through ``orders.services.create_service_lines``; a prescription's
+  quantity is computed from dose, frequency and duration (``domain.prescription``).
+* The doctor's worklist (FEATURES 2.3, 3): the paid, ready entries of the doctor's own queue
+  today, with call next, call, start, complete and no-show.
 * Clinical notes are drafts until signed; a signed note never changes (corrections are a new
   note). Only the author edits a draft.
 * Diagnoses with ICD-10 lookup (code prefix, or words of the English/Arabic title folded the
@@ -16,7 +20,6 @@ Nothing here carries prices: doctors never see billing (FEATURES 3.8).
 from __future__ import annotations
 
 import importlib
-import math
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -35,6 +38,7 @@ from apps.catalog.models import Service, ServiceKind
 from apps.clinical.models import (
     AllergenType,
     Allergy,
+    AllergyOverride,
     Certainty,
     ChronicCondition,
     ClinicalNote,
@@ -61,37 +65,56 @@ from apps.orders.models import FulfilmentStatus, ServiceLine
 from apps.patients import services as patient_services
 from apps.patients.models import Patient
 from apps.pharmacy.models import DrugClass, Item
-from apps.visits.models import Visit, VisitStatus
+from apps.visits import services as visit_services
+from apps.visits.models import ACTIVE_QUEUE_STATUSES, QueueEntry, QueueStatus, Visit, VisitStatus
 from domain import coverage as dc
+from domain import prescription as dp
 from domain.errors import DomainError
 from domain.money import q
 
 __all__ = [
+    "QUEUE_ACTIONS",
     "VITAL_RANGES",
     "AllergyAlert",
+    "HistoryEntry",
     "PatientSummary",
+    "active_allergies",
     "add_diagnosis",
     "add_nursing_note",
+    "allergies_recorded",
     "allergy_alerts",
+    "approved_results",
+    "call_next",
     "cancel_referral",
     "complete_referral",
     "create_order_set",
     "create_referral",
+    "deactivate_order_set",
+    "doctor_profile",
+    "doctor_queue",
+    "drug_classes",
     "estimated_cost",
     "order_lines",
     "order_set_items",
     "order_sets_for",
+    "patient_history",
     "patient_summary",
+    "prepare_order_items",
     "prescription_quantity",
+    "queue_action",
     "reassign_patient",
     "record_allergy",
     "record_condition",
     "record_vitals",
+    "remove_diagnosis",
     "save_note",
     "search_icd10",
     "set_allergy_status",
     "set_condition_status",
     "sign_note",
+    "update_allergy",
+    "update_condition",
+    "visit_queue_entry",
 ]
 
 #: Plausible ranges (inclusive) per vital sign; the database has the same backstop.
@@ -184,14 +207,49 @@ def record_allergy(
 
 def set_allergy_status(allergy: Allergy, *, status: str, actor: User, note: str = "") -> Allergy:
     """Resolve an allergy or mark it entered in error (history keeps the old row)."""
-    _choice(status, RecordStatus, "INVALID_STATUS")
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"allergy {status}"):
+    return update_allergy(allergy, actor=actor, status=status, note=note or None)
+
+
+def update_allergy(
+    allergy: Allergy,
+    *,
+    actor: User,
+    status: str | None = None,
+    severity: str | None = None,
+    reaction: str | None = None,
+    note: str | None = None,
+) -> Allergy:
+    """Change an allergy's status, severity, reaction or note (FEATURES 3.2).
+
+    The allergen itself never changes: a wrong entry is marked ``entered_in_error`` and a new
+    one recorded, so the history shows what alerted when. ``None`` leaves a field as it is.
+
+    Raises:
+        DomainError: ``INVALID_STATUS``, ``INVALID_SEVERITY``, ``NOTHING_TO_CHANGE``.
+    """
+    changes: dict[str, str] = {}
+    if status is not None:
+        changes["status"] = _choice(status, RecordStatus, "INVALID_STATUS")
+    if severity is not None:
+        changes["severity"] = _choice(severity, Severity, "INVALID_SEVERITY")
+    if reaction is not None:
+        changes["reaction"] = reaction.strip()[:300]
+    if note is not None:
+        changes["note"] = note.strip()
+    if not changes:
+        raise DomainError("NOTHING_TO_CHANGE", "Nothing to change")
+    reason = f"allergy {status}" if status else "allergy update"
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=reason):
         locked = Allergy.objects.select_for_update().get(pk=allergy.pk)
-        locked.status = status
-        if note:
-            locked.note = note
-        locked.save(update_fields=["status", "note", "updated_at"])
+        for name, value in changes.items():
+            setattr(locked, name, value)
+        locked.save(update_fields=[*changes, "updated_at"])
     return locked
+
+
+def drug_classes() -> QuerySet[DrugClass]:
+    """Active drug classes, for recording a class allergy."""
+    return DrugClass.objects.filter(active=True).order_by("name_en", "code")
 
 
 def _drug_items(services: Iterable[Service]) -> dict[int, Item]:
@@ -251,9 +309,82 @@ def prescription_quantity(
     *, dose_quantity: Decimal, frequency_per_day: Decimal, duration_days: int
 ) -> int:
     """Base units to dispense: dose x frequency x days, rounded up (FEATURES 3.5)."""
-    if dose_quantity <= 0 or frequency_per_day <= 0 or duration_days <= 0:
-        raise DomainError("INVALID_PRESCRIPTION", "Dose, frequency and duration must be positive")
-    return math.ceil(dose_quantity * frequency_per_day * duration_days)
+    return dp.dispense_quantity(dose_quantity, frequency_per_day, duration_days)
+
+
+def _decimal_or_none(value: Any, name: str) -> Decimal | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool | float):
+        raise DomainError("INVALID_PRESCRIPTION", "Not a decimal number", field=name)
+    try:
+        return Decimal(str(value))
+    except ArithmeticError as exc:
+        raise DomainError("INVALID_PRESCRIPTION", "Not a decimal number", field=name) from exc
+
+
+def _int_or_none(value: Any, name: str) -> int | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise DomainError("INVALID_PRESCRIPTION", "Not a whole number", field=name)
+    return value
+
+
+def prepare_order_items(items: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Resolve services and fill each drug's quantity from its prescription (FEATURES 3.5).
+
+    A prescription's frequency code fills its doses per day (``domain.prescription``). A drug
+    line without a quantity gets ``ceil(dose x doses per day x days)``; one that cannot be
+    counted (as needed, no duration) needs an explicit quantity (``QUANTITY_REQUIRED``). A
+    stated quantity is kept: the prescriber may round up to a whole pack.
+
+    Raises:
+        DomainError: ``ORDER_EMPTY``, ``SERVICE_INACTIVE``, ``QUANTITY_REQUIRED``,
+            ``PRESCRIPTION_NOT_DRUG``, ``UNKNOWN_FREQUENCY``, ``FREQUENCY_MISMATCH``,
+            ``INVALID_PRESCRIPTION``.
+    """
+    if not items:
+        raise DomainError("ORDER_EMPTY", "Nothing to order")
+    ids = [i["service"] if isinstance(i["service"], int) else i["service"].pk for i in items]
+    services = Service.objects.in_bulk(ids)
+    out: list[dict[str, Any]] = []
+    for raw, sid in zip(items, ids, strict=True):
+        service = services.get(sid)
+        if service is None or not service.active:
+            raise DomainError(
+                "SERVICE_INACTIVE", "The service is unknown or inactive", service_id=sid
+            )
+        item: dict[str, Any] = {**raw, "service": service}
+        rx = raw.get("prescription")
+        if rx is not None:
+            if service.kind != ServiceKind.DRUG:
+                raise DomainError("PRESCRIPTION_NOT_DRUG", "Only drug lines carry a prescription")
+            detail = dict(rx)
+            resolved = dp.resolve(
+                dose_quantity=_decimal_or_none(detail.get("dose_quantity"), "dose_quantity"),
+                frequency_code=str(detail.get("frequency_code") or ""),
+                frequency_per_day=_decimal_or_none(
+                    detail.get("frequency_per_day"), "frequency_per_day"
+                ),
+                duration_days=_int_or_none(detail.get("duration_days"), "duration_days"),
+                as_needed=bool(detail.get("as_needed")),
+            )
+            detail["frequency_code"] = resolved.frequency_code
+            detail["frequency_per_day"] = resolved.frequency_per_day
+            item["prescription"] = detail
+            if item.get("quantity") is None:
+                if resolved.quantity is None:
+                    raise DomainError(
+                        "QUANTITY_REQUIRED",
+                        "State the quantity of an as-needed or open-ended prescription",
+                        service_id=sid,
+                    )
+                item["quantity"] = resolved.quantity
+        elif item.get("quantity") is None:
+            item.pop("quantity", None)
+        out.append(item)
+    return out
 
 
 def order_lines(
@@ -261,27 +392,51 @@ def order_lines(
     items: Sequence[Mapping[str, Any]],
     *,
     actor: User,
-    acknowledge_allergies: bool = False,
-) -> Any:
+    allergy_override_reason: str = "",
+) -> list[ServiceLine]:
     """Order services on a visit after the allergy check (FEATURES 3.2, 3.5).
 
-    ``items`` are passed to ``orders.services.create_service_lines`` (each has a
-    ``service``). With matching allergies the order is refused with ``ALLERGY_ALERT``
-    (``details.alerts``) until the doctor acknowledges.
+    ``items`` (each with a ``service``: a ``Service`` or its id) go through
+    :func:`prepare_order_items`, then ``orders.services.create_service_lines``. With matching
+    allergies the order is refused with ``ALLERGY_CONFLICT`` (``details.alerts``) unless
+    ``allergy_override_reason`` says why the drug is given anyway; the override is then
+    stored per ordered line and matching allergy, with who and when (invariant 4).
+
+    Raises:
+        DomainError: ``VISIT_NOT_OPEN``, ``ALLERGY_CONFLICT``, the errors of
+            :func:`prepare_order_items` and of ``orders.services.create_service_lines``.
     """
     _open_visit(visit)
-    if not items:
-        raise DomainError("ORDER_EMPTY", "Nothing to order")
-    alerts = allergy_alerts(visit.patient, [i["service"] for i in items])
-    if alerts and not acknowledge_allergies:
+    prepared = prepare_order_items(items)
+    alerts = allergy_alerts(visit.patient, [i["service"] for i in prepared])
+    reason = allergy_override_reason.strip()
+    if alerts and not reason:
         raise DomainError(
-            "ALLERGY_ALERT",
-            "The patient is allergic to a prescribed drug",
+            "ALLERGY_CONFLICT",
+            "The patient is allergic to a prescribed drug; give a reason to override",
             alerts=[a.as_dict() for a in alerts],
         )
-    reason = "order (allergy alert acknowledged)" if alerts else "order"
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason=reason):
-        return _orders().create_service_lines(visit, [dict(i) for i in items], actor)
+    context = f"order (allergy override: {reason})"[:250] if alerts else "order"
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=context):
+        lines = list(_orders().create_service_lines(visit, prepared, actor))
+        if alerts:
+            now = timezone.now()
+            by_service: dict[int, list[ServiceLine]] = {}
+            for line in lines:
+                by_service.setdefault(line.service_id, []).append(line)
+            AllergyOverride.objects.bulk_create(
+                AllergyOverride(
+                    service_line=line,
+                    allergy_id=alert.allergy_id,
+                    match=alert.match,
+                    reason=reason[:1000],
+                    overridden_by=actor,
+                    overridden_at=now,
+                )
+                for alert in alerts
+                for line in by_service.get(alert.service_id, [])
+            )
+    return lines
 
 
 # --- chronic conditions ---------------------------------------------------------------------
@@ -312,11 +467,34 @@ def record_condition(
 def set_condition_status(
     condition: ChronicCondition, *, status: str, actor: User
 ) -> ChronicCondition:
-    _choice(status, RecordStatus, "INVALID_STATUS")
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"condition {status}"):
+    return update_condition(condition, actor=actor, status=status)
+
+
+def update_condition(
+    condition: ChronicCondition,
+    *,
+    actor: User,
+    status: str | None = None,
+    note: str | None = None,
+) -> ChronicCondition:
+    """Resolve a chronic condition, mark it entered in error, or change its note.
+
+    Raises:
+        DomainError: ``INVALID_STATUS``, ``NOTHING_TO_CHANGE``.
+    """
+    changes: dict[str, str] = {}
+    if status is not None:
+        changes["status"] = _choice(status, RecordStatus, "INVALID_STATUS")
+    if note is not None:
+        changes["note"] = note.strip()
+    if not changes:
+        raise DomainError("NOTHING_TO_CHANGE", "Nothing to change")
+    reason = f"condition {status}" if status else "condition update"
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=reason):
         locked = ChronicCondition.objects.select_for_update().get(pk=condition.pk)
-        locked.status = status
-        locked.save(update_fields=["status", "updated_at"])
+        for name, value in changes.items():
+            setattr(locked, name, value)
+        locked.save(update_fields=[*changes, "updated_at"])
     return locked
 
 
@@ -398,6 +576,22 @@ def add_diagnosis(
             certainty=certainty,
             recorded_by=actor,
         )
+
+
+def remove_diagnosis(diagnosis: Diagnosis, *, actor: User) -> None:
+    """Withdraw a diagnosis recorded in error, while the visit is open, by its author.
+
+    The deletion is kept in the audit history (who, when, the removed row).
+
+    Raises:
+        DomainError: ``VISIT_NOT_OPEN``, ``DIAGNOSIS_NOT_AUTHOR``.
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="remove diagnosis"):
+        locked = Diagnosis.objects.select_for_update().select_related("visit").get(pk=diagnosis.pk)
+        _open_visit(locked.visit)
+        if locked.recorded_by_id != actor.pk:
+            raise DomainError("DIAGNOSIS_NOT_AUTHOR", "Only who recorded a diagnosis removes it")
+        locked.delete()
 
 
 def search_icd10(query: str, *, limit: int = 20) -> list[Icd10Code]:
@@ -604,6 +798,118 @@ def order_set_items(order_set: OrderSet) -> list[dict[str, Any]]:
     return out
 
 
+def deactivate_order_set(order_set: OrderSet, *, actor: User) -> OrderSet:
+    """Remove one of the actor's favorites (FEATURES 3.6). Shared sets are administered
+    centrally, never from the doctor's screen.
+
+    Raises:
+        DomainError: ``ORDER_SET_NOT_OWNER``, ``ORDER_SET_INACTIVE``.
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="remove favorite"):
+        locked = OrderSet.objects.select_for_update().get(pk=order_set.pk)
+        if locked.owner_id != actor.pk:
+            raise DomainError("ORDER_SET_NOT_OWNER", "Only the doctor who saved it removes it")
+        if not locked.active:
+            raise DomainError("ORDER_SET_INACTIVE", "The order set was already removed")
+        locked.active = False
+        locked.save(update_fields=["active", "updated_at"])
+    return locked
+
+
+# --- the doctor's queue (FEATURES 2.3, FLOW step 3) ------------------------------------------
+
+
+def doctor_profile(user: User) -> DoctorProfile | None:
+    """The user's active doctor profile, if they see patients."""
+    return DoctorProfile.objects.filter(user=user, active=True).select_related("department").first()
+
+
+def doctor_queue(user: User, *, include_done: bool = True) -> list[QueueEntry]:
+    """Today's queue of the logged-in doctor, in serving order (FEATURES 2.3).
+
+    Entries assigned to the doctor, and unassigned entries of the doctor's department, whose
+    consultation is paid or authorized (``visits.services.queue``: invariant 1). Waiting,
+    called and in-progress entries come first; with ``include_done`` the ones seen today
+    follow. A user without a doctor profile has no queue.
+    """
+    profile = doctor_profile(user)
+    if profile is None:
+        return []
+    statuses = [*ACTIVE_QUEUE_STATUSES, *([QueueStatus.DONE] if include_done else [])]
+    mine = Q(doctor=profile) | Q(doctor__isnull=True, department_id=profile.department_id)
+    entries = list(
+        visit_services.queue(statuses=statuses)
+        .filter(mine)
+        .select_related("visit__department", "visit__payer", "doctor__user")
+    )
+    active = [e for e in entries if e.status != QueueStatus.DONE]
+    done = sorted(
+        (e for e in entries if e.status == QueueStatus.DONE),
+        key=lambda e: e.done_at or e.created_at,
+        reverse=True,
+    )
+    return active + done
+
+
+#: Doctor actions on a queue entry and the ``visits.services`` move each one makes.
+QUEUE_ACTIONS = frozenset({"call", "start", "complete", "no_show", "requeue"})
+
+
+def _own_entry(entry: QueueEntry, actor: User) -> DoctorProfile:
+    profile = doctor_profile(actor)
+    if profile is None:
+        raise DomainError("DOCTOR_PROFILE_REQUIRED", "Only a doctor works a clinic queue")
+    if entry.doctor_id not in (None, profile.pk) or (
+        entry.doctor_id is None and entry.department_id != profile.department_id
+    ):
+        raise DomainError("QUEUE_OTHER_DOCTOR", "This patient waits for another doctor")
+    return profile
+
+
+def queue_action(entry: QueueEntry, action: str, *, actor: User) -> QueueEntry:
+    """Call, start, complete, mark no-show or requeue one of the doctor's queue entries.
+
+    Completing performs the consultation line (``visits.services.finish_consultation``);
+    the visit stays open for the orders' billing and results.
+
+    Raises:
+        DomainError: ``INVALID_QUEUE_ACTION``, ``DOCTOR_PROFILE_REQUIRED``,
+            ``QUEUE_OTHER_DOCTOR``, ``QUEUE_TRANSITION_INVALID``, ``QUEUE_NOT_READY``.
+    """
+    if action not in QUEUE_ACTIONS:
+        raise DomainError("INVALID_QUEUE_ACTION", "Unknown queue action", action=action)
+    _own_entry(entry, actor)
+    moves = {
+        "call": visit_services.call_patient,
+        "start": visit_services.start_consultation,
+        "complete": visit_services.finish_consultation,
+        "no_show": visit_services.mark_no_show,
+        "requeue": visit_services.requeue,
+    }
+    return moves[action](entry, actor=actor)
+
+
+def call_next(actor: User) -> QueueEntry:
+    """Call the first waiting patient of the doctor's queue (FEATURES 2.3).
+
+    Raises:
+        DomainError: ``DOCTOR_PROFILE_REQUIRED``, ``QUEUE_EMPTY``.
+    """
+    if doctor_profile(actor) is None:
+        raise DomainError("DOCTOR_PROFILE_REQUIRED", "Only a doctor works a clinic queue")
+    waiting = [e for e in doctor_queue(actor, include_done=False) if e.status == "waiting"]
+    if not waiting:
+        raise DomainError("QUEUE_EMPTY", "Nobody is waiting in your queue")
+    return queue_action(waiting[0], "call", actor=actor)
+
+
+def visit_queue_entry(visit: Visit) -> QueueEntry | None:
+    """The visit's current queue entry: an active one, else the latest."""
+    entries = QueueEntry.objects.filter(visit=visit).order_by("-created_at", "-id")
+    active = entries.filter(status__in=ACTIVE_QUEUE_STATUSES).first()
+    return active or entries.first()
+
+
 # --- nursing notes --------------------------------------------------------------------------
 
 
@@ -654,34 +960,127 @@ def patient_summary(patient: Patient, *, medication_days: int = 30) -> PatientSu
     return PatientSummary(
         patient=who,
         allergies=list(
-            Allergy.objects.filter(patient_id__in=ids, status=RecordStatus.ACTIVE).order_by(
-                "-recorded_at"
-            )
+            Allergy.objects.filter(patient_id__in=ids, status=RecordStatus.ACTIVE)
+            .select_related("drug_class", "item")
+            .order_by("-recorded_at", "-id")
         ),
         conditions=list(
-            ChronicCondition.objects.filter(
-                patient_id__in=ids, status=RecordStatus.ACTIVE
-            ).order_by("-recorded_at")
+            ChronicCondition.objects.filter(patient_id__in=ids, status=RecordStatus.ACTIVE)
+            .select_related("icd10")
+            .order_by("-recorded_at", "-id")
         ),
         recent_visits=list(
-            Visit.objects.filter(patient_id__in=ids).order_by("-created_at", "-id")[:5]
+            Visit.objects.filter(patient_id__in=ids)
+            .select_related("department", "doctor__user")
+            .order_by("-created_at", "-id")[:5]
         ),
         active_medications=list(
             ServiceLine.objects.filter(
                 visit__patient_id__in=ids, kind=ServiceKind.DRUG, ordered_at__gte=since
             )
             .exclude(fulfilment_status=FulfilmentStatus.CANCELLED)
-            .select_related("service")
-            .order_by("-ordered_at")
+            .select_related("service", "authorization", "prescription")
+            .order_by("-ordered_at", "-id")
         ),
         latest_results=list(
             ResultVersion.objects.filter(
                 result_set__service_line__visit__patient_id__in=ids,
                 status=ResultStatus.APPROVED,
             )
-            .select_related("result_set__test")
-            .order_by("-approved_at")[:10]
+            .select_related("result_set__test__service", "result_set__service_line")
+            .prefetch_related("values__parameter")
+            .order_by("-approved_at", "-id")[:10]
         ),
+    )
+
+
+def active_allergies(patient: Patient) -> list[Allergy]:
+    """The person's active allergies (every merged file), newest first."""
+    who = patient_services.resolve(patient)
+    return list(
+        Allergy.objects.filter(
+            patient_id__in=patient_services.file_ids(who), status=RecordStatus.ACTIVE
+        )
+        .select_related("drug_class", "item")
+        .order_by("-recorded_at", "-id")
+    )
+
+
+def allergies_recorded(patient: Patient) -> bool:
+    """Whether the registry holds any allergy entry for the person (active or not)."""
+    who = patient_services.resolve(patient)
+    return Allergy.objects.filter(patient_id__in=patient_services.file_ids(who)).exists()
+
+
+@dataclass(frozen=True, slots=True)
+class HistoryEntry:
+    """One past visit as a doctor reviews it: diagnoses, notes and orders. No prices."""
+
+    visit: Visit
+    diagnoses: list[Diagnosis] = field(default_factory=list)
+    notes: list[ClinicalNote] = field(default_factory=list)
+    lines: list[ServiceLine] = field(default_factory=list)
+
+
+#: Order kinds shown in a clinical history (the consultation fee and bed days are billing).
+_CLINICAL_KINDS = (ServiceKind.LAB, ServiceKind.PROCEDURE, ServiceKind.DRUG, ServiceKind.CONSUMABLE)
+
+
+def patient_history(patient: Patient, *, limit: int = 20) -> list[HistoryEntry]:
+    """The person's visits, newest first, with their diagnoses, notes and orders (FEATURES 3.1).
+
+    Every merged file is included; cancelled visits are left out.
+    """
+    who = patient_services.resolve(patient)
+    visits = list(
+        Visit.objects.filter(patient_id__in=patient_services.file_ids(who))
+        .exclude(status=VisitStatus.CANCELLED)
+        .select_related("department", "doctor__user")
+        .order_by("-created_at", "-id")[: max(1, min(limit, 100))]
+    )
+    ids = [v.pk for v in visits]
+    diagnoses: dict[int, list[Diagnosis]] = {}
+    for d in (
+        Diagnosis.objects.filter(visit_id__in=ids)
+        .select_related("icd10")
+        .order_by("kind", "recorded_at", "id")
+    ):
+        diagnoses.setdefault(d.visit_id, []).append(d)
+    notes: dict[int, list[ClinicalNote]] = {}
+    for n in ClinicalNote.objects.filter(visit_id__in=ids).select_related("author"):
+        notes.setdefault(n.visit_id, []).append(n)
+    lines: dict[int, list[ServiceLine]] = {}
+    for ln in (
+        ServiceLine.objects.filter(visit_id__in=ids, kind__in=_CLINICAL_KINDS)
+        .select_related("service", "authorization", "prescription")
+        .order_by("id")
+    ):
+        lines.setdefault(ln.visit_id, []).append(ln)
+    return [
+        HistoryEntry(v, diagnoses.get(v.pk, []), notes.get(v.pk, []), lines.get(v.pk, []))
+        for v in visits
+    ]
+
+
+def approved_results(patient: Patient, *, visit: Visit | None = None, limit: int = 20) -> list[Any]:
+    """Approved lab results of the person (or of one visit), newest first, with values.
+
+    Only the current approved version of a result shows; drafts never reach a doctor
+    (FEATURES 9.4), and an amended version is replaced by its amendment.
+    """
+    from apps.lab.models import ResultStatus, ResultVersion
+
+    who = patient_services.resolve(patient)
+    qs = ResultVersion.objects.filter(
+        result_set__service_line__visit__patient_id__in=patient_services.file_ids(who),
+        status=ResultStatus.APPROVED,
+    )
+    if visit is not None:
+        qs = qs.filter(result_set__service_line__visit=visit)
+    return list(
+        qs.select_related("result_set__test__service", "result_set__service_line")
+        .prefetch_related("values__parameter")
+        .order_by("-approved_at", "-id")[: max(1, min(limit, 100))]
     )
 
 

@@ -433,7 +433,7 @@ def test_allergies_on_file_drive_the_prescribing_alert(seeded: None) -> None:
     visit = run("visit", {"patient": made["patient"]["id"]})["visit"]
     items = [{"service": "DRG-AMOX500", "quantity": 21}]
     error = fail("order", {"visit": visit["id"], "items": items})
-    assert error["code"] == "ALLERGY_ALERT"
+    assert error["code"] == "ALLERGY_CONFLICT"
     lines = run("order", {"visit": visit["id"], "items": items, "acknowledge_allergies": True})
     assert [ln["service"] for ln in lines["lines"]] == ["DRG-AMOX500"]
     # Reception cannot record allergies; the default recorder is the nurse.
