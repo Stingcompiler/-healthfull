@@ -65,7 +65,7 @@ for (const viewport of VIEWPORTS) {
         }
         // Times are 24-hour HH:MM in both languages (no browser-locale AM/PM), shown in full.
         for (const key of ["admin:departments.start", "admin:departments.end"]) {
-          const input = session.getByLabel(tr(lang, key));
+          const input = session.getByLabel(tr(lang, key), { exact: true });
           await expect(input).toHaveValue(/^([01]\d|2[0-3]):[0-5]\d$/);
           expect(await width(input)).toBeGreaterThanOrEqual(80);
         }
