@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -16,9 +16,11 @@ import { vmsg } from "@/lib/validation";
 
 import { useCategories, useDepartments, useSaveService, useServices, type ServiceFilters } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
+import { ListEmpty } from "../components/ListEmpty";
 import { FilterBar, FilterSelect } from "../components/Filters";
 import { ActiveBadge, Code, FormDialog } from "../components/FormDialog";
-import { useLocalName } from "../hooks";
+import { DepartmentLabel } from "../components/DepartmentLabel";
+import { useDepartmentById, useLocalName } from "../hooks";
 import { SERVICE_KINDS, type ServiceKind, type ServiceOut } from "../types";
 
 const NONE = "__none__";
@@ -56,6 +58,7 @@ export function CatalogPage() {
   const [editing, setEditing] = useState<ServiceOut | "new" | null>(null);
   const services = useServices(filters);
   const departments = useDepartments();
+  const departmentById = useDepartmentById();
 
   const columns = useMemo<ColumnDef<ServiceOut>[]>(
     () => [
@@ -79,10 +82,13 @@ export function CatalogPage() {
       },
       {
         id: "department",
-        accessorFn: (s) => s.department_code ?? "",
+        accessorFn: (s) => {
+          const department = departmentById(s.department_id);
+          return department ? localName(department) : (s.department_code ?? "");
+        },
         header: t("departments.department"),
         meta: { label: t("departments.department") },
-        cell: ({ row }) => (row.original.department_code ? <Code>{row.original.department_code}</Code> : "—"),
+        cell: ({ row }) => <DepartmentLabel id={row.original.department_id} code={row.original.department_code} />,
       },
       {
         accessorKey: "active",
@@ -91,7 +97,7 @@ export function CatalogPage() {
         cell: ({ row }) => <ActiveBadge active={row.original.active} />,
       },
     ],
-    [t, localName],
+    [t, localName, departmentById],
   );
 
   return (
@@ -143,6 +149,19 @@ export function CatalogPage() {
           caption={t("sections.catalog.title")}
           columns={columns}
           data={services.data?.items ?? []}
+          emptyState={
+            filters.q || filters.kind ? undefined : (
+              <ListEmpty
+                icon={<BookOpen />}
+                title={t("empty.services.title")}
+                description={t("empty.services.description")}
+                actionLabel={t("catalog.add")}
+                onAction={() => {
+                  setEditing("new");
+                }}
+              />
+            )
+          }
           getRowId={(s) => String(s.id)}
           onRowClick={setEditing}
           rowLabel={(s) => t("common.editNamed", { name: localName(s) })}

@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CalendarClock, Pencil, Plus, Trash2 } from "lucide-react";
+import { Building2, CalendarClock, DoorOpen, Pencil, Plus, Stethoscope, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -37,8 +37,11 @@ import {
   useUsers,
 } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
+import { ListEmpty } from "../components/ListEmpty";
 import { ActiveBadge, Code, FormDialog } from "../components/FormDialog";
-import { useLocalName } from "../hooks";
+import { DepartmentLabel } from "../components/DepartmentLabel";
+import { useDepartmentById, useLocalName, usePersonName } from "../hooks";
+import { sortWeekdays, WEEK_ORDER } from "../weekdays";
 import type { DepartmentOut, DoctorOut, RoomOut } from "../types";
 
 type Tab = "departments" | "rooms" | "doctors";
@@ -48,9 +51,6 @@ const code = z
   .trim()
   .regex(/^[A-Z][A-Z0-9_-]{0,19}$/, vmsg("admin:common.codeRule"));
 const name = z.string().trim().min(1, vmsg("validation.required")).max(150);
-
-/** Weekday numbers (0 = Monday ... 6 = Sunday) in the order a Sudanese week runs. */
-const WEEK_ORDER = [5, 6, 0, 1, 2, 3, 4] as const;
 
 export function DepartmentsPage() {
   const { t } = useTranslation("admin");
@@ -160,6 +160,17 @@ function DepartmentsTab() {
           columns={columns}
           data={departments.data ?? []}
           getRowId={(d) => String(d.id)}
+          emptyState={
+            <ListEmpty
+              icon={<Building2 />}
+              title={t("empty.departments.title")}
+              description={t("empty.departments.description")}
+              actionLabel={t("departments.addDepartment")}
+              onAction={() => {
+                setEditing("new");
+              }}
+            />
+          }
           onRowClick={setEditing}
           rowLabel={(d) => t("common.editNamed", { name: localName(d) })}
         />
@@ -242,6 +253,7 @@ function RoomsTab() {
   const { t } = useTranslation("admin");
   const localName = useLocalName();
   const rooms = useRooms();
+  const departmentById = useDepartmentById();
   const [editing, setEditing] = useState<RoomOut | "new" | null>(null);
   const columns = useMemo<ColumnDef<RoomOut>[]>(
     () => [
@@ -259,10 +271,13 @@ function RoomsTab() {
       },
       {
         id: "department",
-        accessorFn: (r) => r.department_code ?? "",
+        accessorFn: (r) => {
+          const department = departmentById(r.department_id);
+          return department ? localName(department) : (r.department_code ?? "");
+        },
         header: t("departments.department"),
         meta: { label: t("departments.department") },
-        cell: ({ row }) => (row.original.department_code ? <Code>{row.original.department_code}</Code> : "—"),
+        cell: ({ row }) => <DepartmentLabel id={row.original.department_id} code={row.original.department_code} />,
       },
       {
         accessorKey: "active",
@@ -271,7 +286,7 @@ function RoomsTab() {
         cell: ({ row }) => <ActiveBadge active={row.original.active} />,
       },
     ],
-    [t, localName],
+    [t, localName, departmentById],
   );
   return (
     <div className="flex flex-col gap-3">
@@ -287,6 +302,17 @@ function RoomsTab() {
           columns={columns}
           data={rooms.data ?? []}
           getRowId={(r) => String(r.id)}
+          emptyState={
+            <ListEmpty
+              icon={<DoorOpen />}
+              title={t("empty.rooms.title")}
+              description={t("empty.rooms.description")}
+              actionLabel={t("departments.addRoom")}
+              onAction={() => {
+                setEditing("new");
+              }}
+            />
+          }
           onRowClick={setEditing}
           rowLabel={(r) => t("common.editNamed", { name: localName(r) })}
         />
@@ -371,10 +397,11 @@ function DoctorsTab() {
   const { t, i18n } = useTranslation("admin");
   const doctors = useDoctors();
   const weekday = useWeekdayName();
+  const doctorName = usePersonName();
+  const localName = useLocalName();
+  const departmentById = useDepartmentById();
   const [editing, setEditing] = useState<DoctorOut | "new" | null>(null);
   const [scheduling, setScheduling] = useState<DoctorOut | null>(null);
-  const doctorName = (d: DoctorOut) =>
-    (i18n.language === "ar" ? d.full_name_ar || d.full_name_en : d.full_name_en || d.full_name_ar) || d.username;
   const columns = useMemo<ColumnDef<DoctorOut>[]>(
     () => [
       {
@@ -395,10 +422,13 @@ function DoctorsTab() {
       },
       {
         id: "department",
-        accessorFn: (d) => d.department_code,
+        accessorFn: (d) => {
+          const department = departmentById(d.department_id);
+          return department ? localName(department) : d.department_code;
+        },
         header: t("departments.department"),
         meta: { label: t("departments.department") },
-        cell: ({ row }) => <Code>{row.original.department_code}</Code>,
+        cell: ({ row }) => <DepartmentLabel id={row.original.department_id} code={row.original.department_code} />,
       },
       {
         id: "schedule",
@@ -411,7 +441,7 @@ function DoctorsTab() {
             <span className="text-muted">{t("departments.noSchedule")}</span>
           ) : (
             <div className="flex flex-wrap justify-end gap-1 md:justify-start">
-              {[...new Set(row.original.schedule.map((s) => s.weekday))].map((day) => (
+              {sortWeekdays(row.original.schedule.map((s) => s.weekday)).map((day) => (
                 <Badge key={day} variant="neutral">
                   {weekday(day)}
                 </Badge>
@@ -426,8 +456,8 @@ function DoctorsTab() {
         cell: ({ row }) => <ActiveBadge active={row.original.active} />,
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- doctorName and weekday only depend on t and the language
-    [t, i18n.language],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- weekday and localName only depend on t and the language
+    [t, i18n.language, doctorName, departmentById],
   );
   return (
     <div className="flex flex-col gap-3">
@@ -443,6 +473,17 @@ function DoctorsTab() {
           columns={columns}
           data={doctors.data ?? []}
           getRowId={(d) => String(d.id)}
+          emptyState={
+            <ListEmpty
+              icon={<Stethoscope />}
+              title={t("empty.doctors.title")}
+              description={t("empty.doctors.description")}
+              actionLabel={t("departments.addDoctor")}
+              onAction={() => {
+                setEditing("new");
+              }}
+            />
+          }
           onRowClick={setEditing}
           rowLabel={(d) => t("common.editNamed", { name: doctorName(d) })}
           rowActions={(d) => [
@@ -496,13 +537,14 @@ type DoctorValues = z.infer<typeof doctorSchema>;
 function DoctorDialog({ doctor, onClose }: { doctor: DoctorOut | null; onClose: () => void }) {
   const { t } = useTranslation("admin");
   const localName = useLocalName();
+  const personName = usePersonName();
   const save = useSaveDoctor();
   const departmentOptions = useDepartmentOptions(false);
   const doctorUsers = useUsers({ role: "doctor", active: true });
   const services = useServices({ kind: "consultation", active: true });
   const userOptions = (doctorUsers.data?.items ?? [])
     .filter((u) => u.doctor_profile_id === null || u.id === doctor?.user_id)
-    .map((u) => ({ value: String(u.id), label: `${u.full_name_en || u.full_name_ar || u.username} (${u.username})` }));
+    .map((u) => ({ value: String(u.id), label: `${personName(u)} (${u.username})` }));
   const serviceOptions = [
     { value: NONE, label: t("common.none") },
     ...(services.data?.items ?? []).map((s) => ({ value: String(s.id), label: `${localName(s)} (${s.code})` })),
@@ -586,6 +628,7 @@ type ScheduleValues = z.infer<typeof scheduleSchema>;
 
 function ScheduleDialog({ doctor, onClose }: { doctor: DoctorOut; onClose: () => void }) {
   const { t } = useTranslation("admin");
+  const personName = usePersonName();
   const save = useSetSchedule();
   const rooms = useRooms();
   const weekday = useWeekdayName();
@@ -612,7 +655,7 @@ function ScheduleDialog({ doctor, onClose }: { doctor: DoctorOut; onClose: () =>
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={t("departments.scheduleTitle", { name: doctor.full_name_en || doctor.full_name_ar || doctor.username })}
+      title={t("departments.scheduleTitle", { name: personName(doctor) })}
       description={t("departments.scheduleHint")}
       form={form}
       error={save.error}
@@ -637,64 +680,74 @@ function ScheduleDialog({ doctor, onClose }: { doctor: DoctorOut; onClose: () =>
         {sessions.fields.map((field, index) => (
           <li
             key={field.id}
-            className="grid grid-cols-2 gap-2 rounded-control border border-border p-3 sm:grid-cols-[1fr_6.5rem_6.5rem_5rem_1fr_auto] sm:items-end"
+            className="flex min-w-0 flex-col gap-3 rounded-control border border-border p-3"
+            data-testid={`session-${String(index)}`}
           >
-            <FormField
-              control={form.control}
-              name={`sessions.${index}.weekday`}
-              render={({ field: f }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
-                  <FormLabel>{t("departments.weekday")}</FormLabel>
-                  <Select value={f.value} onValueChange={f.onChange}>
+            {/* Two rows with flexible tracks: day and room, then times and slot. Fixed rem
+                tracks squeezed the selects and cut the AM/PM marker off the time inputs. */}
+            <div className="flex min-w-0 items-end gap-2">
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name={`sessions.${index}.weekday`}
+                  render={({ field: f }) => (
+                    <FormItem className="min-w-0">
+                      <FormLabel>{t("departments.weekday")}</FormLabel>
+                      <Select value={f.value} onValueChange={f.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {WEEK_ORDER.map((d) => (
+                            <SelectItem key={d} value={String(d)}>
+                              {weekday(d)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+                <SelectField
+                  control={form.control}
+                  name={`sessions.${index}.room`}
+                  label={t("departments.room")}
+                  options={roomOptions}
+                  className="min-w-0"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t("departments.removeSession")}
+                onClick={() => {
+                  sessions.remove(index);
+                }}
+                className="shrink-0 self-start"
+              >
+                <Trash2 />
+              </Button>
+            </div>
+            <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3">
+              <TimeInput form={form} name={`sessions.${index}.start_time`} label={t("departments.start")} />
+              <TimeInput form={form} name={`sessions.${index}.end_time`} label={t("departments.end")} />
+              <FormField
+                control={form.control}
+                name={`sessions.${index}.slot_minutes`}
+                render={({ field: f }) => (
+                  <FormItem className="col-span-2 min-w-0 sm:col-span-1">
+                    <FormLabel>{t("departments.slot")}</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                      <Input {...f} inputMode="numeric" dir="ltr" />
                     </FormControl>
-                    <SelectContent>
-                      {WEEK_ORDER.map((d) => (
-                        <SelectItem key={d} value={String(d)}>
-                          {weekday(d)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-            <TimeInput form={form} name={`sessions.${index}.start_time`} label={t("departments.start")} />
-            <TimeInput form={form} name={`sessions.${index}.end_time`} label={t("departments.end")} />
-            <FormField
-              control={form.control}
-              name={`sessions.${index}.slot_minutes`}
-              render={({ field: f }) => (
-                <FormItem>
-                  <FormLabel>{t("departments.slot")}</FormLabel>
-                  <FormControl>
-                    <Input {...f} inputMode="numeric" dir="ltr" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <SelectField
-              control={form.control}
-              name={`sessions.${index}.room`}
-              label={t("departments.room")}
-              options={roomOptions}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={t("departments.removeSession")}
-              onClick={() => {
-                sessions.remove(index);
-              }}
-              className="justify-self-end"
-            >
-              <Trash2 />
-            </Button>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </li>
         ))}
       </ul>
@@ -728,10 +781,10 @@ function TimeInput({
       control={form.control}
       name={fieldName}
       render={({ field }) => (
-        <FormItem>
+        <FormItem className="min-w-0">
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input {...field} type="time" dir="ltr" step={300} />
+            <Input {...field} type="time" dir="ltr" step={300} className="min-w-0" />
           </FormControl>
           <FormMessage />
         </FormItem>

@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 
 import { ADMIN_SECTIONS } from "../sections";
 
+/** Sections whose page needs the whole width (the permission matrix has a column per role):
+ * they keep the section picker above the page at every width instead of the side list. */
+const FULL_WIDTH_SECTIONS: ReadonlySet<string> = new Set(["roles"]);
+
 /**
  * Shell of every administration page: the sub-navigation (a side list from lg,
  * a section picker below it) beside the page. The index page (section cards)
@@ -22,11 +26,15 @@ export function AdminLayout() {
   const current = ADMIN_SECTIONS.find((s) => pathname === s.to || pathname.startsWith(`${s.to}/`));
 
   if (pathname === "/administration" || !current) return <Outlet />;
+  const fullWidth = FULL_WIDTH_SECTIONS.has(current.id);
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-      <nav aria-label={t("admin:subnav")} className="lg:sticky lg:top-4 lg:w-56 lg:shrink-0">
-        <div className="lg:hidden">
+    <div className={cn("flex flex-col gap-4", !fullWidth && "lg:flex-row lg:items-start lg:gap-6")}>
+      <nav
+        aria-label={t("admin:subnav")}
+        className={cn(fullWidth ? "lg:max-w-xs" : "lg:sticky lg:top-4 lg:w-56 lg:shrink-0")}
+      >
+        <div className={cn(!fullWidth && "lg:hidden")}>
           <Select
             value={current.id}
             onValueChange={(id) => {
@@ -46,7 +54,7 @@ export function AdminLayout() {
             </SelectContent>
           </Select>
         </div>
-        <ul className="hidden flex-col gap-0.5 lg:flex">
+        <ul className={cn("hidden flex-col gap-0.5", !fullWidth && "lg:flex")}>
           <li>
             <Link
               to="/administration"

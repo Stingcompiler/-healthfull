@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { ListChecks, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -19,6 +19,7 @@ import { vmsg } from "@/lib/validation";
 
 import { useReasonCodes, useSaveReasonCode } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
+import { ListEmpty } from "../components/ListEmpty";
 import { ActiveBadge, Code, FormDialog } from "../components/FormDialog";
 import { REASON_CATEGORIES, type ReasonCategory, type ReasonCodeOut } from "../types";
 
@@ -126,6 +127,17 @@ export function ReasonCodesPage() {
           columns={columns}
           data={reasons.data ?? []}
           getRowId={(r) => String(r.id)}
+          emptyState={
+            <ListEmpty
+              icon={<ListChecks />}
+              title={t("empty.reasons.title")}
+              description={t("empty.reasons.description")}
+              actionLabel={t("reasons.add")}
+              onAction={() => {
+                setEditing("new");
+              }}
+            />
+          }
           onRowClick={setEditing}
           rowLabel={(r) => t("common.editNamed", { name: label(r) })}
           pageSize={50}

@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Ban, Pencil, Plus, Power } from "lucide-react";
+import { Ban, Pencil, Plus, Power, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -20,7 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslateError } from "@/lib/api/translate-error";
+import { formatPercent } from "@/lib/format";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { useLanguage } from "@/lib/i18n-hooks";
 import { vmsg } from "@/lib/validation";
 
 import {
@@ -33,6 +35,7 @@ import {
   useServices,
 } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
+import { ListEmpty } from "../components/ListEmpty";
 import { DateField } from "../components/DateField";
 import { ActiveBadge, Code, FormDialog } from "../components/FormDialog";
 import { useLocalName } from "../hooks";
@@ -246,8 +249,11 @@ function useScopeLabel() {
 
 function RuleSummary({ rule }: { rule: CoverageRuleOut }) {
   const { t } = useTranslation("admin");
+  const language = useLanguage();
   if (rule.rule_kind === "percentage")
-    return <span>{t("payers.summary.percentage", { percent: rule.payer_percent ?? "0" })}</span>;
+    return (
+      <span>{t("payers.summary.percentage", { percent: formatPercent(rule.payer_percent ?? "0", language) })}</span>
+    );
   if (rule.rule_kind === "copay")
     return (
       <span>
@@ -256,7 +262,7 @@ function RuleSummary({ rule }: { rule: CoverageRuleOut }) {
     );
   return (
     <span>
-      {t("payers.summary.ceiling", { percent: rule.payer_percent ?? "100" })}{" "}
+      {t("payers.summary.ceiling", { percent: formatPercent(rule.payer_percent ?? "100", language) })}{" "}
       <MoneyText value={rule.ceiling_amount ?? "0"} />
     </span>
   );
@@ -323,6 +329,17 @@ function RulesTab({ payer }: { payer: PayerOut }) {
         columns={columns}
         data={payer.coverage_rules}
         getRowId={(r) => String(r.id)}
+        emptyState={
+          <ListEmpty
+            icon={<ShieldCheck />}
+            title={t("empty.rules.title")}
+            description={t("empty.rules.description")}
+            actionLabel={t("payers.addRule")}
+            onAction={() => {
+              setEditing("new");
+            }}
+          />
+        }
         onRowClick={setEditing}
         rowLabel={(r) => t("common.editNamed", { name: scopeLabel(r) })}
         rowActions={(r) => [
@@ -574,7 +591,6 @@ function ExampleSplit({ form }: { form: ReturnType<typeof useForm<RuleValues>> }
     <section
       className="grid gap-3 rounded-control border border-info-border bg-info-bg p-3 text-info-fg"
       aria-labelledby="split-title"
-      aria-live="polite"
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <h3 id="split-title" className="text-sm font-semibold">
@@ -600,24 +616,28 @@ function ExampleSplit({ form }: { form: ReturnType<typeof useForm<RuleValues>> }
         <p className="text-sm">{t("payers.exampleIncomplete")}</p>
       ) : preview.error ? (
         <p className="text-sm">{translateError(preview.error)}</p>
-      ) : preview.data ? (
-        <dl className="grid grid-cols-2 gap-2" data-testid="example-split">
-          <div className="rounded-control bg-surface p-2 text-fg">
-            <dt className="text-xs text-muted">{t("payers.payerShare")}</dt>
-            <dd className="text-lg font-semibold" data-testid="example-payer">
-              <MoneyText value={preview.data.payer_share} />
-            </dd>
-          </div>
-          <div className="rounded-control bg-surface p-2 text-fg">
-            <dt className="text-xs text-muted">{t("payers.patientShare")}</dt>
-            <dd className="text-lg font-semibold" data-testid="example-patient">
-              <MoneyText value={preview.data.patient_share} />
-            </dd>
-          </div>
-        </dl>
-      ) : (
+      ) : preview.data ? null : (
         <p className="text-sm">{t("payers.exampleLoading")}</p>
       )}
+      {/* Only the final split is announced (not every keystroke in the amount fields). */}
+      <div aria-live="polite" aria-atomic="true">
+        {body && !preview.error && preview.data ? (
+          <dl className="grid grid-cols-2 gap-2" data-testid="example-split">
+            <div className="rounded-control bg-surface p-2 text-fg">
+              <dt className="text-xs text-muted">{t("payers.payerShare")}</dt>
+              <dd className="text-lg font-semibold" data-testid="example-payer">
+                <MoneyText value={preview.data.payer_share} />
+              </dd>
+            </div>
+            <div className="rounded-control bg-surface p-2 text-fg">
+              <dt className="text-xs text-muted">{t("payers.patientShare")}</dt>
+              <dd className="text-lg font-semibold" data-testid="example-patient">
+                <MoneyText value={preview.data.patient_share} />
+              </dd>
+            </div>
+          </dl>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -695,6 +715,18 @@ function ExclusionsTab({ payer }: { payer: PayerOut }) {
         columns={columns}
         data={payer.exclusions}
         getRowId={(r) => String(r.id)}
+        emptyState={
+          <ListEmpty
+            icon={<Ban />}
+            title={t("empty.exclusions.title")}
+            description={t("empty.exclusions.description")}
+            actionLabel={t("payers.addExclusion")}
+            actionIcon={<Ban />}
+            onAction={() => {
+              setAdding(true);
+            }}
+          />
+        }
         rowActions={(r) => [
           {
             label: r.active ? t("payers.switchOff") : t("payers.switchOn"),

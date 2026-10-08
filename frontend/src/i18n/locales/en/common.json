@@ -213,5 +213,14 @@
   "toast": {
     "saved": "Saved",
     "preferencesFailed": "Could not save preferences to the server; they apply on this device only."
+  },
+  "unsaved": {
+    "title": "Leave without saving?",
+    "description": "Your changes on this page are not saved yet. If you leave now they are lost.",
+    "leave": "Leave and discard",
+    "stay": "Stay on this page",
+    "discardTitle": "Discard unsaved changes?",
+    "discardDescription": "The changes you made here are not saved yet and will be lost.",
+    "discard": "Discard changes"
   }
 }

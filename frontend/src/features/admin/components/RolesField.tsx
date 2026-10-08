@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -9,6 +10,8 @@ import { ROLES } from "@/lib/auth/permissions";
 /** Role checkboxes bound to a string[] field. */
 export function RolesField<T extends FieldValues>({ control, name }: { control: Control<T>; name: FieldPath<T> }) {
   const { t } = useTranslation(["admin", "common"]);
+  // A <label> cannot name a div: the group takes its name from the label by id instead.
+  const labelId = useId();
   return (
     <FormField
       control={control}
@@ -17,9 +20,11 @@ export function RolesField<T extends FieldValues>({ control, name }: { control: 
         const selected = new Set<string>(Array.isArray(field.value) ? (field.value as string[]) : []);
         return (
           <FormItem>
-            <FormLabel required>{t("admin:users.roles")}</FormLabel>
+            <FormLabel id={labelId} required>
+              {t("admin:users.roles")}
+            </FormLabel>
             <FormControl>
-              <div role="group" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div role="group" aria-labelledby={labelId} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {ROLES.map((role) => {
                   const id = `role-${name}-${role}`;
                   return (

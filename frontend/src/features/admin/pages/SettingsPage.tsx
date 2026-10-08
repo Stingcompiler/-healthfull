@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { translateKey } from "@/lib/validation";
@@ -121,6 +122,7 @@ function CenterForm({ profile }: { profile: CenterProfileOut }) {
         {t("admin:settings.centerTitle")}
       </h2>
       <Form {...form}>
+        <UnsavedChangesGuard when={form.formState.isDirty && !form.formState.isSubmitting} />
         <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4">
           {save.error ? (
             <AlertCard variant="danger" title={t("errors:title")} live>
@@ -318,10 +320,12 @@ function TemplateForm({ template }: { template: PrintTemplateOut }) {
   });
   const submit = form.handleSubmit(async (values) => {
     await save.mutateAsync({ document: template.document, paper: template.paper, body: values });
+    form.reset(values);
     toast.success(t("admin:settings.saved"));
   });
   return (
     <Form {...form}>
+      <UnsavedChangesGuard when={form.formState.isDirty && !form.formState.isSubmitting} />
       <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4">
         {save.error ? (
           <AlertCard variant="danger" title={t("errors:title")} live>

@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,7 @@ import { vmsg } from "@/lib/validation";
 
 import { usePayers, useSavePayer } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
+import { ListEmpty } from "../components/ListEmpty";
 import { FilterBar } from "../components/Filters";
 import { ActiveBadge, Code, FormDialog } from "../components/FormDialog";
 import { useLocalName } from "../hooks";
@@ -125,6 +126,19 @@ export function PayersPage() {
           columns={columns}
           data={payers.data?.items ?? []}
           getRowId={(p) => String(p.id)}
+          emptyState={
+            q ? undefined : (
+              <ListEmpty
+                icon={<Building2 />}
+                title={t("empty.payers.title")}
+                description={t("empty.payers.description")}
+                actionLabel={t("payers.add")}
+                onAction={() => {
+                  setCreating(true);
+                }}
+              />
+            )
+          }
           onRowClick={open}
           rowLabel={(p) => t("payers.open", { name: localName(p) })}
         />

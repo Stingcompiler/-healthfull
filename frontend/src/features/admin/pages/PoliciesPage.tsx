@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { ROLES } from "@/lib/auth/permissions";
 import { vmsg } from "@/lib/validation";
@@ -123,6 +124,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
 
   return (
     <Form {...form}>
+      <UnsavedChangesGuard when={form.formState.isDirty && !form.formState.isSubmitting} />
       <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4">
         {save.error ? (
           <AlertCard variant="danger" title={t("errors:title")} live>
@@ -134,8 +136,8 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
           <h2 id="pol-billing" className="font-semibold text-fg">
             {t("admin:policies.billing")}
           </h2>
-          <div className="flex items-start gap-3">
-            <Switch id="pay-first" checked disabled aria-describedby="pay-first-hint" />
+          {/* Same row as SwitchField (label first, control at the end, bordered), locked on. */}
+          <div className="flex flex-row items-center justify-between gap-4 rounded-control border border-border p-3">
             <div className="grid gap-1">
               <Label htmlFor="pay-first" className="flex items-center gap-1.5">
                 {t("admin:policies.payFirst")}
@@ -145,6 +147,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
                 {t("admin:policies.payFirstHint")}
               </p>
             </div>
+            <Switch id="pay-first" checked disabled aria-describedby="pay-first-hint" />
           </div>
           <SwitchField
             control={form.control}

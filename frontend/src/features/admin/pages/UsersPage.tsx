@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
 import { PasswordField, SwitchField, TextareaField, TextField } from "@/components/form";
@@ -58,7 +59,7 @@ type ResetValues = z.infer<typeof resetSchema>;
 const unlockSchema = z.object({ reason: z.string().trim().min(1, vmsg("validation.required")).max(500) });
 type UnlockValues = z.infer<typeof unlockSchema>;
 
-type Dialog = { kind: "create" } | { kind: "edit" | "reset" | "unlock"; user: UserOut } | null;
+type Dialog = { kind: "create" } | { kind: "edit" | "reset" | "unlock" | "deactivate"; user: UserOut } | null;
 
 function displayName(user: UserOut, language: string): string {
   const name = language === "ar" ? user.full_name_ar || user.full_name_en : user.full_name_en || user.full_name_ar;
@@ -217,7 +218,9 @@ export function UsersPage() {
                   destructive: true,
                   separated: true,
                   disabled: user.id === me?.id || user.is_superuser,
-                  onSelect: () => void setActive(user, false),
+                  onSelect: () => {
+                    setDialog({ kind: "deactivate", user });
+                  },
                 }
               : {
                   label: t("admin:users.activate"),
@@ -252,6 +255,25 @@ export function UsersPage() {
           }}
         />
       ) : null}
+      <ConfirmDialog
+        open={dialog?.kind === "deactivate"}
+        onOpenChange={(open) => {
+          if (!open) setDialog(null);
+        }}
+        title={
+          dialog?.kind === "deactivate"
+            ? t("admin:users.deactivateTitle", { name: displayName(dialog.user, i18n.language) })
+            : undefined
+        }
+        description={t("admin:users.deactivateHint")}
+        confirmLabel={t("admin:users.deactivate")}
+        destructive
+        onConfirm={async () => {
+          if (dialog?.kind !== "deactivate") return;
+          await update.mutateAsync({ id: dialog.user.id, body: { is_active: false } });
+          toast.success(t("admin:users.deactivated"));
+        }}
+      />
       {dialog?.kind === "unlock" ? (
         <UnlockDialog
           user={dialog.user}

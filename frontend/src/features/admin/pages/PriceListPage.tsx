@@ -1,14 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CalendarPlus, Lock, Percent, Plus, Save, Trash2, Undo2 } from "lucide-react";
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { CalendarPlus, CircleAlert, Lock, Percent, Plus, Save, Tags, Trash2, Undo2 } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { AlertCard } from "@/components/AlertCard";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
 import { CheckboxField, SelectField, TextField } from "@/components/form";
@@ -26,7 +27,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { useTranslateError } from "@/lib/api/translate-error";
+import { formatPercent } from "@/lib/format";
+import { useLanguage } from "@/lib/i18n-hooks";
 import { cn } from "@/lib/utils";
 import { vmsg } from "@/lib/validation";
 
@@ -36,11 +40,13 @@ import {
   useCreateVersion,
   usePriceItems,
   usePriceList,
+  usePriceLists,
   useServices,
   useSetPriceItems,
   type PriceItemFilters,
 } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
+import { ListEmpty } from "../components/ListEmpty";
 import { FilterBar, FilterSelect } from "../components/Filters";
 import { DateField } from "../components/DateField";
 import { Code, FormDialog } from "../components/FormDialog";
@@ -61,17 +67,25 @@ const PRICE = /^[0-9٠-٩۰-۹]+([.٫][0-9٠-٩۰-۹]{1,2})?$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function PriceListPage() {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
   const localName = useLocalName();
   const { priceListId } = useParams({ from: "/_app/administration/price-lists/$priceListId" });
   const id = Number(priceListId);
   const list = usePriceList(id);
   const [selected, setSelected] = useState<number | null>(null);
   const [dialog, setDialog] = useState<"version" | "bulk" | null>(null);
+  // Typed prices of the shown version that are not saved: switching versions asks first.
+  const [dirty, setDirty] = useState(false);
+  const [switchTo, setSwitchTo] = useState<number | null>(null);
 
   const data = list.data;
   const versionId = selected ?? data?.next_version_id ?? data?.current_version_id ?? data?.versions[0]?.id ?? null;
   const version = data?.versions.find((v) => v.id === versionId) ?? null;
+  const select = (id: number) => {
+    if (id === versionId) return;
+    if (dirty) setSwitchTo(id);
+    else setSelected(id);
+  };
 
   return (
     <AdminPage
@@ -115,9 +129,9 @@ export function PriceListPage() {
       <QueryState loading={list.isPending} error={list.error} onRetry={() => void list.refetch()}>
         {data ? (
           <div className="grid min-w-0 gap-4 2xl:grid-cols-[18rem_1fr] 2xl:items-start">
-            <VersionTimeline versions={data.versions} selected={versionId} onSelect={setSelected} />
+            <VersionTimeline versions={data.versions} selected={versionId} onSelect={select} />
             {version ? (
-              <VersionItems key={version.id} version={version} />
+              <VersionItems key={version.id} version={version} onDirtyChange={setDirty} />
             ) : (
               <AlertCard variant="info" title={t("prices.noVersionsTitle")}>
                 {t("prices.noVersions")}
@@ -131,7 +145,7 @@ export function PriceListPage() {
           list={data}
           onClose={(created) => {
             setDialog(null);
-            if (created) setSelected(created);
+            if (created) select(created);
           }}
         />
       ) : null}
@@ -140,10 +154,26 @@ export function PriceListPage() {
           list={data}
           onClose={(created) => {
             setDialog(null);
-            if (created) setSelected(created);
+            if (created) select(created);
           }}
         />
       ) : null}
+      <ConfirmDialog
+        open={switchTo !== null}
+        onOpenChange={(open) => {
+          if (!open) setSwitchTo(null);
+        }}
+        title={t("common:unsaved.discardTitle")}
+        description={t("common:unsaved.discardDescription")}
+        confirmLabel={t("common:unsaved.discard")}
+        cancelLabel={t("common:unsaved.stay")}
+        destructive
+        onConfirm={() => {
+          setDirty(false);
+          setSelected(switchTo);
+          setSwitchTo(null);
+        }}
+      />
     </AdminPage>
   );
 }
@@ -166,6 +196,7 @@ function VersionTimeline({
   onSelect: (id: number) => void;
 }) {
   const { t } = useTranslation("admin");
+  const language = useLanguage();
   return (
     <section className="card-surface p-3" aria-labelledby="timeline-title">
       <h2 id="timeline-title" className="px-1 pb-2 text-sm font-semibold text-fg">
@@ -198,7 +229,9 @@ function VersionTimeline({
               <span className="flex flex-wrap gap-x-3 text-xs text-muted">
                 <span>{t("prices.items", { count: v.item_count })}</span>
                 {v.percent_change ? (
-                  <bdi dir="ltr">{t("prices.percentChange", { value: v.percent_change })}</bdi>
+                  <span>
+                    {t("prices.percentChange", { value: formatPercent(v.percent_change, language, { signed: true }) })}
+                  </span>
                 ) : null}
               </span>
               {v.note ? <span className="truncate text-xs text-fg-muted">{v.note}</span> : null}
@@ -212,18 +245,40 @@ function VersionTimeline({
 
 // --- Items of one version ---------------------------------------------------------------------
 
-function VersionItems({ version }: { version: VersionOut }) {
+function VersionItems({ version, onDirtyChange }: { version: VersionOut; onDirtyChange: (dirty: boolean) => void }) {
   const { t, i18n } = useTranslation(["admin", "errors"]);
   const [filters, setFilters] = useState<PriceItemFilters>({});
+  const [searchText, setSearchText] = useState("");
   const items = usePriceItems(version.id, filters);
   const save = useSetPriceItems();
   const translateError = useTranslateError();
   const [drafts, setDrafts] = useState<ReadonlyMap<number, string | null>>(new Map());
   const [adding, setAdding] = useState(false);
   const editable = version.editable;
-  const invalid = [...drafts.values()].some((v) => v !== null && !PRICE.test(v.trim()));
+  // Service codes of the drafted rows, to point at an invalid price on another page or filter.
+  const codes = useRef(new Map<number, string>());
+  const invalidIds = [...drafts.entries()].filter(([, v]) => v !== null && !PRICE.test(v.trim())).map(([id]) => id);
+  const invalid = invalidIds.length > 0;
+  const dirty = editable && drafts.size > 0;
+  useEffect(() => {
+    onDirtyChange(dirty);
+  }, [dirty, onDirtyChange]);
+  useEffect(
+    () => () => {
+      onDirtyChange(false);
+    },
+    [onDirtyChange],
+  );
 
-  const setDraft = useCallback((serviceId: number, value: string | null, original?: string) => {
+  const showFirstInvalid = () => {
+    const code = invalidIds[0] === undefined ? undefined : codes.current.get(invalidIds[0]);
+    if (!code) return;
+    setSearchText(code);
+    setFilters((f) => ({ ...f, q: code, kind: undefined }));
+  };
+
+  const setDraft = useCallback((serviceId: number, value: string | null, original?: string, code?: string) => {
+    if (code) codes.current.set(serviceId, code);
     setDrafts((current) => {
       const next = new Map(current);
       if (value !== null && original !== undefined && value === original) next.delete(serviceId);
@@ -274,6 +329,9 @@ function VersionItems({ version }: { version: VersionOut }) {
     [t, i18n.language, editable],
   );
   const draftsValue = useMemo(() => ({ drafts, setDraft, setDrafts, editable }), [drafts, setDraft, editable]);
+  const searchFor = (q: string) => {
+    setFilters((f) => ({ ...f, q: q || undefined }));
+  };
 
   const submit = async () => {
     const sent = new Map(drafts);
@@ -315,9 +373,9 @@ function VersionItems({ version }: { version: VersionOut }) {
         <SearchInput
           label={t("prices.search")}
           placeholder={t("prices.search")}
-          onSearch={(q) => {
-            setFilters((f) => ({ ...f, q: q || undefined }));
-          }}
+          value={searchText}
+          onValueChange={setSearchText}
+          onSearch={searchFor}
           className="sm:max-w-xs"
         />
         <FilterSelect
@@ -349,13 +407,42 @@ function VersionItems({ version }: { version: VersionOut }) {
             columns={columns}
             data={items.data?.items ?? []}
             getRowId={(row) => String(row.service_id)}
+            emptyState={
+              filters.q || filters.kind ? undefined : (
+                <ListEmpty
+                  icon={<Tags />}
+                  title={t(editable ? "empty.priceItems.title" : "empty.priceItemsLocked.title")}
+                  description={t(editable ? "empty.priceItems.description" : "empty.priceItemsLocked.description")}
+                  actionLabel={editable ? t("prices.addService") : undefined}
+                  onAction={
+                    editable
+                      ? () => {
+                          setAdding(true);
+                        }
+                      : undefined
+                  }
+                />
+              )
+            }
             pageSize={25}
           />
         </DraftsContext.Provider>
       </QueryState>
-      {editable && drafts.size > 0 ? (
+      <UnsavedChangesGuard when={dirty} />
+      {dirty ? (
         <div className="sticky bottom-20 z-20 flex flex-col gap-3 rounded-card border border-warning-border bg-warning-bg p-3 text-warning-fg shadow-overlay sm:flex-row sm:items-center sm:justify-between lg:bottom-4">
-          <span className="text-sm font-medium">{t("prices.unsaved", { count: drafts.size })}</span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="text-sm font-medium">{t("prices.unsaved", { count: drafts.size })}</span>
+            {invalid ? (
+              <span className="flex flex-wrap items-center gap-x-2 text-sm" role="alert" data-testid="prices-invalid">
+                <CircleAlert className="size-4 shrink-0 text-danger" aria-hidden="true" />
+                {t("prices.invalidCount", { count: invalidIds.length })}
+                <Button variant="link" size="sm" className="h-auto p-0" onClick={showFirstInvalid}>
+                  {t("prices.showInvalid")}
+                </Button>
+              </span>
+            ) : null}
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -386,7 +473,7 @@ function VersionItems({ version }: { version: VersionOut }) {
 
 interface DraftsState {
   drafts: ReadonlyMap<number, string | null>;
-  setDraft: (serviceId: number, value: string | null, original?: string) => void;
+  setDraft: (serviceId: number, value: string | null, original?: string, code?: string) => void;
   setDrafts: React.Dispatch<React.SetStateAction<ReadonlyMap<number, string | null>>>;
   editable: boolean;
 }
@@ -416,19 +503,28 @@ function PriceCell({ item }: { item: PriceItemOut }) {
   const draft = drafts.get(item.service_id);
   if (draft === null) return <span className="text-muted">{t("prices.removed")}</span>;
   const bad = draft !== undefined && !PRICE.test(draft.trim());
+  const errorId = `price-error-${String(item.service_id)}`;
   return (
-    <Input
-      value={draft ?? item.unit_price}
-      inputMode="decimal"
-      dir="ltr"
-      aria-label={t("prices.priceOf", { code: item.service_code })}
-      aria-invalid={bad || undefined}
-      data-testid={`price-${item.service_code}`}
-      className={cn("ms-auto w-32 text-end tabular", draft !== undefined && "border-warning")}
-      onChange={(e) => {
-        setDraft(item.service_id, e.target.value, item.unit_price);
-      }}
-    />
+    <div className="flex flex-col items-end gap-1">
+      <Input
+        value={draft ?? item.unit_price}
+        inputMode="decimal"
+        dir="ltr"
+        aria-label={t("prices.priceOf", { code: item.service_code })}
+        aria-invalid={bad || undefined}
+        aria-describedby={bad ? errorId : undefined}
+        data-testid={`price-${item.service_code}`}
+        className={cn("ms-auto w-32 text-end tabular", draft !== undefined && "border-warning")}
+        onChange={(e) => {
+          setDraft(item.service_id, e.target.value, item.unit_price, item.service_code);
+        }}
+      />
+      {bad ? (
+        <p id={errorId} className="max-w-48 text-end text-xs font-medium text-danger-fg">
+          {t("prices.priceRule")}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -449,7 +545,7 @@ function RemoveCell({ item }: { item: PriceItemOut }) {
             return next;
           });
         } else {
-          setDraft(item.service_id, null);
+          setDraft(item.service_id, null, undefined, item.service_code);
         }
       }}
     >
@@ -514,19 +610,40 @@ function AddServiceDialog({ versionId, onClose }: { versionId: number; onClose: 
 
 // --- New version --------------------------------------------------------------------------
 
-const versionSchema = z.object({
-  effective_from: z.string().regex(DATE, vmsg("validation.invalid")),
-  note: z.string().max(300),
-});
+const NO_COPY = "__empty__";
+
+const versionSchema = z
+  .object({
+    effective_from: z.string().regex(DATE, vmsg("validation.invalid")),
+    copy_from: z.string(),
+    note: z.string().max(300),
+  })
+  // A version starting today is read-only at once: it must come with prices (PRICE_VERSION_EMPTY).
+  .refine((v) => v.effective_from !== centerDate(0) || v.copy_from !== NO_COPY, {
+    path: ["copy_from"],
+    message: vmsg("admin:prices.copyRequiredToday"),
+  });
 type VersionValues = z.infer<typeof versionSchema>;
 
 function NewVersionDialog({ list, onClose }: { list: PriceListOut; onClose: (created?: number) => void }) {
   const { t } = useTranslation("admin");
+  const localName = useLocalName();
   const create = useCreateVersion();
+  const first = list.versions.length === 0;
+  const lists = usePriceLists();
+  // A new list starts from the current prices of another list (the cash list by default).
+  const sources = first ? (lists.data ?? []).filter((l) => l.id !== list.id && l.current_version_id !== null) : [];
+  const defaultSource = sources.find((l) => l.is_default) ?? sources[0];
   const form = useForm<VersionValues>({
     resolver: zodResolver(versionSchema),
-    defaultValues: { effective_from: centerDate(list.versions.length === 0 ? 0 : 1), note: "" },
+    defaultValues: { effective_from: centerDate(1), copy_from: NO_COPY, note: "" },
   });
+  // Pre-select the cash list once the lists arrive (the form is created before they load).
+  useEffect(() => {
+    if (defaultSource?.current_version_id && !form.formState.dirtyFields.copy_from) {
+      form.setValue("copy_from", String(defaultSource.current_version_id));
+    }
+  }, [defaultSource?.current_version_id, form]);
   return (
     <FormDialog
       open
@@ -534,11 +651,12 @@ function NewVersionDialog({ list, onClose }: { list: PriceListOut; onClose: (cre
         if (!open) onClose();
       }}
       title={t("prices.newVersion")}
-      description={t("prices.newVersionHint")}
+      description={first ? t("prices.firstVersionHint") : t("prices.newVersionHint")}
       form={form}
       error={create.error}
-      onSubmit={async (values) => {
-        const version = await create.mutateAsync({ priceListId: list.id, body: values });
+      onSubmit={async ({ copy_from, ...values }) => {
+        const body = { ...values, copy_from_id: copy_from === NO_COPY ? null : Number(copy_from) };
+        const version = await create.mutateAsync({ priceListId: list.id, body });
         toast.success(t("prices.versionCreated"));
         onClose(version.id);
       }}
@@ -547,9 +665,24 @@ function NewVersionDialog({ list, onClose }: { list: PriceListOut; onClose: (cre
         control={form.control}
         name="effective_from"
         label={t("prices.effectiveFrom")}
-        min={centerDate(0)}
+        min={centerDate(first ? 0 : 1)}
         required
       />
+      {first ? (
+        <SelectField
+          control={form.control}
+          name="copy_from"
+          label={t("prices.copyFrom")}
+          description={t("prices.copyFromHint")}
+          options={[
+            { value: NO_COPY, label: t("prices.startEmpty") },
+            ...sources.map((l) => ({
+              value: String(l.current_version_id),
+              label: `${localName(l)} (${l.code})`,
+            })),
+          ]}
+        />
+      ) : null}
       <TextField control={form.control} name="note" label={t("prices.note")} />
     </FormDialog>
   );
@@ -590,6 +723,7 @@ function BulkDialog({ list, onClose }: { list: PriceListOut; onClose: (created?:
   const apply = useApplyBulk();
   const translateError = useTranslateError();
   const [shown, setShown] = useState<{ body: BulkUpdateIn; result: BulkPreviewOut } | null>(null);
+  const language = useLanguage();
   const form = useForm<BulkValues>({
     resolver: zodResolver(bulkSchema),
     defaultValues: {
@@ -614,7 +748,10 @@ function BulkDialog({ list, onClose }: { list: PriceListOut; onClose: (created?:
           <DialogHeader>
             <DialogTitle>{t("admin:prices.previewTitle")}</DialogTitle>
             <DialogDescription>
-              {t("admin:prices.previewSummary", { count: shown.result.changed_count, percent: shown.result.percent })}{" "}
+              {t("admin:prices.previewSummary", {
+                count: shown.result.changed_count,
+                percent: formatPercent(shown.result.percent, language, { signed: true }),
+              })}{" "}
               <DateText value={shown.result.effective_from} />
             </DialogDescription>
           </DialogHeader>

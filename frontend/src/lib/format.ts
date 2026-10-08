@@ -87,6 +87,19 @@ export function formatNumber(value: number, language: Language, options: Intl.Nu
   return new Intl.NumberFormat(localeFor(language), options).format(value);
 }
 
+/**
+ * A percentage from the API's decimal string ("10.00" -> "10%", "-5.50" -> "-5.5%"): no
+ * trailing zeros, the % sign placed by the locale, and with `signed` a + for increases.
+ */
+export function formatPercent(value: string | number, language: Language, options: { signed?: boolean } = {}): string {
+  const number = typeof value === "number" ? value : Number(toDecimalString(value));
+  return new Intl.NumberFormat(localeFor(language), {
+    style: "percent",
+    maximumFractionDigits: 2,
+    signDisplay: options.signed ? "exceptZero" : "auto",
+  }).format(number / 100);
+}
+
 export type DateFormat = "date" | "datetime" | "time" | "long";
 
 const DATE_OPTIONS: Record<DateFormat, Intl.DateTimeFormatOptions> = {

@@ -117,7 +117,9 @@
     "tempPassword": "Temporary password",
     "tempPasswordHint": "At least 8 characters, not only digits. Give it to the user in person.",
     "locked": "Locked",
-    "mustChange": "Must change password"
+    "mustChange": "Must change password",
+    "deactivateTitle": "Deactivate {{name, bidi}}?",
+    "deactivateHint": "They are signed out at once and cannot sign in until an administrator activates the account again. Their records stay."
   },
   "roles": {
     "search": "Search permissions",
@@ -370,8 +372,8 @@
     "kindsHint": "Leave all unchecked to change every service.",
     "preview": "Preview",
     "previewTitle": "Before and after",
-    "previewSummary_one": "{{count}} price changes by {{percent}}% from",
-    "previewSummary_other": "{{count}} prices change by {{percent}}% from",
+    "previewSummary_one": "{{count}} price changes by {{percent, bidi}} from",
+    "previewSummary_other": "{{count}} prices change by {{percent, bidi}} from",
     "applyBulk": "Create the version",
     "before": "Before",
     "after": "After",
@@ -380,7 +382,7 @@
     "noVersions": "Add the first version to enter prices.",
     "items_one": "{{count}} price",
     "items_other": "{{count}} prices",
-    "percentChange": "{{value}}%",
+    "percentChange": "Change {{value, bidi}}",
     "status": {
       "past": "Past",
       "current": "Current",
@@ -405,7 +407,15 @@
     "unsaved_other": "{{count}} unsaved prices",
     "discard": "Discard",
     "saveChanges": "Save prices",
-    "saved": "Prices saved"
+    "saved": "Prices saved",
+    "firstVersionHint": "The first version of a list. Copy the current prices of another list to start from, then adjust them. A version that starts today is fixed at once, so it needs copied prices.",
+    "copyFrom": "Start from the prices of",
+    "copyFromHint": "The current version of another list is copied into this one.",
+    "startEmpty": "No list: start empty (from tomorrow)",
+    "copyRequiredToday": "A version that starts today needs copied prices. Choose a list, or start tomorrow.",
+    "invalidCount_one": "{{count}} price is not valid.",
+    "invalidCount_other": "{{count}} prices are not valid.",
+    "showInvalid": "Show it"
   },
   "payers": {
     "add": "New payer",
@@ -459,9 +469,9 @@
       "ceiling": "Payer pays up to a ceiling"
     },
     "summary": {
-      "percentage": "Payer {{percent}}%",
+      "percentage": "Payer {{percent, bidi}}",
       "copay": "Patient pays",
-      "ceiling": "Payer {{percent}}% up to"
+      "ceiling": "Payer {{percent, bidi}} up to"
     },
     "payerPercent": "Payer share (%)",
     "payerPercentOptional": "Payer share (%), default 100",
@@ -483,5 +493,47 @@
     "excluded": "Excluded",
     "switchOff": "Switch off",
     "switchOn": "Switch on"
+  },
+  "empty": {
+    "rules": {
+      "title": "No coverage rules yet",
+      "description": "Without a rule the payer covers nothing: the patient pays the whole price. Add a default rule, then rules for kinds or single services."
+    },
+    "exclusions": {
+      "title": "No exclusions",
+      "description": "Everything a rule covers is covered. Exclude a service or a kind of service the contract does not pay for."
+    },
+    "departments": {
+      "title": "No departments yet",
+      "description": "Departments group rooms, doctors and services. Add the first one."
+    },
+    "rooms": {
+      "title": "No rooms yet",
+      "description": "Rooms are where doctors see patients. Add one and link it to a department."
+    },
+    "doctors": {
+      "title": "No doctor profiles yet",
+      "description": "Give a user with the doctor role a profile to set their department, consultation fee and weekly clinic times."
+    },
+    "reasons": {
+      "title": "No reasons in this list",
+      "description": "Staff pick from this list when they need to give a reason. Add the first one."
+    },
+    "payers": {
+      "title": "No payers yet",
+      "description": "Insurers, companies and other payers that share the bill. Add one with its contract dates."
+    },
+    "services": {
+      "title": "No services yet",
+      "description": "The services, tests and items the center bills for. Add the first one."
+    },
+    "priceItems": {
+      "title": "No prices in this version",
+      "description": "Services without a price here cannot be billed to this list. Add the services and their prices."
+    },
+    "priceItemsLocked": {
+      "title": "No prices in this version",
+      "description": "This version is in effect and cannot change. Create a new version to add prices."
+    }
   }
 }

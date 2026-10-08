@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronDown, Lock, RotateCcw, Save } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { SearchInput } from "@/components/SearchInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { isKnownRole } from "@/lib/auth/permissions";
 import { useElementWidth } from "@/lib/hooks/use-element-width";
 import { useBreakpoint } from "@/lib/hooks/use-media-query";
@@ -26,6 +27,9 @@ import type { MatrixChangeIn, PermissionRowOut, RoleOut } from "../types";
 
 /** Container width from which the grid (one column per role) replaces the per-role lists. */
 const GRID_MIN_WIDTH = 640;
+
+/** The explanation of locked cells, referenced by every protected control. */
+const PROTECTED_HINT_ID = "matrix-protected-hint";
 
 type Pending = ReadonlyMap<string, boolean>;
 const cellKey = (role: string, code: string) => `${role}|${code}`;
@@ -117,11 +121,16 @@ export function RolesPage() {
               ) : (
                 <RoleLists roles={data.roles} groups={groups} {...cellProps} />
               )}
+              <p id={PROTECTED_HINT_ID} className="flex items-start gap-1.5 text-xs text-muted">
+                <Lock className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
+                {t("roles.protectedHint")}
+              </p>
             </div>
           ) : null}
         </QueryState>
       </div>
 
+      <UnsavedChangesGuard when={pending.size > 0} />
       {pending.size > 0 ? (
         <div
           role="region"
@@ -193,85 +202,142 @@ function useAppName() {
   return (app: string) => translateKey(t, `admin:roles.apps.${app}`, { defaultValue: app });
 }
 
+/** Whether the element hides more content past its end edge (either text direction). */
+function useScrollEdges(ref: React.RefObject<HTMLElement | null>) {
+  const [moreAtEnd, setMoreAtEnd] = useState(false);
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    // scrollLeft is negative when scrolling toward the end in right-to-left layouts.
+    const scrolled = Math.abs(el.scrollLeft);
+    const next = scrolled + el.clientWidth < el.scrollWidth - 1;
+    setMoreAtEnd(next);
+  }, [ref]);
+  useEffect(() => {
+    update();
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, [ref, update]);
+  return { moreAtEnd, update };
+}
+
 function MatrixGrid({ roles, groups, granted, toggle, pending, label }: CellProps) {
   const { t } = useTranslation("admin");
   const roleName = useRoleName();
   const appName = useAppName();
+  const scroller = useRef<HTMLDivElement>(null);
+  const { moreAtEnd, update } = useScrollEdges(scroller);
   return (
-    <div
-      className="card-surface max-w-full scrollbar-thin overflow-x-auto"
-      tabIndex={0}
-      role="region"
-      aria-label={t("roles.matrix")}
-    >
-      <table className="w-full border-separate border-spacing-0 text-sm">
-        <caption className="sr-only">{t("roles.matrix")}</caption>
-        <thead>
-          <tr>
-            <th
-              scope="col"
-              className="sticky start-0 z-10 min-w-56 border-b border-border bg-surface px-3 py-2 text-start font-semibold text-fg"
-            >
-              {t("roles.permission")}
-            </th>
-            {roles.map((role) => (
-              <th key={role.code} scope="col" className="border-b border-border px-1 py-2 align-bottom">
-                <span className="mx-auto block w-16 text-center text-xs leading-tight font-medium text-fg-muted">
-                  {roleName(role)}
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        {groups.map((group) => (
-          <tbody key={group.app}>
+    <div className="relative min-w-0">
+      {/* Bounded in both directions so the role headers (top) and permission names (start)
+          stay in view however far the matrix is scrolled. */}
+      <div
+        ref={scroller}
+        onScroll={update}
+        className="card-surface max-h-[calc(100dvh-13rem)] max-w-full scrollbar-thin overflow-auto overscroll-contain"
+        tabIndex={0}
+        role="region"
+        aria-label={t("roles.matrix")}
+        data-testid="permission-matrix"
+      >
+        <table className="w-full border-separate border-spacing-0 text-sm">
+          <caption className="sr-only">{t("roles.matrix")}</caption>
+          <thead>
             <tr>
               <th
-                scope="colgroup"
-                colSpan={roles.length + 1}
-                className="sticky start-0 bg-subtle px-3 py-1.5 text-start text-xs font-semibold tracking-wide text-muted uppercase"
+                scope="col"
+                className="sticky start-0 top-0 z-30 min-w-48 border-b border-border bg-surface px-3 py-2 text-start align-bottom font-semibold text-fg"
               >
-                {appName(group.app)}
+                {t("roles.permission")}
               </th>
-            </tr>
-            {group.rows.map((row) => (
-              <tr key={row.code} className="hover:bg-accent/40">
+              {roles.map((role) => (
                 <th
-                  scope="row"
-                  className="sticky start-0 z-[1] border-b border-border bg-surface px-3 py-2 text-start font-normal"
+                  key={role.code}
+                  scope="col"
+                  className="sticky top-0 z-20 border-b border-border bg-surface px-1 py-2 align-bottom"
                 >
-                  <span className="block text-fg">{label(row)}</span>
-                  <bdi dir="ltr" className="font-mono text-[11px] text-muted">
-                    {row.code}
-                  </bdi>
+                  <span className="mx-auto block w-16 text-center text-xs leading-tight font-medium text-fg-muted">
+                    {roleName(role)}
+                  </span>
                 </th>
-                {roles.map((role) => {
-                  const isProtected = row.protected_roles.includes(role.code);
-                  const changed = pending.has(cellKey(role.code, row.code));
-                  return (
-                    <td
-                      key={role.code}
-                      className={cn("border-b border-border text-center", changed && "bg-warning-bg")}
-                    >
-                      <span className="inline-flex size-11 items-center justify-center md:size-9">
-                        <Checkbox
-                          checked={granted(row, role.code)}
-                          disabled={isProtected}
-                          aria-label={t("roles.cellLabel", { role: roleName(role), permission: label(row) })}
-                          data-testid={`perm-${role.code}-${row.code}`}
-                          onCheckedChange={(v) => {
-                            toggle(row, role.code, v === true);
-                          }}
-                        />
-                      </span>
-                    </td>
-                  );
-                })}
+              ))}
+            </tr>
+          </thead>
+          {groups.map((group) => (
+            <tbody key={group.app}>
+              <tr>
+                <th
+                  scope="colgroup"
+                  colSpan={roles.length + 1}
+                  className="sticky start-0 bg-subtle px-3 py-1.5 text-start text-xs font-semibold tracking-wide text-muted uppercase"
+                >
+                  {appName(group.app)}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        ))}
-      </table>
+              {group.rows.map((row) => (
+                <tr key={row.code} className="hover:bg-accent/40">
+                  <th
+                    scope="row"
+                    className="sticky start-0 z-[1] border-b border-border bg-surface px-3 py-2 text-start font-normal"
+                  >
+                    <span className="block text-fg">{label(row)}</span>
+                    <bdi dir="ltr" className="font-mono text-[11px] text-muted">
+                      {row.code}
+                    </bdi>
+                  </th>
+                  {roles.map((role) => {
+                    const isProtected = row.protected_roles.includes(role.code);
+                    const changed = pending.has(cellKey(role.code, row.code));
+                    return (
+                      <td
+                        key={role.code}
+                        className={cn("border-b border-border text-center", changed && "bg-warning-bg")}
+                      >
+                        <span
+                          className="relative inline-flex size-11 items-center justify-center md:size-9"
+                          title={isProtected ? t("roles.protectedHint") : undefined}
+                        >
+                          <Checkbox
+                            checked={granted(row, role.code)}
+                            disabled={isProtected}
+                            aria-label={t("roles.cellLabel", { role: roleName(role), permission: label(row) })}
+                            aria-describedby={isProtected ? PROTECTED_HINT_ID : undefined}
+                            data-testid={`perm-${role.code}-${row.code}`}
+                            onCheckedChange={(v) => {
+                              toggle(row, role.code, v === true);
+                            }}
+                          />
+                          {isProtected ? (
+                            <Lock
+                              className="absolute end-0.5 top-0.5 size-3 text-muted md:end-0 md:top-0"
+                              aria-hidden="true"
+                              data-testid={`perm-lock-${role.code}-${row.code}`}
+                            />
+                          ) : null}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+      {/* A fade on the end side while more role columns are hidden there. */}
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-y-px end-px w-10 rounded-e-card bg-linear-to-l from-fg/15 to-transparent transition-opacity rtl:bg-linear-to-r",
+          moreAtEnd ? "opacity-100" : "opacity-0",
+        )}
+        data-testid="matrix-more-end"
+      />
     </div>
   );
 }
@@ -323,6 +389,7 @@ function RoleLists({ roles, groups, granted, toggle, pending, label }: CellProps
                             id={id}
                             checked={granted(row, role.code)}
                             disabled={isProtected}
+                            aria-describedby={isProtected ? PROTECTED_HINT_ID : undefined}
                             data-testid={`perm-${role.code}-${row.code}`}
                             onCheckedChange={(v) => {
                               toggle(row, role.code, v);
@@ -338,10 +405,6 @@ function RoleLists({ roles, groups, granted, toggle, pending, label }: CellProps
           </details>
         );
       })}
-      <p className="flex items-start gap-1.5 text-xs text-muted">
-        <Lock className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
-        {t("roles.protectedHint")}
-      </p>
     </div>
   );
 }
