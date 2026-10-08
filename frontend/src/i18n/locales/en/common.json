@@ -96,7 +96,8 @@
   },
   "sex": {
     "male": "Male",
-    "female": "Female"
+    "female": "Female",
+    "unknown": "Unknown"
   },
   "patient": {
     "fileNo": "File no.",
