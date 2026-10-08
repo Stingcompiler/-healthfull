@@ -138,7 +138,7 @@ def _new_list(client: ApiClient, code: str = "TEST") -> dict[str, Any]:
         "/api/catalog/price-lists", {"code": code, "name_ar": "قائمة", "name_en": "List"}
     )
     assert response.status_code == 201, response.content
-    return response.json()  # type: ignore[no-any-return]
+    return response.json()
 
 
 def test_price_list_versions_and_item_editing(client: ApiClient, today: Any) -> None:
