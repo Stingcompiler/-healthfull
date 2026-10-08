@@ -34,6 +34,13 @@ the reason and the time recorded on the row.
   accountant) approves the refund, and one person never decides both the credit and the cash
   leaving the drawer.
 
+- Cash leaving a drawer (FEATURES 7.6) is confirmed by someone other than its sender
+  (`HANDOVER_SELF_RECEIPT`). A next-shift handover names the receiving shift; a supervisor
+  handover names the supervisor (`to_user_id`, a holder of `payments.receive_handover` and
+  `payments.view_all_shifts`); cash to the safe or the bank waits in the incoming list of every
+  such holder (Shift review screen). Until confirmed it shows as in transit and the sender may
+  cancel it.
+
 ## Consequences
 - A supervisor approves without the cashier signing out, and the money stays in the right
   drawer.
@@ -45,5 +52,6 @@ the reason and the time recorded on the row.
 
 ## Code
 `apps/payments/approvals.py`, `apps/billing/desk.py` (`discount_line`, `discount_invoice`),
-`apps/payments/desk.py` (`take_payment`), tests in `apps/payments/tests/test_approvals.py`,
+`apps/payments/desk.py` (`take_payment`, `hand_over`), `apps/payments/services.py`
+(`cash_handover`, `receive_handover`), tests in `apps/payments/tests/test_approvals.py`,
 `apps/billing/tests/test_api.py`, `apps/payments/tests/test_api.py`.

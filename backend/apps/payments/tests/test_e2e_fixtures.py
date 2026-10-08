@@ -30,7 +30,8 @@ def test_cashier_screens_builds_every_populated_screen_once(settings: Any) -> No
     first = run("cashier_screens")
     closed = Shift.objects.get(pk=first["closed_shift"])
     assert closed.status == "closed"
-    assert closed.variance is not None and closed.variance != 0
+    assert closed.variance is not None
+    assert closed.variance != 0
     opened = Shift.objects.get(pk=first["open_shift"])
     assert opened.status == "open"
     transfer = Payment.objects.get(pk=first["transfer"]["id"])
