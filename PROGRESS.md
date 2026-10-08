@@ -170,3 +170,13 @@ including the full money cycle with a shift variance and a transfer rejected aft
   clinic and clinic-visit responsive matrix: 50 passed, 1 skipped (billing sweep, no money
   operations yet). `make check` stops at the frontend lint/typecheck of the admin screens
   because of the wave a `DoctorOut` collision (see clinic follow-ups).
+- 2026-10-09: Clinic second review fixed on `feat/a-clinic`: withdrawal needs `clinical.view` and
+  refuses started lines (`LINE_IN_PROGRESS`); clinic completion needs
+  `visits.finish_consultation`; referral cancellation, diagnosis removal and allergy/condition
+  entered-in-error carry a reason (migration `clinical.0006`); favorites keep route, dose
+  quantity and as-needed; early allergy warnings (`/api/clinical/patients/{id}/allergy-alerts`);
+  unsaved-changes guard on the workspace; UI, a11y and Arabic wording fixes (ADR 0007
+  addendum). Results: backend 1588 passed, frontend 424 passed, mypy and ruff clean, API
+  contract in sync, no missing migrations; `make e2e E2E_GREP=@clinic` 14 passed, 1 skipped
+  (billing sweep); clinic responsive matrix 36 passed. Frontend lint/typecheck still stop at
+  the admin screens' wave a `DoctorOut` collision (unchanged, see clinic follow-ups).
