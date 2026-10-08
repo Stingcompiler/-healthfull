@@ -251,15 +251,21 @@ found are listed at the end.
   from a version of another list (`copy_from_id`), because it is read-only at once: an empty
   one would leave every payer on the list without prices until a later version starts
   (`PRICE_VERSION_EMPTY`). Prices of a version can be edited only before it starts
-  (`PRICE_VERSION_LOCKED`).
+  (`PRICE_VERSION_LOCKED`). A version that has not started can be withdrawn with a reason
+  (audited by pghistory), unless a later version is based on it (`PRICE_VERSION_IN_USE`);
+  once effective it is locked. An active payer can be put on a list only while that list
+  has a version effective today (`PRICE_LIST_NOT_EFFECTIVE`); otherwise every invoice for
+  its patients would fail with `NO_EFFECTIVE_PRICE_LIST`. There is no fallback to the cash
+  list: charging contract patients cash prices silently would be wrong.
 - Why: invariant 6. Backdating, or a second version starting today, would change which price
   was "the list effective that day" after invoices of that day froze it.
 - Consequences: a price correction takes effect tomorrow. The DB `version_guard` is a narrower
   backstop: it refuses a version that would reprice frozen invoices, and any change to a
   version already used by a frozen invoice line. It does not refuse a same-day version when
   no invoice was frozen that day. The service rule is the stricter one.
-- Code: `domain/pricing.py` (`validate_new_version`), `apps/catalog/services.py`
-  (`create_version`, `set_prices`), DB `version_guard`, `item_guard`.
+- Code: `domain/pricing.py` (`validate_new_version`, `can_start_today`),
+  `apps/catalog/services.py` (`create_version`, `set_prices`, `withdraw_version`,
+  `_check_list_effective`), DB `version_guard`, `item_guard`.
 
 ### (p) Pooled patient credit can go negative
 - Decision: patient credit is one pooled balance per file. Rejecting a transfer reverses its

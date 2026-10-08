@@ -223,6 +223,8 @@
   "PRICE_VERSION_BACKDATED": "A new price list version can start tomorrow at the earliest.",
   "PRICE_VERSION_DATE_TAKEN": "Another version of this price list already starts on {{effective_from, bidi}}. Choose another date.",
   "PRICE_VERSION_EMPTY": "A version that starts today needs prices. Copy the prices of another list, or start it tomorrow.",
+  "PRICE_LIST_NOT_EFFECTIVE": "This price list has no version in effect today, so its payer's invoices could not be priced. Add a version that starts today first.",
+  "PRICE_VERSION_IN_USE": "Another version is based on this one. Withdraw the later version first.",
   "INVALID_PRICE": "The price is not valid. Enter an amount of zero or more with at most two decimal places.",
   "INVALID_ROUNDING_STEP": "The rounding step is not valid. Enter a positive amount with at most two decimal places.",
   "CLAIM_STATUS_INVALID": "This action is not allowed in the claim's current status.",

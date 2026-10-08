@@ -26,7 +26,7 @@ from decimal import Decimal
 
 import pghistory
 from django.db import connection, transaction
-from django.db.models import Count, Prefetch, Q, QuerySet
+from django.db.models import Count, Prefetch, ProtectedError, Q, QuerySet
 from django.utils import timezone
 
 from apps.catalog.models import (
@@ -189,6 +189,21 @@ def _check_services(service_ids: Collection[int]) -> None:
         raise DomainError("SERVICE_UNKNOWN", "Unknown services in the price list", services=unknown)
 
 
+def _check_new_version(
+    plist: PriceList, effective_from: date, today: date, *, priced: bool = True
+) -> None:
+    """Whether ``plist`` may take a new version from ``effective_from``: the one rule set
+    shared by :func:`create_version` and :func:`preview_bulk_update`.
+
+    Raises:
+        DomainError: ``PRICE_LIST_INACTIVE``, ``PRICE_VERSION_BACKDATED``,
+            ``PRICE_VERSION_DATE_TAKEN``, ``PRICE_VERSION_EMPTY``.
+    """
+    if not plist.active:
+        raise DomainError("PRICE_LIST_INACTIVE", "The price list is inactive")
+    pricing.validate_new_version(_versions(plist), effective_from, today, priced=priced)
+
+
 def create_version(
     price_list: PriceList,
     *,
@@ -212,13 +227,8 @@ def create_version(
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="price list version"):
         # One writer per list at a time, so two versions can never take the same date.
         plist = PriceList.objects.select_for_update(no_key=True).get(pk=price_list.pk)
-        if not plist.active:
-            raise DomainError("PRICE_LIST_INACTIVE", "The price list is inactive")
-        pricing.validate_new_version(
-            _versions(plist),
-            effective_from,
-            today or timezone.localdate(),
-            priced=bool(snapshot.prices),
+        _check_new_version(
+            plist, effective_from, today or timezone.localdate(), priced=bool(snapshot.prices)
         )
         _check_services([int(sid) for sid in snapshot.prices])
         version = PriceListVersion.objects.create(
@@ -637,10 +647,19 @@ class PriceListRow:
     price_list: PriceList
     versions: tuple[VersionRow, ...]
     payer_codes: tuple[str, ...]
+    today: date
 
     @property
     def current(self) -> VersionRow | None:
         return next((v for v in self.versions if v.status == VersionStatus.CURRENT), None)
+
+    @property
+    def can_start_today(self) -> bool:
+        """A new version may start today (nothing is effective yet; ADR 0006)."""
+        return pricing.can_start_today(
+            (pricing.PriceVersion(v.version.pk, v.version.effective_from) for v in self.versions),
+            self.today,
+        )
 
     @property
     def next_scheduled(self) -> VersionRow | None:
@@ -686,6 +705,7 @@ def list_price_lists(
             price_list=plist,
             versions=_timeline(plist.versions.all(), on),
             payer_codes=tuple(p.code for p in plist.payers.all()),
+            today=on,
         )
         for plist in qs
     ]
@@ -698,6 +718,7 @@ def get_price_list(price_list_id: int, *, today: date | None = None) -> PriceLis
         price_list=plist,
         versions=_timeline(_versions_qs().filter(price_list=plist), on),
         payer_codes=tuple(plist.payers.order_by("code").values_list("code", flat=True)),
+        today=on,
     )
 
 
@@ -829,6 +850,51 @@ def edit_version_prices(
     return get_version(version_id, today=today)
 
 
+def withdraw_version(
+    actor: User, version_id: int, *, reason: str, today: date | None = None
+) -> PriceListRow:
+    """Remove a version that has not started yet (a mistaken date or bulk update).
+
+    The delete is audited with ``reason`` (pghistory keeps the version and its prices).
+
+    Raises:
+        DomainError: ``REASON_REQUIRED``, ``PRICE_VERSION_LOCKED`` (effective today or
+            earlier: its prices may be frozen on invoices), ``PRICE_VERSION_IN_USE`` (a later
+            version or an invoice line refers to it).
+    """
+    text = (reason or "").strip()
+    if not text:
+        raise DomainError("REASON_REQUIRED", "A reason is required to withdraw a price version")
+    on = today or timezone.localdate()
+    with (
+        transaction.atomic(),
+        pghistory.context(user=actor.pk, reason=f"withdraw price version: {text[:400]}"),
+    ):
+        list_id = PriceListVersion.objects.values_list("price_list_id", flat=True).get(
+            pk=version_id
+        )
+        PriceList.objects.select_for_update(no_key=True).get(pk=list_id)
+        locked = PriceListVersion.objects.select_for_update().get(pk=version_id)
+        if locked.effective_from <= on:
+            raise DomainError(
+                "PRICE_VERSION_LOCKED",
+                "A version that is already effective cannot change; create a new version",
+                effective_from=locked.effective_from.isoformat(),
+            )
+        if PriceListVersion.objects.filter(based_on=locked).exists():
+            raise DomainError(
+                "PRICE_VERSION_IN_USE", "A later version is based on this one; withdraw it first"
+            )
+        try:
+            with transaction.atomic():
+                locked.delete()
+        except ProtectedError:
+            raise DomainError(
+                "PRICE_VERSION_IN_USE", "Other records refer to this price list version"
+            ) from None
+    return get_price_list(list_id, today=on)
+
+
 @dataclass(frozen=True, slots=True)
 class BulkPreviewRow:
     service: Service
@@ -869,13 +935,13 @@ def preview_bulk_update(
     so the preview shows exactly the version that applying it would create.
 
     Raises:
-        DomainError: ``PRICE_VERSION_BACKDATED``, ``PRICE_VERSION_DATE_TAKEN``,
-            ``NO_EFFECTIVE_PRICE_LIST``, ``INVALID_PERCENT``, ``INVALID_ROUNDING_STEP``,
-            ``PRICE_NOT_FOUND``.
+        DomainError: ``PRICE_LIST_INACTIVE``, ``PRICE_VERSION_BACKDATED``,
+            ``PRICE_VERSION_DATE_TAKEN``, ``NO_EFFECTIVE_PRICE_LIST``, ``INVALID_PERCENT``,
+            ``INVALID_ROUNDING_STEP``, ``PRICE_NOT_FOUND``.
     """
     on = today or timezone.localdate()
     plist = PriceList.objects.get(pk=price_list_id)
-    pricing.validate_new_version(_versions(plist), effective_from, on)
+    _check_new_version(plist, effective_from, on)
     base = effective_version(plist, effective_from)
     base_prices = version_prices(base)
     only = _bulk_scope(base_prices, service_ids, kinds)
@@ -999,6 +1065,28 @@ _PAYER_FIELDS = {
 }
 
 
+def _check_list_effective(plist: PriceList, today: date) -> None:
+    """An active payer prices from a list with a version in effect today, or every invoice
+    for its patients would fail with ``NO_EFFECTIVE_PRICE_LIST`` (ADR 0006).
+
+    Raises:
+        DomainError: ``PRICE_LIST_NOT_EFFECTIVE`` (``details.price_list``, and
+            ``details.starts`` when a version is scheduled).
+    """
+    versions = _versions(plist)
+    if any(v.effective_from <= today for v in versions):
+        return
+    upcoming = min((v.effective_from for v in versions), default=None)
+    details: dict[str, object] = {"price_list": plist.code}
+    if upcoming is not None:
+        details["starts"] = upcoming.isoformat()
+    raise DomainError(
+        "PRICE_LIST_NOT_EFFECTIVE",
+        "The price list has no version in effect today; add one before assigning it",
+        **details,
+    )
+
+
 def _apply_payer_fields(payer: Payer, fields: Mapping[str, object]) -> None:
     for attr, value in fields.items():
         if attr == "price_list_id":
@@ -1010,6 +1098,12 @@ def _apply_payer_fields(payer: Payer, fields: Mapping[str, object]) -> None:
             payer.price_list = plist
         else:
             setattr(payer, attr, _clean(value))
+    if (
+        ("price_list_id" in fields or "active" in fields)
+        and payer.active
+        and payer.price_list is not None
+    ):
+        _check_list_effective(payer.price_list, timezone.localdate())
     if payer.kind not in PayerKind.values:
         raise DomainError("PAYER_KIND_UNKNOWN", "Unknown payer kind", kind=payer.kind)
     if payer.claim_period not in ClaimPeriod.values:
@@ -1031,7 +1125,7 @@ def create_payer(actor: User, *, code: str, **fields: object) -> Payer:
 
     Raises:
         DomainError: ``INVALID_CODE``, ``PAYER_CODE_TAKEN``, ``PAYER_CONTRACT_DATES``,
-            ``PRICE_LIST_INACTIVE``, ``INVALID_EMAIL``.
+            ``PRICE_LIST_INACTIVE``, ``PRICE_LIST_NOT_EFFECTIVE``, ``INVALID_EMAIL``.
     """
     value = _code(code, _LIST_CODE_RE)
     _only(fields, _PAYER_FIELDS, "payer")

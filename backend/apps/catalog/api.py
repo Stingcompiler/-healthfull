@@ -54,6 +54,7 @@ from apps.catalog.schemas import (
     VersionIn,
     VersionItemParams,
     VersionOut,
+    VersionWithdrawIn,
 )
 from apps.core.models import User
 from domain.money import money
@@ -254,6 +255,23 @@ def create_price_version(
 @require_perm("catalog.view_prices")
 def get_price_version(request: HttpRequest, version_id: int) -> Any:
     return services.get_version(version_id)
+
+
+@catalog_router.post(
+    "/versions/{version_id}/withdraw",
+    response={200: PriceListOut, **_WRITE},
+    operation_id="catalog_withdraw_price_version",
+    summary="Remove a version that has not started yet, with a reason (audited)",
+    description=(
+        "Returns the price list. 409 REASON_REQUIRED, PRICE_VERSION_LOCKED (already "
+        "effective), PRICE_VERSION_IN_USE (a later version is based on it)."
+    ),
+)
+@require_perm("catalog.manage_prices")
+def withdraw_price_version(
+    request: HttpRequest, version_id: int, payload: VersionWithdrawIn
+) -> Any:
+    return services.withdraw_version(_actor(request), version_id, reason=payload.reason)
 
 
 @catalog_router.get(

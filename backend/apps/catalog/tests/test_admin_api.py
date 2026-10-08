@@ -12,7 +12,7 @@ import pytest
 from django.utils import timezone
 
 from apps.catalog import services as cat
-from apps.catalog.models import PriceList, PriceListVersion
+from apps.catalog.models import PriceList, PriceListVersion, PriceListVersionEvent
 from apps.core.models import User
 from apps.core.tests import builders as b
 from conftest import ApiClient, router_operations
@@ -363,8 +363,23 @@ def test_bulk_update_errors(client: ApiClient, admin: User, today: Any, make_use
     )
 
 
-def test_price_list_cannot_be_deactivated_while_payer_uses_it(client: ApiClient) -> None:
+def _go_live_today(client: ApiClient, plist: dict[str, Any], today: Any) -> None:
+    """Put a new list in effect today by copying the cash list's current version."""
+    cash = b.price_version()
+    if not cash.items.exists():
+        cat.PriceItem.objects.create(version=cash, service=b.service(), unit_price=Decimal("50"))
+    response = client.post(
+        f"/api/catalog/price-lists/{plist['id']}/versions",
+        {"effective_from": today.isoformat(), "copy_from_id": cash.pk},
+    )
+    assert response.status_code == 201, response.content
+
+
+def test_price_list_cannot_be_deactivated_while_payer_uses_it(
+    client: ApiClient, today: Any
+) -> None:
     plist = _new_list(client, "PAYLIST")
+    _go_live_today(client, plist, today)
     payer = client.post(
         "/api/catalog/payers",
         {"code": "ACME", "name_ar": "أكمي", "name_en": "Acme", "price_list_id": plist["id"]},
@@ -381,6 +396,114 @@ def test_price_list_cannot_be_deactivated_while_payer_uses_it(client: ApiClient)
         409,
         "PRICE_LIST_DEFAULT_REQUIRED",
     )
+
+
+def test_bulk_preview_refuses_an_inactive_list_like_apply(
+    client: ApiClient, admin: User, today: Any
+) -> None:
+    lab = b.service(kind="lab")
+    plist = _seed_list(admin, today, {lab: "100.00"})
+    plist.active = False
+    plist.save(update_fields=["active"])
+    body = {"percent": "10", "effective_from": (today + timedelta(days=3)).isoformat()}
+    for path in ("bulk-preview", "bulk-update"):
+        _error(
+            client.post(f"/api/catalog/price-lists/{plist.pk}/{path}", body),
+            409,
+            "PRICE_LIST_INACTIVE",
+        )
+
+
+def test_can_start_today_follows_the_backend_rule(client: ApiClient, today: Any) -> None:
+    plist = _new_list(client, "SOON")
+    assert plist["can_start_today"] is True
+    # Only a scheduled version: nothing is effective, so today is still allowed.
+    scheduled = client.post(
+        f"/api/catalog/price-lists/{plist['id']}/versions",
+        {"effective_from": (today + timedelta(days=5)).isoformat()},
+    )
+    assert scheduled.status_code == 201, scheduled.content
+    detail = client.get(f"/api/catalog/price-lists/{plist['id']}").json()
+    assert detail["current_version_id"] is None
+    assert detail["can_start_today"] is True
+    _go_live_today(client, plist, today)
+    assert client.get(f"/api/catalog/price-lists/{plist['id']}").json()["can_start_today"] is False
+
+
+def test_withdraw_a_scheduled_version_only(
+    client: ApiClient, admin: User, today: Any, make_user: Any
+) -> None:
+    lab = b.service(kind="lab")
+    plist = _seed_list(admin, today, {lab: "100.00"})
+    current = cat.effective_version(plist, today)
+    url = f"/api/catalog/price-lists/{plist.pk}/bulk-update"
+    mistake = client.post(
+        url, {"percent": "100", "effective_from": (today + timedelta(days=1)).isoformat()}
+    ).json()
+
+    _error(
+        client.post(f"/api/catalog/versions/{mistake['id']}/withdraw", {"reason": "  "}),
+        409,
+        "REASON_REQUIRED",
+    )
+    cashier = _login(make_user, "till", "cashier")
+    _error(
+        cashier.post(f"/api/catalog/versions/{mistake['id']}/withdraw", {"reason": "typo"}),
+        403,
+        "PERMISSION_DENIED",
+    )
+    # A later version based on it blocks the withdrawal until that one goes first.
+    later = cat.derive_version(
+        plist, effective_from=today + timedelta(days=9), actor=admin, changes={}, today=today
+    )
+    assert later.based_on_id == mistake["id"]
+    _error(
+        client.post(f"/api/catalog/versions/{mistake['id']}/withdraw", {"reason": "typo"}),
+        409,
+        "PRICE_VERSION_IN_USE",
+    )
+    assert (
+        client.post(f"/api/catalog/versions/{later.pk}/withdraw", {"reason": "typo"}).status_code
+        == 200
+    )
+
+    response = client.post(
+        f"/api/catalog/versions/{mistake['id']}/withdraw", {"reason": "+100% was meant as +10%"}
+    )
+    assert response.status_code == 200, response.content
+    assert [v["id"] for v in response.json()["versions"]] == [current.pk]
+    assert not PriceListVersion.objects.filter(pk=mistake["id"]).exists()
+    event = PriceListVersionEvent.objects.get(pgh_obj_id=mistake["id"], pgh_label="delete")
+    assert "+100% was meant as +10%" in event.pgh_context.metadata["reason"]
+
+    # The effective version is locked.
+    _error(
+        client.post(f"/api/catalog/versions/{current.pk}/withdraw", {"reason": "oops"}),
+        409,
+        "PRICE_VERSION_LOCKED",
+    )
+    assert cat.effective_version(plist, today).pk == current.pk
+
+
+def test_payer_needs_a_price_list_in_effect(client: ApiClient, today: Any) -> None:
+    plist = _new_list(client, "LATER")
+    body = {"code": "NEWP", "name_ar": "جديد", "name_en": "New", "price_list_id": plist["id"]}
+    _error(client.post("/api/catalog/payers", body), 409, "PRICE_LIST_NOT_EFFECTIVE")
+    starts = today + timedelta(days=4)
+    client.post(
+        f"/api/catalog/price-lists/{plist['id']}/versions", {"effective_from": starts.isoformat()}
+    )
+    error = _error(client.post("/api/catalog/payers", body), 409, "PRICE_LIST_NOT_EFFECTIVE")
+    assert error["details"]["starts"] == starts.isoformat()
+
+    # Moving an existing payer onto it is refused too; with a version today it works.
+    payer = client.post("/api/catalog/payers", {**body, "price_list_id": None})
+    assert payer.status_code == 201, payer.content
+    payer_url = f"/api/catalog/payers/{payer.json()['id']}"
+    _error(client.patch(payer_url, {"price_list_id": plist["id"]}), 409, "PRICE_LIST_NOT_EFFECTIVE")
+    _go_live_today(client, plist, today)
+    moved = client.patch(payer_url, {"price_list_id": plist["id"]})
+    assert moved.status_code == 200, moved.content
 
 
 # --- Payers, rules, exclusions and the split preview ----------------------------------------
@@ -584,6 +707,12 @@ def test_catalog_api_surface_is_pinned() -> None:
             set_prices,
         ),
         ("GET", "/versions/{version_id}", "catalog_get_price_version", prices),
+        (
+            "POST",
+            "/versions/{version_id}/withdraw",
+            "catalog_withdraw_price_version",
+            set_prices,
+        ),
         ("GET", "/versions/{version_id}/items", "catalog_list_price_items", prices),
         ("PUT", "/versions/{version_id}/items", "catalog_set_price_items", set_prices),
         (
