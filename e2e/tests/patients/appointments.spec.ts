@@ -88,7 +88,9 @@ test("@patients reschedule and cancel an appointment for a caller without a file
   await booked.getByRole("button", { name: tr("ar", "visits:appointments.moreFor", { name: caller }) }).click();
   await page.getByRole("menuitem", { name: tr("ar", "visits:appointments.cancel") }).click();
   const cancel = page.getByRole("dialog");
-  await cancel.getByLabel(tr("ar", "visits:appointments.cancelReason")).fill("مسافر");
+  await cancel.getByRole("combobox").click();
+  await page.getByRole("option", { name: "بطلب من المريض" }).click();
+  await cancel.getByRole("textbox").fill("مسافر");
   await cancel.getByRole("button", { name: tr("ar", "visits:appointments.cancel") }).click();
   await expect(page.locator('[data-testid="appointment"][data-status="cancelled"]').filter({ hasText: caller })).toBeVisible();
 });

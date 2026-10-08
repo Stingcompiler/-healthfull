@@ -67,6 +67,7 @@ test("@patients duplicate warning offers the existing file", async ({ page }) =>
   await openNewPatient(page, "en");
 
   await page.getByLabel(tr("en", "patients:form.nameEn")).fill("Hassan Altahir");
+  await page.getByRole("radio", { name: tr("en", "common:sex.male") }).check();
   await page.getByLabel(tr("en", "patients:form.phone"), { exact: true }).fill(phone);
   const inline = page.getByText(tr("en", "patients:duplicates.inlineTitle_one", { count: "1" }));
   await expect(inline).toBeVisible();
@@ -88,12 +89,25 @@ test("@patients duplicate warning can be overridden for another person", async (
   await signIn(page, "ar", "warm");
   await openNewPatient(page, "ar");
   await page.getByLabel(tr("ar", "patients:form.nameAr")).fill("نور الدين بابكر الابن");
+  await page.getByRole("radio", { name: tr("ar", "common:sex.male") }).check();
   await page.getByLabel(tr("ar", "patients:form.phone"), { exact: true }).fill(phone);
   await expect(page.getByRole("button", { name: tr("ar", "patients:duplicates.review") })).toBeVisible();
   await page.getByRole("button", { name: tr("ar", "patients:new.submit") }).click();
   await page.getByRole("button", { name: tr("ar", "patients:duplicates.registerAnyway") }).click();
   await expect(page).toHaveURL(/\/patients\/\d+$/);
   await expect(page.locator("#main h1")).toHaveText("نور الدين بابكر الابن");
+});
+
+test("@patients registration asks for the sex instead of assuming one", async ({ page }) => {
+  await signIn(page, "en", "light");
+  await openNewPatient(page, "en");
+  for (const sex of ["male", "female"] as const) {
+    await expect(page.getByRole("radio", { name: tr("en", `common:sex.${sex}`) })).not.toBeChecked();
+  }
+  await page.getByLabel(tr("en", "patients:form.nameEn")).fill("Sex Not Chosen");
+  await page.getByRole("button", { name: tr("en", "patients:new.submit") }).click();
+  await expect(page.getByText(tr("en", "validation.selectOption")).first()).toBeVisible();
+  await expect(page).toHaveURL(/\/patients\/new$/);
 });
 
 test("@patients emergency registration, then completion", async ({ page }) => {

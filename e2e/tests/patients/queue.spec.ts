@@ -116,7 +116,7 @@ test("@patients board calls the paid token and the waiting room shows it", async
     tr("en", "visits:queueStatus.called"),
   );
 
-  await page.goto(`/queue/display?department=${String(gen.id)}`);
+  await page.goto(`/display/queue?department=${String(gen.id)}`);
   const current = page.getByTestId("display-current");
   await expect(current).toContainText(String(token));
   await expect(current).toContainText("Abdalla A.");
@@ -127,13 +127,23 @@ test("@patients board calls the paid token and the waiting room shows it", async
   await page.reload();
   await expect(page.getByTestId("display-current")).toContainText("عبد الله ط.");
 
-  // Start and finish the consultation from the board.
+  // Reception starts the consultation; finishing it (which performs the fee) is the doctor's.
   await page.goto("/queue");
   const row = page.getByRole("row").filter({ hasText: ready.patient.file_no });
   await row.getByRole("button", { name: tr("ar", "common:table.rowActions") }).click();
   await page.getByRole("menuitem", { name: tr("ar", "visits:board.action.start") }).click();
   await expect(row).toContainText(tr("ar", "visits:queueStatus.in_progress"));
   await row.getByRole("button", { name: tr("ar", "common:table.rowActions") }).click();
+  await expect(page.getByRole("menuitem", { name: tr("ar", "visits:board.action.start") })).toHaveCount(0);
+  await expect(page.getByRole("menuitem", { name: tr("ar", "visits:board.action.finish") })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  await login(page, "doctor");
+  await setPrefs(page, { theme: "dark", lang: "ar" });
+  await page.goto("/queue");
+  await chooseOption(page, tr("ar", "visits:board.department"), gen.name_ar);
+  const doctorRow = page.getByRole("row").filter({ hasText: ready.patient.file_no });
+  await doctorRow.getByRole("button", { name: tr("ar", "common:table.rowActions") }).click();
   await page.getByRole("menuitem", { name: tr("ar", "visits:board.action.finish") }).click();
-  await expect(row).toHaveCount(0);
+  await expect(doctorRow).toHaveCount(0);
 });

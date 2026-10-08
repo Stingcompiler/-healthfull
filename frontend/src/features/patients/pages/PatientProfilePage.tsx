@@ -247,7 +247,11 @@ export function PatientProfilePage() {
       ) : null}
 
       {(merges.data ?? []).length > 0 ? (
-        <section aria-labelledby="merges-heading" className="card-surface flex flex-col gap-3 p-4 md:p-5">
+        <section
+          aria-labelledby="merges-heading"
+          className="card-surface flex flex-col gap-3 p-4 md:p-5"
+          data-testid="merge-history"
+        >
           <h2 id="merges-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
             <GitMerge className="size-5 text-muted" aria-hidden="true" />
             {t("merge.history")}

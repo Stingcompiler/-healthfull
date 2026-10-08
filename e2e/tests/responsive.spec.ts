@@ -60,6 +60,8 @@ for (const viewport of VIEWPORTS) {
               await expectPrefsApplied(page, { theme, lang });
               await page.evaluate(() => document.fonts.ready.then(() => undefined));
 
+              // Data requests settle before measuring and capturing: no skeletons in the pictures.
+              await page.waitForLoadState("networkidle");
               await expectNoHorizontalScroll(page);
               if (wantsScreenshot(theme, lang)) await snap(page, route.name);
 
