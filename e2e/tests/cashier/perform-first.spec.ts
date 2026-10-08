@@ -32,6 +32,8 @@ test.describe("@cashier perform first", () => {
     await form.getByLabel(/Electrocardiogram/).check();
     await choose(sup, tr("en", "reason.code"), "Emergency");
     await form.getByLabel(tr("en", "reason.note")).fill("Chest pain, ECG before payment");
+    // Who asked for the exception is recorded apart from who allowed it (FEATURES 4.4).
+    await choose(sup, t("cashier:performFirst.requester"), "Dr. Ahmed Altayeb");
     await form.getByTestId("authorize").click();
     await expect(form.getByText(t("cashier:performFirst.doneTitle"))).toBeVisible();
 
@@ -42,6 +44,9 @@ test.describe("@cashier perform first", () => {
 
     const active = sup.locator("li").filter({ hasText: visit.number }).filter({ hasText: "Electrocardiogram" });
     await expect(active).toBeVisible();
+    await expect(active.getByTestId("authorization-requester")).toHaveText(
+      t("cashier:performFirst.requestedBy", { name: "Dr. Ahmed Altayeb" }),
+    );
     await active.getByRole("button", { name: t("cashier:performFirst.revoke") }).click();
     await sup.getByRole("dialog").getByLabel(tr("en", "reason.note")).fill("Patient paid after all");
     await sup.getByRole("dialog").getByRole("button", { name: t("cashier:performFirst.revoke") }).click();
