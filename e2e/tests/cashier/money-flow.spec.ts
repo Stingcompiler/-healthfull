@@ -6,7 +6,7 @@
 import { expect, test } from "@playwright/test";
 
 import { createPatient, createVisit, disposeApiClients, orderLines } from "../../helpers";
-import { lineRow, noShift, openVisit, pageAs, payer70, sdg, t } from "./kit";
+import { lineRow, lineState, noShift, openVisit, pageAs, payer70, sdg, t } from "./kit";
 
 test.describe("@cashier money flow", () => {
   test.describe.configure({ timeout: 120_000 });
@@ -55,12 +55,16 @@ test.describe("@cashier money flow", () => {
     await page.getByRole("alertdialog").getByRole("button", { name: t("cashier:invoice.approve") }).click();
     const invoice = page.getByTestId("approved-invoice");
     await expect(invoice.getByTestId("invoice-number")).toHaveText(/^INV-/);
-    await expect(invoice.locator('[data-status="invoiced"]')).toHaveCount(2);
+    await expect(invoice.locator(lineState("invoiced"))).toHaveCount(2);
     await expect(invoice.getByTestId("invoice-totals")).toContainText(sdg("7500.00"));
 
     // Cash: the amount defaults to what is owed; 10,000 handed over leaves 2,500 change.
     const payment = page.getByTestId("payment-panel");
     await expect(payment.getByLabel(t("cashier:payment.amount"))).toHaveValue("7500.00");
+    // F9 jumps to the amount from anywhere on the desk.
+    await page.getByTestId("cashier-lookup").focus();
+    await page.keyboard.press("F9");
+    await expect(payment.getByLabel(t("cashier:payment.amount"))).toBeFocused();
     await payment.getByLabel(t("cashier:payment.tendered")).fill("10000");
     await expect(payment.getByTestId("change-due")).toContainText(sdg("2500.00"));
     // The app reads Ctrl on the emulated (non-Mac) desktop browser.
@@ -69,7 +73,7 @@ test.describe("@cashier money flow", () => {
     await expect(payment.getByTestId("payment-done")).toContainText(sdg("2500.00"));
 
     // Fully paid: both lines are paid and leave for the departments' work lists.
-    await expect(invoice.locator('[data-status="paid"]')).toHaveCount(2);
+    await expect(invoice.locator(lineState("paid"))).toHaveCount(2);
     await expect(page.getByTestId("patient-balance")).toContainText(sdg("0.00"));
 
     // Receipt with its verification QR, in 80 mm and A4.
@@ -79,6 +83,14 @@ test.describe("@cashier money flow", () => {
     await expect(page.getByTestId("receipt")).toContainText(sdg("7500.00"));
     await page.getByTestId("format-a4").click();
     await expect(page.locator('[data-print-root][data-print-format="a4"]')).toBeVisible();
+    // Printing shows only the receipt.
+    await page.emulateMedia({ media: "print" });
+    await expect(page.getByTestId("receipt")).toBeVisible();
+    await expect(page.locator("#main h1")).toBeHidden();
+    await page.emulateMedia({ media: "screen" });
+    // Back to the desk keeps the patient and the visit.
+    await page.getByTestId("receipt-back").click();
+    await expect(page.getByTestId("visit-number")).toHaveText(visit.number);
 
     // The shift report counts the cash as confirmed collection.
     await page.goto("/cashier/shift");

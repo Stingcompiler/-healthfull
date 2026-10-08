@@ -16,7 +16,7 @@ import {
   pay,
   tr,
 } from "../../helpers";
-import { choose, noShift, openVisit, pageAs, sdg, t } from "./kit";
+import { choose, lineState, noShift, openVisit, pageAs, sdg, t } from "./kit";
 
 interface ShiftReport {
   shift: { id: number; number: string; status: string };
@@ -50,7 +50,7 @@ test.describe("@cashier transfers", () => {
     const done = panel.getByTestId("payment-done");
     await expect(done.locator('[data-status="pending_verification"]')).toBeVisible();
     // Pending money settles the lines: the service proceeds.
-    await expect(cashier.getByTestId("approved-invoice").locator('[data-status="paid"]')).toHaveCount(1);
+    await expect(cashier.getByTestId("approved-invoice").locator(lineState("paid"))).toHaveCount(1);
 
     // Visit B is paid by transfer too (through the API).
     const paidB = await pay({ invoice: invB, method: "bank_transfer" });

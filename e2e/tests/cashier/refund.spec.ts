@@ -1,7 +1,8 @@
 /**
  * Refund after a credit note (FEATURES 5.11, 6.7, FLOW 8): the cashier drafts a credit note
  * on an approved and paid invoice, a supervisor approves it (the released money opens a refund
- * request), approves the refund, and the cashier pays it in cash from their own shift.
+ * request in the supervisor's name, ADR 0007), so a second person (the accountant) approves the
+ * refund, and the cashier pays it in cash from their own shift.
  */
 import { expect, test } from "@playwright/test";
 
@@ -12,7 +13,7 @@ test.describe("@cashier refund", () => {
   test.describe.configure({ timeout: 150_000 });
   test.afterAll(disposeApiClients);
 
-  test("credit note, supervisor approval, refund approval, cash refund", async ({ browser }) => {
+  test("credit note, supervisor approval, accountant refund approval, cash refund", async ({ browser }) => {
     await noShift("cashier");
     // A consultation invoiced and paid in cash (15,000) in the cashier's new shift.
     const paid = await paidVisit();
@@ -39,14 +40,18 @@ test.describe("@cashier refund", () => {
     await sup.getByTestId("approve-credit-note").click();
     await expect(noteRow).toHaveCount(0);
 
-    await sup.goto("/cashier/refunds");
-    const refundRow = sup.locator("tr").filter({ hasText: paid.patient.full_name_en });
+    // The supervisor asked for the refund, so a second person (the accountant) approves it.
+    const accountant = await pageAs(browser, "accountant");
+    await accountant.goto("/cashier/refunds");
+    const refundRow = accountant.locator("tr").filter({ hasText: paid.patient.full_name_en });
     await expect(refundRow).toBeVisible();
     await expect(refundRow).toContainText(sdg("15000.00"));
+    await expect(refundRow).toContainText("Hala Ibrahim");
     await refundRow.getByRole("button", { name: tr("en", "table.rowActions") }).click();
-    await sup.getByRole("menuitem", { name: t("cashier:refunds.approve") }).click();
-    await sup.getByRole("dialog").getByRole("button", { name: t("cashier:refunds.approve") }).click();
+    await accountant.getByRole("menuitem", { name: t("cashier:refunds.approve") }).click();
+    await accountant.getByRole("dialog").getByRole("button", { name: t("cashier:refunds.approve") }).click();
     await expect(refundRow).toHaveCount(0);
+    await accountant.context().close();
 
     // The cashier pays it in cash from their open shift.
     await cashier.goto("/cashier/refunds");
