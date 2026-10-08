@@ -32,6 +32,19 @@ ReferralKindCode = Literal["internal", "external"]
 UrgencyCode = Literal["routine", "urgent", "emergency"]
 ReferralStatusCode = Literal["issued", "completed", "cancelled"]
 NoteStatusCode = Literal["draft", "signed"]
+RouteCode = Literal[
+    "oral",
+    "iv",
+    "im",
+    "sc",
+    "topical",
+    "inhaled",
+    "rectal",
+    "ophthalmic",
+    "otic",
+    "nasal",
+    "other",
+]
 
 
 def _dec(value: Decimal | int | None) -> str | None:
@@ -262,6 +275,8 @@ class AllergyPatch(Schema):
     severity: SeverityCode | None = None
     reaction: str | None = Field(None, max_length=300)
     note: str | None = Field(None, max_length=1000)
+    #: Why the allergy is marked entered in error (required then, invariant 4).
+    reason: str = Field("", max_length=200)
 
 
 def allergy_out(allergy: Allergy) -> dict[str, Any]:
@@ -316,6 +331,8 @@ class ConditionIn(Schema):
 class ConditionPatch(Schema):
     status: RecordStatusCode | None = None
     note: str | None = Field(None, max_length=1000)
+    #: Why the condition is marked entered in error (required then, invariant 4).
+    reason: str = Field("", max_length=200)
 
 
 def condition_out(condition: ChronicCondition) -> dict[str, Any]:
@@ -555,6 +572,21 @@ def history_out(entry: Any) -> dict[str, Any]:
     }
 
 
+class AllergyAlertParams(Schema):
+    service_ids: list[int] = Field(default_factory=list, max_length=100)
+
+
+class AllergyAlertOut(Schema):
+    """An active allergy matching a drug being written (same as ALLERGY_CONFLICT details)."""
+
+    service_id: int
+    allergy_id: int
+    match: Literal["item", "drug_class", "substance"]
+    severity: SeverityCode
+    allergen: str
+    allergen_ar: str
+
+
 class ResultParams(Schema):
     visit_id: int | None = None
     limit: int = Field(20, ge=1, le=100)
@@ -659,6 +691,19 @@ class ReferralOut(Schema):
     status: ReferralStatusCode
     referred_by: ClinicUserRefOut | None
     created_at: datetime
+    cancel_reason: str
+    cancelled_by: ClinicUserRefOut | None
+    cancelled_at: datetime | None
+
+
+class ReferralCancelIn(Schema):
+    reason: str = Field(..., max_length=1000)
+
+
+class WithdrawRecordIn(Schema):
+    """Why a clinical record is withdrawn (invariant 4)."""
+
+    reason: str = Field(..., max_length=200)
 
 
 def referral_out(r: Any) -> dict[str, Any]:
@@ -674,6 +719,9 @@ def referral_out(r: Any) -> dict[str, Any]:
         "status": r.status,
         "referred_by": user_ref(r.referred_by),
         "created_at": r.created_at,
+        "cancel_reason": r.cancel_reason,
+        "cancelled_by": user_ref(r.cancelled_by),
+        "cancelled_at": r.cancelled_at,
     }
 
 
@@ -724,8 +772,11 @@ class OrderSetItemOut(Schema):
     name_en: str
     quantity: str
     dose: str
+    dose_quantity: str | None
+    route: RouteCode | None
     frequency_code: str
     duration_days: int | None
+    as_needed: bool
     instructions: str
 
 
@@ -742,8 +793,11 @@ class OrderSetItemIn(Schema):
     service_id: int
     quantity: int = Field(1, ge=1, le=10000)
     dose: str = Field("", max_length=60)
+    dose_quantity: Decimal | None = Field(None, gt=0, max_digits=10, decimal_places=3)
+    route: RouteCode | None = None
     frequency_code: str = Field("", max_length=20)
     duration_days: int | None = Field(None, ge=1, le=365)
+    as_needed: bool = False
     instructions: str = Field("", max_length=300)
 
 
@@ -771,8 +825,11 @@ def order_set_out(order_set: Any) -> dict[str, Any]:
                 "name_en": it.service.name_en,
                 "quantity": _dec(it.quantity) or "1",
                 "dose": it.dose,
+                "dose_quantity": _dec(it.dose_quantity),
+                "route": it.route or None,
                 "frequency_code": it.frequency_code,
                 "duration_days": it.duration_days,
+                "as_needed": it.as_needed,
                 "instructions": it.instructions,
             }
             for it in items

@@ -392,6 +392,11 @@ class Referral(models.Model):
     referred_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
+    cancel_reason = models.TextField(blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -411,6 +416,16 @@ class Referral(models.Model):
                 name="clinical_referral_external_has_facility",
             ),
             models.CheckConstraint(condition=~Q(reason=""), name="clinical_referral_has_reason"),
+            # Invariant 4: a cancellation records its reason, who cancelled and when.
+            models.CheckConstraint(
+                condition=~Q(status=ReferralStatus.CANCELLED)
+                | (
+                    ~Q(cancel_reason="")
+                    & Q(cancelled_by__isnull=False)
+                    & Q(cancelled_at__isnull=False)
+                ),
+                name="clinical_referral_cancel_documented",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -453,8 +468,13 @@ class OrderSetItem(models.Model):
     service = models.ForeignKey("catalog.Service", on_delete=models.PROTECT, related_name="+")
     quantity = quantity_field(default=1)
     dose = models.CharField(max_length=60, blank=True)
+    dose_quantity = quantity_field(
+        null=True, blank=True, help_text="Base units per dose, when computable."
+    )
+    route = models.CharField(max_length=20, blank=True, help_text="Drugs: e.g. oral, iv.")
     frequency_code = models.CharField(max_length=20, blank=True)
     duration_days = models.PositiveSmallIntegerField(null=True, blank=True)
+    as_needed = models.BooleanField(default=False)
     instructions = models.CharField(max_length=300, blank=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
 
@@ -464,6 +484,10 @@ class OrderSetItem(models.Model):
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.CheckConstraint(
                 condition=Q(quantity__gt=0), name="clinical_orderset_qty_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(dose_quantity__isnull=True) | Q(dose_quantity__gt=0),
+                name="clinical_orderset_dose_positive",
             ),
         ]
 

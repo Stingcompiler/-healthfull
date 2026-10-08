@@ -258,7 +258,11 @@ def test_note_diagnosis_vitals_referral(doctor_client, entry, doctor) -> None:
         409,
         "FACILITY_REQUIRED",
     )
-    cancelled = ok(doctor_client.post(f"/api/clinical/referrals/{referral['id']}/cancel"))
+    cancelled = ok(
+        doctor_client.post(
+            f"/api/clinical/referrals/{referral['id']}/cancel", {"reason": "Seen here instead"}
+        )
+    )
     assert cancelled["status"] == "cancelled"
 
     ws = ok(doctor_client.get(f"/api/clinical/visits/{visit_id}/workspace"))
@@ -273,7 +277,12 @@ def test_note_diagnosis_vitals_referral(doctor_client, entry, doctor) -> None:
     assert ws["allergies_recorded"] is False
     assert_no_prices(ws)
 
-    ok(doctor_client.request("DELETE", f"/api/clinical/diagnoses/{dx['id']}"), 204)
+    ok(
+        doctor_client.request(
+            "DELETE", f"/api/clinical/diagnoses/{dx['id']}", {"reason": "Recorded in error"}
+        ),
+        204,
+    )
     assert not Diagnosis.objects.filter(pk=dx["id"]).exists()
     assert ClinicalNote.objects.get(pk=note["id"]).status == "signed"
 
@@ -344,7 +353,8 @@ def test_allergy_and_condition_registry(doctor_client, entry, penicillins) -> No
     )
     ok(
         doctor_client.patch(
-            f"/api/clinical/conditions/{named['id']}", {"status": "entered_in_error"}
+            f"/api/clinical/conditions/{named['id']}",
+            {"status": "entered_in_error", "reason": "Recorded in error"},
         )
     )
     conditions = ok(doctor_client.get(f"/api/clinical/patients/{pid}/conditions"))

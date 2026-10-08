@@ -162,3 +162,36 @@ def test_withdrawal_rechecks_billing_under_the_lock(doctor, cashier) -> None:
     assert not CreditNote.objects.exists()
     line.refresh_from_db()
     assert (line.billing_status, line.fulfilment_status) == ("invoiced", "pending")
+
+
+def test_withdrawal_refuses_a_line_already_under_way(doctor, supervisor) -> None:
+    """Review: an unbilled line under a perform-first authorization that was started is no
+    longer the doctor's to withdraw (it matches ``can_withdraw``); a pending one still is."""
+    visit = fin.visit()
+    started, waiting = fin.order(visit, doctor, fin.priced("lab"), fin.priced("lab"))
+    orders.authorize_perform_first([started, waiting], actor=supervisor, reason="EMERGENCY")
+    orders.start_line(started, fin.staff("lab_tech"))
+    stale = ServiceLine.objects.get(pk=started.pk)
+    with pytest.raises(DomainError) as exc:
+        orders.withdraw_order(stale, reason="ORDER_ERROR", note="", actor=doctor)
+    assert exc.value.code == "LINE_IN_PROGRESS"
+    started.refresh_from_db()
+    assert (started.fulfilment_status, started.cancelled_at) == ("in_progress", None)
+    assert started.performed_by_id is None
+
+    view = orders.withdraw_order(waiting, reason="ORDER_ERROR", note="", actor=doctor)
+    assert view.status == "cancelled"
+
+
+def test_withdrawal_is_a_clinical_act(doctor, cashier) -> None:
+    """Review: the withdrawal answers with the doctor's line view (prescription, results,
+    allergy override reasons), so it needs ``clinical.view`` besides ``orders.cancel_line``."""
+    from api.errors import PermissionRequired
+
+    visit = fin.visit()
+    (line,) = fin.order(visit, doctor, fin.priced("lab"))
+    for role in ("cashier", "cashier_supervisor", "pharmacist", "lab_supervisor", "manager"):
+        with pytest.raises(PermissionRequired):
+            orders.withdraw_order(line, reason="ORDER_ERROR", note="", actor=fin.staff(role))
+    line.refresh_from_db()
+    assert line.fulfilment_status == "pending"

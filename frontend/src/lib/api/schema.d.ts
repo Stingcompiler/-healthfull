@@ -548,7 +548,7 @@ export interface paths {
         head?: never;
         /**
          * Resolve an allergy, mark it entered in error, or change severity, reaction, note
-         * @description The allergen never changes; a wrong entry is marked entered_in_error.
+         * @description The allergen never changes; a wrong entry is marked entered_in_error, which needs a reason (409 REASON_REQUIRED) kept with who and when in the audit history.
          */
         patch: operations["clinical_update_allergy"];
         trace?: never;
@@ -566,7 +566,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Resolve a chronic condition, mark it entered in error, or change its note */
+        /**
+         * Resolve a chronic condition, mark it entered in error, or change its note
+         * @description Marking it entered_in_error needs a reason (409 REASON_REQUIRED).
+         */
         patch: operations["clinical_update_condition"];
         trace?: never;
     };
@@ -582,7 +585,7 @@ export interface paths {
         post?: never;
         /**
          * Withdraw a diagnosis recorded in error (its author, while the visit is open)
-         * @description 409 VISIT_NOT_OPEN, DIAGNOSIS_NOT_AUTHOR. The audit history keeps the row.
+         * @description The body states why (409 REASON_REQUIRED); the audit history keeps the row with who, when and why. 409 VISIT_NOT_OPEN, DIAGNOSIS_NOT_AUTHOR.
          */
         delete: operations["clinical_delete_diagnosis"];
         options?: never;
@@ -726,6 +729,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clinical/patients/{patient_id}/allergy-alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Active allergies matching drugs of an order being written (a warning only)
+         * @description service_ids may repeat (up to 100). Placing the order still refuses a match with 409 ALLERGY_CONFLICT unless an override reason is given.
+         */
+        get: operations["clinical_list_allergy_alerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clinical/patients/{patient_id}/conditions": {
         parameters: {
             query?: never;
@@ -845,8 +868,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Cancel an issued referral
-         * @description 409 REFERRAL_CLOSED.
+         * Cancel an issued referral with a reason (its author, while the visit is open)
+         * @description The reason, who and when are stored on the referral. 409 REASON_REQUIRED, REFERRAL_CLOSED, REFERRAL_NOT_AUTHOR, VISIT_NOT_OPEN.
          */
         post: operations["clinical_cancel_referral"];
         delete?: never;
@@ -1003,7 +1026,7 @@ export interface paths {
         put?: never;
         /**
          * Call, start, complete, mark no-show or requeue one of the doctor's patients
-         * @description Completing performs the consultation line; the visit stays open for its orders. 409 DOCTOR_PROFILE_REQUIRED, QUEUE_OTHER_DOCTOR, QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY.
+         * @description Completing performs the consultation line and needs visits.finish_consultation (403 otherwise); the visit stays open for its orders. 409 DOCTOR_PROFILE_REQUIRED, QUEUE_OTHER_DOCTOR, QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY.
          */
         post: operations["clinical_queue_action"];
         delete?: never;
@@ -1652,7 +1675,7 @@ export interface paths {
         put?: never;
         /**
          * Withdraw an order that has not reached the cashier, with a reason
-         * @description A billed order is cancelled by a credit note at billing (409 CREDIT_NOTE_REQUIRED). Also 409 LINE_NOT_CLINICAL, LINE_ALREADY_CANCELLED, LINE_ALREADY_PERFORMED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.
+         * @description A billed order is cancelled by a credit note at billing (409 CREDIT_NOTE_REQUIRED); one already started or partly given belongs to its work list (409 LINE_IN_PROGRESS). The answer is the doctor's clinical line view, so the caller also needs clinical.view (403 otherwise). Also 409 LINE_NOT_CLINICAL, LINE_ALREADY_CANCELLED, LINE_ALREADY_PERFORMED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.
          */
         post: operations["orders_withdraw_line"];
         delete?: never;
@@ -2452,6 +2475,35 @@ export interface components {
             doctor_id: number;
         };
         /**
+         * AllergyAlertOut
+         * @description An active allergy matching a drug being written (same as ALLERGY_CONFLICT details).
+         */
+        AllergyAlertOut: {
+            /** Allergen */
+            allergen: string;
+            /** Allergen Ar */
+            allergen_ar: string;
+            /** Allergy Id */
+            allergy_id: number;
+            /**
+             * Match
+             * @enum {string}
+             */
+            match: "item" | "drug_class" | "substance";
+            /** Service Id */
+            service_id: number;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "mild" | "moderate" | "severe" | "life_threatening";
+        };
+        /** AllergyAlertParams */
+        AllergyAlertParams: {
+            /** Service Ids */
+            service_ids?: number[];
+        };
+        /**
          * AllergyChipOut
          * @description An active allergy as a prominent chip (PatientCard).
          */
@@ -2529,6 +2581,11 @@ export interface components {
             note?: string | null;
             /** Reaction */
             reaction?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
             /** Severity */
             severity?: ("mild" | "moderate" | "severe" | "life_threatening") | null;
             /** Status */
@@ -3026,6 +3083,11 @@ export interface components {
         ConditionPatch: {
             /** Note */
             note?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
             /** Status */
             status?: ("active" | "inactive" | "entered_in_error") | null;
         };
@@ -4235,10 +4297,17 @@ export interface components {
         /** OrderSetItemIn */
         OrderSetItemIn: {
             /**
+             * As Needed
+             * @default false
+             */
+            as_needed: boolean;
+            /**
              * Dose
              * @default
              */
             dose: string;
+            /** Dose Quantity */
+            dose_quantity?: number | string | null;
             /** Duration Days */
             duration_days?: number | null;
             /**
@@ -4256,13 +4325,19 @@ export interface components {
              * @default 1
              */
             quantity: number;
+            /** Route */
+            route?: ("oral" | "iv" | "im" | "sc" | "topical" | "inhaled" | "rectal" | "ophthalmic" | "otic" | "nasal" | "other") | null;
             /** Service Id */
             service_id: number;
         };
         /** OrderSetItemOut */
         OrderSetItemOut: {
+            /** As Needed */
+            as_needed: boolean;
             /** Dose */
             dose: string;
+            /** Dose Quantity */
+            dose_quantity: string | null;
             /** Duration Days */
             duration_days: number | null;
             /** Frequency Code */
@@ -4277,6 +4352,8 @@ export interface components {
             name_en: string;
             /** Quantity */
             quantity: string;
+            /** Route */
+            route: ("oral" | "iv" | "im" | "sc" | "topical" | "inhaled" | "rectal" | "ophthalmic" | "otic" | "nasal" | "other") | null;
             /** Service Code */
             service_code: string;
             /** Service Id */
@@ -5521,6 +5598,11 @@ export interface components {
             /** Requires Note */
             requires_note: boolean;
         };
+        /** ReferralCancelIn */
+        ReferralCancelIn: {
+            /** Reason */
+            reason: string;
+        };
         /** ReferralIn */
         ReferralIn: {
             /**
@@ -5553,6 +5635,11 @@ export interface components {
         };
         /** ReferralOut */
         ReferralOut: {
+            /** Cancel Reason */
+            cancel_reason: string;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            cancelled_by: components["schemas"]["ClinicUserRefOut"] | null;
             /** Clinical Summary */
             clinical_summary: string;
             /**
@@ -6466,6 +6553,14 @@ export interface components {
             label_en: string;
             /** Requires Note */
             requires_note: boolean;
+        };
+        /**
+         * WithdrawRecordIn
+         * @description Why a clinical record is withdrawn (invariant 4).
+         */
+        WithdrawRecordIn: {
+            /** Reason */
+            reason: string;
         };
         /**
          * WorkspaceOut
@@ -8815,7 +8910,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithdrawRecordIn"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {
@@ -9443,6 +9542,66 @@ export interface operations {
             };
         };
     };
+    clinical_list_allergy_alerts: {
+        parameters: {
+            query?: {
+                service_ids?: number[];
+            };
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllergyAlertOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     clinical_list_conditions: {
         parameters: {
             query?: never;
@@ -9852,7 +10011,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferralCancelIn"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

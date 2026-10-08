@@ -196,9 +196,11 @@ def list_withdraw_reasons(request: HttpRequest) -> Any:
     operation_id="orders_withdraw_line",
     summary="Withdraw an order that has not reached the cashier, with a reason",
     description=(
-        "A billed order is cancelled by a credit note at billing (409 CREDIT_NOTE_REQUIRED). "
-        "Also 409 LINE_NOT_CLINICAL, LINE_ALREADY_CANCELLED, LINE_ALREADY_PERFORMED, "
-        "REASON_UNKNOWN, REASON_NOTE_REQUIRED."
+        "A billed order is cancelled by a credit note at billing (409 CREDIT_NOTE_REQUIRED); "
+        "one already started or partly given belongs to its work list (409 LINE_IN_PROGRESS). "
+        "The answer is the doctor's clinical line view, so the caller also needs clinical.view "
+        "(403 otherwise). Also 409 LINE_NOT_CLINICAL, LINE_ALREADY_CANCELLED, "
+        "LINE_ALREADY_PERFORMED, REASON_UNKNOWN, REASON_NOTE_REQUIRED."
     ),
 )
 @require_perm("orders.cancel_line")

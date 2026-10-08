@@ -399,9 +399,11 @@ def test_referrals(doctor_user, visit) -> None:
             cs.create_referral(visit, actor=doctor_user, **kwargs)
         assert exc.value.code == code
     assert cs.complete_referral(internal, actor=doctor_user).status == "completed"
-    assert cs.cancel_referral(external, actor=doctor_user).status == "cancelled"
+    assert cs.cancel_referral(external, actor=doctor_user, reason="Seen here").status == (
+        "cancelled"
+    )
     with pytest.raises(DomainError) as exc:
-        cs.cancel_referral(internal, actor=doctor_user)
+        cs.cancel_referral(internal, actor=doctor_user, reason="Seen here")
     assert exc.value.code == "REFERRAL_CLOSED"
 
 
@@ -474,7 +476,7 @@ def test_patient_summary(doctor_user, visit, amoxicillin, penicillins) -> None:
         patient, actor=doctor_user, allergen_type="drug_class", drug_class=penicillins
     )
     gone = cs.record_allergy(patient, actor=doctor_user, allergen_type="food", substance="milk")
-    cs.set_allergy_status(gone, status="entered_in_error", actor=doctor_user)
+    cs.set_allergy_status(gone, status="entered_in_error", actor=doctor_user, reason="wrong file")
     cs.record_condition(patient, actor=doctor_user, name="Hypertension")
     for _ in range(6):
         b.visit(patient)

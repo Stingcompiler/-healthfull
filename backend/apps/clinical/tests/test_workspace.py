@@ -166,12 +166,15 @@ def test_remove_diagnosis(clinic, make_user) -> None:
     visit = b.visit()
     diagnosis = cs.add_diagnosis(visit, actor=user, icd10_code="B54")
     other = make_user(roles=["doctor"])
-    assert _code(lambda: cs.remove_diagnosis(diagnosis, actor=other)) == "DIAGNOSIS_NOT_AUTHOR"
-    cs.remove_diagnosis(diagnosis, actor=user)
+    assert (
+        _code(lambda: cs.remove_diagnosis(diagnosis, actor=other, reason="x"))
+        == "DIAGNOSIS_NOT_AUTHOR"
+    )
+    cs.remove_diagnosis(diagnosis, actor=user, reason="recorded in error")
     assert not Diagnosis.objects.filter(pk=diagnosis.pk).exists()
     kept = cs.add_diagnosis(visit, actor=user, text="viral fever")
     vs.close_visit(visit, actor=user)
-    assert _code(lambda: cs.remove_diagnosis(kept, actor=user)) == "VISIT_NOT_OPEN"
+    assert _code(lambda: cs.remove_diagnosis(kept, actor=user, reason="x")) == "VISIT_NOT_OPEN"
 
 
 def test_favorites_are_removed_only_by_their_owner(clinic, make_user) -> None:

@@ -61,7 +61,7 @@ from apps.clinical.models import (
 from apps.core.db import NormalizeText
 from apps.core.models import Department, DoctorProfile, Policy, User
 from apps.core.services import require_permission
-from apps.orders.models import FulfilmentStatus, ServiceLine
+from apps.orders.models import FulfilmentStatus, Route, ServiceLine
 from apps.patients import services as patient_services
 from apps.patients.models import Patient
 from apps.pharmacy.models import DrugClass, Item
@@ -90,6 +90,7 @@ __all__ = [
     "add_nursing_note",
     "allergies_recorded",
     "allergy_alerts",
+    "allergy_alerts_for",
     "allergy_registry",
     "approved_results",
     "call_next",
@@ -171,6 +172,19 @@ def _choice(value: str, choices: type[Any], code: str) -> str:
     return value
 
 
+def _withdrawal_reason(reason: str | None) -> str:
+    """The stated reason for withdrawing clinical data (invariant 4), kept in the audit
+    history's context.
+
+    Raises:
+        DomainError: ``REASON_REQUIRED``.
+    """
+    why = " ".join((reason or "").split())
+    if not why:
+        raise DomainError("REASON_REQUIRED", "State why the record is withdrawn")
+    return why[:200]
+
+
 # --- allergies and prescribing alerts -------------------------------------------------------
 
 
@@ -248,9 +262,11 @@ def record_allergy(
         )
 
 
-def set_allergy_status(allergy: Allergy, *, status: str, actor: User, note: str = "") -> Allergy:
+def set_allergy_status(
+    allergy: Allergy, *, status: str, actor: User, note: str = "", reason: str = ""
+) -> Allergy:
     """Resolve an allergy or mark it entered in error (history keeps the old row)."""
-    return update_allergy(allergy, actor=actor, status=status, note=note or None)
+    return update_allergy(allergy, actor=actor, status=status, note=note or None, reason=reason)
 
 
 def update_allergy(
@@ -261,14 +277,18 @@ def update_allergy(
     severity: str | None = None,
     reaction: str | None = None,
     note: str | None = None,
+    reason: str = "",
 ) -> Allergy:
     """Change an allergy's status, severity, reaction or note (FEATURES 3.2).
 
     The allergen itself never changes: a wrong entry is marked ``entered_in_error`` and a new
-    one recorded, so the history shows what alerted when. ``None`` leaves a field as it is.
+    one recorded, so the history shows what alerted when. Marking it in error stops its
+    prescribing alerts, so it needs a ``reason``, kept with who and when in the audit
+    history (invariant 4). ``None`` leaves a field as it is.
 
     Raises:
-        DomainError: ``INVALID_STATUS``, ``INVALID_SEVERITY``, ``NOTHING_TO_CHANGE``.
+        DomainError: ``INVALID_STATUS``, ``INVALID_SEVERITY``, ``NOTHING_TO_CHANGE``,
+            ``REASON_REQUIRED``.
     """
     changes: dict[str, str] = {}
     if status is not None:
@@ -281,8 +301,10 @@ def update_allergy(
         changes["note"] = note.strip()
     if not changes:
         raise DomainError("NOTHING_TO_CHANGE", "Nothing to change")
-    reason = f"allergy {status}" if status else "allergy update"
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason=reason):
+    context = f"allergy {status}" if status else "allergy update"
+    if status == RecordStatus.ERROR:
+        context = f"{context}: {_withdrawal_reason(reason)}"
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=context):
         locked = Allergy.objects.select_for_update().get(pk=allergy.pk)
         for name, value in changes.items():
             setattr(locked, name, value)
@@ -301,6 +323,13 @@ def _drug_items(services: Iterable[Service]) -> dict[int, Item]:
         it.service_id: it
         for it in Item.objects.filter(service_id__in=ids).prefetch_related("drug_classes")
     }
+
+
+def allergy_alerts_for(patient: Patient, service_ids: Iterable[int]) -> list[AllergyAlert]:
+    """The allergy matches of services named by id, for a warning while an order is written
+    (FEATURES 3.2). Placing the order still refuses them (``ALLERGY_CONFLICT``)."""
+    wanted = sorted(set(service_ids))[:100]
+    return allergy_alerts(patient, Service.objects.filter(pk__in=wanted))
 
 
 def allergy_alerts(patient: Patient, services: Iterable[Service]) -> list[AllergyAlert]:
@@ -590,9 +619,9 @@ def record_condition(
 
 
 def set_condition_status(
-    condition: ChronicCondition, *, status: str, actor: User
+    condition: ChronicCondition, *, status: str, actor: User, reason: str = ""
 ) -> ChronicCondition:
-    return update_condition(condition, actor=actor, status=status)
+    return update_condition(condition, actor=actor, status=status, reason=reason)
 
 
 def update_condition(
@@ -601,11 +630,15 @@ def update_condition(
     actor: User,
     status: str | None = None,
     note: str | None = None,
+    reason: str = "",
 ) -> ChronicCondition:
     """Resolve a chronic condition, mark it entered in error, or change its note.
 
+    Marking it in error needs a ``reason``, kept with who and when in the audit history
+    (invariant 4).
+
     Raises:
-        DomainError: ``INVALID_STATUS``, ``NOTHING_TO_CHANGE``.
+        DomainError: ``INVALID_STATUS``, ``NOTHING_TO_CHANGE``, ``REASON_REQUIRED``.
     """
     changes: dict[str, str] = {}
     if status is not None:
@@ -614,8 +647,10 @@ def update_condition(
         changes["note"] = note.strip()
     if not changes:
         raise DomainError("NOTHING_TO_CHANGE", "Nothing to change")
-    reason = f"condition {status}" if status else "condition update"
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason=reason):
+    context = f"condition {status}" if status else "condition update"
+    if status == RecordStatus.ERROR:
+        context = f"{context}: {_withdrawal_reason(reason)}"
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=context):
         locked = ChronicCondition.objects.select_for_update().get(pk=condition.pk)
         for name, value in changes.items():
             setattr(locked, name, value)
@@ -703,15 +738,19 @@ def add_diagnosis(
         )
 
 
-def remove_diagnosis(diagnosis: Diagnosis, *, actor: User) -> None:
+def remove_diagnosis(diagnosis: Diagnosis, *, actor: User, reason: str) -> None:
     """Withdraw a diagnosis recorded in error, while the visit is open, by its author.
 
-    The deletion is kept in the audit history (who, when, the removed row).
+    The deletion is kept in the audit history with who, when, why and the removed row.
 
     Raises:
-        DomainError: ``VISIT_NOT_OPEN``, ``DIAGNOSIS_NOT_AUTHOR``.
+        DomainError: ``REASON_REQUIRED``, ``VISIT_NOT_OPEN``, ``DIAGNOSIS_NOT_AUTHOR``.
     """
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason="remove diagnosis"):
+    why = _withdrawal_reason(reason)
+    with (
+        transaction.atomic(),
+        pghistory.context(user=actor.pk, reason=f"remove diagnosis: {why}"),
+    ):
         locked = Diagnosis.objects.select_for_update().select_related("visit").get(pk=diagnosis.pk)
         _open_visit(locked.visit)
         if locked.recorded_by_id != actor.pk:
@@ -835,22 +874,50 @@ def create_referral(
         )
 
 
-def _close_referral(referral: Referral, status: str, actor: User) -> Referral:
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"referral {status}"):
+def complete_referral(referral: Referral, *, actor: User) -> Referral:
+    """Mark an issued referral completed.
+
+    Raises:
+        DomainError: ``REFERRAL_CLOSED``.
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="referral completed"):
         locked = Referral.objects.select_for_update().get(pk=referral.pk)
         if locked.status != ReferralStatus.ISSUED:
             raise DomainError("REFERRAL_CLOSED", "The referral is already closed")
-        locked.status = status
+        locked.status = ReferralStatus.COMPLETED
         locked.save(update_fields=["status", "updated_at"])
     return locked
 
 
-def complete_referral(referral: Referral, *, actor: User) -> Referral:
-    return _close_referral(referral, ReferralStatus.COMPLETED, actor)
+def cancel_referral(referral: Referral, *, actor: User, reason: str) -> Referral:
+    """Cancel an issued referral with a reason, by the doctor who wrote it, while its visit
+    is open. The reason, who and when are stored on the row (invariant 4).
 
-
-def cancel_referral(referral: Referral, *, actor: User) -> Referral:
-    return _close_referral(referral, ReferralStatus.CANCELLED, actor)
+    Raises:
+        DomainError: ``REASON_REQUIRED``, ``REFERRAL_CLOSED``, ``REFERRAL_NOT_AUTHOR``,
+            ``VISIT_NOT_OPEN``.
+    """
+    reason = reason.strip()
+    if not reason:
+        raise DomainError("REASON_REQUIRED", "A cancelled referral states why")
+    with (
+        transaction.atomic(),
+        pghistory.context(user=actor.pk, reason=f"referral cancelled: {reason[:200]}"),
+    ):
+        locked = Referral.objects.select_for_update().select_related("visit").get(pk=referral.pk)
+        if locked.status != ReferralStatus.ISSUED:
+            raise DomainError("REFERRAL_CLOSED", "The referral is already closed")
+        if locked.referred_by_id != actor.pk:
+            raise DomainError("REFERRAL_NOT_AUTHOR", "Only who wrote a referral cancels it")
+        _open_visit(locked.visit)
+        locked.status = ReferralStatus.CANCELLED
+        locked.cancel_reason = reason
+        locked.cancelled_by = actor
+        locked.cancelled_at = timezone.now()
+        locked.save(
+            update_fields=["status", "cancel_reason", "cancelled_by", "cancelled_at", "updated_at"]
+        )
+    return locked
 
 
 # --- order sets -----------------------------------------------------------------------------
@@ -867,14 +934,30 @@ def create_order_set(
 ) -> OrderSet:
     """A reusable group of orders; ``personal`` makes it the actor's favorite (FEATURES 3.6).
 
-    Each item: ``service`` and optional ``quantity``, ``dose``, ``frequency_code``,
-    ``duration_days``, ``instructions``.
+    Each item: ``service`` and optional ``quantity``, ``dose``, ``dose_quantity``,
+    ``route``, ``frequency_code``, ``duration_days``, ``as_needed``, ``instructions``. A drug
+    keeps its route and dose quantity, so a reapplied favorite orders the same prescription
+    and its quantity follows dose x frequency x duration again (FEATURES 3.5, 3.6).
+
+    Raises:
+        DomainError: ``NAME_REQUIRED``, ``ORDER_EMPTY``, ``FIELD_NOT_EDITABLE``,
+            ``SERVICE_INACTIVE``, ``INVALID_QUANTITY``, ``INVALID_ROUTE``.
     """
     if not (name_ar.strip() or name_en.strip()):
         raise DomainError("NAME_REQUIRED", "An order set needs a name")
     if not items:
         raise DomainError("ORDER_EMPTY", "An order set needs at least one service")
-    allowed = {"service", "quantity", "dose", "frequency_code", "duration_days", "instructions"}
+    allowed = {
+        "service",
+        "quantity",
+        "dose",
+        "dose_quantity",
+        "route",
+        "frequency_code",
+        "duration_days",
+        "as_needed",
+        "instructions",
+    }
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="order set"):
         order_set = OrderSet.objects.create(
             name_ar=name_ar.strip(),
@@ -890,15 +973,24 @@ def create_order_set(
             if not service.active:
                 raise DomainError("SERVICE_INACTIVE", "The service is inactive", service=service.pk)
             quantity = Decimal(raw.get("quantity", 1))
-            if quantity <= 0:
+            dose_quantity = raw.get("dose_quantity")
+            dose_quantity = None if dose_quantity is None else Decimal(dose_quantity)
+            if quantity <= 0 or (dose_quantity is not None and dose_quantity <= 0):
                 raise DomainError("INVALID_QUANTITY", "Quantities are positive")
+            route = str(raw.get("route") or "")
+            if route and route not in Route.values:
+                raise DomainError("INVALID_ROUTE", "Unknown route", value=route)
+            is_drug = service.kind == ServiceKind.DRUG
             OrderSetItem.objects.create(
                 order_set=order_set,
                 service=service,
                 quantity=quantity,
                 dose=str(raw.get("dose", ""))[:60],
+                dose_quantity=dose_quantity if is_drug else None,
+                route=(route or Route.ORAL) if is_drug else "",
                 frequency_code=str(raw.get("frequency_code", ""))[:20],
                 duration_days=raw.get("duration_days"),
+                as_needed=bool(raw.get("as_needed", False)) and is_drug,
                 instructions=str(raw.get("instructions", ""))[:300],
                 sort_order=position,
             )
@@ -927,8 +1019,11 @@ def order_set_items(order_set: OrderSet) -> list[dict[str, Any]]:
         if it.service.kind == ServiceKind.DRUG:
             entry["prescription"] = {
                 "dose": it.dose,
+                "dose_quantity": it.dose_quantity,
+                "route": it.route or Route.ORAL,
                 "frequency_code": it.frequency_code,
                 "duration_days": it.duration_days,
+                "as_needed": it.as_needed,
                 "instructions": it.instructions,
             }
         elif it.instructions:
@@ -1086,12 +1181,18 @@ def queue_action(entry: QueueEntry, action: str, *, actor: User) -> QueueEntry:
     (``visits.services.finish_consultation``); the visit stays open for the orders' billing
     and results.
 
+    Completing needs ``visits.finish_consultation``, as finishing from the visits board does:
+    it performs the consultation fee line, the doctor's act (FLOW step 3).
+
     Raises:
+        PermissionRequired: ``complete`` by an actor without ``visits.finish_consultation``.
         DomainError: ``INVALID_QUEUE_ACTION``, ``DOCTOR_PROFILE_REQUIRED``,
             ``QUEUE_OTHER_DOCTOR``, ``QUEUE_TRANSITION_INVALID``, ``QUEUE_NOT_READY``.
     """
     if action not in QUEUE_ACTIONS:
         raise DomainError("INVALID_QUEUE_ACTION", "Unknown queue action", action=action)
+    if action == "complete":
+        require_permission(actor, "visits.finish_consultation")
     profile = _own_entry(entry, actor)
     if action == "call":
         return visit_services.call_patient(entry, actor=actor, doctor=profile)
@@ -1169,7 +1270,7 @@ def visit_workspace(visit: Visit) -> VisitWorkspace:
         ),
         referrals=list(
             Referral.objects.filter(visit=loaded)
-            .select_related("to_department", "to_doctor__user", "referred_by")
+            .select_related("to_department", "to_doctor__user", "referred_by", "cancelled_by")
             .order_by("-created_at", "-id")
         ),
     )

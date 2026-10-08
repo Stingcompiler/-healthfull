@@ -96,9 +96,9 @@ def _entry_out(entry: QueueEntry) -> dict[str, Any]:
     operation_id="clinical_queue_action",
     summary="Call, start, complete, mark no-show or requeue one of the doctor's patients",
     description=(
-        "Completing performs the consultation line; the visit stays open for its orders. "
-        "409 DOCTOR_PROFILE_REQUIRED, QUEUE_OTHER_DOCTOR, QUEUE_TRANSITION_INVALID, "
-        "QUEUE_NOT_READY."
+        "Completing performs the consultation line and needs visits.finish_consultation "
+        "(403 otherwise); the visit stays open for its orders. 409 DOCTOR_PROFILE_REQUIRED, "
+        "QUEUE_OTHER_DOCTOR, QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY."
     ),
 )
 @require_perm("visits.manage_queue")
@@ -195,6 +195,24 @@ def list_allergies(request: HttpRequest, patient_id: int) -> Any:
     return [s.allergy_out(a) for a in services.allergy_registry(patient)]
 
 
+@clinical_router.get(
+    "/patients/{patient_id}/allergy-alerts",
+    response={200: list[s.AllergyAlertOut], **_READ},
+    operation_id="clinical_list_allergy_alerts",
+    summary="Active allergies matching drugs of an order being written (a warning only)",
+    description=(
+        "service_ids may repeat (up to 100). Placing the order still refuses a match with 409 "
+        "ALLERGY_CONFLICT unless an override reason is given."
+    ),
+)
+@require_perm("clinical.view")
+def list_allergy_alerts(
+    request: HttpRequest, patient_id: int, params: Query[s.AllergyAlertParams]
+) -> Any:
+    patient = get_object_or_404(Patient, pk=patient_id)
+    return [a.as_dict() for a in services.allergy_alerts_for(patient, params.service_ids)]
+
+
 @clinical_router.post(
     "/patients/{patient_id}/allergies",
     response={201: s.PatientAllergyOut, **_WRITE},
@@ -223,7 +241,10 @@ def create_allergy(request: HttpRequest, patient_id: int, payload: s.AllergyIn) 
     response={200: s.PatientAllergyOut, **_WRITE},
     operation_id="clinical_update_allergy",
     summary="Resolve an allergy, mark it entered in error, or change severity, reaction, note",
-    description="The allergen never changes; a wrong entry is marked entered_in_error.",
+    description=(
+        "The allergen never changes; a wrong entry is marked entered_in_error, which needs a "
+        "reason (409 REASON_REQUIRED) kept with who and when in the audit history."
+    ),
 )
 @require_perm("clinical.manage_allergies")
 def update_allergy(request: HttpRequest, allergy_id: int, payload: s.AllergyPatch) -> Any:
@@ -235,6 +256,7 @@ def update_allergy(request: HttpRequest, allergy_id: int, payload: s.AllergyPatc
         severity=payload.severity,
         reaction=payload.reaction,
         note=payload.note,
+        reason=payload.reason,
     )
     return s.allergy_out(Allergy.objects.select_related("drug_class", "item").get(pk=updated.pk))
 
@@ -277,12 +299,17 @@ def create_condition(request: HttpRequest, patient_id: int, payload: s.Condition
     response={200: s.ConditionOut, **_WRITE},
     operation_id="clinical_update_condition",
     summary="Resolve a chronic condition, mark it entered in error, or change its note",
+    description="Marking it entered_in_error needs a reason (409 REASON_REQUIRED).",
 )
 @require_perm("clinical.manage_conditions")
 def update_condition(request: HttpRequest, condition_id: int, payload: s.ConditionPatch) -> Any:
     condition = get_object_or_404(ChronicCondition, pk=condition_id)
     updated = services.update_condition(
-        condition, actor=_actor(request), status=payload.status, note=payload.note
+        condition,
+        actor=_actor(request),
+        status=payload.status,
+        note=payload.note,
+        reason=payload.reason,
     )
     return s.condition_out(ChronicCondition.objects.select_related("icd10").get(pk=updated.pk))
 
@@ -373,12 +400,17 @@ def create_diagnosis(request: HttpRequest, visit_id: int, payload: s.DiagnosisIn
     response={204: None, **_WRITE},
     operation_id="clinical_delete_diagnosis",
     summary="Withdraw a diagnosis recorded in error (its author, while the visit is open)",
-    description="409 VISIT_NOT_OPEN, DIAGNOSIS_NOT_AUTHOR. The audit history keeps the row.",
+    description=(
+        "The body states why (409 REASON_REQUIRED); the audit history keeps the row with who, "
+        "when and why. 409 VISIT_NOT_OPEN, DIAGNOSIS_NOT_AUTHOR."
+    ),
 )
 @require_perm("clinical.record_diagnosis")
-def delete_diagnosis(request: HttpRequest, diagnosis_id: int) -> Status[None]:
+def delete_diagnosis(
+    request: HttpRequest, diagnosis_id: int, payload: s.WithdrawRecordIn
+) -> Status[None]:
     diagnosis = get_object_or_404(Diagnosis, pk=diagnosis_id)
-    services.remove_diagnosis(diagnosis, actor=_actor(request))
+    services.remove_diagnosis(diagnosis, actor=_actor(request), reason=payload.reason)
     return Status(204, None)
 
 
@@ -450,13 +482,17 @@ def create_referral(request: HttpRequest, visit_id: int, payload: s.ReferralIn) 
     "/referrals/{referral_id}/cancel",
     response={200: s.ReferralOut, **_WRITE},
     operation_id="clinical_cancel_referral",
-    summary="Cancel an issued referral",
-    description="409 REFERRAL_CLOSED.",
+    summary="Cancel an issued referral with a reason (its author, while the visit is open)",
+    description=(
+        "The reason, who and when are stored on the referral. 409 REASON_REQUIRED, "
+        "REFERRAL_CLOSED, REFERRAL_NOT_AUTHOR, VISIT_NOT_OPEN."
+    ),
 )
 @require_perm("clinical.refer")
-def cancel_referral(request: HttpRequest, referral_id: int) -> Any:
+def cancel_referral(request: HttpRequest, referral_id: int, payload: s.ReferralCancelIn) -> Any:
     referral = get_object_or_404(Referral, pk=referral_id)
-    return s.referral_out(services.cancel_referral(referral, actor=_actor(request)))
+    cancelled = services.cancel_referral(referral, actor=_actor(request), reason=payload.reason)
+    return s.referral_out(cancelled)
 
 
 # --- order sets and favorites ---------------------------------------------------------------

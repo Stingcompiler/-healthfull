@@ -213,6 +213,8 @@
   "INVALID_QUEUE_ACTION": "This queue action is not available.",
   "INVALID_KIND": "These services cannot be ordered from the clinic.",
   "LINE_NOT_CLINICAL": "This line is not a clinical order and cannot be withdrawn here.",
+  "LINE_IN_PROGRESS": "This order is already under way, so it can no longer be withdrawn here.",
+  "REFERRAL_NOT_AUTHOR": "Only the doctor who wrote a referral can cancel it.",
   "LINE_NOT_LAB": "This line is not a lab test.",
   "LAB_TEST_UNKNOWN": "This service has no lab test set up. Contact the lab supervisor.",
   "SERVICE_NOT_LAB": "Lab tests can be linked only to lab services.",

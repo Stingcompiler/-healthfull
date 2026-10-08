@@ -69,6 +69,70 @@
         "title": "AgendaParams",
         "type": "object"
       },
+      "AllergyAlertOut": {
+        "description": "An active allergy matching a drug being written (same as ALLERGY_CONFLICT details).",
+        "properties": {
+          "allergen": {
+            "title": "Allergen",
+            "type": "string"
+          },
+          "allergen_ar": {
+            "title": "Allergen Ar",
+            "type": "string"
+          },
+          "allergy_id": {
+            "title": "Allergy Id",
+            "type": "integer"
+          },
+          "match": {
+            "enum": [
+              "item",
+              "drug_class",
+              "substance"
+            ],
+            "title": "Match",
+            "type": "string"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "integer"
+          },
+          "severity": {
+            "enum": [
+              "mild",
+              "moderate",
+              "severe",
+              "life_threatening"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id",
+          "allergy_id",
+          "match",
+          "severity",
+          "allergen",
+          "allergen_ar"
+        ],
+        "title": "AllergyAlertOut",
+        "type": "object"
+      },
+      "AllergyAlertParams": {
+        "properties": {
+          "service_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 100,
+            "title": "Service Ids",
+            "type": "array"
+          }
+        },
+        "title": "AllergyAlertParams",
+        "type": "object"
+      },
       "AllergyChipOut": {
         "description": "An active allergy as a prominent chip (PatientCard).",
         "properties": {
@@ -252,6 +316,12 @@
               }
             ],
             "title": "Reaction"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Reason",
+            "type": "string"
           },
           "severity": {
             "anyOf": [
@@ -1499,6 +1569,12 @@
               }
             ],
             "title": "Note"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Reason",
+            "type": "string"
           },
           "status": {
             "anyOf": [
@@ -4749,11 +4825,32 @@
       },
       "OrderSetItemIn": {
         "properties": {
+          "as_needed": {
+            "default": false,
+            "title": "As Needed",
+            "type": "boolean"
+          },
           "dose": {
             "default": "",
             "maxLength": 60,
             "title": "Dose",
             "type": "string"
+          },
+          "dose_quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,7}|(?=[\\d.]{1,11}0*$)\\d{0,7}\\.\\d{0,3}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dose Quantity"
           },
           "duration_days": {
             "anyOf": [
@@ -4787,6 +4884,30 @@
             "title": "Quantity",
             "type": "integer"
           },
+          "route": {
+            "anyOf": [
+              {
+                "enum": [
+                  "oral",
+                  "iv",
+                  "im",
+                  "sc",
+                  "topical",
+                  "inhaled",
+                  "rectal",
+                  "ophthalmic",
+                  "otic",
+                  "nasal",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
           "service_id": {
             "title": "Service Id",
             "type": "integer"
@@ -4800,9 +4921,24 @@
       },
       "OrderSetItemOut": {
         "properties": {
+          "as_needed": {
+            "title": "As Needed",
+            "type": "boolean"
+          },
           "dose": {
             "title": "Dose",
             "type": "string"
+          },
+          "dose_quantity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dose Quantity"
           },
           "duration_days": {
             "anyOf": [
@@ -4839,6 +4975,30 @@
             "title": "Quantity",
             "type": "string"
           },
+          "route": {
+            "anyOf": [
+              {
+                "enum": [
+                  "oral",
+                  "iv",
+                  "im",
+                  "sc",
+                  "topical",
+                  "inhaled",
+                  "rectal",
+                  "ophthalmic",
+                  "otic",
+                  "nasal",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
           "service_code": {
             "title": "Service Code",
             "type": "string"
@@ -4856,8 +5016,11 @@
           "name_en",
           "quantity",
           "dose",
+          "dose_quantity",
+          "route",
           "frequency_code",
           "duration_days",
+          "as_needed",
           "instructions"
         ],
         "title": "OrderSetItemOut",
@@ -8309,6 +8472,20 @@
         "title": "ReasonOut",
         "type": "object"
       },
+      "ReferralCancelIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ReferralCancelIn",
+        "type": "object"
+      },
       "ReferralIn": {
         "properties": {
           "clinical_summary": {
@@ -8379,6 +8556,32 @@
       },
       "ReferralOut": {
         "properties": {
+          "cancel_reason": {
+            "title": "Cancel Reason",
+            "type": "string"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "cancelled_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClinicUserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "clinical_summary": {
             "title": "Clinical Summary",
             "type": "string"
@@ -8468,7 +8671,10 @@
           "urgency",
           "status",
           "referred_by",
-          "created_at"
+          "created_at",
+          "cancel_reason",
+          "cancelled_by",
+          "cancelled_at"
         ],
         "title": "ReferralOut",
         "type": "object"
@@ -11074,6 +11280,21 @@
           "requires_note"
         ],
         "title": "WithdrawReasonOut",
+        "type": "object"
+      },
+      "WithdrawRecordIn": {
+        "description": "Why a clinical record is withdrawn (invariant 4).",
+        "properties": {
+          "reason": {
+            "maxLength": 200,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "WithdrawRecordIn",
         "type": "object"
       },
       "WorkspaceOut": {
@@ -14233,7 +14454,7 @@
     },
     "/api/clinical/allergies/{allergy_id}": {
       "patch": {
-        "description": "The allergen never changes; a wrong entry is marked entered_in_error.",
+        "description": "The allergen never changes; a wrong entry is marked entered_in_error, which needs a reason (409 REASON_REQUIRED) kept with who and when in the audit history.",
         "operationId": "clinical_update_allergy",
         "parameters": [
           {
@@ -14331,6 +14552,7 @@
     },
     "/api/clinical/conditions/{condition_id}": {
       "patch": {
+        "description": "Marking it entered_in_error needs a reason (409 REASON_REQUIRED).",
         "operationId": "clinical_update_condition",
         "parameters": [
           {
@@ -14428,7 +14650,7 @@
     },
     "/api/clinical/diagnoses/{diagnosis_id}": {
       "delete": {
-        "description": "409 VISIT_NOT_OPEN, DIAGNOSIS_NOT_AUTHOR. The audit history keeps the row.",
+        "description": "The body states why (409 REASON_REQUIRED); the audit history keeps the row with who, when and why. 409 VISIT_NOT_OPEN, DIAGNOSIS_NOT_AUTHOR.",
         "operationId": "clinical_delete_diagnosis",
         "parameters": [
           {
@@ -14441,6 +14663,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawRecordIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "No Content"
@@ -15274,6 +15506,101 @@
         ]
       }
     },
+    "/api/clinical/patients/{patient_id}/allergy-alerts": {
+      "get": {
+        "description": "service_ids may repeat (up to 100). Placing the order still refuses a match with 409 ALLERGY_CONFLICT unless an override reason is given.",
+        "operationId": "clinical_list_allergy_alerts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "service_ids",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "integer"
+              },
+              "maxItems": 100,
+              "title": "Service Ids",
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AllergyAlertOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Active allergies matching drugs of an order being written (a warning only)",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
     "/api/clinical/patients/{patient_id}/conditions": {
       "get": {
         "operationId": "clinical_list_conditions",
@@ -15835,7 +16162,7 @@
     },
     "/api/clinical/referrals/{referral_id}/cancel": {
       "post": {
-        "description": "409 REFERRAL_CLOSED.",
+        "description": "The reason, who and when are stored on the referral. 409 REASON_REQUIRED, REFERRAL_CLOSED, REFERRAL_NOT_AUTHOR, VISIT_NOT_OPEN.",
         "operationId": "clinical_cancel_referral",
         "parameters": [
           {
@@ -15848,6 +16175,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferralCancelIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -15915,7 +16252,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Cancel an issued referral",
+        "summary": "Cancel an issued referral with a reason (its author, while the visit is open)",
         "tags": [
           "clinical"
         ]
@@ -16542,7 +16879,7 @@
     },
     "/api/clinical/worklist/{entry_id}/action": {
       "post": {
-        "description": "Completing performs the consultation line; the visit stays open for its orders. 409 DOCTOR_PROFILE_REQUIRED, QUEUE_OTHER_DOCTOR, QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY.",
+        "description": "Completing performs the consultation line and needs visits.finish_consultation (403 otherwise); the visit stays open for its orders. 409 DOCTOR_PROFILE_REQUIRED, QUEUE_OTHER_DOCTOR, QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY.",
         "operationId": "clinical_queue_action",
         "parameters": [
           {
@@ -20472,7 +20809,7 @@
     },
     "/api/orders/lines/{line_id}/withdraw": {
       "post": {
-        "description": "A billed order is cancelled by a credit note at billing (409 CREDIT_NOTE_REQUIRED). Also 409 LINE_NOT_CLINICAL, LINE_ALREADY_CANCELLED, LINE_ALREADY_PERFORMED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
+        "description": "A billed order is cancelled by a credit note at billing (409 CREDIT_NOTE_REQUIRED); one already started or partly given belongs to its work list (409 LINE_IN_PROGRESS). The answer is the doctor's clinical line view, so the caller also needs clinical.view (403 otherwise). Also 409 LINE_NOT_CLINICAL, LINE_ALREADY_CANCELLED, LINE_ALREADY_PERFORMED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
         "operationId": "orders_withdraw_line",
         "parameters": [
           {

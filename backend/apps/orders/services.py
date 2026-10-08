@@ -713,12 +713,15 @@ def cancel_line(
     open_refund: bool = True,
     approver: User | None = None,
     require_unbilled: bool = False,
+    require_pending: bool = False,
 ) -> ServiceLine:
     """Cancel an open line with a reason (FEATURES 4.2, invariant 4).
 
     With ``require_unbilled`` (the ordering side's withdrawal) a line found billed under the
     row lock is refused with ``CREDIT_NOTE_REQUIRED`` instead of being credited, so an
-    invoice approved concurrently never routes through the credit-note path here.
+    invoice approved concurrently never routes through the credit-note path here. With
+    ``require_pending`` (the same withdrawal) a line already started, or with units given,
+    is refused with ``LINE_IN_PROGRESS``: the work list owns it from then on.
 
     * Unbilled: the line is cancelled and removed from any draft invoice (FLOW step 4: the
       patient refuses a test and it does not enter the invoice).
@@ -735,7 +738,7 @@ def cancel_line(
         DomainError: ``REASON_REQUIRED``, ``REASON_UNKNOWN``, ``REASON_NOTE_REQUIRED``,
             ``LINE_ALREADY_CANCELLED``, ``LINE_ALREADY_PERFORMED`` (credit a performed line
             instead), ``LINE_NOT_ELIGIBLE`` (dispensed units of an unpaid line: collect the
-            payment first), ``CLAIM_LINE_LOCKED``.
+            payment first), ``CLAIM_LINE_LOCKED``, ``LINE_IN_PROGRESS`` (``require_pending``).
     """
     reason_obj = resolve_reason(reason, "line_cancel", note)
     with (
@@ -752,6 +755,10 @@ def cancel_line(
                 "CREDIT_NOTE_REQUIRED", "A billed order is withdrawn by a credit note at billing"
             )
         given = given_units(locked) if status.fulfilment in dsl.ACTIVE_FULFILMENT else 0
+        if require_pending and (status.fulfilment == dsl.FulfilmentStatus.IN_PROGRESS or given > 0):
+            raise DomainError(
+                "LINE_IN_PROGRESS", "The order is already under way and is no longer withdrawn"
+            )
         if given > 0:
             _perform(locked, actor, performed_quantity=given, note=note, at=now)
             return _cancel_remainder(
@@ -1093,20 +1100,40 @@ def doctor_line(line: ServiceLine) -> DoctorLine:
 def withdraw_order(line: ServiceLine, *, reason: str, note: str, actor: User) -> DoctorLine:
     """Withdraw an order that has not reached the cashier, with a reason (FEATURES 4.2).
 
-    A billed order is credited by billing instead; the ordering side never moves money. The
-    early check gives a fast answer; ``cancel_line`` repeats it under the row lock.
+    A billed order is credited by billing instead; the ordering side never moves money. Only
+    a line ``can_withdraw`` shows is withdrawn: unbilled, not started and nothing given (one
+    under a perform-first authorization that is under way belongs to its work list). The
+    early checks give a fast answer; ``cancel_line`` repeats them under the row lock.
+
+    The answer is the doctor's line view (prescription, approved result, allergy override
+    reasons), part of the clinical record (ADR 0007 a), so the actor also needs
+    ``clinical.view``: a cashier or pharmacist cancels lines through their own modules.
 
     Raises:
-        DomainError: ``CREDIT_NOTE_REQUIRED``, ``LINE_NOT_CLINICAL``,
+        PermissionRequired: the actor lacks ``clinical.view``.
+        DomainError: ``CREDIT_NOTE_REQUIRED``, ``LINE_NOT_CLINICAL``, ``LINE_IN_PROGRESS``,
             ``LINE_ALREADY_CANCELLED``, ``LINE_ALREADY_PERFORMED``, the reason errors.
     """
+    require_permission(actor, "clinical.view")
     if line.kind not in ORDERABLE_KINDS:
         raise DomainError("LINE_NOT_CLINICAL", "This line is not a clinical order")
     if line.billing_status != BillingStatus.UNBILLED:
         raise DomainError(
             "CREDIT_NOTE_REQUIRED", "A billed order is withdrawn by a credit note at billing"
         )
-    cancel_line(line, reason, actor, note=note, open_refund=False, require_unbilled=True)
+    if line.fulfilment_status == FulfilmentStatus.IN_PROGRESS:
+        raise DomainError(
+            "LINE_IN_PROGRESS", "The order is already under way and is no longer withdrawn"
+        )
+    cancel_line(
+        line,
+        reason,
+        actor,
+        note=note,
+        open_refund=False,
+        require_unbilled=True,
+        require_pending=True,
+    )
     return doctor_line(line)
 
 

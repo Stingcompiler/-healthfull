@@ -13,24 +13,11 @@ from typing import Any, Literal
 from ninja import Field, Schema
 
 from apps.catalog.models import Service
-from apps.clinical.schemas import ClinicUserRefOut, ResultOut, result_out, user_ref
+from apps.clinical.schemas import ClinicUserRefOut, ResultOut, RouteCode, result_out, user_ref
 from apps.orders.services import DoctorLine
 
 OrderableKind = Literal["lab", "procedure", "drug", "consumable"]
 DoctorStatusCode = Literal["requested", "paid", "in_progress", "done", "cancelled"]
-RouteCode = Literal[
-    "oral",
-    "iv",
-    "im",
-    "sc",
-    "topical",
-    "inhaled",
-    "rectal",
-    "ophthalmic",
-    "otic",
-    "nasal",
-    "other",
-]
 
 
 def _dec(value: Decimal | int | None) -> str | None:
