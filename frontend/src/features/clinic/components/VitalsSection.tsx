@@ -75,6 +75,28 @@ export function VitalsSection({
   const [error, setError] = useState<string | null>(null);
   const filled = ORDER.some((f) => values[f].trim() !== "");
 
+  /** One recorded set as label/value pairs with units; blood pressure as systolic/diastolic. */
+  const readings = (v: Vitals): { key: string; label: string; value: string }[] => {
+    const has = (x: unknown) => x != null && x !== "";
+    const out: { key: string; label: string; value: string }[] = [];
+    const add = (key: string, label: string, value: string) => out.push({ key, label, value });
+    if (has(v.temperature_c))
+      add("t", t("vitals.short.temperature_c"), t("vitals.tempValue", { value: v.temperature_c }));
+    if (has(v.bp_systolic) && has(v.bp_diastolic))
+      add("bp", t("vitals.short.bp"), t("vitals.bpValue", { sys: v.bp_systolic, dia: v.bp_diastolic }));
+    if (has(v.pulse_bpm)) add("hr", t("vitals.short.pulse_bpm"), t("vitals.pulseValue", { value: v.pulse_bpm }));
+    if (has(v.respiratory_rate))
+      add("rr", t("vitals.short.respiratory_rate"), t("vitals.rrValue", { value: v.respiratory_rate }));
+    if (has(v.spo2_percent))
+      add("spo2", t("vitals.short.spo2_percent"), t("vitals.spo2Value", { value: v.spo2_percent }));
+    if (has(v.weight_kg)) add("wt", t("vitals.short.weight_kg"), t("vitals.weightValue", { value: v.weight_kg }));
+    if (has(v.height_cm)) add("ht", t("vitals.short.height_cm"), t("vitals.heightValue", { value: v.height_cm }));
+    if (has(v.blood_glucose_mg_dl))
+      add("glu", t("vitals.short.blood_glucose_mg_dl"), t("vitals.glucoseValue", { value: v.blood_glucose_mg_dl }));
+    if (has(v.pain_score)) add("pain", t("vitals.short.pain_score"), t("vitals.painValue", { value: v.pain_score }));
+    return out;
+  };
+
   const submit = () => {
     setError(null);
     create.mutate(toInput(values), {
@@ -108,16 +130,14 @@ export function VitalsSection({
                 <DateText value={v.recorded_at} format="datetime" />
               </div>
               <dl className="flex flex-wrap gap-x-4 gap-y-1">
-                {ORDER.map((f) =>
-                  v[f] != null && v[f] !== "" ? (
-                    <div key={f} className="flex gap-1">
-                      <dt className="text-muted">{t(`vitals.short.${f}`)}</dt>
-                      <dd className="tabular font-semibold text-fg">
-                        <bdi>{String(v[f])}</bdi>
-                      </dd>
-                    </div>
-                  ) : null,
-                )}
+                {readings(v).map(({ key, label, value }) => (
+                  <div key={key} className="flex gap-1">
+                    <dt className="text-muted">{label}</dt>
+                    <dd className="tabular font-semibold text-fg">
+                      <bdi>{value}</bdi>
+                    </dd>
+                  </div>
+                ))}
               </dl>
             </li>
           ))}

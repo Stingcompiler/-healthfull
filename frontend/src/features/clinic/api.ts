@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api, unwrap } from "@/lib/api/client";
 
 import type {
+  EstimateInput,
   AllergyInput,
   AllergyPatch,
   ConditionInput,
@@ -414,5 +415,13 @@ export function useWithdrawLine(visitId: number) {
         }),
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: clinicKeys.lines(visitId) }),
+  });
+}
+
+/** The patient's estimated share of a draft order (FEATURES 3.8): only when the center allows it. */
+export function useEstimate(visitId: number) {
+  return useMutation({
+    mutationFn: (body: EstimateInput) =>
+      unwrap(api.POST("/api/orders/visits/{visit_id}/estimate", { params: { path: { visit_id: visitId } }, body })),
   });
 }

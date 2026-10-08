@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
+import { KbdCombo } from "@/components/Kbd";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,11 +16,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslateError } from "@/lib/api/translate-error";
+import { useShortcut } from "@/lib/hooks/use-shortcut";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 
 import type { AllergyAlert } from "../types";
 
+/** Mirrors the server's ALLERGY_OVERRIDE_REASON_MIN; the server enforces it. */
 const REASON_MIN = 3;
 
 /**
@@ -59,6 +62,13 @@ export function AllergyOverrideDialog({
       setPending(false);
     }
   };
+
+  // Ctrl/Cmd+Enter in the reason confirms (the page's own Ctrl+Enter stays quiet behind it).
+  useShortcut("mod+enter", () => void confirm(), {
+    enabled: open && valid && !pending,
+    allowInInputs: true,
+    allowInDialogs: true,
+  });
 
   return (
     <Dialog
@@ -109,7 +119,7 @@ export function AllergyOverrideDialog({
             data-testid="override-reason"
           />
           <p id="override-reason-hint" className="text-xs text-muted">
-            {t("override.reasonHint")}
+            {t("override.reasonHint", { min: REASON_MIN })}
           </p>
         </div>
         {error ? (
@@ -129,6 +139,7 @@ export function AllergyOverrideDialog({
             data-testid="override-confirm"
           >
             {t("override.confirm")}
+            <KbdCombo combo="mod+enter" className="max-md:hidden" />
           </Button>
         </DialogFooter>
       </DialogContent>

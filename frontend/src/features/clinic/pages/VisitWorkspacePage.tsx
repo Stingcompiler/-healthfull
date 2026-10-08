@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { AlertCard } from "@/components/AlertCard";
 import { Can } from "@/components/Can";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isApiError } from "@/lib/api/errors";
+import { useCurrentUser } from "@/lib/auth/hooks";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { useShortcut } from "@/lib/hooks/use-shortcut";
 import { useLanguage } from "@/lib/i18n-hooks";
@@ -45,6 +47,11 @@ export function VisitWorkspacePage() {
   const valid = Number.isInteger(visitId) && visitId > 0;
   const workspace = useWorkspace(valid ? visitId : 0);
   const [tab, setTab] = useState<Tab>("note");
+  // What would be lost by finishing now: unsaved note changes and unplaced draft orders. The note
+  // and orders tabs stay mounted while hidden, so switching tabs never discards them.
+  const [noteDirty, setNoteDirty] = useState(false);
+  const [draftCount, setDraftCount] = useState(0);
+  const me = useCurrentUser();
 
   useShortcut(
     Object.values(TAB_SHORTCUTS),
@@ -101,6 +108,7 @@ export function VisitWorkspacePage() {
   const ws = workspace.data;
   const open = ws.visit.status === "open";
   const name = patientName(ws.patient, language);
+  const unsignedNote = ws.notes.some((n) => n.status === "draft" && n.author?.id === me?.id);
 
   return (
     <div className="flex flex-col gap-5">
@@ -124,7 +132,13 @@ export function VisitWorkspacePage() {
           </span>
         }
         icon={<Stethoscope />}
-        actions={<QueueActions entryId={ws.queue_entry_id} status={ws.queue_status} />}
+        actions={
+          <QueueActions
+            entryId={ws.queue_entry_id}
+            status={ws.queue_status}
+            pending={{ noteDirty, unsignedNote, draftCount }}
+          />
+        }
       />
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
@@ -163,11 +177,11 @@ export function VisitWorkspacePage() {
               {t("tabs.history")}
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="note">
-            <NoteTab workspace={ws} />
+          <TabsContent value="note" forceMount className="data-[state=inactive]:hidden">
+            <NoteTab workspace={ws} onDirtyChange={setNoteDirty} />
           </TabsContent>
-          <TabsContent value="orders">
-            <OrdersTab visitId={ws.visit.id} patientId={ws.patient.id} open={open} />
+          <TabsContent value="orders" forceMount className="data-[state=inactive]:hidden">
+            <OrdersTab visitId={ws.visit.id} patientId={ws.patient.id} open={open} onDraftChange={setDraftCount} />
           </TabsContent>
           <TabsContent value="results">
             <ResultsTab patientId={ws.patient.id} active={tab === "results"} />
@@ -181,7 +195,21 @@ export function VisitWorkspacePage() {
   );
 }
 
-function QueueActions({ entryId, status }: { entryId: number | null; status: string | null }) {
+interface Pending {
+  noteDirty: boolean;
+  unsignedNote: boolean;
+  draftCount: number;
+}
+
+function QueueActions({
+  entryId,
+  status,
+  pending,
+}: {
+  entryId: number | null;
+  status: string | null;
+  pending: Pending;
+}) {
   const { t } = useTranslation("clinic");
   const action = useQueueAction();
   const translateError = useTranslateError();
@@ -227,7 +255,21 @@ function QueueActions({ entryId, status }: { entryId: number | null; status: str
             description={t("queue.completeDescription")}
             confirmLabel={t("queue.complete")}
             onConfirm={() => run("complete")}
-          />
+          >
+            {pending.noteDirty || pending.unsignedNote || pending.draftCount > 0 ? (
+              <div data-testid="complete-pending">
+                <AlertCard variant="warning" title={t("queue.unsavedTitle")}>
+                  <ul className="list-disc ps-5">
+                    {pending.noteDirty ? <li>{t("queue.unsavedNote")}</li> : null}
+                    {pending.unsignedNote ? <li>{t("queue.unsignedNote")}</li> : null}
+                    {pending.draftCount > 0 ? (
+                      <li>{t("queue.unplacedOrders", { count: pending.draftCount })}</li>
+                    ) : null}
+                  </ul>
+                </AlertCard>
+              </div>
+            ) : null}
+          </ConfirmDialog>
         </>
       ) : null}
     </Can>

@@ -1,18 +1,21 @@
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SearchInput } from "@/components/SearchInput";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 import { cn } from "@/lib/utils";
 
 import { useIcd10Search } from "../api";
 import type { Icd10 } from "../types";
+import { useCombobox } from "../use-combobox";
 
 /**
- * ICD-10 lookup by code prefix or words of the title (Arabic or English). Enter picks the first
- * match; results are buttons, so Tab and Enter reach every one.
+ * ICD-10 lookup by code prefix or words of the title (Arabic or English), as a combobox:
+ * ArrowUp/ArrowDown pick a row, Enter takes the highlighted one (never a row left from the
+ * previous query).
  */
 export function Icd10Picker({
   value,
@@ -36,6 +39,15 @@ export function Icd10Picker({
     setTerm("");
   };
 
+  const box = useCombobox({
+    query,
+    term,
+    search: setTerm,
+    results,
+    settled: search.isSuccess && !search.isPlaceholderData && !search.isFetching,
+    onPick: pick,
+  });
+
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <SearchInput
@@ -47,55 +59,62 @@ export function Icd10Picker({
         delayMs={200}
         loading={search.isFetching}
         data-testid="icd10-search"
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            const first = results[0];
-            if (first) pick(first);
-          }
-        }}
+        data-fresh={box.fresh ? "true" : "false"}
+        {...box.inputProps}
       />
+      <p className="sr-only" aria-live="polite">
+        {term.length >= 2 && box.fresh ? t("diagnosis.resultCount", { count: results.length }) : ""}
+      </p>
       {value ? (
-        <div className="flex min-w-0 items-center gap-2 rounded-control border border-primary bg-primary-soft px-3 py-2 text-sm text-primary-strong">
+        <div className="flex min-w-0 items-center gap-2 rounded-control border border-primary bg-primary-soft py-1 ps-3 pe-1 text-sm text-primary-strong">
           <Check className="size-4 shrink-0" aria-hidden="true" />
           <bdi className="tabular font-semibold">{value.code}</bdi>
           <span className="min-w-0 truncate">{pickName({ ar: value.title_ar, en: value.title_en }, language)}</span>
-          <button
+          <Button
             type="button"
-            className="ms-auto shrink-0 text-xs underline focus-ring"
+            size="sm"
+            variant="ghost"
+            className="ms-auto shrink-0"
             onClick={() => {
               onChange(null);
             }}
+            aria-label={t("diagnosis.clearCodeNamed", { code: value.code })}
           >
+            <X aria-hidden="true" />
             {t("diagnosis.clearCode")}
-          </button>
+          </Button>
         </div>
       ) : null}
       {results.length > 0 ? (
         <ul
+          {...box.listProps}
           className="flex max-h-60 flex-col overflow-y-auto rounded-control border border-border"
           aria-label={t("diagnosis.results")}
           data-testid="icd10-results"
         >
-          {results.map((code) => (
-            <li key={code.code} className="border-b border-border last:border-b-0">
-              <button
-                type="button"
+          {results.map((code, index) => {
+            const highlighted = box.fresh && index === box.active;
+            return (
+              <li
+                key={code.code}
+                {...box.optionProps(index)}
                 onClick={() => {
                   pick(code);
                 }}
                 className={cn(
-                  "flex w-full min-w-0 items-baseline gap-2 px-3 py-2 text-start text-sm focus-ring-inset hover:bg-accent",
+                  "flex min-h-11 w-full min-w-0 cursor-pointer items-baseline gap-2 border-b border-border px-3 py-2.5 text-start text-sm last:border-b-0 hover:bg-accent md:min-h-0 md:py-2",
                   value?.code === code.code && "bg-primary-soft",
+                  highlighted && "bg-accent",
                 )}
+                data-highlighted={highlighted ? "true" : undefined}
               >
                 <bdi className="w-14 shrink-0 tabular font-semibold">{code.code}</bdi>
                 <span className="min-w-0 break-words">
                   {pickName({ ar: code.title_ar, en: code.title_en }, language)}
                 </span>
-              </button>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       ) : term.length >= 2 && search.isSuccess && !search.isFetching ? (
         <p className="text-xs text-muted">{t("diagnosis.noMatch")}</p>

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { AlertCard } from "@/components/AlertCard";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 import { useAllergies, useCreateAllergy, useDrugClasses, useUpdateAllergy } from "../api";
 import { allergyLabel } from "../lib";
-import type { AllergyInput } from "../types";
+import type { Allergy, AllergyInput } from "../types";
 import { QueryError } from "./QueryError";
 
 type AllergenType = AllergyInput["allergen_type"];
@@ -77,9 +78,12 @@ export function AllergyManager({
     );
   };
 
-  const setStatus = (id: number, status: "inactive" | "entered_in_error" | "active") => {
-    update.mutate({ id, body: { status } }, { onError: (e) => toast.error(translateError(e)) });
-  };
+  const [changing, setChanging] = useState<{ allergy: Allergy; status: AllergyStatus } | null>(null);
+
+  const setStatus = (id: number, status: AllergyStatus) =>
+    update.mutateAsync({ id, body: { status } }).then(() => {
+      toast.success(t(`allergy.statusToast.${status}`));
+    });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,18 +126,37 @@ export function AllergyManager({
                   {t(`allergy.severity.${a.severity}`)}
                 </Badge>
                 {a.reaction ? <span className="min-w-0 text-xs break-words text-fg-muted">{a.reaction}</span> : null}
-                <div className="ms-auto flex gap-1">
+                <div className="ms-auto flex flex-wrap gap-1">
                   {a.status === "active" ? (
                     <>
-                      <Button size="sm" variant="ghost" onClick={() => setStatus(a.id, "inactive")}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label={t("allergy.resolveNamed", { name: allergyLabel(a, language) })}
+                        onClick={() => setChanging({ allergy: a, status: "inactive" })}
+                        data-testid="allergy-resolve"
+                      >
                         {t("allergy.resolve")}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setStatus(a.id, "entered_in_error")}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label={t("allergy.errorNamed", { name: allergyLabel(a, language) })}
+                        onClick={() => setChanging({ allergy: a, status: "entered_in_error" })}
+                        data-testid="allergy-error"
+                      >
                         {t("allergy.error")}
                       </Button>
                     </>
                   ) : (
-                    <Button size="sm" variant="ghost" onClick={() => setStatus(a.id, "active")}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={t("allergy.reactivateNamed", { name: allergyLabel(a, language) })}
+                      onClick={() => {
+                        setStatus(a.id, "active").catch((e: unknown) => toast.error(translateError(e)));
+                      }}
+                    >
                       {t("allergy.reactivate")}
                     </Button>
                   )}
@@ -225,7 +248,34 @@ export function AllergyManager({
             </Button>
           </div>
         </div>
+        <ConfirmDialog
+          open={changing !== null}
+          onOpenChange={(o) => {
+            if (!o) setChanging(null);
+          }}
+          destructive
+          title={
+            changing
+              ? t(`allergy.confirm.${changing.status === "inactive" ? "resolve" : "error"}Title`, {
+                  name: allergyLabel(changing.allergy, language),
+                })
+              : undefined
+          }
+          description={
+            changing
+              ? t(`allergy.confirm.${changing.status === "inactive" ? "resolve" : "error"}Description`)
+              : undefined
+          }
+          confirmLabel={changing?.status === "inactive" ? t("allergy.resolve") : t("allergy.error")}
+          onConfirm={async () => {
+            if (!changing) return;
+            await setStatus(changing.allergy.id, changing.status);
+            setChanging(null);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
 }
+
+type AllergyStatus = "inactive" | "entered_in_error" | "active";

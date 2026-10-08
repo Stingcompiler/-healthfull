@@ -22,7 +22,12 @@
     "movedToast": {
       "done": "Consultation finished.",
       "moved": "Queue updated."
-    }
+    },
+    "unsavedTitle": "Not finished yet",
+    "unsavedNote": "The note has changes that are not saved.",
+    "unsignedNote": "Your note is saved as a draft but not signed.",
+    "unplacedOrders_one": "{{count}} order in the draft is not placed.",
+    "unplacedOrders_other": "{{count}} orders in the draft are not placed."
   },
   "queueStatus": {
     "waiting": "Waiting",
@@ -73,7 +78,9 @@
     "latestResults": "Latest approved results",
     "noResults": "No approved results yet.",
     "recentVisits": "Last visits",
-    "noVisits": "No earlier visits."
+    "noVisits": "No earlier visits.",
+    "show": "Show conditions, medications and results",
+    "hide": "Hide the summary"
   },
   "vitals": {
     "title": "Vital signs",
@@ -100,12 +107,13 @@
       "weight_kg": "Wt",
       "height_cm": "Ht",
       "blood_glucose_mg_dl": "Glucose",
-      "pain_score": "Pain"
+      "pain_score": "Pain",
+      "bp": "BP"
     },
     "field": {
       "temperature_c": "Temperature (°C)",
-      "bp_systolic": "Systolic BP",
-      "bp_diastolic": "Diastolic BP",
+      "bp_systolic": "Systolic BP (mmHg)",
+      "bp_diastolic": "Diastolic BP (mmHg)",
       "pulse_bpm": "Pulse (/min)",
       "respiratory_rate": "Resp. rate (/min)",
       "spo2_percent": "SpO₂ (%)",
@@ -113,7 +121,12 @@
       "height_cm": "Height (cm)",
       "blood_glucose_mg_dl": "Glucose (mg/dL)",
       "pain_score": "Pain (0-10)"
-    }
+    },
+    "pulseValue": "{{value}} /min",
+    "rrValue": "{{value}} /min",
+    "heightValue": "{{value}} cm",
+    "glucoseValue": "{{value}} mg/dL",
+    "painValue": "{{value}}/10"
   },
   "note": {
     "title": "Clinical note",
@@ -156,7 +169,10 @@
     "addedToast": "Diagnosis added.",
     "addError": "The diagnosis was not added.",
     "remove": "Remove diagnosis",
-    "none": "No diagnosis recorded yet."
+    "none": "No diagnosis recorded yet.",
+    "resultCount_one": "{{count}} ICD-10 match",
+    "resultCount_other": "{{count}} ICD-10 matches",
+    "clearCodeNamed": "Remove code {{code, bidi}}"
   },
   "referral": {
     "title": "Referrals",
@@ -216,11 +232,25 @@
       "severe": "Severe",
       "life_threatening": "Life-threatening"
     },
-    "resolve": "Resolved",
-    "error": "Entered in error",
+    "resolve": "Mark resolved",
+    "error": "Mark entered in error",
     "reactivate": "Reactivate",
     "addedToast": "Allergy recorded.",
-    "saveError": "The allergy was not recorded."
+    "saveError": "The allergy was not recorded.",
+    "resolveNamed": "Mark {{name}} allergy resolved",
+    "errorNamed": "Mark {{name}} allergy entered in error",
+    "reactivateNamed": "Reactivate {{name}} allergy",
+    "statusToast": {
+      "inactive": "Allergy marked resolved.",
+      "entered_in_error": "Allergy marked entered in error.",
+      "active": "Allergy active again."
+    },
+    "confirm": {
+      "resolveTitle": "Mark the {{name}} allergy resolved?",
+      "resolveDescription": "It no longer alerts when you prescribe a matching drug. You can reactivate it later.",
+      "errorTitle": "Mark the {{name}} allergy entered in error?",
+      "errorDescription": "Use this only when the allergy was recorded by mistake. It leaves the registry and stops alerting; the history keeps it."
+    }
   },
   "condition": {
     "title": "Chronic conditions",
@@ -248,7 +278,7 @@
     "kindFilter": "Kind of service",
     "allKinds": "All",
     "searchLabel": "Search the catalog",
-    "searchPlaceholder": "Name or code, e.g. CBC or amoxicillin",
+    "searchPlaceholder": "CBC, amoxicillin…",
     "noMatch": "Nothing in the catalog matches.",
     "draftEmpty": "Add tests, procedures or drugs from the catalog or a favorite.",
     "quantity": "Quantity",
@@ -267,7 +297,10 @@
     "cancelledBecause": "Withdrawn: {{reason}}",
     "withdraw": "Withdraw",
     "withdrawTitle": "Withdraw this order?",
-    "withdrawnToast": "Order withdrawn."
+    "withdrawnToast": "Order withdrawn.",
+    "results": "Catalog matches",
+    "resultCount_one": "{{count}} match",
+    "resultCount_other": "{{count}} matches"
   },
   "rx": {
     "dose": "Dose",
@@ -279,8 +312,8 @@
     "instructions": "Instructions",
     "asNeeded": "As needed",
     "quantityOverride": "Quantity (optional)",
-    "quantityComputed": "To dispense: {{count}} {{unit}}",
-    "quantityGiven": "To dispense: {{count}} {{unit}}",
+    "quantityComputed": "To dispense: {{count}} {{unit}} (calculated)",
+    "quantityGiven": "To dispense: {{count}} {{unit}} (entered)",
     "quantityNeeded": "Enter dose, frequency and days, or a quantity.",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days"
@@ -337,7 +370,7 @@
       "substance": "named substance"
     },
     "reason": "Reason to prescribe anyway",
-    "reasonHint": "Recorded with your name and the time.",
+    "reasonHint": "At least {{min}} characters. Recorded with your name and the time.",
     "error": "The orders were not placed.",
     "back": "Back to the order",
     "confirm": "Override and order"
@@ -358,5 +391,12 @@
     "loadError": "The history could not be loaded.",
     "emptyTitle": "No earlier visits",
     "emptyDescription": "This is the patient's first visit."
+  },
+  "estimate": {
+    "show": "Estimated cost",
+    "title": "Estimated patient share",
+    "hint": "At today's prices and the visit's coverage. An estimate only; the cashier's invoice is final.",
+    "total": "Total",
+    "error": "The estimate is not available."
   }
 }

@@ -78,9 +78,14 @@ export function AppShell({ nav, search, children }: AppShellProps) {
   const bottomCells = bottomItems.length + (needsMore ? 1 : 0);
 
   // ⌘K on macOS; Ctrl+K everywhere (most clinic PCs run Windows).
-  useShortcut([SEARCH_SHORTCUT, "ctrl+k"], () => {
-    setCommandOpen((open) => !open);
-  });
+  // Also inside the palette itself (a dialog), so the same keys close it.
+  useShortcut(
+    [SEARCH_SHORTCUT, "ctrl+k"],
+    () => {
+      setCommandOpen((open) => !open);
+    },
+    { allowInDialogs: true },
+  );
 
   return (
     <div className="min-h-dvh bg-bg">

@@ -22,7 +22,16 @@
     "movedToast": {
       "done": "انتهى الكشف.",
       "moved": "تم تحديث الطابور."
-    }
+    },
+    "unsavedTitle": "لم تكتمل بعد",
+    "unsavedNote": "في الملاحظة تعديلات لم تُحفظ.",
+    "unsignedNote": "ملاحظتك محفوظة كمسودة ولم تُوقّع.",
+    "unplacedOrders_zero": "لا طلبات غير مرسلة.",
+    "unplacedOrders_one": "طلب واحد في المسودة لم يُرسل.",
+    "unplacedOrders_two": "طلبان في المسودة لم يُرسلا.",
+    "unplacedOrders_few": "{{count}} طلبات في المسودة لم تُرسل.",
+    "unplacedOrders_many": "{{count}} طلباً في المسودة لم يُرسل.",
+    "unplacedOrders_other": "{{count}} طلب في المسودة لم يُرسل."
   },
   "queueStatus": {
     "waiting": "في الانتظار",
@@ -41,7 +50,7 @@
   },
   "visitStatus": {
     "open": "مفتوحة",
-    "closed": "الزيارة مختومة",
+    "closed": "الزيارة مغلقة",
     "cancelled": "الزيارة ملغاة"
   },
   "workspace": {
@@ -73,7 +82,9 @@
     "latestResults": "آخر النتائج المعتمدة",
     "noResults": "لا توجد نتائج معتمدة بعد.",
     "recentVisits": "آخر الزيارات",
-    "noVisits": "لا زيارات سابقة."
+    "noVisits": "لا زيارات سابقة.",
+    "show": "عرض الأمراض والأدوية والنتائج",
+    "hide": "إخفاء الملخص"
   },
   "vitals": {
     "title": "العلامات الحيوية",
@@ -100,12 +111,13 @@
       "weight_kg": "الوزن",
       "height_cm": "الطول",
       "blood_glucose_mg_dl": "السكر",
-      "pain_score": "الألم"
+      "pain_score": "الألم",
+      "bp": "الضغط"
     },
     "field": {
       "temperature_c": "الحرارة (°م)",
-      "bp_systolic": "الضغط الانقباضي",
-      "bp_diastolic": "الضغط الانبساطي",
+      "bp_systolic": "الضغط الانقباضي (ملم زئبق)",
+      "bp_diastolic": "الضغط الانبساطي (ملم زئبق)",
       "pulse_bpm": "النبض (/دقيقة)",
       "respiratory_rate": "التنفس (/دقيقة)",
       "spo2_percent": "تشبع الأكسجين (٪)",
@@ -113,7 +125,12 @@
       "height_cm": "الطول (سم)",
       "blood_glucose_mg_dl": "السكر (ملغ/دسل)",
       "pain_score": "الألم (0-10)"
-    }
+    },
+    "pulseValue": "{{value}} /دقيقة",
+    "rrValue": "{{value}} /دقيقة",
+    "heightValue": "{{value}} سم",
+    "glucoseValue": "{{value}} ملغ/دسل",
+    "painValue": "{{value}} من 10"
   },
   "note": {
     "title": "الملاحظة السريرية",
@@ -156,7 +173,14 @@
     "addedToast": "تمت إضافة التشخيص.",
     "addError": "لم يُضف التشخيص.",
     "remove": "حذف التشخيص",
-    "none": "لم يُسجل تشخيص بعد."
+    "none": "لم يُسجل تشخيص بعد.",
+    "resultCount_zero": "لا رموز ICD-10 مطابقة",
+    "resultCount_one": "رمز ICD-10 واحد مطابق",
+    "resultCount_two": "رمزان من ICD-10 مطابقان",
+    "resultCount_few": "{{count}} رموز ICD-10 مطابقة",
+    "resultCount_many": "{{count}} رمزاً من ICD-10 مطابقاً",
+    "resultCount_other": "{{count}} رمز ICD-10 مطابق",
+    "clearCodeNamed": "إزالة الرمز {{code, bidi}}"
   },
   "referral": {
     "title": "الإحالات",
@@ -216,11 +240,25 @@
       "severe": "شديدة",
       "life_threatening": "مهددة للحياة"
     },
-    "resolve": "زالت",
-    "error": "سُجلت خطأً",
+    "resolve": "تعليم كزائلة",
+    "error": "تعليم كإدخال خاطئ",
     "reactivate": "إعادة التفعيل",
     "addedToast": "تم تسجيل الحساسية.",
-    "saveError": "لم تُسجل الحساسية."
+    "saveError": "لم تُسجل الحساسية.",
+    "resolveNamed": "تعليم حساسية {{name}} كزائلة",
+    "errorNamed": "تعليم حساسية {{name}} كإدخال خاطئ",
+    "reactivateNamed": "إعادة تفعيل حساسية {{name}}",
+    "statusToast": {
+      "inactive": "عُلّمت الحساسية كزائلة.",
+      "entered_in_error": "عُلّمت الحساسية كإدخال خاطئ.",
+      "active": "عادت الحساسية فعالة."
+    },
+    "confirm": {
+      "resolveTitle": "تعليم حساسية {{name}} كزائلة؟",
+      "resolveDescription": "لن تنبهك بعد الآن عند وصف دواء مطابق. يمكنك إعادة تفعيلها لاحقاً.",
+      "errorTitle": "تعليم حساسية {{name}} كإدخال خاطئ؟",
+      "errorDescription": "استخدم هذا فقط إذا سُجلت الحساسية بالخطأ. تخرج من السجل ويتوقف تنبيهها، ويبقى أثرها في التاريخ."
+    }
   },
   "condition": {
     "title": "الأمراض المزمنة",
@@ -248,7 +286,7 @@
     "kindFilter": "نوع الخدمة",
     "allKinds": "الكل",
     "searchLabel": "البحث في الدليل",
-    "searchPlaceholder": "الاسم أو الرمز، مثل CBC أو أموكسيسيلين",
+    "searchPlaceholder": "CBC، أموكسيسيلين…",
     "noMatch": "لا شيء في الدليل يطابق البحث.",
     "draftEmpty": "أضف فحوصات أو إجراءات أو أدوية من الدليل أو من المفضلة.",
     "quantity": "الكمية",
@@ -267,7 +305,14 @@
     "cancelledBecause": "سُحب الطلب: {{reason}}",
     "withdraw": "سحب الطلب",
     "withdrawTitle": "سحب هذا الطلب؟",
-    "withdrawnToast": "تم سحب الطلب."
+    "withdrawnToast": "تم سحب الطلب.",
+    "results": "نتائج الدليل",
+    "resultCount_zero": "لا نتائج",
+    "resultCount_one": "نتيجة واحدة",
+    "resultCount_two": "نتيجتان",
+    "resultCount_few": "{{count}} نتائج",
+    "resultCount_many": "{{count}} نتيجة",
+    "resultCount_other": "{{count}} نتيجة"
   },
   "rx": {
     "dose": "الجرعة",
@@ -279,8 +324,8 @@
     "instructions": "التعليمات",
     "asNeeded": "عند الحاجة",
     "quantityOverride": "الكمية (اختياري)",
-    "quantityComputed": "للصرف: {{count}} {{unit}}",
-    "quantityGiven": "للصرف: {{count}} {{unit}}",
+    "quantityComputed": "للصرف: {{count}} {{unit}} (محسوبة)",
+    "quantityGiven": "للصرف: {{count}} {{unit}} (أدخلتها يدوياً)",
     "quantityNeeded": "أدخل الجرعة والتكرار والأيام، أو الكمية.",
     "days_zero": "أقل من يوم",
     "days_one": "يوم واحد",
@@ -341,7 +386,7 @@
       "substance": "مادة مذكورة"
     },
     "reason": "سبب الوصف رغم الحساسية",
-    "reasonHint": "يُسجل مع اسمك والوقت.",
+    "reasonHint": "{{min}} أحرف على الأقل. يُسجل مع اسمك والوقت.",
     "error": "لم تُرسل الطلبات.",
     "back": "العودة إلى الطلب",
     "confirm": "تجاوز التنبيه وإرسال الطلب"
@@ -362,5 +407,12 @@
     "loadError": "تعذر تحميل السجل.",
     "emptyTitle": "لا زيارات سابقة",
     "emptyDescription": "هذه أول زيارة للمريض."
+  },
+  "estimate": {
+    "show": "التكلفة التقديرية",
+    "title": "نصيب المريض التقديري",
+    "hint": "بأسعار اليوم وتغطية الزيارة. تقدير فقط؛ فاتورة الكاشير هي النهائية.",
+    "total": "الإجمالي",
+    "error": "التقدير غير متاح."
   }
 }

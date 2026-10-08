@@ -40,7 +40,18 @@ function valuesOf(note: Note | undefined): Values {
  * The doctor's clinical note (FEATURES 3.3): a draft the author edits until it is signed; a
  * signed note never changes (a correction is a new note).
  */
-export function NoteEditor({ visitId, notes, open }: { visitId: number; notes: readonly Note[]; open: boolean }) {
+export function NoteEditor({
+  visitId,
+  notes,
+  open,
+  onDirtyChange,
+}: {
+  visitId: number;
+  notes: readonly Note[];
+  open: boolean;
+  /** Tells the page whether typed text is unsaved (finishing the consultation warns about it). */
+  onDirtyChange?: (dirty: boolean) => void;
+}) {
   const { t } = useTranslation("clinic");
   const me = useCurrentUser();
   const canWrite = usePermission("clinical.write_note") && open;
@@ -85,6 +96,11 @@ export function NoteEditor({ visitId, notes, open }: { visitId: number; notes: r
   };
 
   useShortcut("mod+s", () => void onSave(), { enabled: canWrite, allowInInputs: true });
+
+  const dirty = form.formState.isDirty;
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const watched = useWatch({ control: form.control });
   const empty = FIELDS.every((f) => !(watched[f] ?? "").trim());

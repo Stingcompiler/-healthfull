@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 
-import { lineBadgeState } from "../lib";
+import { lineBadgeState, useFrequencyText } from "../lib";
 import type { DoctorLine } from "../types";
 import { MetaParts } from "./MetaParts";
 import { ResultValues } from "./ResultValues";
@@ -15,6 +15,7 @@ import { ResultValues } from "./ResultValues";
 /** One order as its doctor sees it: progress, prescription, overrides, result. Never a price. */
 export function OrderLineCard({ line, onWithdraw }: { line: DoctorLine; onWithdraw?: (line: DoctorLine) => void }) {
   const { t } = useTranslation("clinic");
+  const frequencyText = useFrequencyText();
   const language = useLanguage();
   const rx = line.prescription;
   const cancellation = line.cancellation;
@@ -46,7 +47,7 @@ export function OrderLineCard({ line, onWithdraw }: { line: DoctorLine; onWithdr
                 <MetaParts
                   parts={[
                     rx.dose,
-                    rx.frequency_code,
+                    frequencyText(rx.frequency_code),
                     rx.duration_days ? t("rx.days", { count: rx.duration_days }) : "",
                     rx.as_needed ? t("rx.asNeeded") : "",
                     t(`route.${rx.route}`),

@@ -11,13 +11,17 @@ import { pickName } from "@/lib/names";
 import { cn } from "@/lib/utils";
 
 import { useCatalog } from "../api";
-import type { OrderableKind, OrderableService } from "../types";
 import { KIND_ICONS } from "../kind-icons";
+import type { OrderableKind, OrderableService } from "../types";
+import { useCombobox } from "../use-combobox";
 
 const SEARCH_ID = "catalog-search-input";
 const KINDS: readonly (OrderableKind | null)[] = [null, "lab", "procedure", "drug", "consumable"];
 
-/** Search the orderable catalog (no prices); Enter adds the first match, "/" focuses the search. */
+/**
+ * Search the orderable catalog (no prices) as a combobox: ArrowUp/ArrowDown pick a row, Enter
+ * adds the highlighted one (never a row left from the previous query), "/" focuses the search.
+ */
 export function CatalogPicker({ onPick }: { onPick: (service: OrderableService) => void }) {
   const { t } = useTranslation("clinic");
   const language = useLanguage();
@@ -36,6 +40,16 @@ export function CatalogPicker({ onPick }: { onPick: (service: OrderableService) 
     setTerm("");
     focusSearch();
   };
+
+  const box = useCombobox({
+    query,
+    term,
+    search: setTerm,
+    results,
+    settled: catalog.isSuccess && !catalog.isPlaceholderData && !catalog.isFetching,
+    onPick: pick,
+    resetKey: `${term}|${kind ?? ""}`,
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-2" data-testid="catalog-picker">
@@ -68,43 +82,47 @@ export function CatalogPicker({ onPick }: { onPick: (service: OrderableService) 
         delayMs={200}
         loading={catalog.isFetching}
         data-testid="catalog-search"
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            const first = results[0];
-            if (first) pick(first);
-          }
-        }}
+        data-fresh={box.fresh ? "true" : "false"}
+        {...box.inputProps}
       />
+      <p className="sr-only" aria-live="polite">
+        {term && box.fresh ? t("orders.resultCount", { count: results.length }) : ""}
+      </p>
       {results.length > 0 ? (
         <ul
+          {...box.listProps}
+          aria-label={t("orders.results")}
           className="flex max-h-72 flex-col overflow-y-auto rounded-control border border-border"
           data-testid="catalog-results"
         >
-          {results.map((service) => {
+          {results.map((service, index) => {
             const Icon = KIND_ICONS[service.kind];
+            const highlighted = box.fresh && index === box.active;
             return (
-              <li key={service.id} className="border-b border-border last:border-b-0">
-                <button
-                  type="button"
-                  onClick={() => pick(service)}
-                  className="flex w-full min-w-0 items-center gap-2 px-3 py-2 text-start text-sm focus-ring-inset hover:bg-accent"
-                  data-service-code={service.code}
-                >
-                  <Icon className="size-4 shrink-0 text-muted" aria-hidden="true" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block break-words text-fg">
-                      {pickName({ ar: service.name_ar, en: service.name_en }, language)}
-                    </span>
-                    <span className="block text-xs text-muted">
-                      <bdi>{service.code}</bdi>
-                      {service.drug
-                        ? ` · ${[service.drug.generic_name, service.drug.strength].filter(Boolean).join(" ")}`
-                        : ""}
-                    </span>
+              <li
+                key={service.id}
+                {...box.optionProps(index)}
+                onClick={() => pick(service)}
+                className={cn(
+                  "flex min-h-11 w-full min-w-0 cursor-pointer items-center gap-2 border-b border-border px-3 py-2 text-start text-sm last:border-b-0 hover:bg-accent md:min-h-0",
+                  highlighted && "bg-accent",
+                )}
+                data-service-code={service.code}
+                data-highlighted={highlighted ? "true" : undefined}
+              >
+                <Icon className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block break-words text-fg">
+                    {pickName({ ar: service.name_ar, en: service.name_en }, language)}
                   </span>
-                  <Plus className={cn("size-4 shrink-0 text-primary-strong")} aria-hidden="true" />
-                </button>
+                  <span className="block text-xs text-muted">
+                    <bdi>{service.code}</bdi>
+                    {service.drug
+                      ? ` · ${[service.drug.generic_name, service.drug.strength].filter(Boolean).join(" ")}`
+                      : ""}
+                  </span>
+                </span>
+                <Plus className="size-4 shrink-0 text-primary-strong" aria-hidden="true" />
               </li>
             );
           })}

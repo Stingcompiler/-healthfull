@@ -1,5 +1,5 @@
-import { Activity, HeartPulse, Pill, ShieldAlert, Stethoscope, TestTube } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { Activity, ChevronDown, HeartPulse, Pill, ShieldAlert, Stethoscope, TestTube } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Can } from "@/components/Can";
@@ -8,12 +8,13 @@ import { PatientCard } from "@/components/PatientCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber } from "@/lib/format";
+import { useBreakpoint } from "@/lib/hooks/use-media-query";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 import { cn } from "@/lib/utils";
 
 import { usePatientSummary } from "../api";
-import { toPatientCard } from "../lib";
+import { toPatientCard, useFrequencyText } from "../lib";
 import type { Workspace } from "../types";
 import { AllergyManager } from "./AllergyManager";
 import { ConditionManager } from "./ConditionManager";
@@ -21,13 +22,22 @@ import { MetaParts } from "./MetaParts";
 import { QueryError } from "./QueryError";
 import { ResultValues } from "./ResultValues";
 
-/** What a doctor sees on opening the file (FEATURES 3.1): allergies first, then the rest. */
+/**
+ * What a doctor sees on opening the file (FEATURES 3.1): allergies first, then the rest. Beside
+ * the tabs from lg; below lg the patient card (with its allergies) stays on top and the rest
+ * folds behind a toggle, so the note and orders start on the first screen.
+ */
 export function SummaryPanel({ workspace }: { workspace: Workspace }) {
   const { t } = useTranslation("clinic");
+  const frequencyText = useFrequencyText();
   const language = useLanguage();
   const summary = usePatientSummary(workspace.patient.id);
   const [allergiesOpen, setAllergiesOpen] = useState(false);
   const [conditionsOpen, setConditionsOpen] = useState(false);
+  const wide = useBreakpoint("lg");
+  const [expanded, setExpanded] = useState(false);
+  const detailsId = useId();
+  const showDetails = wide || expanded;
   const data = summary.data;
   const latestVitals = workspace.vitals[0];
 
@@ -53,7 +63,21 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
       <AllergyManager patientId={workspace.patient.id} open={allergiesOpen} onOpenChange={setAllergiesOpen} />
       <ConditionManager patientId={workspace.patient.id} open={conditionsOpen} onOpenChange={setConditionsOpen} />
 
-      {summary.isError ? (
+      {wide ? null : (
+        <Button
+          variant="outline"
+          className="justify-between"
+          aria-expanded={expanded}
+          aria-controls={detailsId}
+          onClick={() => setExpanded((v) => !v)}
+          data-testid="summary-toggle"
+        >
+          {expanded ? t("summary.hide") : t("summary.show")}
+          <ChevronDown aria-hidden="true" className={cn("transition-transform", expanded && "rotate-180")} />
+        </Button>
+      )}
+
+      {!showDetails ? null : summary.isError ? (
         <QueryError
           title={t("summary.loadError")}
           error={summary.error}
@@ -63,7 +87,7 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
       ) : !data ? (
         <Skeleton className="h-48" />
       ) : (
-        <div className="card-surface flex flex-col divide-y divide-border">
+        <div id={detailsId} className="card-surface flex flex-col divide-y divide-border" data-testid="summary-details">
           <Section
             icon={<HeartPulse />}
             title={t("summary.conditions")}
@@ -110,7 +134,10 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
                   />
                 ) : null}
                 {latestVitals.pulse_bpm != null ? (
-                  <Vital label={t("vitals.pulse")} value={formatNumber(latestVitals.pulse_bpm, language)} />
+                  <Vital
+                    label={t("vitals.pulse")}
+                    value={t("vitals.pulseValue", { value: formatNumber(latestVitals.pulse_bpm, language) })}
+                  />
                 ) : null}
                 {latestVitals.spo2_percent != null ? (
                   <Vital label={t("vitals.spo2")} value={t("vitals.spo2Value", { value: latestVitals.spo2_percent })} />
@@ -139,7 +166,7 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
                       <MetaParts
                         parts={[
                           m.dose,
-                          m.frequency_code,
+                          frequencyText(m.frequency_code),
                           m.duration_days ? t("rx.days", { count: m.duration_days }) : "",
                         ]}
                       />

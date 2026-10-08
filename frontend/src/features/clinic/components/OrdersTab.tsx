@@ -1,9 +1,10 @@
 import { ClipboardList, Send, Star } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { AlertCard } from "@/components/AlertCard";
+import { Can } from "@/components/Can";
 import { EmptyState } from "@/components/EmptyState";
 import { KbdCombo } from "@/components/Kbd";
 import { ReasonDialog } from "@/components/ReasonDialog";
@@ -22,6 +23,7 @@ import type { AllergyAlert, DoctorLine } from "../types";
 import { AllergyOverrideDialog } from "./AllergyOverrideDialog";
 import { CatalogPicker } from "./CatalogPicker";
 import { DraftItemEditor } from "./DraftItemEditor";
+import { EstimatePanel } from "./EstimatePanel";
 import { FavoriteDialog } from "./FavoriteDialog";
 import { OrderLineCard } from "./OrderLineCard";
 import { OrderSetPicker } from "./OrderSetPicker";
@@ -34,7 +36,18 @@ const PLACE_SHORTCUT = "mod+enter";
  * and favorites (drugs through the prescription builder), place it, and follow each line's
  * status. A drug matching an allergy needs an override reason.
  */
-export function OrdersTab({ visitId, patientId, open }: { visitId: number; patientId: number; open: boolean }) {
+export function OrdersTab({
+  visitId,
+  patientId,
+  open,
+  onDraftChange,
+}: {
+  visitId: number;
+  patientId: number;
+  open: boolean;
+  /** Tells the page how many draft items are not placed (finishing the consultation warns). */
+  onDraftChange?: (count: number) => void;
+}) {
   const { t } = useTranslation("clinic");
   const language = useLanguage();
   const canOrder = usePermission("orders.create") && open;
@@ -50,6 +63,10 @@ export function OrdersTab({ visitId, patientId, open }: { visitId: number; patie
   const [withdrawing, setWithdrawing] = useState<DoctorLine | null>(null);
   const reasons = useWithdrawReasons(withdrawing !== null);
   const draftRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onDraftChange?.(draft.length);
+  }, [draft.length, onDraftChange]);
 
   const add = (items: DraftItem[]) => {
     setError(null);
@@ -79,12 +96,17 @@ export function OrdersTab({ visitId, patientId, open }: { visitId: number; patie
     }
   };
 
-  useShortcut(PLACE_SHORTCUT, () => void place(), { enabled: canOrder && draft.length > 0, allowInInputs: true });
+  // Never behind this tab's dialogs (the override dialog has its own Ctrl/Cmd+Enter).
+  const dialogOpen = alerts !== null || favoriteOpen || withdrawing !== null;
+  useShortcut(PLACE_SHORTCUT, () => void place(), {
+    enabled: canOrder && draft.length > 0 && !dialogOpen,
+    allowInInputs: true,
+  });
 
   const flagged = new Set((alerts ?? []).map((a) => a.service_id));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="@container flex flex-col gap-4">
       {canOrder ? (
         <section aria-labelledby="new-order-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
           <div className="flex items-center gap-2">
@@ -93,7 +115,7 @@ export function OrdersTab({ visitId, patientId, open }: { visitId: number; patie
               {t("orders.newOrder")}
             </h2>
           </div>
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-4 @3xl:grid-cols-2">
             <CatalogPicker onPick={(service) => add([draftFromService(service)])} />
             <OrderSetPicker onPick={(set) => add(draftsFromOrderSet(set))} />
           </div>
@@ -121,6 +143,13 @@ export function OrdersTab({ visitId, patientId, open }: { visitId: number; patie
                 {error}
               </AlertCard>
             ) : null}
+            <Can permission="clinical.view_estimated_cost">
+              <EstimatePanel
+                key={draft.map((d) => `${d.key}:${JSON.stringify(toOrderItem(d, language))}`).join("|")}
+                visitId={visitId}
+                draft={draft}
+              />
+            </Can>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Button
                 variant="ghost"
@@ -167,7 +196,7 @@ export function OrdersTab({ visitId, patientId, open }: { visitId: number; patie
             description={t("orders.noneDescription")}
           />
         ) : (
-          <ul className="grid gap-3 xl:grid-cols-2" data-testid="order-lines">
+          <ul className="grid gap-3 @3xl:grid-cols-2" data-testid="order-lines">
             {lines.data.map((line) => (
               <li key={line.id} className="min-w-0">
                 <OrderLineCard line={line} onWithdraw={canWithdraw && open ? setWithdrawing : undefined} />
