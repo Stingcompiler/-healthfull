@@ -143,5 +143,22 @@ test.describe("@admin catalog and prices", () => {
     // The base version keeps its price (a bulk update never edits an existing version).
     await page.getByTestId(`version-${centerDate(1)}`).click();
     await expect(page.getByTestId(`price-${serviceCode}`)).toHaveValue("15000.00");
+
+    // 5. A mistaken scheduled version is withdrawn with a reason before it starts.
+    await created.click();
+    await page.getByRole("button", { name: tr("en", "admin:prices.withdraw") }).click();
+    dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: tr("en", "admin:prices.withdraw") }).click();
+    await expect(dialog.getByText(tr("en", "validation.required"))).toBeVisible();
+    await dialog.getByLabel(tr("en", "admin:common.reason")).fill("Meant for next month");
+    await dialog.getByRole("button", { name: tr("en", "admin:prices.withdraw") }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText(tr("en", "admin:prices.withdrawn")).first()).toBeVisible();
+    await expect(page.getByTestId(`version-${chosen}`)).toHaveCount(0);
+    // The version that is in effect today offers no withdrawal.
+    await page.goto("/administration/price-lists");
+    await page.locator("main").getByText(todayListCode).first().click();
+    await expect(page.getByTestId(`version-${centerDate(0)}`)).toBeVisible();
+    await expect(page.getByRole("button", { name: tr("en", "admin:prices.withdraw") })).toHaveCount(0);
   });
 });

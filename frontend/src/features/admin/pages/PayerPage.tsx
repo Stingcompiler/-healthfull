@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { formatPercent } from "@/lib/format";
+import { formatMoney, formatPercent } from "@/lib/format";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { vmsg } from "@/lib/validation";
@@ -37,6 +37,7 @@ import {
 import { AdminPage, QueryState } from "../components/AdminPage";
 import { ListEmpty } from "../components/ListEmpty";
 import { DateField } from "../components/DateField";
+import { useDiscardConfirm, useReportDirty } from "../components/DiscardConfirm";
 import { ActiveBadge, Code, FormDialog } from "../components/FormDialog";
 import { useLocalName } from "../hooks";
 import {
@@ -64,6 +65,9 @@ export function PayerPage() {
   const { payerId } = useParams({ from: "/_app/administration/payers/$payerId" });
   const payer = usePayer(Number(payerId));
   const [tab, setTab] = useState<Tab>("rules");
+  // Only the shown tab is mounted: leaving unsaved contract edits asks first.
+  const [dirty, setDirty] = useState(false);
+  const discard = useDiscardConfirm();
   const data = payer.data;
   return (
     <AdminPage
@@ -85,7 +89,9 @@ export function PayerPage() {
           <Tabs
             value={tab}
             onValueChange={(v) => {
-              setTab(v as Tab);
+              discard.ask(dirty, () => {
+                setTab(v as Tab);
+              });
             }}
           >
             <TabsList aria-label={t("sections.payers.title")}>
@@ -100,11 +106,12 @@ export function PayerPage() {
               <ExclusionsTab payer={data} />
             </TabsContent>
             <TabsContent value="contract">
-              <ContractForm key={data.id} payer={data} />
+              <ContractForm key={data.id} payer={data} onDirtyChange={setDirty} />
             </TabsContent>
           </Tabs>
         ) : null}
       </QueryState>
+      {discard.dialog}
     </AdminPage>
   );
 }
@@ -155,13 +162,14 @@ function contractValues(p: PayerOut): ContractValues {
   };
 }
 
-function ContractForm({ payer }: { payer: PayerOut }) {
+function ContractForm({ payer, onDirtyChange }: { payer: PayerOut; onDirtyChange: (dirty: boolean) => void }) {
   const { t } = useTranslation(["admin", "errors"]);
   const localName = useLocalName();
   const save = useSavePayer();
   const lists = usePriceLists();
   const translateError = useTranslateError();
   const form = useForm<ContractValues>({ resolver: zodResolver(contractSchema), defaultValues: contractValues(payer) });
+  useReportDirty(form.formState.isDirty, onDirtyChange);
   const submit = form.handleSubmit(async ({ price_list, contract_start, contract_end, ...rest }) => {
     const saved = await save.mutateAsync({
       id: payer.id,
@@ -178,7 +186,8 @@ function ContractForm({ payer }: { payer: PayerOut }) {
   const listOptions = [
     { value: NONE, label: t("admin:payers.cashList") },
     ...(lists.data ?? [])
-      .filter((l) => l.active || l.id === payer.price_list_id)
+      // A payer prices from a list in effect today (PRICE_LIST_NOT_EFFECTIVE otherwise).
+      .filter((l) => (l.active && l.current_version_id !== null) || l.id === payer.price_list_id)
       .map((l) => ({ value: String(l.id), label: `${localName(l)} (${l.code})` })),
   ];
   return (
@@ -255,15 +264,13 @@ function RuleSummary({ rule }: { rule: CoverageRuleOut }) {
       <span>{t("payers.summary.percentage", { percent: formatPercent(rule.payer_percent ?? "0", language) })}</span>
     );
   if (rule.rule_kind === "copay")
-    return (
-      <span>
-        {t("payers.summary.copay")} <MoneyText value={rule.copay_amount ?? "0"} />
-      </span>
-    );
+    return <span>{t("payers.summary.copay", { amount: formatMoney(rule.copay_amount ?? "0", language) })}</span>;
   return (
     <span>
-      {t("payers.summary.ceiling", { percent: formatPercent(rule.payer_percent ?? "100", language) })}{" "}
-      <MoneyText value={rule.ceiling_amount ?? "0"} />
+      {t("payers.summary.ceiling", {
+        percent: formatPercent(rule.payer_percent ?? "100", language),
+        amount: formatMoney(rule.ceiling_amount ?? "0", language),
+      })}
     </span>
   );
 }

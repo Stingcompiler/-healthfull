@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { AlertCard } from "@/components/AlertCard";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable } from "@/components/DataTable";
 import { Form, RadioGroupField, SwitchField, TextareaField, TextField } from "@/components/form";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ import {
   useUploadLogo,
 } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
+import { useDiscardConfirm, useReportDirty } from "../components/DiscardConfirm";
 import { Code } from "../components/FormDialog";
 import type { CenterProfileOut, PrintTemplateOut, SequencesOut } from "../types";
 
@@ -38,12 +40,17 @@ export function SettingsPage() {
   const { t } = useTranslation("admin");
   const canPrint = usePermission("core.manage_print_templates");
   const [tab, setTab] = useState<Tab>("center");
+  // Only the shown tab is mounted: switching away from unsaved edits asks first.
+  const [dirty, setDirty] = useState(false);
+  const discard = useDiscardConfirm();
   return (
     <AdminPage section="settings" title={t("sections.settings.title")} description={t("sections.settings.description")}>
       <Tabs
         value={tab}
         onValueChange={(v) => {
-          setTab(v as Tab);
+          discard.ask(dirty, () => {
+            setTab(v as Tab);
+          });
         }}
       >
         <TabsList aria-label={t("sections.settings.title")}>
@@ -52,17 +59,18 @@ export function SettingsPage() {
           <TabsTrigger value="numbering">{t("settings.numberingTab")}</TabsTrigger>
         </TabsList>
         <TabsContent value="center">
-          <CenterProfileCard />
+          <CenterProfileCard onDirtyChange={setDirty} />
         </TabsContent>
         {canPrint ? (
           <TabsContent value="print">
-            <PrintTemplatesCard />
+            <PrintTemplatesCard onDirtyChange={setDirty} />
           </TabsContent>
         ) : null}
         <TabsContent value="numbering">
           <NumberingCard />
         </TabsContent>
       </Tabs>
+      {discard.dialog}
     </AdminPage>
   );
 }
@@ -92,13 +100,15 @@ function centerValues(profile: CenterProfileOut): CenterValues {
   };
 }
 
-function CenterProfileCard() {
+function CenterProfileCard({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const center = useCenterProfile();
   return (
     <QueryState loading={center.isPending} error={center.error} onRetry={() => void center.refetch()}>
       {center.data ? (
-        <div className="grid gap-4 xl:grid-cols-[1fr_18rem]">
-          <CenterForm profile={center.data} />
+        // The card sits beside the app and admin navigation: the logo goes beside the form
+        // only when the screen is wide enough for the form to keep its own columns.
+        <div className="grid gap-4 2xl:grid-cols-[1fr_18rem]">
+          <CenterForm profile={center.data} onDirtyChange={onDirtyChange} />
           <LogoCard profile={center.data} />
         </div>
       ) : null}
@@ -106,18 +116,25 @@ function CenterProfileCard() {
   );
 }
 
-function CenterForm({ profile }: { profile: CenterProfileOut }) {
+function CenterForm({
+  profile,
+  onDirtyChange,
+}: {
+  profile: CenterProfileOut;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
   const { t } = useTranslation(["admin", "errors"]);
   const save = useUpdateCenterProfile();
   const translateError = useTranslateError();
   const form = useForm<CenterValues>({ resolver: zodResolver(centerSchema), defaultValues: centerValues(profile) });
+  useReportDirty(form.formState.isDirty, onDirtyChange);
   const submit = form.handleSubmit(async (values) => {
     const saved = await save.mutateAsync(values);
     form.reset(centerValues(saved));
     toast.success(t("admin:settings.saved"));
   });
   return (
-    <section className="card-surface p-4 md:p-5" aria-labelledby="center-title">
+    <section className="card-surface @container min-w-0 p-4 md:p-5" aria-labelledby="center-title">
       <h2 id="center-title" className="mb-4 font-semibold text-fg">
         {t("admin:settings.centerTitle")}
       </h2>
@@ -129,12 +146,12 @@ function CenterForm({ profile }: { profile: CenterProfileOut }) {
               {translateError(save.error)}
             </AlertCard>
           ) : null}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 @lg:grid-cols-2">
             <TextField control={form.control} name="name_ar" label={t("admin:settings.nameAr")} dir="rtl" />
             <TextField control={form.control} name="name_en" label={t("admin:settings.nameEn")} dir="ltr" />
           </div>
           <TextField control={form.control} name="address" label={t("admin:settings.address")} />
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 @lg:grid-cols-2 @3xl:grid-cols-3">
             <TextField control={form.control} name="phone" label={t("admin:settings.phone")} type="tel" dir="ltr" />
             <TextField
               control={form.control}
@@ -170,6 +187,7 @@ function LogoCard({ profile }: { profile: CenterProfileOut }) {
   const remove = useDeleteLogo();
   const translateError = useTranslateError();
   const input = useRef<HTMLInputElement>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   return (
     <section className="card-surface flex flex-col gap-3 p-4 md:p-5" aria-labelledby="logo-title">
       <h2 id="logo-title" className="font-semibold text-fg">
@@ -191,7 +209,9 @@ function LogoCard({ profile }: { profile: CenterProfileOut }) {
         type="file"
         accept="image/png,image/jpeg,image/gif,image/webp"
         className="sr-only"
-        aria-label={t("settings.uploadLogo")}
+        // The visible button opens it: one "Upload logo" stop for keyboard and screen readers.
+        tabIndex={-1}
+        aria-hidden="true"
         data-testid="logo-input"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -213,7 +233,7 @@ function LogoCard({ profile }: { profile: CenterProfileOut }) {
             variant="destructive-soft"
             loading={remove.isPending}
             onClick={() => {
-              remove.mutate(undefined, { onError: (err) => toast.error(translateError(err)) });
+              setConfirmRemove(true);
             }}
           >
             <Trash2 />
@@ -221,6 +241,18 @@ function LogoCard({ profile }: { profile: CenterProfileOut }) {
           </Button>
         ) : null}
       </div>
+      <ConfirmDialog
+        open={confirmRemove}
+        onOpenChange={setConfirmRemove}
+        title={t("settings.removeLogoTitle")}
+        description={t("settings.removeLogoHint")}
+        confirmLabel={t("settings.removeLogo")}
+        destructive
+        onConfirm={async () => {
+          await remove.mutateAsync(undefined);
+          toast.success(t("settings.logoRemoved"));
+        }}
+      />
     </section>
   );
 }
@@ -240,11 +272,15 @@ const templateSchema = z.object({
 });
 type TemplateValues = z.infer<typeof templateSchema>;
 
-function PrintTemplatesCard() {
+function PrintTemplatesCard({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const { t } = useTranslation("admin");
   const templates = usePrintTemplates();
   const [document, setDocument] = useState<PrintTemplateOut["document"]>("invoice");
   const [paper, setPaper] = useState<PrintTemplateOut["paper"]>("a4");
+  // Another document or paper shows another form: unsaved texts of this one are asked about.
+  const [dirty, setDirty] = useState(false);
+  useReportDirty(dirty, onDirtyChange);
+  const discard = useDiscardConfirm();
   const current = templates.data?.find((row) => row.document === document && row.paper === paper);
   return (
     <section className="card-surface flex flex-col gap-4 p-4 md:p-5" aria-labelledby="print-title">
@@ -260,7 +296,9 @@ function PrintTemplatesCard() {
           <Select
             value={document}
             onValueChange={(v) => {
-              setDocument(v as PrintTemplateOut["document"]);
+              discard.ask(dirty, () => {
+                setDocument(v as PrintTemplateOut["document"]);
+              });
             }}
           >
             <SelectTrigger id="print-document">
@@ -280,7 +318,9 @@ function PrintTemplatesCard() {
           <Select
             value={paper}
             onValueChange={(v) => {
-              setPaper(v as PrintTemplateOut["paper"]);
+              discard.ask(dirty, () => {
+                setPaper(v as PrintTemplateOut["paper"]);
+              });
             }}
           >
             <SelectTrigger id="print-paper">
@@ -297,13 +337,26 @@ function PrintTemplatesCard() {
         </div>
       </div>
       <QueryState loading={templates.isPending} error={templates.error} onRetry={() => void templates.refetch()}>
-        {current ? <TemplateForm key={`${document}-${paper}-${current.updated_at ?? ""}`} template={current} /> : null}
+        {current ? (
+          <TemplateForm
+            key={`${document}-${paper}-${current.updated_at ?? ""}`}
+            template={current}
+            onDirtyChange={setDirty}
+          />
+        ) : null}
       </QueryState>
+      {discard.dialog}
     </section>
   );
 }
 
-function TemplateForm({ template }: { template: PrintTemplateOut }) {
+function TemplateForm({
+  template,
+  onDirtyChange,
+}: {
+  template: PrintTemplateOut;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
   const { t } = useTranslation(["admin", "errors"]);
   const save = useSavePrintTemplate();
   const translateError = useTranslateError();
@@ -318,6 +371,7 @@ function TemplateForm({ template }: { template: PrintTemplateOut }) {
       active: template.active,
     },
   });
+  useReportDirty(form.formState.isDirty, onDirtyChange);
   const submit = form.handleSubmit(async (values) => {
     await save.mutateAsync({ document: template.document, paper: template.paper, body: values });
     form.reset(values);

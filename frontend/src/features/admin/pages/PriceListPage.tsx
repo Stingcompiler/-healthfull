@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CalendarPlus, CircleAlert, Lock, Percent, Plus, Save, Tags, Trash2, Undo2 } from "lucide-react";
+import { CalendarPlus, CalendarX2, CircleAlert, Lock, Percent, Plus, Save, Tags, Trash2, Undo2 } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -12,7 +12,7 @@ import { AlertCard } from "@/components/AlertCard";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
-import { CheckboxField, SelectField, TextField } from "@/components/form";
+import { CheckboxField, SelectField, TextareaField, TextField } from "@/components/form";
 import { ArrowBack } from "@/components/icons";
 import { MoneyText } from "@/components/MoneyText";
 import { SearchInput } from "@/components/SearchInput";
@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { formatPercent } from "@/lib/format";
+import { formatDate, formatPercent } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { cn } from "@/lib/utils";
 import { vmsg } from "@/lib/validation";
@@ -43,6 +43,7 @@ import {
   usePriceLists,
   useServices,
   useSetPriceItems,
+  useWithdrawVersion,
   type PriceItemFilters,
 } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
@@ -131,7 +132,14 @@ export function PriceListPage() {
           <div className="grid min-w-0 gap-4 2xl:grid-cols-[18rem_1fr] 2xl:items-start">
             <VersionTimeline versions={data.versions} selected={versionId} onSelect={select} />
             {version ? (
-              <VersionItems key={version.id} version={version} onDirtyChange={setDirty} />
+              <VersionItems
+                key={version.id}
+                version={version}
+                onDirtyChange={setDirty}
+                onWithdrawn={() => {
+                  setSelected(null);
+                }}
+              />
             ) : (
               <AlertCard variant="info" title={t("prices.noVersionsTitle")}>
                 {t("prices.noVersions")}
@@ -245,8 +253,18 @@ function VersionTimeline({
 
 // --- Items of one version ---------------------------------------------------------------------
 
-function VersionItems({ version, onDirtyChange }: { version: VersionOut; onDirtyChange: (dirty: boolean) => void }) {
+function VersionItems({
+  version,
+  onDirtyChange,
+  onWithdrawn,
+}: {
+  version: VersionOut;
+  onDirtyChange: (dirty: boolean) => void;
+  onWithdrawn: () => void;
+}) {
   const { t, i18n } = useTranslation(["admin", "errors"]);
+  const language = useLanguage();
+  const [withdrawing, setWithdrawing] = useState(false);
   const [filters, setFilters] = useState<PriceItemFilters>({});
   const [searchText, setSearchText] = useState("");
   const items = usePriceItems(version.id, filters);
@@ -353,15 +371,29 @@ function VersionItems({ version, onDirtyChange }: { version: VersionOut; onDirty
 
   return (
     <section className="flex min-w-0 flex-col gap-3" aria-labelledby="items-title">
-      <div className="flex flex-col gap-1">
-        <h2 id="items-title" className="flex flex-wrap items-center gap-2 font-semibold text-fg">
-          {t("prices.versionFrom")} <DateText value={version.effective_from} />
-          <StatusBadgeFor version={version} />
-        </h2>
-        {version.based_on_effective_from ? (
-          <p className="text-xs text-muted">
-            {t("prices.basedOn")} <DateText value={version.based_on_effective_from} />
-          </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 id="items-title" className="flex flex-wrap items-center gap-2 font-semibold text-fg">
+            {t("prices.versionFrom", { date: formatDate(version.effective_from, language) })}
+            <StatusBadgeFor version={version} />
+          </h2>
+          {version.based_on_effective_from ? (
+            <p className="text-xs text-muted">
+              {t("prices.basedOn", { date: formatDate(version.based_on_effective_from, language) })}
+            </p>
+          ) : null}
+        </div>
+        {editable ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setWithdrawing(true);
+            }}
+          >
+            <CalendarX2 />
+            {t("prices.withdraw")}
+          </Button>
         ) : null}
       </div>
       {!editable ? (
@@ -458,6 +490,18 @@ function VersionItems({ version, onDirtyChange }: { version: VersionOut; onDirty
             </Button>
           </div>
         </div>
+      ) : null}
+      {withdrawing ? (
+        <WithdrawVersionDialog
+          version={version}
+          onClose={(done) => {
+            setWithdrawing(false);
+            if (done) {
+              onDirtyChange(false);
+              onWithdrawn();
+            }
+          }}
+        />
       ) : null}
       {adding ? (
         <AddServiceDialog
@@ -608,6 +652,38 @@ function AddServiceDialog({ versionId, onClose }: { versionId: number; onClose: 
   );
 }
 
+const withdrawSchema = z.object({ reason: z.string().trim().min(1, vmsg("validation.required")).max(400) });
+type WithdrawValues = z.infer<typeof withdrawSchema>;
+
+/** Remove a version that has not started yet (a wrong date or bulk update), with a reason. */
+function WithdrawVersionDialog({ version, onClose }: { version: VersionOut; onClose: (done?: boolean) => void }) {
+  const { t } = useTranslation("admin");
+  const language = useLanguage();
+  const withdraw = useWithdrawVersion();
+  const form = useForm<WithdrawValues>({ resolver: zodResolver(withdrawSchema), defaultValues: { reason: "" } });
+  return (
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={t("prices.withdrawTitle", { date: formatDate(version.effective_from, language) })}
+      description={t("prices.withdrawHint")}
+      form={form}
+      error={withdraw.error}
+      submitLabel={t("prices.withdraw")}
+      destructive
+      onSubmit={async (values) => {
+        await withdraw.mutateAsync({ versionId: version.id, reason: values.reason.trim() });
+        toast.success(t("prices.withdrawn"));
+        onClose(true);
+      }}
+    >
+      <TextareaField control={form.control} name="reason" label={t("common.reason")} rows={3} required />
+    </FormDialog>
+  );
+}
+
 // --- New version --------------------------------------------------------------------------
 
 const NO_COPY = "__empty__";
@@ -629,7 +705,8 @@ function NewVersionDialog({ list, onClose }: { list: PriceListOut; onClose: (cre
   const { t } = useTranslation("admin");
   const localName = useLocalName();
   const create = useCreateVersion();
-  const first = list.versions.length === 0;
+  // Nothing on the list is in effect yet: a version may start today (rule from the server).
+  const first = list.can_start_today;
   const lists = usePriceLists();
   // A new list starts from the current prices of another list (the cash list by default).
   const sources = first ? (lists.data ?? []).filter((l) => l.id !== list.id && l.current_version_id !== null) : [];
@@ -751,8 +828,8 @@ function BulkDialog({ list, onClose }: { list: PriceListOut; onClose: (created?:
               {t("admin:prices.previewSummary", {
                 count: shown.result.changed_count,
                 percent: formatPercent(shown.result.percent, language, { signed: true }),
-              })}{" "}
-              <DateText value={shown.result.effective_from} />
+                date: formatDate(shown.result.effective_from, language),
+              })}
             </DialogDescription>
           </DialogHeader>
           {apply.error ? (

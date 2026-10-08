@@ -117,10 +117,14 @@ export function UsersPage() {
         id: "last_login",
         accessorFn: (u) => u.last_login ?? "",
         header: t("admin:users.lastLogin"),
-        meta: { label: t("admin:users.lastLogin") },
+        meta: { label: t("admin:users.lastLogin"), className: "min-w-32" },
+        // Date over time: the cell never cuts the time off next to the actions button.
         cell: ({ row }) =>
           row.original.last_login ? (
-            <DateText value={row.original.last_login} format="datetime" className="text-muted" />
+            <span className="flex flex-col" data-testid="last-login">
+              <DateText value={row.original.last_login} className="text-fg-muted" />
+              <DateText value={row.original.last_login} format="time" className="text-xs text-muted" />
+            </span>
           ) : (
             <span className="text-muted">{t("admin:users.never")}</span>
           ),
@@ -152,10 +156,11 @@ export function UsersPage() {
           onSearch={(q) => {
             setFilters((f) => ({ ...f, q: q || undefined }));
           }}
-          className="sm:max-w-xs"
+          className="sm:max-w-xs sm:min-w-48 sm:flex-1"
         />
         <FilterSelect
           label={t("admin:users.roleFilter")}
+          className="sm:w-44"
           allLabel={t("admin:users.allRoles")}
           value={filters.role}
           onChange={(role) => {
@@ -165,7 +170,8 @@ export function UsersPage() {
         />
         <FilterSelect
           label={t("admin:users.statusFilter")}
-          allLabel={t("admin:common.all")}
+          allLabel={t("admin:users.allStatuses")}
+          className="sm:w-44"
           value={filters.active === undefined ? undefined : String(filters.active)}
           onChange={(v) => {
             setFilters((f) => ({ ...f, active: v === undefined ? undefined : v === "true" }));
