@@ -276,5 +276,7 @@
   "LEDGER_ACCOUNT_MISSING": "The chart of accounts is incomplete. Contact the system administrator.",
   "JOURNAL_UNBALANCED": "The accounting entry does not balance. Contact the system administrator.",
   "JOURNAL_LINE_INVALID": "An accounting entry line is not valid. Contact the system administrator.",
-  "JOURNAL_DIMENSIONS_INVALID": "An accounting entry line is missing required details. Contact the system administrator."
+  "JOURNAL_DIMENSIONS_INVALID": "An accounting entry line is missing required details. Contact the system administrator.",
+  "ALLOCATION_REQUIRED": "Choose the invoices to pay, or allocate automatically.",
+  "APPROVER_INVALID": "The approver's username or password is wrong."
 }
