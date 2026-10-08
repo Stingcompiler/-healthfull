@@ -1,4 +1,366 @@
 {
   "title": "العيادة",
-  "description": "ملخص المريض والملاحظات السريرية والطلبات والوصفات."
+  "description": "ملخص المريض والملاحظات السريرية والطلبات والوصفات.",
+  "queue": {
+    "title": "مرضاي",
+    "description": "المرضى الذين دفعوا رسوم الكشف، بترتيب الدخول. نادِ التالي عندما تكون جاهزاً.",
+    "callNext": "نداء التالي",
+    "calledToast": "تم نداء الرقم {{token, bidi}}.",
+    "loadError": "تعذر تحميل طابورك.",
+    "emptyTitle": "لا أحد في انتظارك",
+    "emptyDescription": "يظهر المرضى هنا بعد دفع رسوم الكشف أو التصريح بها.",
+    "activeHeading": "في الانتظار ومعك ({{count}})",
+    "noneWaiting": "لا أحد في الانتظار الآن.",
+    "seenHeading": "تم الكشف عليهم اليوم ({{count}})",
+    "token": "الرقم",
+    "call": "نداء",
+    "start": "بدء الكشف",
+    "open": "فتح",
+    "complete": "إنهاء الكشف",
+    "completeTitle": "إنهاء هذا الكشف؟",
+    "completeDescription": "يخرج المريض من طابورك. تبقى الزيارة مفتوحة ليفوتر الكاشير طلباتك وتصل النتائج.",
+    "movedToast": {
+      "done": "انتهى الكشف.",
+      "moved": "تم تحديث الطابور."
+    }
+  },
+  "queueStatus": {
+    "waiting": "في الانتظار",
+    "called": "تم النداء",
+    "in_progress": "مع الطبيب",
+    "done": "تم الكشف",
+    "no_show": "لم يحضر",
+    "cancelled": "ملغى"
+  },
+  "visitType": {
+    "new": "زيارة جديدة",
+    "follow_up": "متابعة",
+    "emergency": "طوارئ",
+    "pharmacy_sale": "بيع صيدلية",
+    "inpatient": "تنويم"
+  },
+  "visitStatus": {
+    "open": "مفتوحة",
+    "closed": "الزيارة مختومة",
+    "cancelled": "الزيارة ملغاة"
+  },
+  "workspace": {
+    "title": "الكشف",
+    "notFoundTitle": "الزيارة غير موجودة",
+    "notFoundDescription": "هذه الزيارة غير موجودة أو الرابط غير صحيح.",
+    "backToQueue": "العودة إلى مرضاي",
+    "loadError": "تعذر تحميل الزيارة.",
+    "visit": "الزيارة",
+    "tabsLabel": "أقسام الكشف",
+    "shortcutHint": "الاختصار: {{keys}}"
+  },
+  "tabs": {
+    "note": "الملاحظة",
+    "orders": "الطلبات",
+    "results": "النتائج",
+    "history": "السجل"
+  },
+  "summary": {
+    "label": "ملخص المريض",
+    "allergies": "الحساسية",
+    "loadError": "تعذر تحميل ملخص المريض.",
+    "conditions": "الأمراض المزمنة",
+    "manage": "إدارة",
+    "noConditions": "لا توجد أمراض مزمنة مسجلة.",
+    "latestVitals": "آخر العلامات الحيوية",
+    "medications": "الأدوية الحديثة (30 يوماً)",
+    "noMedications": "لا أدوية في آخر 30 يوماً.",
+    "latestResults": "آخر النتائج المعتمدة",
+    "noResults": "لا توجد نتائج معتمدة بعد.",
+    "recentVisits": "آخر الزيارات",
+    "noVisits": "لا زيارات سابقة."
+  },
+  "vitals": {
+    "title": "العلامات الحيوية",
+    "temperature": "الحرارة",
+    "bp": "ضغط الدم",
+    "pulse": "النبض",
+    "spo2": "تشبع الأكسجين",
+    "weight": "الوزن",
+    "tempValue": "{{value}} °م",
+    "bpValue": "{{sys}}/{{dia}} ملم زئبق",
+    "spo2Value": "{{value}}٪",
+    "weightValue": "{{value}} كجم",
+    "savedToast": "تم تسجيل العلامات الحيوية.",
+    "saveError": "لم تُسجل العلامات الحيوية.",
+    "none": "لا علامات حيوية مسجلة لهذه الزيارة.",
+    "record": "تسجيل العلامات",
+    "short": {
+      "temperature_c": "الحرارة",
+      "bp_systolic": "الانقباضي",
+      "bp_diastolic": "الانبساطي",
+      "pulse_bpm": "النبض",
+      "respiratory_rate": "التنفس",
+      "spo2_percent": "الأكسجين",
+      "weight_kg": "الوزن",
+      "height_cm": "الطول",
+      "blood_glucose_mg_dl": "السكر",
+      "pain_score": "الألم"
+    },
+    "field": {
+      "temperature_c": "الحرارة (°م)",
+      "bp_systolic": "الضغط الانقباضي",
+      "bp_diastolic": "الضغط الانبساطي",
+      "pulse_bpm": "النبض (/دقيقة)",
+      "respiratory_rate": "التنفس (/دقيقة)",
+      "spo2_percent": "تشبع الأكسجين (٪)",
+      "weight_kg": "الوزن (كجم)",
+      "height_cm": "الطول (سم)",
+      "blood_glucose_mg_dl": "السكر (ملغ/دسل)",
+      "pain_score": "الألم (0-10)"
+    }
+  },
+  "note": {
+    "title": "الملاحظة السريرية",
+    "complaint": "الشكوى",
+    "history": "التاريخ المرضي",
+    "examination": "الفحص",
+    "assessment": "التقييم",
+    "plan": "الخطة",
+    "draft": "مسودة غير موقعة",
+    "draftOther": "مسودة",
+    "signed": "موقعة",
+    "save": "حفظ المسودة",
+    "sign": "توقيع الملاحظة",
+    "signTitle": "توقيع هذه الملاحظة؟",
+    "signDescription": "الملاحظة الموقعة لا تتغير. التصحيح يُكتب في ملاحظة جديدة.",
+    "savedToast": "تم حفظ المسودة.",
+    "signedToast": "تم توقيع الملاحظة.",
+    "saveError": "لم تُحفظ الملاحظة.",
+    "none": "لا توجد ملاحظة سريرية لهذه الزيارة."
+  },
+  "diagnosis": {
+    "title": "التشخيص",
+    "icd10": "رمز ICD-10",
+    "searchPlaceholder": "رمز أو كلمات، مثل B54 أو ملاريا",
+    "clearCode": "إزالة الرمز",
+    "results": "نتائج ICD-10",
+    "noMatch": "لا يوجد رمز ICD-10 مطابق. يمكنك كتابة التشخيص نصاً.",
+    "text": "نص التشخيص (اختياري مع الرمز)",
+    "kindLabel": "النوع",
+    "kind": {
+      "primary": "رئيسي",
+      "secondary": "ثانوي"
+    },
+    "certaintyLabel": "درجة التأكد",
+    "certainty": {
+      "provisional": "مبدئي",
+      "confirmed": "مؤكد"
+    },
+    "add": "إضافة تشخيص",
+    "addedToast": "تمت إضافة التشخيص.",
+    "addError": "لم يُضف التشخيص.",
+    "remove": "حذف التشخيص",
+    "none": "لم يُسجل تشخيص بعد."
+  },
+  "referral": {
+    "title": "الإحالات",
+    "new": "كتابة إحالة",
+    "description": "إحالة المريض إلى قسم آخر أو إلى جهة خارجية.",
+    "none": "لا إحالات لهذه الزيارة.",
+    "kind": {
+      "internal": "قسم آخر",
+      "external": "جهة خارجية"
+    },
+    "department": "القسم",
+    "doctor": "الطبيب (اختياري)",
+    "anyDoctor": "أي طبيب",
+    "choose": "اختر…",
+    "facility": "اسم الجهة",
+    "urgencyLabel": "الأولوية",
+    "urgency": {
+      "routine": "عادية",
+      "urgent": "عاجلة",
+      "emergency": "طارئة"
+    },
+    "status": {
+      "issued": "صادرة",
+      "completed": "مكتملة",
+      "cancelled": "ملغاة"
+    },
+    "reason": "سبب الإحالة",
+    "summary": "الملخص السريري",
+    "issue": "إصدار الإحالة",
+    "createdToast": "تم إصدار الإحالة.",
+    "saveError": "لم تصدر الإحالة.",
+    "cancel": "إلغاء الإحالة",
+    "cancelTitle": "إلغاء هذه الإحالة؟"
+  },
+  "allergy": {
+    "title": "الحساسية",
+    "description": "حساسية الأدوية ومجموعاتها تنبهك عند وصف دواء مطابق.",
+    "loadError": "تعذر تحميل الحساسية.",
+    "none": "لا توجد حساسية مسجلة.",
+    "add": "إضافة حساسية",
+    "type": "الحساسية من",
+    "types": {
+      "drug_class": "مجموعة دوائية",
+      "drug": "دواء محدد",
+      "food": "طعام",
+      "environmental": "مادة بيئية",
+      "other": "أخرى"
+    },
+    "drugClass": "المجموعة الدوائية",
+    "choose": "اختر…",
+    "substance": "الدواء أو المادة",
+    "reaction": "التفاعل",
+    "severityLabel": "الشدة",
+    "severity": {
+      "mild": "خفيفة",
+      "moderate": "متوسطة",
+      "severe": "شديدة",
+      "life_threatening": "مهددة للحياة"
+    },
+    "resolve": "زالت",
+    "error": "سُجلت خطأً",
+    "reactivate": "إعادة التفعيل",
+    "addedToast": "تم تسجيل الحساسية.",
+    "saveError": "لم تُسجل الحساسية."
+  },
+  "condition": {
+    "title": "الأمراض المزمنة",
+    "description": "أمراض طويلة الأمد تظهر لكل طبيب يفتح هذا الملف.",
+    "loadError": "تعذر تحميل الأمراض المزمنة.",
+    "none": "لا توجد أمراض مزمنة مسجلة.",
+    "add": "إضافة مرض",
+    "icd10": "رمز ICD-10",
+    "name": "الاسم (اختياري مع الرمز)",
+    "since": "منذ",
+    "resolve": "زال",
+    "addedToast": "تم تسجيل المرض.",
+    "saveError": "لم يُسجل المرض."
+  },
+  "kind": {
+    "lab": "فحص معمل",
+    "procedure": "إجراء",
+    "drug": "دواء",
+    "consumable": "مستهلكات"
+  },
+  "orders": {
+    "newOrder": "طلب جديد",
+    "catalog": "الدليل",
+    "searchHint": "انتقل إلى البحث",
+    "kindFilter": "نوع الخدمة",
+    "allKinds": "الكل",
+    "searchLabel": "البحث في الدليل",
+    "searchPlaceholder": "الاسم أو الرمز، مثل CBC أو أموكسيسيلين",
+    "noMatch": "لا شيء في الدليل يطابق البحث.",
+    "draftEmpty": "أضف فحوصات أو إجراءات أو أدوية من الدليل أو من المفضلة.",
+    "quantity": "الكمية",
+    "note": "ملاحظة",
+    "removeItem": "إزالة {{name}}",
+    "place": "إرسال الطلبات ({{count}})",
+    "placedToast": "تم إرسال الطلبات: {{count}}.",
+    "placeError": "لم تُرسل الطلبات.",
+    "saveFavorite": "حفظ في المفضلة",
+    "current": "طلبات هذه الزيارة",
+    "loadError": "تعذر تحميل الطلبات.",
+    "noneTitle": "لا طلبات بعد",
+    "noneDescription": "تظهر طلباتك هنا بحالتها: مطلوب، مدفوع، قيد التنفيذ، منفذ.",
+    "inProgress": "قيد التنفيذ",
+    "overridden": "تجاوز تنبيه الحساسية: {{reason}}",
+    "cancelledBecause": "سُحب الطلب: {{reason}}",
+    "withdraw": "سحب الطلب",
+    "withdrawTitle": "سحب هذا الطلب؟",
+    "withdrawnToast": "تم سحب الطلب."
+  },
+  "rx": {
+    "dose": "الجرعة",
+    "doseIn": "الجرعة ({{unit}})",
+    "frequency": "التكرار",
+    "chooseFrequency": "اختر…",
+    "duration": "الأيام",
+    "route": "طريقة الإعطاء",
+    "instructions": "التعليمات",
+    "asNeeded": "عند الحاجة",
+    "quantityOverride": "الكمية (اختياري)",
+    "quantityComputed": "للصرف: {{count}} {{unit}}",
+    "quantityGiven": "للصرف: {{count}} {{unit}}",
+    "quantityNeeded": "أدخل الجرعة والتكرار والأيام، أو الكمية.",
+    "days_zero": "أقل من يوم",
+    "days_one": "يوم واحد",
+    "days_two": "يومان",
+    "days_few": "{{count}} أيام",
+    "days_many": "{{count}} يوماً",
+    "days_other": "{{count}} يوم"
+  },
+  "frequency": {
+    "OD": "مرة يومياً",
+    "BID": "مرتان يومياً",
+    "TID": "ثلاث مرات يومياً",
+    "QID": "أربع مرات يومياً",
+    "Q4H": "كل 4 ساعات",
+    "Q6H": "كل 6 ساعات",
+    "Q8H": "كل 8 ساعات",
+    "Q12H": "كل 12 ساعة",
+    "HS": "عند النوم",
+    "QOD": "يوماً بعد يوم",
+    "STAT": "مرة واحدة الآن",
+    "PRN": "عند الحاجة"
+  },
+  "route": {
+    "oral": "بالفم",
+    "iv": "في الوريد",
+    "im": "في العضل",
+    "sc": "تحت الجلد",
+    "topical": "على الجلد",
+    "inhaled": "استنشاق",
+    "rectal": "شرجي",
+    "ophthalmic": "في العين",
+    "otic": "في الأذن",
+    "nasal": "في الأنف",
+    "other": "أخرى"
+  },
+  "orderSets": {
+    "favorites": "مفضلتي",
+    "noFavorites": "لا مفضلة بعد. احفظ طلباً في المفضلة لتعيد استخدامه.",
+    "shared": "مجموعات الطلبات",
+    "noShared": "لا توجد مجموعات طلبات مشتركة.",
+    "loadError": "تعذر تحميل مجموعات الطلبات.",
+    "remove": "حذف المفضلة {{name}}",
+    "removedToast": "تم حذف المفضلة.",
+    "saveTitle": "حفظ في المفضلة",
+    "saveDescription": "تُحفظ عناصر هذا الطلب ({{count}}) باسم تختاره.",
+    "name": "اسم المفضلة",
+    "save": "حفظ المفضلة",
+    "savedToast": "تم حفظ المفضلة.",
+    "saveError": "لم تُحفظ المفضلة."
+  },
+  "override": {
+    "title": "تنبيه حساسية",
+    "description": "المريض لديه حساسية من دواء في هذا الطلب. لن يُطلب ما لم تذكر سبب إعطائه رغم ذلك.",
+    "match": "{{allergen}} ({{match}}، {{severity}})",
+    "matchKind": {
+      "item": "الدواء نفسه",
+      "drug_class": "المجموعة الدوائية نفسها",
+      "substance": "مادة مذكورة"
+    },
+    "reason": "سبب الوصف رغم الحساسية",
+    "reasonHint": "يُسجل مع اسمك والوقت.",
+    "error": "لم تُرسل الطلبات.",
+    "back": "العودة إلى الطلب",
+    "confirm": "تجاوز التنبيه وإرسال الطلب"
+  },
+  "resultFlag": {
+    "high": "مرتفع",
+    "low": "منخفض",
+    "critical": "حرج",
+    "abnormal": "غير طبيعي"
+  },
+  "results": {
+    "loadError": "تعذر تحميل النتائج.",
+    "emptyTitle": "لا نتائج معتمدة",
+    "emptyDescription": "تظهر نتائج المعمل هنا بعد اعتماد مشرف المعمل.",
+    "amended": "معدلة"
+  },
+  "history": {
+    "loadError": "تعذر تحميل السجل.",
+    "emptyTitle": "لا زيارات سابقة",
+    "emptyDescription": "هذه أول زيارة للمريض."
+  }
 }
