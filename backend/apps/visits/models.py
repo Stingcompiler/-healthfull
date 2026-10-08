@@ -253,6 +253,14 @@ class Appointment(models.Model):
     cancelled_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
+    cancel_reason = models.ForeignKey(
+        "core.ReasonCode",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="An appointment_cancel reason code (invariant 4).",
+    )
     cancel_note = models.CharField(max_length=300, blank=True)
 
     class Meta:

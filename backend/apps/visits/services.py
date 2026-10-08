@@ -41,8 +41,17 @@ from django.db.models import Exists, Max, OuterRef, Q, QuerySet
 from django.utils import timezone
 
 from apps.catalog.models import Service, ServiceKind
-from apps.core.models import Department, DoctorProfile, Policy, Room, User
-from apps.core.services import next_number, resolve_reason
+from apps.core.models import (
+    CenterProfile,
+    Department,
+    DoctorProfile,
+    Policy,
+    ReasonCategory,
+    ReasonCode,
+    Room,
+    User,
+)
+from apps.core.services import next_number, require_permission, resolve_reason
 from apps.orders.models import BillingStatus, FulfilmentStatus, OrderSource, ServiceLine
 from apps.patients import services as patient_services
 from apps.patients.models import Patient, PatientCoverage
@@ -64,22 +73,38 @@ from apps.visits.models import (
     VisitType,
 )
 from domain import coverage as dc
+from domain import queue as dq
 from domain.errors import DomainError
 
 __all__ = [
     "EMERGENCY_PRIORITY",
     "FINANCIAL_EVENTS",
+    "AgendaItem",
+    "DayAgenda",
+    "DisplayEntry",
+    "LineView",
     "TimelineEvent",
+    "TimelineItem",
+    "TokenSlip",
+    "VisitOptions",
+    "VisitView",
+    "WaitingRoom",
     "admit",
+    "appointment_day",
     "available_slots",
     "bed_charge_dates",
+    "board",
+    "board_row",
     "book_appointment",
+    "call_next",
     "call_patient",
     "cancel_appointment",
     "cancel_queue_entry",
     "cancel_visit",
+    "cancel_visit_view",
     "change_coverage",
     "charge_bed_days",
+    "check_in",
     "close_visit",
     "convert_appointment",
     "create_bed",
@@ -92,13 +117,23 @@ __all__ = [
     "is_ready",
     "mark_appointment_no_show",
     "mark_no_show",
+    "move_entry",
+    "open_visit",
     "queue",
     "reassign_future_appointments",
     "requeue",
     "reschedule_appointment",
     "start_consultation",
     "timeline",
+    "timeline_view",
+    "token_slip",
     "transfer_bed",
+    "upcoming_appointments",
+    "update_appointment",
+    "visit_list",
+    "visit_options",
+    "visit_view",
+    "waiting_room",
 ]
 
 EMERGENCY_PRIORITY = 10
@@ -375,6 +410,22 @@ def cancel_visit(
 # --- queue ----------------------------------------------------------------------------------
 
 
+def billed_lines(visit_ref: Any) -> Exists:
+    """The visit has open lines on an approved invoice (invoiced or paid).
+
+    Cancelling such a visit credits those lines, so it needs a holder of
+    ``billing.approve_credit_note`` (FEATURES 2.7); the reception screens show it before the
+    clerk tries.
+    """
+    return Exists(
+        ServiceLine.objects.filter(
+            visit_id=visit_ref,
+            billing_status__in=[BillingStatus.INVOICED, BillingStatus.SETTLED],
+            fulfilment_status__in=[FulfilmentStatus.PENDING, FulfilmentStatus.IN_PROGRESS],
+        )
+    )
+
+
 def _unpaid_consultation() -> Exists:
     return Exists(
         ServiceLine.objects.filter(
@@ -402,7 +453,7 @@ def queue(
     qs = (
         QueueEntry.objects.filter(queue_date=on or timezone.localdate(), status__in=statuses)
         .select_related("visit", "visit__patient")
-        .annotate(blocked=_unpaid_consultation())
+        .annotate(blocked=_unpaid_consultation(), billed=billed_lines(OuterRef("visit_id")))
     )
     if department is not None:
         qs = qs.filter(department=department)
@@ -646,15 +697,37 @@ def reschedule_appointment(
         )
 
 
-def cancel_appointment(appointment: Appointment, *, actor: User, note: str = "") -> Appointment:
+def cancel_appointment(
+    appointment: Appointment,
+    *,
+    actor: User,
+    reason_code: ReasonCode | str | None = None,
+    note: str = "",
+) -> Appointment:
+    """Cancel a booking with an ``appointment_cancel`` reason code and the caller's words
+    (invariant 4: reason, who, when).
+
+    Raises:
+        DomainError: ``APPOINTMENT_NOT_BOOKED``, ``REASON_REQUIRED``, ``REASON_UNKNOWN``,
+            ``REASON_NOTE_REQUIRED``.
+    """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="cancel appointment"):
         locked = _booked(appointment)
+        reason = resolve_reason(reason_code, ReasonCategory.APPOINTMENT_CANCEL, note)
         locked.status = AppointmentStatus.CANCELLED
         locked.cancelled_at = timezone.now()
         locked.cancelled_by = actor
+        locked.cancel_reason = reason
         locked.cancel_note = note.strip()[:300]
         locked.save(
-            update_fields=["status", "cancelled_at", "cancelled_by", "cancel_note", "updated_at"]
+            update_fields=[
+                "status",
+                "cancelled_at",
+                "cancelled_by",
+                "cancel_reason",
+                "cancel_note",
+                "updated_at",
+            ]
         )
     return locked
 
@@ -1052,28 +1125,34 @@ def timeline(visit: Visit, *, include_financial: bool = True) -> list[TimelineEv
 
     visit = Visit.objects.get(pk=visit.pk)  # fresh status and timestamps
     events = [TimelineEvent(visit.created_at, "visit_created", visit.pk, visit.created_by_id)]
-    for line in ServiceLine.objects.filter(visit=visit).order_by("id"):
+    for line in ServiceLine.objects.filter(visit=visit).select_related("service").order_by("id"):
+        service = {
+            "service_id": line.service_id,
+            "service_code": line.service.code,
+            "service_name_ar": line.service.name_ar,
+            "service_name_en": line.service.name_en,
+            "kind": line.kind,
+        }
         events.append(
-            TimelineEvent(
-                line.ordered_at,
-                "line_ordered",
-                line.pk,
-                line.ordered_by_id,
-                {"service_id": line.service_id, "kind": line.kind},
-            )
+            TimelineEvent(line.ordered_at, "line_ordered", line.pk, line.ordered_by_id, service)
         )
         if line.performed_at is not None:
             events.append(
-                TimelineEvent(line.performed_at, "line_performed", line.pk, line.performed_by_id)
+                TimelineEvent(
+                    line.performed_at, "line_performed", line.pk, line.performed_by_id, service
+                )
             )
         if line.cancelled_at is not None:
             events.append(
-                TimelineEvent(line.cancelled_at, "line_cancelled", line.pk, line.cancelled_by_id)
+                TimelineEvent(
+                    line.cancelled_at, "line_cancelled", line.pk, line.cancelled_by_id, service
+                )
             )
     for version in ResultVersion.objects.filter(
         result_set__service_line__visit=visit,
         status__in=[ResultStatus.APPROVED, ResultStatus.AMENDED],
-    ):
+    ).select_related("result_set__service_line__service"):
+        tested = version.result_set.service_line.service
         events.append(
             TimelineEvent(
                 version.approved_at or version.entered_at,
@@ -1083,6 +1162,9 @@ def timeline(visit: Visit, *, include_financial: bool = True) -> list[TimelineEv
                 {
                     "service_line_id": version.result_set.service_line_id,
                     "version": version.version_no,
+                    "service_code": tested.code,
+                    "service_name_ar": tested.name_ar,
+                    "service_name_en": tested.name_en,
                 },
             )
         )
@@ -1152,3 +1234,454 @@ def timeline(visit: Visit, *, include_financial: bool = True) -> list[TimelineEv
             TimelineEvent(visit.cancelled_at, "visit_cancelled", visit.pk, visit.cancelled_by_id)
         )
     return sorted(events, key=lambda e: (e.at, e.kind, e.ref_id))
+
+
+@dataclass(frozen=True, slots=True)
+class TimelineItem:
+    """A timeline event with the user who did it."""
+
+    event: TimelineEvent
+    actor: User | None
+
+
+def timeline_view(visit: Visit, *, include_financial: bool) -> list[TimelineItem]:
+    """:func:`timeline` with the acting users loaded in one query (FEATURES 2.4)."""
+    events = timeline(visit, include_financial=include_financial)
+    users = User.objects.in_bulk({e.actor_id for e in events if e.actor_id is not None})
+    return [
+        TimelineItem(e, users.get(e.actor_id) if e.actor_id is not None else None) for e in events
+    ]
+
+
+# --- reception screens: reference data, visit lists, queue board, display, token slip -------
+
+
+@dataclass(frozen=True, slots=True)
+class VisitOptions:
+    """What the create-visit form chooses from."""
+
+    departments: list[Department]
+    doctors: list[DoctorProfile]
+    cancel_reasons: list[ReasonCode]
+    appointment_cancel_reasons: list[ReasonCode]
+    follow_up_window_days: int
+
+
+def visit_options() -> VisitOptions:
+    """Active departments and doctors, visit and appointment cancellation reasons and the
+    follow-up window."""
+    return VisitOptions(
+        departments=list(Department.objects.filter(active=True).order_by("sort_order", "code")),
+        doctors=list(
+            DoctorProfile.objects.filter(active=True, user__is_active=True)
+            .select_related("user", "department", "consultation_service")
+            .order_by("department__sort_order", "department__code", "user__username")
+        ),
+        cancel_reasons=list(
+            ReasonCode.objects.filter(category=ReasonCategory.VISIT_CANCEL, active=True).order_by(
+                "sort_order", "code"
+            )
+        ),
+        appointment_cancel_reasons=list(
+            ReasonCode.objects.filter(
+                category=ReasonCategory.APPOINTMENT_CANCEL, active=True
+            ).order_by("sort_order", "code")
+        ),
+        follow_up_window_days=Policy.load().follow_up_window_days,
+    )
+
+
+def _visit_rows() -> QuerySet[Visit]:
+    return Visit.objects.select_related(
+        "patient",
+        "department",
+        "doctor__user",
+        "payer",
+        "follow_up_of",
+        "cancel_reason",
+        "created_by",
+    ).annotate(billed=billed_lines(OuterRef("pk")))
+
+
+def visit_list(
+    *,
+    patient: Patient | None = None,
+    on: date | None = None,
+    department: Department | None = None,
+    doctor: DoctorProfile | None = None,
+    status: str | None = None,
+) -> QuerySet[Visit]:
+    """Visits, newest first: of a person (every merged file), a day, a department or doctor."""
+    qs = _visit_rows()
+    if patient is not None:
+        qs = qs.filter(patient_id__in=patient_services.person_file_ids(patient))
+    if on is not None:
+        tz = timezone.get_current_timezone()
+        start = datetime.combine(on, time.min, tzinfo=tz)
+        qs = qs.filter(created_at__gte=start, created_at__lt=start + timedelta(days=1))
+    if department is not None:
+        qs = qs.filter(department=department)
+    if doctor is not None:
+        qs = qs.filter(doctor=doctor)
+    if status:
+        qs = qs.filter(status=status)
+    return qs.order_by("-created_at", "-id")
+
+
+@dataclass(frozen=True, slots=True)
+class LineView:
+    """A service line with its derived state (ARCHITECTURE 4.4); never a price."""
+
+    line: ServiceLine
+    state: str
+
+
+@dataclass(frozen=True, slots=True)
+class VisitView:
+    visit: Visit
+    lines: list[LineView]
+    queue_entry: QueueEntry | None
+    #: The consultation fee is paid or authorized (or none is due): the doctor may call.
+    queue_ready: bool
+
+
+def _entry_rows() -> QuerySet[QueueEntry]:
+    return QueueEntry.objects.select_related(
+        "visit", "visit__patient", "department", "doctor__user", "room"
+    )
+
+
+def visit_view(visit: Visit) -> VisitView:
+    """A visit with its service lines' states and its latest queue entry."""
+    fresh = _visit_rows().get(pk=visit.pk)
+    lines = ServiceLine.objects.filter(visit=fresh).select_related("service").order_by("id")
+    entry = (
+        _entry_rows()
+        .filter(visit=fresh)
+        .annotate(blocked=_unpaid_consultation(), billed=billed_lines(OuterRef("visit_id")))
+        .exclude(status=QueueStatus.CANCELLED)
+        .order_by("-queue_date", "-id")
+        .first()
+    )
+    return VisitView(
+        visit=fresh,
+        lines=[LineView(line, str(_orders().line_state(line))) for line in lines],
+        queue_entry=entry,
+        queue_ready=entry is not None and is_ready(entry),
+    )
+
+
+def _ready(entry: QueueEntry) -> bool:
+    """Whether a row from :func:`queue` may be called (its ``blocked`` annotation)."""
+    return not bool(getattr(entry, "blocked", False))
+
+
+def board(
+    *,
+    department: Department | None = None,
+    doctor: DoctorProfile | None = None,
+    on: date | None = None,
+    include_finished: bool = False,
+) -> QuerySet[QueueEntry]:
+    """The reception board: every token of the day in serving order, paid or not.
+
+    Active tokens always; with ``include_finished`` also no-shows and finished ones.
+    Each row is annotated with ``blocked`` (consultation fee neither paid nor authorized).
+    """
+    statuses: list[str] = [*ACTIVE_QUEUE_STATUSES, QueueStatus.NO_SHOW]
+    if include_finished:
+        statuses.append(QueueStatus.DONE)
+    return queue(
+        department=department,
+        doctor=doctor,
+        on=on,
+        include_not_ready=True,
+        statuses=statuses,
+    ).select_related("department", "doctor__user", "room")
+
+
+def call_next(
+    *,
+    department: Department,
+    actor: User,
+    doctor: DoctorProfile | None = None,
+    on: date | None = None,
+) -> QueueEntry:
+    """Call the first paid, waiting token of the department (FEATURES 2.3).
+
+    Emergencies first, then token order (:func:`domain.queue.next_to_call`). With a doctor,
+    only that doctor's tokens and tokens without a doctor. Unpaid tokens keep their place
+    and are skipped (invariant 1).
+
+    Raises:
+        DomainError: ``QUEUE_EMPTY``.
+    """
+    day = on or timezone.localdate()
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="queue call next"):
+        # One caller at a time per department (the lock token numbering takes too).
+        Department.objects.select_for_update().get(pk=department.pk)
+        waiting = list(
+            queue(
+                department=department,
+                doctor=doctor,
+                on=day,
+                include_not_ready=True,
+                statuses=[QueueStatus.WAITING],
+            )
+        )
+        chosen = dq.next_to_call(
+            dq.QueueCandidate(e.pk, e.token_no, e.priority, e.status, _ready(e)) for e in waiting
+        )
+        if chosen is None:
+            raise DomainError(
+                "QUEUE_EMPTY",
+                "Nobody with a paid consultation is waiting",
+                department=department.code,
+            )
+        entry = next(e for e in waiting if e.pk == chosen.entry_id)
+        return board_row(call_patient(entry, actor=actor).pk)
+
+
+def board_row(entry_id: int) -> QueueEntry:
+    """One queue entry as the board lists it (annotated with ``blocked``)."""
+    return (
+        _entry_rows()
+        .filter(pk=entry_id)
+        .annotate(blocked=_unpaid_consultation(), billed=billed_lines(OuterRef("visit_id")))
+        .get()
+    )
+
+
+_QUEUE_ACTIONS = {
+    "call": call_patient,
+    "start": start_consultation,
+    "finish": finish_consultation,
+    "no_show": mark_no_show,
+    "requeue": requeue,
+}
+
+
+def move_entry(entry: QueueEntry, action: str, *, actor: User) -> QueueEntry:
+    """Apply a board action (call, start, finish, no_show, requeue) and return the row.
+
+    Raises:
+        PermissionRequired: ``finish`` by an actor without ``visits.finish_consultation``.
+        DomainError: ``QUEUE_TRANSITION_INVALID``, ``QUEUE_NOT_READY``.
+    """
+    step = _QUEUE_ACTIONS.get(action)
+    if step is None:
+        raise DomainError(
+            "QUEUE_TRANSITION_INVALID", "Unknown queue action", status=entry.status, to=action
+        )
+    if action == "finish":
+        # Finishing performs the consultation fee line: the doctor's act (FLOW step 3), not
+        # the front desk's.
+        require_permission(actor, "visits.finish_consultation")
+    return board_row(step(entry, actor=actor).pk)
+
+
+@dataclass(frozen=True, slots=True)
+class DisplayEntry:
+    """One token on the waiting-room screen: the name is abbreviated (privacy)."""
+
+    visit_id: int
+    token_no: int
+    name_ar: str
+    name_en: str
+    status: str
+    department: Department
+    doctor: DoctorProfile | None
+    room: Room | None
+    called_at: datetime | None
+
+
+@dataclass(frozen=True, slots=True)
+class WaitingRoom:
+    #: Called or with the doctor, the latest call first.
+    serving: list[DisplayEntry]
+    #: Paid tokens still waiting, in serving order.
+    waiting: list[DisplayEntry]
+
+
+def _display(entry: QueueEntry) -> DisplayEntry:
+    patient = entry.visit.patient
+    return DisplayEntry(
+        visit_id=entry.visit_id,
+        token_no=entry.token_no,
+        name_ar=dq.abbreviate_name(patient.full_name_ar or patient.full_name_en),
+        name_en=dq.abbreviate_name(patient.full_name_en or patient.full_name_ar),
+        status=entry.status,
+        department=entry.department,
+        doctor=entry.doctor,
+        room=entry.room,
+        called_at=entry.called_at,
+    )
+
+
+def waiting_room(*, department: Department | None = None, on: date | None = None) -> WaitingRoom:
+    """The waiting-room display feed (FEATURES 2.3): paid tokens only, names abbreviated."""
+    rows = [
+        _display(e)
+        for e in queue(department=department, on=on).select_related(
+            "department", "doctor__user", "room"
+        )
+    ]
+    serving = [r for r in rows if r.status in (QueueStatus.CALLED, QueueStatus.IN_PROGRESS)]
+    serving.sort(
+        key=lambda r: (r.called_at.timestamp() if r.called_at else 0.0, r.token_no), reverse=True
+    )
+    return WaitingRoom(
+        serving=serving, waiting=[r for r in rows if r.status == QueueStatus.WAITING]
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class TokenSlip:
+    """What the 80 mm token slip prints (FEATURES 2.6)."""
+
+    entry: QueueEntry
+    #: Paid tokens still waiting or called that are served before this one.
+    ahead: int
+    center: CenterProfile
+
+
+def token_slip(entry: QueueEntry) -> TokenSlip:
+    fresh = board_row(entry.pk)
+    same_day = QueueEntry.objects.filter(
+        department_id=fresh.department_id,
+        queue_date=fresh.queue_date,
+        status__in=ACTIVE_QUEUE_STATUSES,
+    ).annotate(blocked=_unpaid_consultation())
+    # Unpaid tokens are skipped by call_next, so they are not ahead of anyone.
+    candidates = [
+        dq.QueueCandidate(e.pk, e.token_no, e.priority, e.status, _ready(e)) for e in same_day
+    ]
+    return TokenSlip(
+        entry=fresh, ahead=dq.tokens_ahead(candidates, fresh.pk), center=CenterProfile.load()
+    )
+
+
+# --- appointment day view -------------------------------------------------------------------
+
+#: Appointment statuses that keep their slot on the day view.
+_HOLDS_SLOT = frozenset(
+    {AppointmentStatus.BOOKED, AppointmentStatus.ARRIVED, AppointmentStatus.NO_SHOW}
+)
+
+
+@dataclass(frozen=True, slots=True)
+class AgendaItem:
+    """A free slot (``appointment`` is None) or an appointment on the doctor's day."""
+
+    starts_at: datetime
+    ends_at: datetime
+    appointment: Appointment | None
+
+
+@dataclass(frozen=True, slots=True)
+class DayAgenda:
+    doctor: DoctorProfile
+    day: date
+    #: The doctor has clinic hours that day.
+    works: bool
+    items: list[AgendaItem]
+
+
+def _appointment_rows() -> QuerySet[Appointment]:
+    return Appointment.objects.select_related(
+        "patient", "department", "doctor__user", "converted_visit", "cancel_reason"
+    )
+
+
+def appointment_day(doctor: DoctorProfile, on: date, *, now: datetime | None = None) -> DayAgenda:
+    """A doctor's day (FEATURES 2.5): free slots still ahead and every appointment, by time."""
+    tz = timezone.get_current_timezone()
+    start = datetime.combine(on, time.min, tzinfo=tz)
+    appointments = list(
+        _appointment_rows()
+        .filter(doctor=doctor, starts_at__gte=start, starts_at__lt=start + timedelta(days=1))
+        .order_by("starts_at", "id")
+    )
+    held = [(a.starts_at, a.ends_at) for a in appointments if a.status in _HOLDS_SLOT]
+    moment = _now(now)
+    items = [
+        AgendaItem(s, e, None)
+        for s, e in available_slots(doctor, on)
+        if e > moment and not any(hs < e and he > s for hs, he in held)
+    ]
+    items.extend(AgendaItem(a.starts_at, a.ends_at, a) for a in appointments)
+    items.sort(
+        key=lambda i: (i.starts_at, i.appointment is not None, getattr(i.appointment, "pk", 0))
+    )
+    works = (
+        DoctorSchedule.objects.filter(doctor=doctor, weekday=on.weekday(), active=True)
+        .filter(Q(valid_from__isnull=True) | Q(valid_from__lte=on))
+        .filter(Q(valid_to__isnull=True) | Q(valid_to__gte=on))
+        .exists()
+    )
+    return DayAgenda(doctor=doctor, day=on, works=works, items=items)
+
+
+def update_appointment(
+    appointment: Appointment,
+    *,
+    actor: User,
+    notes: str | None = None,
+    contact_name: str | None = None,
+    contact_phone: str | None = None,
+) -> Appointment:
+    """Edit a booking's notes or caller details (time changes go through reschedule).
+
+    Raises:
+        DomainError: ``APPOINTMENT_NOT_BOOKED``, ``PATIENT_OR_CONTACT_REQUIRED``.
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit appointment"):
+        locked = _booked(appointment)
+        fields = ["updated_at"]
+        if notes is not None:
+            locked.notes = notes.strip()[:300]
+            fields.append("notes")
+        if contact_name is not None:
+            locked.contact_name = " ".join(contact_name.split())[:200]
+            fields.append("contact_name")
+        if contact_phone is not None:
+            locked.contact_phone = contact_phone.strip()[:30]
+            fields.append("contact_phone")
+        if locked.patient_id is None and not locked.contact_name:
+            raise DomainError(
+                "PATIENT_OR_CONTACT_REQUIRED", "Book for a patient or a named contact"
+            )
+        locked.save(update_fields=fields)
+    return locked
+
+
+def open_visit(*, patient: Patient, actor: User, **kwargs: Any) -> VisitView:
+    """:func:`create_visit`, returned as the reception screen shows it (:func:`visit_view`)."""
+    return visit_view(create_visit(patient=patient, actor=actor, **kwargs))
+
+
+def cancel_visit_view(visit: Visit, *, actor: User, reason_code: str, note: str = "") -> VisitView:
+    """:func:`cancel_visit` (the actor approves any credit note), returned as a view."""
+    return visit_view(cancel_visit(visit, actor=actor, reason_code=reason_code, note=note))
+
+
+def check_in(
+    appointment: Appointment, *, actor: User, patient: Patient | None = None, **visit_kwargs: Any
+) -> VisitView:
+    """The booked patient arrived (FEATURES 2.5): :func:`convert_appointment` as a view."""
+    return visit_view(
+        convert_appointment(appointment, actor=actor, patient=patient, **visit_kwargs)
+    )
+
+
+def upcoming_appointments(patient: Patient, *, now: datetime | None = None) -> list[Appointment]:
+    """Booked appointments of the person (every merged file) that have not ended yet."""
+    return list(
+        _appointment_rows()
+        .filter(
+            patient_id__in=patient_services.person_file_ids(patient),
+            status=AppointmentStatus.BOOKED,
+            ends_at__gt=_now(now),
+        )
+        .order_by("starts_at", "id")
+    )

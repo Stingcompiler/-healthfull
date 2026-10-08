@@ -6,7 +6,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 |---|---|---|
 | 0. Foundation | done (merged PR #1); Docker run pending in CI | `make check` and `make e2e` green locally; Docker exit gate (`docker compose up` shows a working login) not run: no Docker on the build machine, first run is the CI `docker` job |
 | 1. Domain core + schema | done on `feat/1-domain-core`; merge to main pending | backend 1290 tests (396 domain), all passing; ADR 0006; follow-ups below |
-| 2. Patients and visits | next (wave a) | shared e2e ground ready on `wave/a` (seed catalog, `e2e_fixture`, `e2e/helpers/api.ts`) |
+| 2. Patients and visits | built and reviewed on `feat/a-patients`; merge pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7; integration notes below |
 | 3. Doctor and orders | next (wave a) | |
 | 4. Billing, payments, shifts | next (wave a) | |
 | 5. Pharmacy, lab, procedures | not started | |
@@ -117,3 +117,26 @@ including the full money cycle with a shift variance and a transfer rejected aft
   to these shared files (still shared: `errors.json` and the generated OpenAPI files).
   `make check` green (backend 1321 passed, frontend 399 passed, no API drift; shellcheck not
   installed here); `make e2e` 491 passed (9 new `@helpers` tests).
+- 2026-10-08: Patients and visits review fixes on `feat/a-patients` (wave a). Built FEATURES 1.8
+  (Excel/CSV patient import: `domain/patient_import.py`, `apps/imports/services.py`,
+  `/api/imports`, screen `/patients/import`) and patient results in the global quick search
+  (0.9). Finishing a consultation needs `visits.finish_consultation` (doctor, admin); visits
+  and board rows carry `billed` so reception sees that a supervisor must cancel a paid visit;
+  doctors read the appointment day; token slips count only paid tokens ahead; list rows show
+  only a coverage valid today; merge and appointment-cancel reasons are ReasonCode rows
+  (`patient_merge`, `appointment_cancel`, core migration 0009). `require_perm` now refuses a
+  caller without the permission before the body is validated (403, never 422), with per-module
+  route contract tests. Waiting-room screen is the kiosk route `/display/queue` (no shell, no
+  exit, offline screen). Every patients/visits query shows a failure with a retry. UI review
+  fixes (emergency badge, no-show confirmation, sex not preselected, 80 mm print page, compact
+  free slots, focus management, Arabic copy). E2E API clients start with an empty cookie jar.
+  Results: `make check` green (backend 1430 passed, frontend 405 passed, mypy and eslint clean,
+  no API drift; shellcheck not installed here); `make e2e` with `@patients` plus the responsive
+  matrix of patients, patient-new, patient-import, patient-file, queue, queue-display and
+  appointments: 151 passed. Full `make e2e`: 586 passed, 1 failed (768px queue-display light en:
+  the browser session closed while the feed loaded; the 18 queue-display cases then passed on a
+  rerun).
+  Integration notes: core migration `0009_reason_categories_merge_appointment` and
+  `feat/a-admin`'s `0009_authevent_password_reset` need a merge migration; the admin reason-code
+  screens need labels for the two new categories; `/administration/imports` can link to
+  `/patients/import`; a display-only role for the kiosk needs a core role change.

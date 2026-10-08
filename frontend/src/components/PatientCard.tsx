@@ -13,7 +13,7 @@ export interface PatientCardPatient {
   nameAr: string;
   nameEn?: string | null;
   fileNo: string;
-  sex: "male" | "female";
+  sex: "male" | "female" | "unknown";
   /** ISO date (YYYY-MM-DD); preferred over ageYears when known. */
   birthDate?: string | null;
   /** Estimated age when only age was recorded. */

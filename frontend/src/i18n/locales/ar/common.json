@@ -96,7 +96,8 @@
   },
   "sex": {
     "male": "ذكر",
-    "female": "أنثى"
+    "female": "أنثى",
+    "unknown": "غير معروف"
   },
   "patient": {
     "fileNo": "رقم الملف",

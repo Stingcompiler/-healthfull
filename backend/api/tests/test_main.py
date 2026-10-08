@@ -51,7 +51,10 @@ def _operations(schema: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]
 
 
 def test_expected_routes_exist(schema: dict[str, Any]) -> None:
-    assert set(schema["paths"]) == {
+    # The platform routes and every module's ping; feature routes add to these per module.
+    for path in schema["paths"]:
+        assert OPERATION_ID.match(f"{path.split('/')[2]}_x"), path
+    assert set(schema["paths"]) >= {
         "/api/auth/csrf",
         "/api/auth/login",
         "/api/auth/logout",
@@ -70,18 +73,16 @@ def test_operation_ids_are_stable_and_unique(schema: dict[str, Any]) -> None:
     assert len(ids) == len(set(ids))
     for op_id in ids:
         assert OPERATION_ID.match(op_id), op_id
-    assert sorted(ids) == sorted(
-        [
-            "auth_get_csrf",
-            "auth_login",
-            "auth_logout",
-            "auth_get_me",
-            "auth_update_preferences",
-            "auth_change_password",
-            "ops_get_health",
-            *(f"{module}_get_ping" for module in PING_MODULES),
-        ]
-    )
+    assert set(ids) >= {
+        "auth_get_csrf",
+        "auth_login",
+        "auth_logout",
+        "auth_get_me",
+        "auth_update_preferences",
+        "auth_change_password",
+        "ops_get_health",
+        *(f"{module}_get_ping" for module in PING_MODULES),
+    }
 
 
 def test_every_operation_is_tagged_with_its_module(schema: dict[str, Any]) -> None:

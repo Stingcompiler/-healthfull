@@ -190,6 +190,14 @@ class PatientMerge(models.Model):
 
     source = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name="merges_out")
     target = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name="merges_in")
+    reason = models.ForeignKey(
+        "core.ReasonCode",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="A patient_merge reason code (invariant 4); null on merges recorded before.",
+    )
     reason_note = models.TextField()
     source_snapshot = models.JSONField(
         default=dict, help_text="Demographics of the source file at merge time."

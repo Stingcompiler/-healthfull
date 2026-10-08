@@ -5,6 +5,7 @@
  *   root
  *   ├── /login, /change-password        (features/auth)
  *   ├── /portal/*                        (portal, mobile-first, public)
+ *   ├── /display/queue                   visits: waiting-room kiosk (signed in, no shell)
  *   └── _app  (auth guard + AppShell)
  *       ├── /                            dashboard
  *       ├── /patients                    patients
@@ -33,7 +34,7 @@ import { routes as nursingRoutes } from "@/features/nursing/routes";
 import { routes as patientsRoutes } from "@/features/patients/routes";
 import { routes as pharmacyRoutes } from "@/features/pharmacy/routes";
 import { routes as reportsRoutes } from "@/features/reports/routes";
-import { routes as visitsRoutes } from "@/features/visits/routes";
+import { kioskRoutes as visitsKioskRoutes, routes as visitsRoutes } from "@/features/visits/routes";
 import { routes as portalRoutes } from "@/portal/routes";
 
 import { requireAppUser } from "./guards";
@@ -61,6 +62,7 @@ export const appRoute = createRoute({
 export const routeTree = rootRoute.addChildren([
   ...authRoutes(rootRoute),
   ...portalRoutes(rootRoute),
+  ...visitsKioskRoutes(rootRoute),
   appRoute.addChildren([
     ...dashboardRoutes(appRoute),
     ...patientsRoutes(appRoute),
