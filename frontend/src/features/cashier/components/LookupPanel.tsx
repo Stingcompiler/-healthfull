@@ -37,7 +37,10 @@ export function LookupPanel({
   const onlyVisit = items.length === 1 && items[0]?.visits.length === 1 ? items[0].visits[0] : undefined;
 
   return (
-    <section aria-labelledby="lookup-title" className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5">
+    <section
+      aria-labelledby="lookup-title"
+      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5 lg:sticky lg:top-20 lg:self-start"
+    >
       <div className="flex items-center justify-between gap-2">
         <h2 id="lookup-title" className="text-base font-semibold">
           {t("lookup.title")}

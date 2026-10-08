@@ -1,12 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
-import { BadgePercent, CheckCircle2, FileMinus, Printer, Trash2, XCircle } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { BadgePercent, CheckCircle2, FileMinus, MoreHorizontal, Printer, Trash2, XCircle } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Can } from "@/components/Can";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { DataTable, type DataTableRowAction } from "@/components/DataTable";
+import { type DataTableRowAction } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
 import { KbdCombo } from "@/components/Kbd";
 import { MoneyText } from "@/components/MoneyText";
@@ -14,6 +13,13 @@ import { ReasonDialog } from "@/components/ReasonDialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { usePermission } from "@/lib/auth/hooks";
 import { useShortcut } from "@/lib/hooks/use-shortcut";
 
@@ -28,9 +34,19 @@ import { PreapprovalDialog } from "./PreapprovalDialog";
 
 export const APPROVE_SHORTCUT = "f8";
 
-function Amount({ label, value, strong = false }: { label: ReactNode; value: string; strong?: boolean }) {
+function Amount({
+  label,
+  value,
+  strong = false,
+  testId,
+}: {
+  label: ReactNode;
+  value: string;
+  strong?: boolean;
+  testId?: string;
+}) {
   return (
-    <div className="flex items-baseline justify-between gap-3">
+    <div className="flex items-baseline justify-between gap-3" data-testid={testId}>
       <dt className="text-muted">{label}</dt>
       <dd className={strong ? "font-semibold" : undefined}>
         <MoneyText value={value} />
@@ -43,7 +59,7 @@ function LineCard({ line, actions, approved }: { line: InvoiceLine; actions: Rea
   const { t } = useTranslation("cashier");
   const names = useNames();
   return (
-    <div className="card-surface flex flex-col gap-2 p-4" data-testid="invoice-line">
+    <div className="flex h-full flex-col gap-2 rounded-control border border-border p-3" data-testid="invoice-line">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <span className="font-medium break-words">{names.name(line.service)}</span>
@@ -52,6 +68,10 @@ function LineCard({ line, actions, approved }: { line: InvoiceLine; actions: Rea
             <Badge variant={line.payer ? "info" : "neutral"}>
               {line.payer ? names.name(line.payer) : t("invoice.cash")}
             </Badge>
+            {line.excluded ? <Badge variant="warning">{t("invoice.excluded")}</Badge> : null}
+            {line.requires_pre_approval && !line.pre_approval_ref ? (
+              <Badge variant="warning">{t("invoice.needsPreapproval")}</Badge>
+            ) : null}
           </span>
         </div>
         {actions}
@@ -59,8 +79,8 @@ function LineCard({ line, actions, approved }: { line: InvoiceLine; actions: Rea
       <dl className="grid gap-1 text-sm">
         <Amount label={t("invoice.qtyPrice", { qty: line.quantity })} value={line.gross} />
         {line.discount !== "0.00" ? <Amount label={t("invoice.discount")} value={negate(line.discount)} /> : null}
-        <Amount label={t("invoice.payerShare")} value={line.payer_share} />
-        <Amount label={t("invoice.patientShare")} value={line.patient_share} strong />
+        <Amount label={t("invoice.payerShare")} value={line.payer_share} testId="payer-share" />
+        <Amount label={t("invoice.patientShare")} value={line.patient_share} strong testId="patient-share" />
         {approved && line.outstanding !== null ? (
           <Amount label={t("invoice.outstanding")} value={line.outstanding} />
         ) : null}
@@ -146,73 +166,6 @@ export function InvoiceCard({
     return out;
   };
 
-  const columns = useMemo<ColumnDef<InvoiceLine>[]>(
-    () => [
-      {
-        id: "service",
-        header: t("invoice.service"),
-        meta: { label: t("invoice.service") },
-        cell: ({ row }) => (
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="font-medium">{names.name(row.original.service)}</span>
-            <span className="flex flex-wrap items-center gap-1.5">
-              <StatusBadge status={row.original.state} size="sm" />
-              {row.original.excluded ? <Badge variant="warning">{t("invoice.excluded")}</Badge> : null}
-              {row.original.requires_pre_approval && !row.original.pre_approval_ref ? (
-                <Badge variant="warning">{t("invoice.needsPreapproval")}</Badge>
-              ) : null}
-            </span>
-          </div>
-        ),
-      },
-      {
-        id: "payer",
-        header: t("invoice.payer"),
-        meta: { label: t("invoice.payer") },
-        cell: ({ row }) => (row.original.payer ? names.name(row.original.payer) : t("invoice.cash")),
-      },
-      {
-        id: "qty",
-        header: t("invoice.qty"),
-        meta: { label: t("invoice.qty"), align: "end" },
-        cell: ({ row }) => <span className="tabular">{row.original.quantity}</span>,
-      },
-      {
-        id: "gross",
-        header: t("invoice.gross"),
-        meta: { label: t("invoice.gross"), align: "end" },
-        cell: ({ row }) => <MoneyText value={row.original.gross} currency={false} />,
-      },
-      {
-        id: "discount",
-        header: t("invoice.discount"),
-        meta: { label: t("invoice.discount"), align: "end" },
-        cell: ({ row }) => <MoneyText value={row.original.discount} currency={false} />,
-      },
-      {
-        id: "payerShare",
-        header: t("invoice.payerShare"),
-        meta: { label: t("invoice.payerShare"), align: "end" },
-        cell: ({ row }) => (
-          <span data-testid="payer-share">
-            <MoneyText value={row.original.payer_share} currency={false} />
-          </span>
-        ),
-      },
-      {
-        id: "patientShare",
-        header: t("invoice.patientShare"),
-        meta: { label: t("invoice.patientShare"), align: "end" },
-        cell: ({ row }) => (
-          <span data-testid="patient-share" className="font-semibold">
-            <MoneyText value={row.original.patient_share} currency={false} />
-          </span>
-        ),
-      },
-    ],
-    [t, names],
-  );
-
   return (
     <section
       className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5"
@@ -268,18 +221,21 @@ export function InvoiceCard({
         ) : null}
       </header>
 
-      <DataTable
-        columns={columns}
-        data={invoice.lines}
-        getRowId={(l) => String(l.id)}
-        caption={t("invoice.linesCaption")}
-        rowActions={isDraft ? rowActions : undefined}
-        pageSize={50}
-        pageSizeOptions={[50]}
-        minTableWidth={760}
-        renderCard={(line, ctx) => <LineCard line={line} actions={ctx.actions} approved={approved} />}
-        emptyState={<p className="p-4 text-sm text-muted">{t("invoice.noLines")}</p>}
-      />
+      {invoice.lines.length === 0 ? (
+        <p className="text-sm text-muted">{t("invoice.noLines")}</p>
+      ) : (
+        <ul className="grid gap-3 xl:grid-cols-2" aria-label={t("invoice.linesCaption")}>
+          {invoice.lines.map((line) => (
+            <li key={line.id} className="min-w-0">
+              <LineCard
+                line={line}
+                approved={approved}
+                actions={isDraft ? <LineActions actions={rowActions(line)} /> : null}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
 
       <dl className="grid gap-1 text-sm sm:ms-auto sm:w-80" data-testid="invoice-totals">
         <Amount label={t("invoice.grossTotal")} value={invoice.gross_total} />
@@ -418,5 +374,35 @@ export function InvoiceCard({
       />
       {approved ? <CreditNoteDialog invoice={invoice} open={creditOpen} onOpenChange={setCreditOpen} /> : null}
     </section>
+  );
+}
+
+/** The actions of one draft line (discount, pre-approval, take off, cancel). */
+function LineActions({ actions }: { actions: DataTableRowAction[] }) {
+  const { t } = useTranslation();
+  if (actions.length === 0) return null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={t("table.rowActions")} data-testid="line-actions">
+          <MoreHorizontal aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {actions.map((action) => (
+          <div key={action.label}>
+            {action.separated ? <DropdownMenuSeparator /> : null}
+            <DropdownMenuItem
+              onSelect={action.onSelect}
+              disabled={action.disabled}
+              variant={action.destructive ? "destructive" : "default"}
+            >
+              {action.icon}
+              {action.label}
+            </DropdownMenuItem>
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -31,7 +31,7 @@ test.describe("@cashier shift close", () => {
     await confirm.getByRole("button", { name: tr("en", "actions.cancel") }).click();
 
     await choose(page, t("cashier:close.reason"), "Counting error");
-    await page.getByLabel(tr("en", "reason.note")).fill("Coins miscounted");
+    await page.getByTestId("close-shift-form").getByLabel(tr("en", "reason.note")).fill("Coins miscounted");
     await page.getByTestId("close-shift").click();
     await page.getByRole("alertdialog").getByRole("button", { name: t("cashier:close.submit") }).click();
     await expect(page.getByTestId("shift-report")).toHaveAttribute("data-frozen", "true");

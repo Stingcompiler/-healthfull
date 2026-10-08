@@ -32,7 +32,7 @@ export function DocHeader({ center, title, format }: { center: Center; title: Re
       {center.address ? <p>{center.address}</p> : null}
       {center.phone ? (
         <p>
-          <bdi>{center.phone}</bdi>
+          <bdi dir="ltr">{center.phone}</bdi>
         </p>
       ) : null}
       <p className={cn("mt-1 font-semibold", format === "thermal" ? "" : "text-base")}>{title}</p>
@@ -109,7 +109,7 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
           label={t("receipt.qrLabel")}
           className={format === "thermal" ? "size-32" : "size-36"}
         />
-        <bdi className="text-[10px] break-all text-muted">{receipt.verify_code}</bdi>
+        <bdi dir="ltr" className="text-[10px] break-all text-muted">{receipt.verify_code}</bdi>
         <p className="text-center text-[11px] text-muted">{t("receipt.verifyHint")}</p>
       </div>
     </div>

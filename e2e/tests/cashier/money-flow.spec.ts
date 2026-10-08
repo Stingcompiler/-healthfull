@@ -63,7 +63,8 @@ test.describe("@cashier money flow", () => {
     await expect(payment.getByLabel(t("cashier:payment.amount"))).toHaveValue("7500.00");
     await payment.getByLabel(t("cashier:payment.tendered")).fill("10000");
     await expect(payment.getByTestId("change-due")).toContainText(sdg("2500.00"));
-    await page.keyboard.press("ControlOrMeta+Enter");
+    // The app reads Ctrl on the emulated (non-Mac) desktop browser.
+    await page.keyboard.press("Control+Enter");
     await expect(payment.getByTestId("payment-done")).toContainText(sdg("7500.00"));
     await expect(payment.getByTestId("payment-done")).toContainText(sdg("2500.00"));
 

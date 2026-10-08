@@ -54,7 +54,7 @@ export function PatientHeader({
               <span className="sr-only">{t("common:patient.phone")}</span>
             </dt>
             <dd className="tabular">
-              <bdi>{patient.phone}</bdi>
+              <bdi dir="ltr">{patient.phone}</bdi>
             </dd>
           </div>
         ) : null}
