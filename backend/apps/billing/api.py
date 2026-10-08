@@ -179,8 +179,12 @@ def remove_line(request: HttpRequest, invoice_id: int, line_id: int) -> Any:
     response={200: InvoiceOut, **_READ},
     operation_id="billing_cancel_draft_line",
     summary="Cancel a draft line's service with a reason (e.g. the patient refused it)",
+    description=(
+        "Needs billing.create_invoice (the router) and orders.cancel_line (the service): "
+        "roles outside the cashier's desk never see the invoice this returns."
+    ),
 )
-@require_perm("orders.cancel_line")
+@require_perm("billing.create_invoice")
 def cancel_line(request: HttpRequest, invoice_id: int, line_id: int, payload: LineCancelIn) -> Any:
     return desk.cancel_draft_line(
         invoice_id, line_id, actor=_user(request), reason=payload.reason, note=payload.note

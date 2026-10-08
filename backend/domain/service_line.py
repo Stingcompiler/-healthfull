@@ -57,6 +57,7 @@ __all__ = [
     "LineStatus",
     "apply_settlement",
     "authorize",
+    "can_authorize",
     "can_enter_worklist",
     "cancel",
     "credit",
@@ -274,6 +275,19 @@ def credit(status: LineStatus, approval: Approval, *, fully_credited: bool = Tru
 
 
 # --- fulfilment edges -----------------------------------------------------------------
+
+
+def can_authorize(status: LineStatus) -> bool:
+    """Whether :func:`authorize` accepts the line: open, not settled, not yet authorized.
+
+    Screens show this flag; the rule itself stays in :func:`authorize`, and a test pins the
+    two together.
+    """
+    return (
+        status.fulfilment in ACTIVE_FULFILMENT
+        and not status.authorized
+        and status.billing is not BillingStatus.SETTLED
+    )
 
 
 def authorize(status: LineStatus, approval: Approval) -> LineStatus:

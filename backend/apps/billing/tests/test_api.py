@@ -12,6 +12,7 @@ import pytest
 
 from apps.billing.models import Invoice
 from apps.orders.models import ServiceLine
+from apps.payments.models import Refund
 from apps.payments.tests import api_kit as kit
 from apps.payments.tests.api_kit import Desk, error, ok
 
@@ -219,6 +220,32 @@ def test_remove_cancel_and_void_draft_lines(d: Desk) -> None:
     assert body["status"] == "void"
 
 
+def test_only_the_billing_desk_cancels_a_draft_line(d: Desk, make_user: Any) -> None:
+    """orders.cancel_line alone (doctor, pharmacist) never reaches a cashier's invoice."""
+    pharmacist = kit.actor(make_user, "pharm", "pharmacist")
+    iv = kit.insured_visit(d.doctor.user)
+    inv = _draft(d, iv)
+    url = f"/api/billing/invoices/{inv['id']}/lines/{inv['lines'][0]['id']}/cancel"
+    for who in (d.doctor, pharmacist):
+        error(who.api.post(url, {"reason": "PATIENT_REFUSED"}), 403, "PERMISSION_DENIED")
+    assert ServiceLine.objects.get(pk=iv.insured.pk).fulfilment_status != "cancelled"
+
+
+def test_a_draft_line_cannot_be_cancelled_once_approved(d: Desk) -> None:
+    iv = kit.insured_visit(d.doctor.user)
+    inv = _draft(d, iv)
+    ok(d.cashier.api.post(f"/api/billing/invoices/{inv['id']}/approve"))
+    error(
+        d.cashier.api.post(
+            f"/api/billing/invoices/{inv['id']}/lines/{inv['lines'][0]['id']}/cancel",
+            {"reason": "PATIENT_REFUSED"},
+        ),
+        409,
+        "INVOICE_FROZEN",
+    )
+    assert ServiceLine.objects.get(pk=iv.insured.pk).fulfilment_status != "cancelled"
+
+
 def test_approve_freezes_numbers_and_refuses_a_second_approval(d: Desk) -> None:
     iv = kit.insured_visit(d.doctor.user)
     inv = _draft(d, iv)
@@ -321,6 +348,11 @@ def test_credit_note_by_cashier_approved_by_supervisor_opens_a_refund(d: Desk) -
     assert outcome["deallocated"] == "600.00"
     assert outcome["refund"]["status"] == "requested"
     assert outcome["refund"]["amount"] == "600.00"
+    # The approver asked for the money back (invariant 4), so another person approves it.
+    assert Refund.objects.get(pk=outcome["refund"]["id"]).requested_by_id == d.sup.user.pk
+    refund_url = f"/api/payments/refunds/{outcome['refund']['id']}/approve"
+    error(d.sup.api.post(refund_url, {}), 409, "SELF_APPROVAL_NOT_ALLOWED")
+    assert ok(d.accountant.api.post(refund_url, {}))["status"] == "approved"
     assert outcome["credit_note"]["released"] == "600.00"
     detail = ok(d.cashier.api.get(f"/api/billing/invoices/{inv['id']}"))
     assert detail["outstanding"] == "0.00"

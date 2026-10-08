@@ -68,6 +68,7 @@ __all__ = [
     "apply_invoice_discount",
     "approve_credit_note",
     "approve_invoice",
+    "cancel_draft_line",
     "create_credit_note",
     "create_draft_invoice",
     "create_pharmacy_sale",
@@ -436,6 +437,33 @@ def remove_draft_line(invoice_line: InvoiceLine, *, actor: User) -> Invoice:
         _require_draft(invoice)
         InvoiceLine.objects.filter(pk=invoice_line.pk, invoice=invoice).delete()
         _reprice_draft(invoice)
+    return invoice
+
+
+def cancel_draft_line(
+    invoice_line: InvoiceLine, reason: ReasonCode | str, *, actor: User, note: str = ""
+) -> Invoice:
+    """Cancel a draft line's service with a reason (FLOW step 4: the patient refuses a test).
+
+    The invoice is locked and must still be a draft for the whole operation, so a concurrent
+    approval cannot turn the cancellation into a credit note behind the cashier's back. A
+    billed line is corrected by a credit note instead. The cancellation itself is the
+    ``orders.cancel_line`` rule, which the actor must hold (invariant 4).
+
+    Raises:
+        PermissionRequired: the actor lacks ``orders.cancel_line``.
+        DomainError: ``INVOICE_FROZEN``, ``INVOICE_NOT_DRAFT``, and the errors of
+            ``orders.cancel_line``.
+    """
+    require_permission(actor, "orders.cancel_line")
+    with transaction.atomic():
+        invoice = _lock_invoice(invoice_line.invoice_id)
+        _require_draft(invoice)
+        il = InvoiceLine.objects.select_related("service_line").get(
+            pk=invoice_line.pk, invoice=invoice
+        )
+        orders.cancel_line(il.service_line, reason, actor, note=note)
+        invoice.refresh_from_db()
     return invoice
 
 

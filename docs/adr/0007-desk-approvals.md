@@ -27,6 +27,13 @@ the reason and the time recorded on the row.
   permissions and limits apply (a supervisor working the desk approves their own discount).
 - No session is created for the approver, and the password is never stored or logged.
 
+- Approving a credit note that releases patient money opens the refund request in the
+  approver's own name, not the note's creator's: the approver is the person who decided the
+  money goes back, so invariant 4 records them. `payments.approve_refund` refuses
+  `SELF_APPROVAL_NOT_ALLOWED` to the requester, so a second person (another supervisor or an
+  accountant) approves the refund, and one person never decides both the credit and the cash
+  leaving the drawer.
+
 ## Consequences
 - A supervisor approves without the cashier signing out, and the money stays in the right
   drawer.

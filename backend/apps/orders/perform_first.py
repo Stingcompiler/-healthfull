@@ -17,8 +17,9 @@ from api.pagination import paginate
 from apps.billing import queries as bq
 from apps.core.models import User
 from apps.orders import services as orders
-from apps.orders.models import BillingStatus, FulfilmentStatus, PerformAuthorization, ServiceLine
+from apps.orders.models import FulfilmentStatus, PerformAuthorization, ServiceLine
 from apps.visits.models import Visit
+from domain import service_line as dsl
 
 __all__ = ["authorizations", "authorize", "revoke", "visit_lines"]
 
@@ -35,11 +36,7 @@ def _line_json(sl: ServiceLine) -> dict[str, Any]:
         "billing_status": sl.billing_status,
         "fulfilment_status": sl.fulfilment_status,
         "authorized": status.authorized,
-        "authorizable": (
-            sl.fulfilment_status in _OPEN
-            and sl.billing_status in (BillingStatus.UNBILLED, BillingStatus.INVOICED)
-            and not status.authorized
-        ),
+        "authorizable": dsl.can_authorize(status),
     }
 
 

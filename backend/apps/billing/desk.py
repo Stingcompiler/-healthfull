@@ -15,14 +15,13 @@ from typing import Any
 
 from apps.billing import queries
 from apps.billing import services as billing
-from apps.billing.models import CreditNote, DocumentStatus, Invoice, InvoiceLine
+from apps.billing.models import CreditNote, Invoice, InvoiceLine
 from apps.catalog.models import Payer
 from apps.core.models import User
 from apps.orders import services as orders
 from apps.orders.models import ServiceLine
 from apps.payments.approvals import ApproverLogin, resolve_approver
 from apps.visits.models import Visit
-from domain.errors import DomainError
 
 __all__ = [
     "approve_credit_note",
@@ -63,15 +62,8 @@ def cancel_draft_line(
     """Cancel a draft line's service line with a reason (the patient refuses a test, FLOW 4).
 
     Only lines of a draft: a billed line is cancelled by a credit note instead.
-
-    Raises:
-        DomainError: ``INVOICE_NOT_DRAFT``, and the errors of ``orders.cancel_line``.
     """
-    il = _line_of(invoice_id, line_id)
-    status = Invoice.objects.filter(pk=invoice_id).values_list("status", flat=True).get()
-    if status != DocumentStatus.DRAFT:
-        raise DomainError("INVOICE_NOT_DRAFT", "The invoice is not a draft", status=status)
-    orders.cancel_line(ServiceLine.objects.get(pk=il.service_line_id), reason, actor, note=note)
+    billing.cancel_draft_line(_line_of(invoice_id, line_id), reason, actor=actor, note=note)
     return queries.invoice_detail(invoice_id)
 
 
@@ -179,15 +171,17 @@ def approve_credit_note(
 ) -> dict[str, Any]:
     """Approve a draft credit note; its released patient money may open a refund request.
 
-    The refund request is opened in the name of the note's creator, so the approver of the
-    credit note can still approve the refund only if they did not create the note (FLOW 8).
+    The refund request is opened in the approver's own name (ADR 0007): the approver is the
+    person who asked for the money to go back, so invariant 4 names them, and a different
+    holder of ``payments.approve_refund`` must approve the refund (SELF_APPROVAL_NOT_ALLOWED).
+    One person never decides both the credit and the cash leaving the drawer.
     """
-    cn = CreditNote.objects.select_related("created_by").get(pk=credit_note_id)
+    cn = CreditNote.objects.get(pk=credit_note_id)
     outcome = billing.approve_credit_note(
         cn,
         actor=actor,
         rebill=rebill,
         open_refund=open_refund,
-        refund_requested_by=cn.created_by,
+        refund_requested_by=actor,
     )
     return queries.credit_outcome_json(outcome)
