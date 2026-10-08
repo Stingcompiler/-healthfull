@@ -215,6 +215,7 @@
   "LINE_NOT_CLINICAL": "This line is not a clinical order and cannot be withdrawn here.",
   "LINE_IN_PROGRESS": "This order is already under way, so it can no longer be withdrawn here.",
   "REFERRAL_NOT_AUTHOR": "Only the doctor who wrote a referral can cancel it.",
+  "INVALID_ROUTE": "Choose a valid route of administration.",
   "LINE_NOT_LAB": "This line is not a lab test.",
   "LAB_TEST_UNKNOWN": "This service has no lab test set up. Contact the lab supervisor.",
   "SERVICE_NOT_LAB": "Lab tests can be linked only to lab services.",
