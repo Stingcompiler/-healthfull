@@ -5,15 +5,16 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import { ADMIN_STATE, ANONYMOUS_STATE } from "../../fixtures/state";
-import { apiAs, disposeApiClients, login, setPrefs, tr } from "../../helpers";
+import { apiAs, disposeApiClients, login, reseed, setPrefs, tr } from "../../helpers";
 
 const CELL = "perm-receptionist-core.manage_settings";
 
 async function receptionistPage(browser: Browser): Promise<Page> {
   const context = await browser.newContext({ storageState: ANONYMOUS_STATE });
   const page = await context.newPage();
-  await setPrefs(page, { theme: "light", lang: "en" });
   await login(page, "reception");
+  // Logged in, this saves English to the profile too (it wins over the browser cache).
+  await setPrefs(page, { theme: "light", lang: "en" });
   return page;
 }
 
@@ -36,6 +37,8 @@ test.describe("@admin permission matrix", () => {
       reason: "e2e cleanup",
     });
     await disposeApiClients();
+    // The receptionist's saved language goes back to the seed value.
+    reseed();
   });
 
   test("granting and revoking a permission changes what the role can open", async ({ page, browser }) => {

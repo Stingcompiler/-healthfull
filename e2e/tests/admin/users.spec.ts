@@ -87,8 +87,11 @@ test.describe("@admin users", () => {
     await setPrefs(page, { theme: "light", lang: "en" });
     await page.goto("/administration/users");
     await page.getByRole("searchbox").fill(username);
+    // Wait for the filtered list: one row, the locked account.
+    const actions = page.getByRole("button", { name: tr("en", "table.rowActions") });
+    await expect(actions).toHaveCount(1);
     await expect(page.locator("main").getByText(tr("en", "admin:users.locked")).first()).toBeVisible();
-    await page.getByRole("button", { name: tr("en", "table.rowActions") }).first().click();
+    await actions.click();
     await page.getByRole("menuitem", { name: tr("en", "admin:users.unlock") }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel(tr("en", "admin:common.reason")).fill("Verified by phone");

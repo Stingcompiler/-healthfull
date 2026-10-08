@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarPlus, Lock, Percent, Plus, Save, Trash2, Undo2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -172,7 +172,10 @@ function VersionTimeline({
         {t("prices.timeline")}
       </h2>
       {versions.length === 0 ? <p className="px-1 text-sm text-muted">{t("prices.noVersions")}</p> : null}
-      <ol className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-1" data-testid="version-timeline">
+      <ol
+        className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-1"
+        data-testid="version-timeline"
+      >
         {versions.map((v) => (
           <li key={v.id}>
             <button
@@ -220,15 +223,17 @@ function VersionItems({ version }: { version: VersionOut }) {
   const editable = version.editable;
   const invalid = [...drafts.values()].some((v) => v !== null && !PRICE.test(v.trim()));
 
-  const setDraft = (serviceId: number, value: string | null, original?: string) => {
+  const setDraft = useCallback((serviceId: number, value: string | null, original?: string) => {
     setDrafts((current) => {
       const next = new Map(current);
       if (value !== null && original !== undefined && value === original) next.delete(serviceId);
       else next.set(serviceId, value);
       return next;
     });
-  };
+  }, []);
 
+  // Columns never depend on the drafts: a new cell function would remount the inputs (and drop
+  // the focus) on every keystroke. Cells read the drafts from DraftsContext instead.
   const columns = useMemo<ColumnDef<PriceItemOut>[]>(
     () => [
       {
@@ -239,12 +244,7 @@ function VersionItems({ version }: { version: VersionOut }) {
             : row.service_name_en || row.service_name_ar,
         header: t("prices.service"),
         meta: { label: t("prices.service") },
-        cell: ({ row, getValue }) => (
-          <div className={cn("min-w-0", drafts.get(row.original.service_id) === null && "line-through opacity-60")}>
-            <div className="truncate font-medium text-fg">{String(getValue())}</div>
-            <Code>{row.original.service_code}</Code>
-          </div>
-        ),
+        cell: ({ row, getValue }) => <ServiceCell item={row.original} name={String(getValue())} />,
       },
       {
         accessorKey: "service_kind",
@@ -257,67 +257,23 @@ function VersionItems({ version }: { version: VersionOut }) {
         accessorFn: (row) => Number(row.unit_price),
         header: t("prices.unitPrice"),
         meta: { label: t("prices.unitPrice"), align: "end" },
-        cell: ({ row }) => {
-          const item = row.original;
-          if (!editable) return <MoneyText value={item.unit_price} />;
-          const draft = drafts.get(item.service_id);
-          if (draft === null) return <span className="text-muted">{t("prices.removed")}</span>;
-          const value = draft ?? item.unit_price;
-          const bad = draft !== undefined && !PRICE.test(draft.trim());
-          return (
-            <Input
-              value={value}
-              inputMode="decimal"
-              dir="ltr"
-              aria-label={t("prices.priceOf", { code: item.service_code })}
-              aria-invalid={bad || undefined}
-              data-testid={`price-${item.service_code}`}
-              className={cn("ms-auto w-32 text-end tabular", draft !== undefined && "border-warning")}
-              onChange={(e) => {
-                setDraft(item.service_id, e.target.value, item.unit_price);
-              }}
-            />
-          );
-        },
+        cell: ({ row }) => <PriceCell item={row.original} />,
       },
       ...(editable
         ? [
             {
               id: "remove",
               header: () => <span className="sr-only">{t("prices.remove")}</span>,
-              meta: { label: t("prices.remove"), align: "end" as const, hideInCard: false },
+              meta: { label: t("prices.remove"), align: "end" as const },
               enableSorting: false,
-              cell: ({ row }: { row: { original: PriceItemOut } }) => {
-                const removed = drafts.get(row.original.service_id) === null;
-                return (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={
-                      removed ? t("prices.undoRemove") : t("prices.removeNamed", { code: row.original.service_code })
-                    }
-                    onClick={() => {
-                      if (removed) {
-                        setDrafts((current) => {
-                          const next = new Map(current);
-                          next.delete(row.original.service_id);
-                          return next;
-                        });
-                      } else {
-                        setDraft(row.original.service_id, null);
-                      }
-                    }}
-                  >
-                    {removed ? <Undo2 /> : <Trash2 />}
-                  </Button>
-                );
-              },
+              cell: ({ row }: { row: { original: PriceItemOut } }) => <RemoveCell item={row.original} />,
             } satisfies ColumnDef<PriceItemOut>,
           ]
         : []),
     ],
-    [t, i18n.language, editable, drafts],
+    [t, i18n.language, editable],
   );
+  const draftsValue = useMemo(() => ({ drafts, setDraft, setDrafts, editable }), [drafts, setDraft, editable]);
 
   const submit = async () => {
     try {
@@ -385,13 +341,15 @@ function VersionItems({ version }: { version: VersionOut }) {
         ) : null}
       </FilterBar>
       <QueryState loading={items.isPending} error={items.error} onRetry={() => void items.refetch()}>
-        <DataTable
-          caption={t("prices.itemsCaption")}
-          columns={columns}
-          data={items.data?.items ?? []}
-          getRowId={(row) => String(row.service_id)}
-          pageSize={25}
-        />
+        <DraftsContext.Provider value={draftsValue}>
+          <DataTable
+            caption={t("prices.itemsCaption")}
+            columns={columns}
+            data={items.data?.items ?? []}
+            getRowId={(row) => String(row.service_id)}
+            pageSize={25}
+          />
+        </DraftsContext.Provider>
       </QueryState>
       {editable && drafts.size > 0 ? (
         <div className="sticky bottom-20 z-20 flex flex-col gap-3 rounded-card border border-warning-border bg-warning-bg p-3 text-warning-fg shadow-overlay sm:flex-row sm:items-center sm:justify-between lg:bottom-4">
@@ -421,6 +379,80 @@ function VersionItems({ version }: { version: VersionOut }) {
         />
       ) : null}
     </section>
+  );
+}
+
+interface DraftsState {
+  drafts: ReadonlyMap<number, string | null>;
+  setDraft: (serviceId: number, value: string | null, original?: string) => void;
+  setDrafts: React.Dispatch<React.SetStateAction<ReadonlyMap<number, string | null>>>;
+  editable: boolean;
+}
+
+const DraftsContext = createContext<DraftsState | null>(null);
+
+function useDrafts(): DraftsState {
+  const value = useContext(DraftsContext);
+  if (!value) throw new Error("price cells need DraftsContext");
+  return value;
+}
+
+function ServiceCell({ item, name }: { item: PriceItemOut; name: string }) {
+  const { drafts } = useDrafts();
+  return (
+    <div className={cn("min-w-0", drafts.get(item.service_id) === null && "line-through opacity-60")}>
+      <div className="truncate font-medium text-fg">{name}</div>
+      <Code>{item.service_code}</Code>
+    </div>
+  );
+}
+
+function PriceCell({ item }: { item: PriceItemOut }) {
+  const { t } = useTranslation("admin");
+  const { drafts, setDraft, editable } = useDrafts();
+  if (!editable) return <MoneyText value={item.unit_price} />;
+  const draft = drafts.get(item.service_id);
+  if (draft === null) return <span className="text-muted">{t("prices.removed")}</span>;
+  const bad = draft !== undefined && !PRICE.test(draft.trim());
+  return (
+    <Input
+      value={draft ?? item.unit_price}
+      inputMode="decimal"
+      dir="ltr"
+      aria-label={t("prices.priceOf", { code: item.service_code })}
+      aria-invalid={bad || undefined}
+      data-testid={`price-${item.service_code}`}
+      className={cn("ms-auto w-32 text-end tabular", draft !== undefined && "border-warning")}
+      onChange={(e) => {
+        setDraft(item.service_id, e.target.value, item.unit_price);
+      }}
+    />
+  );
+}
+
+function RemoveCell({ item }: { item: PriceItemOut }) {
+  const { t } = useTranslation("admin");
+  const { drafts, setDraft, setDrafts } = useDrafts();
+  const removed = drafts.get(item.service_id) === null;
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      aria-label={removed ? t("prices.undoRemove") : t("prices.removeNamed", { code: item.service_code })}
+      onClick={() => {
+        if (removed) {
+          setDrafts((current) => {
+            const next = new Map(current);
+            next.delete(item.service_id);
+            return next;
+          });
+        } else {
+          setDraft(item.service_id, null);
+        }
+      }}
+    >
+      {removed ? <Undo2 /> : <Trash2 />}
+    </Button>
   );
 }
 
