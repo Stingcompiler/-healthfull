@@ -7,7 +7,7 @@ import importlib
 import pytest
 
 from apps.core.models import DoctorProfile, ReasonCategory, ReasonCode
-from apps.core.reason_codes import REASON_CODES, ensure_reason_codes
+from apps.core.reason_codes import LATER_SEEDS, REASON_CODES, ensure_reason_codes
 from apps.core.tests import builders as b
 
 pytestmark = pytest.mark.django_db
@@ -25,8 +25,12 @@ REQUIRED_CATEGORIES = {
 
 
 def test_migration_copy_matches_the_reason_list() -> None:
-    migration = importlib.import_module("apps.core.migrations.0007_seed_reason_codes")
-    assert [tuple(row) for row in migration.REASON_CODES] == [
+    rows = [
+        tuple(row)
+        for name in ("0007_seed_reason_codes", *LATER_SEEDS)
+        for row in importlib.import_module(f"apps.core.migrations.{name}").REASON_CODES
+    ]
+    assert rows == [
         (r.category, r.code, r.label_ar, r.label_en, r.requires_note) for r in REASON_CODES
     ]
 

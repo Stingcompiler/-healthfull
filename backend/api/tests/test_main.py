@@ -40,7 +40,7 @@ OPERATION_ID = re.compile(
 
 MODULE_PATH = re.compile(
     r"^/api/(auth|core|ops|patients|visits|catalog|clinical|orders|billing|"
-    r"payments|pharmacy|lab|claims|reports|imports|portal)/"
+    r"payments|pharmacy|lab|claims|reports|imports|portal)(/|$)"
 )
 
 #: The cashier module's operations (billing, payments, perform-first), used by the frontend.
@@ -146,6 +146,48 @@ def test_operation_ids_are_stable_and_unique(schema: dict[str, Any]) -> None:
         *CASHIER_OPERATIONS,
     }
     assert pinned <= set(ids), sorted(pinned - set(ids))
+
+
+#: Operations a signed-in user may call without a permission code. Anything else must carry
+#: ``@require_perm`` (a new endpoint that forgets it fails here instead of going unnoticed).
+OPEN_OPERATIONS = frozenset(
+    {
+        # Session plumbing: every user, before and after sign-in.
+        "auth_get_csrf",
+        "auth_login",
+        "auth_logout",
+        "auth_get_me",
+        "auth_update_preferences",
+        "auth_change_password",
+        "ops_get_health",
+        # Reference data every screen reads: the reason dialog lists and the center logo on
+        # printouts and the app shell.
+        "core_list_reason_codes",
+        "core_get_center_logo",
+        *(f"{module}_get_ping" for module in PING_MODULES),
+    }
+)
+
+
+def _ninja_operations() -> list[tuple[str, Any]]:
+    from api.main import api
+
+    return [
+        (str(op.operation_id), op)
+        for _, router in api._routers
+        for path_view in router.path_operations.values()
+        for op in path_view.operations
+    ]
+
+
+def test_every_operation_requires_a_permission_unless_allowlisted() -> None:
+    ops = _ninja_operations()
+    open_ops = {
+        op_id for op_id, op in ops if not getattr(op.view_func, "required_permission", None)
+    }
+    assert open_ops == OPEN_OPERATIONS
+    # The allowlist names only operations that exist (a renamed one is not silently kept).
+    assert {op_id for op_id, _ in ops} >= OPEN_OPERATIONS
 
 
 def test_every_operation_is_tagged_with_its_module(schema: dict[str, Any]) -> None:

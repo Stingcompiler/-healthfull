@@ -411,7 +411,7 @@ class Sequence(models.Model):
 
 
 class ReasonCategory(models.TextChoices):
-    """What a reason code explains. Seeded by migration ``0007_seed_reason_codes``."""
+    """What a reason code explains. Seeded by migrations ``0007_seed_reason_codes`` and ``0009``."""
 
     LINE_CANCEL = "line_cancel", "Service line cancellation"
     VISIT_CANCEL = "visit_cancel", "Visit cancellation"
@@ -426,6 +426,8 @@ class ReasonCategory(models.TextChoices):
     TRANSFER_REJECT = "transfer_reject", "Bank transfer rejection"
     RESULT_AMEND = "result_amend", "Lab result amendment"
     SAMPLE_REJECT = "sample_reject", "Lab sample rejection"
+    PATIENT_MERGE = "patient_merge", "Patient file merge"
+    APPOINTMENT_CANCEL = "appointment_cancel", "Appointment cancellation"
 
 
 @pghistory.track(*_full_history())
@@ -552,6 +554,7 @@ class AuthEventKind(models.TextChoices):
     PASSWORD_CHANGE_FAILED = "password_change_failed", "Password change rejected"
     LOGIN_THROTTLED = "login_throttled", "Login refused: too many failures from this address"
     ACCOUNT_UNLOCKED = "account_unlocked", "Account unlocked by an administrator"
+    PASSWORD_RESET = "password_reset", "Password reset by an administrator"
 
 
 class AuthEvent(models.Model):

@@ -4,6 +4,7 @@ import {
   compareDecimal,
   formatDate,
   formatMoney,
+  formatPercent,
   formatRelative,
   isNegativeAmount,
   isZeroAmount,
@@ -102,5 +103,22 @@ describe("compareDecimal", () => {
   it("sorts a list like a human would", () => {
     const values = ["15000.00", "8500.00", "-250.00", "4750.50", "0.00", "4750.5"];
     expect([...values].sort(compareDecimal)).toEqual(["-250.00", "0.00", "4750.50", "4750.5", "8500.00", "15000.00"]);
+  });
+});
+
+describe("formatPercent", () => {
+  it("drops trailing zeros and places the sign and % by locale", () => {
+    expect(formatPercent("10.00", "en")).toBe("10%");
+    expect(formatPercent("70.50", "en")).toBe("70.5%");
+    expect(formatPercent("10.00", "en", { signed: true })).toBe("+10%");
+    expect(formatPercent("-5.25", "en", { signed: true })).toBe("-5.25%");
+    expect(formatPercent("0.00", "en", { signed: true })).toBe("0%");
+  });
+
+  it("formats Arabic with the locale's percent sign and no trailing zeros", () => {
+    const ar = formatPercent("10.00", "ar", { signed: true });
+    expect(ar).not.toContain(".00");
+    expect(ar).toMatch(/10/);
+    expect(ar).toMatch(/[%٪]/);
   });
 });
