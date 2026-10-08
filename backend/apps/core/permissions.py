@@ -103,13 +103,22 @@ def effective_permissions(user: User | AnonymousUser | None) -> frozenset[str]:
     (break-glass account). Everyone else gets the union over their roles, with
     ``RolePermission`` overrides applied per role.
     """
-    from apps.core.models import RolePermission
-
     if user is None or not user.is_authenticated or not user.is_active:
         return frozenset()
     if user.is_superuser:
         return frozenset(_REGISTRY)
-    role_codes = list(user.roles.values_list("code", flat=True))
+    return role_permissions(user.roles.values_list("code", flat=True))
+
+
+def role_permissions(role_codes: Iterable[str]) -> frozenset[str]:
+    """Permission codes that holding ``role_codes`` grants (defaults plus matrix overrides).
+
+    Unlike ``effective_permissions`` this ignores the account's active flag, so it also
+    answers what an inactive account would hold once reactivated.
+    """
+    from apps.core.models import RolePermission
+
+    role_codes = list(role_codes)
     if not role_codes:
         return frozenset()
     overrides = {

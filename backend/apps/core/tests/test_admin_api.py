@@ -198,6 +198,46 @@ def test_manage_users_alone_cannot_grant_admin_or_elevate_self(admin: User, make
     assert response.json()["roles"] == ["doctor", "nurse"]
 
 
+def test_manage_users_alone_cannot_take_over_an_administrator(
+    admin: User, make_user: Any
+) -> None:
+    """Reset, unlock and (de)activate of an account holding admin rights need manage_roles."""
+    manager, api = _manager_with_manage_users(make_user)
+    make_user("boss2", roles=["admin"])  # a second admin, so LAST_ADMIN never applies
+    peer = make_user("chief2", roles=["manager"])  # holds core.manage_users via the matrix
+    admin.failed_login_count = 5
+    admin.locked_until = timezone.now() + timedelta(minutes=10)
+    admin.save(update_fields=["failed_login_count", "locked_until"])
+
+    for target in (admin, peer):
+        for response in (
+            api.post(
+                f"/api/core/users/{target.pk}/reset-password", {"new_password": NEW_PASSWORD}
+            ),
+            api.post(f"/api/core/users/{target.pk}/unlock", {"reason": "Called the desk"}),
+            api.patch(f"/api/core/users/{target.pk}", {"is_active": False}),
+        ):
+            body = _error(response, 403, "PERMISSION_DENIED")
+            assert body["details"]["permission"] == "core.manage_roles"
+    # An inactive administrator cannot be reactivated either.
+    admin.is_active = False
+    admin.save(update_fields=["is_active"])
+    _error(api.patch(f"/api/core/users/{admin.pk}", {"is_active": True}), 403, "PERMISSION_DENIED")
+    admin.refresh_from_db()
+    assert admin.check_password(TEST_PASSWORD)
+    assert admin.failed_login_count == 5
+    assert ApiClient().login("boss", NEW_PASSWORD).status_code != 200
+
+    # Ordinary accounts, and the actor's own password, stay manageable.
+    nurse = make_user("n8", roles=["nurse"])
+    for response in (
+        api.post(f"/api/core/users/{nurse.pk}/reset-password", {"new_password": NEW_PASSWORD}),
+        api.patch(f"/api/core/users/{nurse.pk}", {"is_active": False}),
+        api.post(f"/api/core/users/{manager.pk}/reset-password", {"new_password": NEW_PASSWORD}),
+    ):
+        assert response.status_code == 200, response.content
+
+
 def test_superuser_is_protected(client: ApiClient) -> None:
     root = User.objects.create_superuser("rootx", password=TEST_PASSWORD)
     _error(
