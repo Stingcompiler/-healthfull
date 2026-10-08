@@ -19,6 +19,7 @@ import {
   paidVisit,
   pay,
   setPrefs,
+  snap,
   tr,
   trackConsoleErrors,
 } from "../../helpers";
@@ -156,6 +157,7 @@ test.describe("@clinic doctor workspace", () => {
     await expect(page.locator('[data-testid="order-line"][data-status="paid"]')).toHaveCount(4);
     await expect(amoxLine).toContainText(tr("en", "status.paid"));
     await expectNoHorizontalScroll(page);
+    await snap(page, "clinic-visit-orders");
 
     // Finish the consultation; the visit stays open for results.
     await page.getByTestId("queue-complete").click();
@@ -179,6 +181,7 @@ test.describe("@clinic doctor workspace", () => {
     await page.getByTestId("tab-orders").click();
     await expect(page.getByTestId("catalog-picker")).toBeVisible();
     await expectNoHorizontalScroll(page);
+    await snap(page, "clinic-visit-orders");
     await drainQueue();
   });
 });

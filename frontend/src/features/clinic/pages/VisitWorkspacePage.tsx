@@ -139,11 +139,11 @@ export function VisitWorkspacePage() {
         >
           <TabsList className="w-full" aria-label={t("workspace.tabsLabel")}>
             <TabsTrigger value="note" data-testid="tab-note" title={t("workspace.shortcutHint", { keys: "Alt+1" })}>
-              <FileText aria-hidden="true" />
+              <FileText aria-hidden="true" className="max-sm:hidden" />
               {t("tabs.note")}
             </TabsTrigger>
             <TabsTrigger value="orders" data-testid="tab-orders" title={t("workspace.shortcutHint", { keys: "Alt+2" })}>
-              <ClipboardList aria-hidden="true" />
+              <ClipboardList aria-hidden="true" className="max-sm:hidden" />
               {t("tabs.orders")}
             </TabsTrigger>
             <TabsTrigger
@@ -151,7 +151,7 @@ export function VisitWorkspacePage() {
               data-testid="tab-results"
               title={t("workspace.shortcutHint", { keys: "Alt+3" })}
             >
-              <FlaskConical aria-hidden="true" />
+              <FlaskConical aria-hidden="true" className="max-sm:hidden" />
               {t("tabs.results")}
             </TabsTrigger>
             <TabsTrigger
@@ -159,7 +159,7 @@ export function VisitWorkspacePage() {
               data-testid="tab-history"
               title={t("workspace.shortcutHint", { keys: "Alt+4" })}
             >
-              <History aria-hidden="true" />
+              <History aria-hidden="true" className="max-sm:hidden" />
               {t("tabs.history")}
             </TabsTrigger>
           </TabsList>
