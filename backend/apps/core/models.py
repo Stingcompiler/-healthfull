@@ -552,6 +552,7 @@ class AuthEventKind(models.TextChoices):
     PASSWORD_CHANGE_FAILED = "password_change_failed", "Password change rejected"
     LOGIN_THROTTLED = "login_throttled", "Login refused: too many failures from this address"
     ACCOUNT_UNLOCKED = "account_unlocked", "Account unlocked by an administrator"
+    PASSWORD_RESET = "password_reset", "Password reset by an administrator"
 
 
 class AuthEvent(models.Model):
