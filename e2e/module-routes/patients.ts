@@ -1,13 +1,13 @@
 /**
  * Patients screens for the responsive matrix, besides /patients (listed in e2e/routes.ts).
- * Owned by the patients module: add one entry per new screen. A path with parameters gets
- * `resolve`, which builds the data (factories from ../helpers) and returns the path to open.
- * Example:
- *
- *   appRoute("patient-file", "/patients/$patientId", {
- *     resolve: async () => `/patients/${String((await createPatient()).patient.id)}`,
- *   }),
+ * Owned by the patients module: one entry per screen.
  */
-import type { AppRoute } from "../route-kit";
+import { createPatient } from "../helpers/api";
+import { appRoute, type AppRoute } from "../route-kit";
 
-export const routes: readonly AppRoute[] = [];
+export const routes: readonly AppRoute[] = [
+  appRoute("patient-new", "/patients/new"),
+  appRoute("patient-file", "/patients/$patientId", {
+    resolve: async () => `/patients/${String((await createPatient({ payer: "AMAN" })).patient.id)}`,
+  }),
+];
