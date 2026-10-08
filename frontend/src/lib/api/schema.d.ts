@@ -274,7 +274,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cancel a draft line's service with a reason (e.g. the patient refused it) */
+        /**
+         * Cancel a draft line's service with a reason (e.g. the patient refused it)
+         * @description Needs billing.create_invoice (the router) and orders.cancel_line (the service): roles outside the cashier's desk never see the invoice this returns.
+         */
         post: operations["billing_cancel_draft_line"];
         delete?: never;
         options?: never;
@@ -680,6 +683,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/handover-receivers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The supervisors and accountants who can receive cash handed over by the user */
+        get: operations["payments_list_handover_receivers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments/handovers/{handover_id}/cancel": {
         parameters: {
             query?: never;
@@ -828,6 +848,26 @@ export interface paths {
         };
         /** Check that the /api/payments router is reachable */
         get: operations["payments_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/receipts/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check a printed receipt: its scanned QR code or its receipt number
+         * @description `code` is the QR text (`number|amount|YYYY-MM-DD`) or a receipt number. 404 when no payment has that number.
+         */
+        get: operations["payments_check_receipt"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1622,6 +1662,8 @@ export interface components {
             note: string;
             /** To Shift Id */
             to_shift_id?: number | null;
+            /** To User Id */
+            to_user_id?: number | null;
         };
         /** HandoverOut */
         HandoverOut: {
@@ -2309,6 +2351,31 @@ export interface components {
             /** Count */
             count: number;
             reason: components["schemas"]["ReasonOut"] | null;
+        };
+        /**
+         * ReceiptCheckOut
+         * @description A printed receipt checked against the system (FEATURES 6.9, 15.1).
+         */
+        ReceiptCheckOut: {
+            /**
+             * Code Amount
+             * @description The amount the scanned code carries
+             */
+            code_amount?: string | null;
+            /** Code Day */
+            code_day?: string | null;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            payment: components["schemas"]["PaymentOut"];
+            /**
+             * Standing
+             * @description valid; pending (transfer not yet confirmed by the bank); rejected (the transfer bounced); reversed; mismatch (the code's amount or day differs from the payment)
+             * @enum {string}
+             */
+            standing: "valid" | "pending" | "rejected" | "reversed" | "mismatch";
         };
         /** ReceiptInvoiceOut */
         ReceiptInvoiceOut: {
@@ -5081,6 +5148,71 @@ export interface operations {
             };
         };
     };
+    payments_list_handover_receivers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRefOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     payments_cancel_handover: {
         parameters: {
             query?: never;
@@ -5682,6 +5814,73 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_check_receipt: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptCheckOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

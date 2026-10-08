@@ -18,7 +18,7 @@ from api.pagination import PageParams
 from api.permissions import require_perm
 from api.ping import add_ping
 from api.schemas import ERROR_RESPONSES, ErrorOut, Page
-from apps.billing.schemas import NameOut
+from apps.billing.schemas import NameOut, UserRefOut
 from apps.core.models import User
 from apps.payments import desk, queries
 from apps.payments.approvals import ApproverLogin
@@ -34,6 +34,7 @@ from apps.payments.schemas import (
     OpenShiftRefOut,
     PaymentIn,
     PaymentOut,
+    ReceiptCheckOut,
     ReceiptOut,
     RefundIn,
     RefundOut,
@@ -159,6 +160,17 @@ def handover_targets(request: HttpRequest) -> Any:
 
 
 @payments_router.get(
+    "/handover-receivers",
+    response={200: list[UserRefOut], **_READ},
+    operation_id="payments_list_handover_receivers",
+    summary="The supervisors and accountants who can receive cash handed over by the user",
+)
+@require_perm("payments.cash_handover")
+def handover_receivers(request: HttpRequest) -> Any:
+    return queries.handover_receivers(_user(request))
+
+
+@payments_router.get(
     "/shifts/{shift_id}",
     response={200: ShiftReportOut, **_READ},
     operation_id="payments_get_shift",
@@ -215,6 +227,7 @@ def create_handover(request: HttpRequest, shift_id: int, payload: HandoverIn) ->
             amount=money(payload.amount),
             destination=payload.destination,
             to_shift_id=payload.to_shift_id,
+            to_user_id=payload.to_user_id,
             bank_reference=payload.bank_reference,
             note=payload.note,
         ),
@@ -285,6 +298,23 @@ def record_payment(request: HttpRequest, payload: PaymentIn) -> Any:
             approver=approver,
         ),
     )
+
+
+@payments_router.get(
+    "/receipts/check",
+    response={200: ReceiptCheckOut, **_READ},
+    operation_id="payments_check_receipt",
+    summary="Check a printed receipt: its scanned QR code or its receipt number",
+    description=(
+        "`code` is the QR text (`number|amount|YYYY-MM-DD`) or a receipt number. 404 when no "
+        "payment has that number."
+    ),
+)
+@require_perm("payments.view")
+def check_receipt(
+    request: HttpRequest, code: str = Query(..., min_length=1, max_length=200)
+) -> Any:
+    return queries.check_receipt(code)
 
 
 @payments_router.get(

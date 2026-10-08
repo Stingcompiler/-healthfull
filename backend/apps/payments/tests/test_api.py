@@ -1,12 +1,14 @@
 """``/api/payments`` contract: shifts, payments, transfers, refunds, handovers, review.
 
-Each endpoint: the happy path, permission denied, and a domain error code. The money rules
+Each endpoint: the happy path and a domain error code. Permission denied for every endpoint
+and every role without its code is generated in ``test_permission_matrix.py``. The money rules
 themselves are tested in ``test_services.py`` and the domain property tests.
 """
 
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlencode
 
 import pytest
 
@@ -179,6 +181,39 @@ def _pending_transfer(d: Desk, reference: str) -> tuple[kit.InsuredVisit, dict[s
     return iv, payment
 
 
+def test_a_printed_receipt_is_checked_by_its_qr_or_number(d: Desk) -> None:
+    """FEATURES 6.9, 15.1: the receipt QR is looked up; a rejected transfer never stands."""
+    _open(d.cashier)
+    iv, transfer = _pending_transfer(d, "Q-1")
+    code = ok(d.cashier.api.get(f"/api/payments/payments/{transfer['id']}/receipt"))["verify_code"]
+
+    def check(who: kit.Actor, text: str) -> Any:
+        return who.api.get(f"/api/payments/receipts/check?{urlencode({'code': text})}")
+
+    body = ok(check(d.cashier, code))
+    assert (body["standing"], body["payment"]["id"]) == ("pending", transfer["id"])
+    assert body["code_amount"] == "3600.00"
+    assert ok(check(d.cashier, transfer["number"].lower()))["standing"] == "pending"
+    number, _, day = code.split("|")
+    assert ok(check(d.cashier, f"{number}|9999.00|{day}"))["standing"] == "mismatch"
+
+    _open(d.sup)
+    ok(
+        d.sup.api.post(
+            f"/api/payments/payments/{transfer['id']}/reject", {"reason": "NOT_RECEIVED"}
+        )
+    )
+    assert ok(check(d.sup, code))["standing"] == "rejected"
+
+    cash_inv = _approved(d, kit.insured_visit(d.doctor.user))
+    cash = ok(_pay(d.cashier, cash_inv["patient"]["id"], cash_inv), 201)
+    cash_code = ok(d.cashier.api.get(f"/api/payments/payments/{cash['id']}/receipt"))["verify_code"]
+    assert ok(check(d.accountant, cash_code))["standing"] == "valid"
+    error(check(d.cashier, "PAY-NOPE"), 404, "NOT_FOUND")
+    error(check(d.doctor, cash_code), 403, "PERMISSION_DENIED")
+    assert iv.patient.pk == body["payment"]["patient"]["id"]
+
+
 def test_pending_queue_confirm_and_reject_after_close(d: Desk) -> None:
     _open(d.cashier)
     iv1, p1 = _pending_transfer(d, "A-100")
@@ -302,6 +337,54 @@ def test_handover_to_the_next_shift_must_be_received_before_it_closes(d: Desk) -
     assert ok(d.cashier.api.get("/api/payments/shifts/current"))["report"]["expected_cash"] == (
         "500.00"
     )
+
+
+def test_cash_to_a_supervisor_or_the_safe_waits_in_their_queue(d: Desk) -> None:
+    shift = _open(d.cashier, "2000")["shift"]
+    url = f"/api/payments/shifts/{shift['id']}/handovers"
+    receivers = ok(d.cashier.api.get("/api/payments/handover-receivers"))
+    names = {r["username"] for r in receivers}
+    assert {"sup", "acc", "mgr"} <= names
+    assert not names & {"cash", "cash2", "doc"}
+    error(
+        d.cashier.api.post(url, {"amount": "100", "destination": "supervisor"}),
+        409,
+        "HANDOVER_TARGET_REQUIRED",
+    )
+    error(
+        d.cashier.api.post(
+            url,
+            {"amount": "100", "destination": "supervisor", "to_user_id": d.cashier2.user.pk},
+        ),
+        409,
+        "HANDOVER_RECEIVER_INVALID",
+    )
+    to_sup = ok(
+        d.cashier.api.post(
+            url, {"amount": "300", "destination": "supervisor", "to_user_id": d.sup.user.pk}
+        ),
+        201,
+    )
+    assert to_sup["to_user"]["username"] == "sup"
+    to_safe = ok(d.cashier.api.post(url, {"amount": "200", "destination": "safe"}), 201)
+
+    def incoming(who: kit.Actor) -> list[int]:
+        body = ok(who.api.get("/api/payments/shifts/current"))
+        return [h["id"] for h in body["incoming_handovers"]]
+
+    assert incoming(d.sup) == [to_sup["id"], to_safe["id"]]
+    assert incoming(d.accountant) == [to_safe["id"]]
+    assert incoming(d.cashier) == []
+    assert incoming(d.cashier2) == []
+    for handover in (to_sup, to_safe):
+        receive = f"/api/payments/handovers/{handover['id']}/receive"
+        error(d.cashier.api.post(receive), 409, "HANDOVER_SELF_RECEIPT")
+        error(d.cashier2.api.post(receive), 409, "HANDOVER_NOT_YOURS")
+    received = ok(d.sup.api.post(f"/api/payments/handovers/{to_sup['id']}/receive"))
+    assert received["received_by"]["username"] == "sup"
+    ok(d.accountant.api.post(f"/api/payments/handovers/{to_safe['id']}/receive"))
+    assert incoming(d.sup) == []
+    error(d.doctor.api.get("/api/payments/handover-receivers"), 403, "PERMISSION_DENIED")
 
 
 def _refundable(d: Desk) -> tuple[kit.InsuredVisit, dict[str, Any]]:

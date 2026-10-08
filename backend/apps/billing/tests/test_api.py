@@ -1,7 +1,9 @@
 """``/api/billing`` contract: lookup, drafts, coverage split, discounts, approval, credit notes.
 
-Each endpoint: the happy path, permission denied (doctors hold no billing code), and a domain
-error code. The money rules themselves are tested in ``test_services.py``.
+Each endpoint: the happy path and a domain error code. Permission denied for every endpoint
+and every role without its code (doctors hold no billing code) is generated in
+``apps/payments/tests/test_permission_matrix.py``. The money rules themselves are tested in
+``test_services.py``.
 """
 
 from __future__ import annotations

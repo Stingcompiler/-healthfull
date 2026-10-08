@@ -210,16 +210,18 @@ def hand_over(
     amount: Decimal,
     destination: str,
     to_shift_id: int | None,
+    to_user_id: int | None,
     bank_reference: str,
     note: str,
 ) -> dict[str, Any]:
-    """Cash leaves the drawer: next shift, safe, bank or a supervisor (FEATURES 7.6)."""
+    """Cash leaves the drawer: next shift, safe, bank or a named supervisor (FEATURES 7.6)."""
     handover = pay.cash_handover(
         Shift.objects.get(pk=shift_id),
         amount,
         destination,
         actor=actor,
         to_shift=Shift.objects.get(pk=to_shift_id) if to_shift_id is not None else None,
+        to_user=User.objects.get(pk=to_user_id) if to_user_id is not None else None,
         bank_reference=bank_reference,
         note=note,
     )

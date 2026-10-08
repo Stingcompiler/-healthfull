@@ -708,7 +708,7 @@ def test_cash_handover_between_shifts(cashier, shift) -> None:
     assert pay.expected_cash(next_shift) == D("0.00")  # not received yet
     with pytest.raises(DomainError) as exc:
         pay.receive_handover(h, actor=cashier)
-    assert _code(exc) == "HANDOVER_NOT_YOURS"
+    assert _code(exc) == "HANDOVER_SELF_RECEIPT"
     received = pay.receive_handover(h, actor=other)
     assert received.received_by == other
     assert pay.expected_cash(next_shift) == D("200.00")
@@ -725,6 +725,44 @@ def test_cash_handover_between_shifts(cashier, shift) -> None:
     with pytest.raises(DomainError) as exc:
         pay.receive_handover(late, actor=other)
     assert _code(exc) == "HANDOVER_NOT_YOURS"
+
+
+def test_cash_to_the_safe_or_a_supervisor_is_confirmed_by_someone_else(cashier, shift) -> None:
+    """FEATURES 7.6, invariant 4: cash leaving the drawer is never confirmed by its sender."""
+    pay.record_payment(shift, fin.patient(), "cash", D("300.00"), actor=cashier)
+    other_cashier = fin.staff("cashier")
+    supervisor = fin.staff("cashier_supervisor")
+    accountant = fin.staff("accountant")
+    cases = [
+        ({"destination": "supervisor"}, "HANDOVER_TARGET_REQUIRED"),
+        ({"destination": "supervisor", "to_user": cashier}, "HANDOVER_TO_ITSELF"),
+        ({"destination": "supervisor", "to_user": other_cashier}, "HANDOVER_RECEIVER_INVALID"),
+        ({"destination": "safe", "to_user": fin.staff("doctor")}, "HANDOVER_RECEIVER_INVALID"),
+    ]
+    for kwargs, code in cases:
+        with pytest.raises(DomainError) as exc:
+            pay.cash_handover(shift, D("10.00"), kwargs.pop("destination"), actor=cashier, **kwargs)
+        assert _code(exc) == code, code
+
+    to_sup = pay.cash_handover(shift, D("50.00"), "supervisor", actor=cashier, to_user=supervisor)
+    to_safe = pay.cash_handover(shift, D("40.00"), "safe", actor=cashier)
+    deposit = pay.cash_handover(
+        shift, D("30.00"), "bank_deposit", actor=cashier, bank_reference="DEP-1"
+    )
+    for h in (to_sup, to_safe, deposit):
+        with pytest.raises(DomainError) as exc:
+            pay.receive_handover(h, actor=cashier)
+        assert _code(exc) == "HANDOVER_SELF_RECEIPT"
+    for h in (to_sup, to_safe):
+        with pytest.raises(DomainError) as exc:
+            pay.receive_handover(h, actor=other_cashier)
+        assert _code(exc) == "HANDOVER_NOT_YOURS"
+    with pytest.raises(DomainError) as exc:
+        pay.receive_handover(to_sup, actor=accountant)
+    assert _code(exc) == "HANDOVER_NOT_YOURS"
+    assert pay.receive_handover(to_sup, actor=supervisor).received_by == supervisor
+    assert pay.receive_handover(to_safe, actor=accountant).received_by == accountant
+    assert pay.receive_handover(deposit, actor=supervisor).received_by == supervisor
 
 
 # --- reports ---------------------------------------------------------------------------------

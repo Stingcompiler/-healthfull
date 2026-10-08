@@ -1174,6 +1174,17 @@
               }
             ],
             "title": "To Shift Id"
+          },
+          "to_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To User Id"
           }
         },
         "required": [
@@ -3096,6 +3107,66 @@
           "amount"
         ],
         "title": "ReasonTotalOut",
+        "type": "object"
+      },
+      "ReceiptCheckOut": {
+        "description": "A printed receipt checked against the system (FEATURES 6.9, 15.1).",
+        "properties": {
+          "code_amount": {
+            "anyOf": [
+              {
+                "examples": [
+                  "15000.00"
+                ],
+                "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The amount the scanned code carries",
+            "title": "Code Amount"
+          },
+          "code_day": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Day"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/PaymentOut"
+          },
+          "standing": {
+            "description": "valid; pending (transfer not yet confirmed by the bank); rejected (the transfer bounced); reversed; mismatch (the code's amount or day differs from the payment)",
+            "enum": [
+              "valid",
+              "pending",
+              "rejected",
+              "reversed",
+              "mismatch"
+            ],
+            "title": "Standing",
+            "type": "string"
+          }
+        },
+        "required": [
+          "standing",
+          "day",
+          "payment"
+        ],
+        "title": "ReceiptCheckOut",
         "type": "object"
       },
       "ReceiptInvoiceOut": {
@@ -5612,6 +5683,7 @@
     },
     "/api/billing/invoices/{invoice_id}/lines/{line_id}/cancel": {
       "post": {
+        "description": "Needs billing.create_invoice (the router) and orders.cancel_line (the service): roles outside the cashier's desk never see the invoice this returns.",
         "operationId": "billing_cancel_draft_line",
         "parameters": [
           {
@@ -7534,6 +7606,87 @@
         ]
       }
     },
+    "/api/payments/handover-receivers": {
+      "get": {
+        "operationId": "payments_list_handover_receivers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserRefOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The supervisors and accountants who can receive cash handed over by the user",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
     "/api/payments/handovers/{handover_id}/cancel": {
       "post": {
         "operationId": "payments_cancel_handover",
@@ -8333,6 +8486,96 @@
           }
         ],
         "summary": "Check that the /api/payments router is reachable",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/api/payments/receipts/check": {
+      "get": {
+        "description": "`code` is the QR text (`number|amount|YYYY-MM-DD`) or a receipt number. 404 when no payment has that number.",
+        "operationId": "payments_check_receipt",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptCheckOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Check a printed receipt: its scanned QR code or its receipt number",
         "tags": [
           "payments"
         ]

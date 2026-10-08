@@ -86,6 +86,7 @@ from domain.errors import DomainError
 from domain.money import ZERO, require_non_negative, require_positive
 
 __all__ = [
+    "HANDOVER_RECEIVER_PERMISSIONS",
     "MANAGER_ROLES",
     "PatientBalance",
     "ShiftSummary",
@@ -93,6 +94,7 @@ __all__ = [
     "allocate",
     "approve_refund",
     "auto_allocate",
+    "can_receive_for_the_center",
     "cancel_handover",
     "cash_handover",
     "cash_movements",
@@ -1302,6 +1304,16 @@ def pay_refund(refund: Refund, *, actor: User, shift: Shift | None = None) -> Re
 # --- handovers ---------------------------------------------------------------------------
 
 
+#: Who may take cash that is not handed to a named person or shift (the safe, a bank deposit)
+#: and who may be named as the receiving supervisor: a person outside the sending drawer.
+HANDOVER_RECEIVER_PERMISSIONS = ("payments.receive_handover", "payments.view_all_shifts")
+
+
+def can_receive_for_the_center(user: User) -> bool:
+    """Whether ``user`` confirms cash handed to the safe, the bank or a supervisor (7.6)."""
+    return user.is_active and all(holds_permission(user, c) for c in HANDOVER_RECEIVER_PERMISSIONS)
+
+
 def cash_handover(
     shift: Shift,
     amount: Decimal,
@@ -1315,21 +1327,44 @@ def cash_handover(
 ) -> CashHandover:
     """Cash leaving the drawer: to the next shift, the safe, the bank or a supervisor (7.6).
 
+    A next-shift handover names the receiving shift (its cashier receives it); a supervisor
+    handover names the supervisor. Cash to the safe or the bank may name its receiver, and
+    otherwise waits for any holder of :data:`HANDOVER_RECEIVER_PERMISSIONS` other than the
+    sender. Until someone confirms it, the cash is in transit.
+
     Posted (ADR 0006): a bank deposit Dr BANK / Cr CASH; anything else Dr CASH_SAFE / Cr CASH
     (cash in the safe, or in transit until the receiving shift takes it).
 
     Raises:
         DomainError: ``SHIFT_NOT_OPEN``, ``SHIFT_CLOSED``, ``SHIFT_NOT_YOURS``,
             ``INVALID_HANDOVER_DESTINATION``, ``HANDOVER_TARGET_REQUIRED``,
-            ``HANDOVER_TO_ITSELF``, ``INVALID_AMOUNT``, ``CASH_INSUFFICIENT``.
+            ``HANDOVER_TO_ITSELF``, ``HANDOVER_RECEIVER_INVALID``, ``INVALID_AMOUNT``,
+            ``CASH_INSUFFICIENT``.
     """
     value = require_positive(amount, "amount")
     if destination not in HandoverDestination.values:
         raise DomainError(
             "INVALID_HANDOVER_DESTINATION", "Unknown destination", destination=destination
         )
-    if destination == HandoverDestination.NEXT_SHIFT and to_shift is None:
-        raise DomainError("HANDOVER_TARGET_REQUIRED", "Name the shift that receives the cash")
+    if destination == HandoverDestination.NEXT_SHIFT:
+        if to_shift is None:
+            raise DomainError("HANDOVER_TARGET_REQUIRED", "Name the shift that receives the cash")
+        to_user = None
+    else:
+        to_shift = None
+        if destination == HandoverDestination.SUPERVISOR and to_user is None:
+            raise DomainError(
+                "HANDOVER_TARGET_REQUIRED", "Name the supervisor who receives the cash"
+            )
+    if to_user is not None:
+        if to_user.pk == actor.pk:
+            raise DomainError("HANDOVER_TO_ITSELF", "You cannot hand cash to yourself")
+        if not can_receive_for_the_center(to_user):
+            raise DomainError(
+                "HANDOVER_RECEIVER_INVALID",
+                "This person cannot receive cash for the center",
+                user=to_user.username,
+            )
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="cash handover"):
         shifts = _lock_shifts(shift.pk, to_shift.pk if to_shift else None)
         source = _own_open(shifts[shift.pk], actor)
@@ -1366,11 +1401,14 @@ def cash_handover(
 def receive_handover(handover: CashHandover, *, actor: User) -> CashHandover:
     """The receiving cashier (or named user) confirms the cash arrived.
 
-    Cash handed to a shift enters its drawer (Dr CASH / Cr CASH_SAFE, ADR 0006).
+    Never the sender (invariant 4: the cash leaving a drawer is confirmed by someone else).
+    Cash handed to nobody in particular (the safe, a bank deposit) is confirmed by a holder of
+    :data:`HANDOVER_RECEIVER_PERMISSIONS`. Cash handed to a shift enters its drawer
+    (Dr CASH / Cr CASH_SAFE, ADR 0006).
 
     Raises:
         DomainError: ``HANDOVER_ALREADY_RECEIVED``, ``HANDOVER_CANCELLED``,
-            ``HANDOVER_NOT_YOURS``, ``SHIFT_CLOSED``.
+            ``HANDOVER_SELF_RECEIPT``, ``HANDOVER_NOT_YOURS``, ``SHIFT_CLOSED``.
     """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="receive handover"):
         row = CashHandover.objects.get(pk=handover.pk)
@@ -1384,9 +1422,18 @@ def receive_handover(handover: CashHandover, *, actor: User) -> CashHandover:
             raise DomainError("HANDOVER_ALREADY_RECEIVED", "The cash was already received")
         if locked.cancelled_at is not None:
             raise DomainError("HANDOVER_CANCELLED", "The handover was cancelled")
+        sender = Shift.objects.values_list("cashier_id", flat=True).get(pk=locked.shift_id)
+        if actor.pk in (sender, locked.handed_by_id):
+            raise DomainError(
+                "HANDOVER_SELF_RECEIPT", "Someone else must confirm the cash you handed over"
+            )
         target = locked.to_user_id or (locked.to_shift.cashier_id if locked.to_shift else None)
         if target is not None and target != actor.pk:
             raise DomainError("HANDOVER_NOT_YOURS", "This cash is handed to someone else")
+        if target is None and not can_receive_for_the_center(actor):
+            raise DomainError(
+                "HANDOVER_NOT_YOURS", "A supervisor or an accountant receives this cash"
+            )
         if locked.to_shift is not None:
             ds.require_open(ds.ShiftStatus(locked.to_shift.status))
         locked.received_by = actor

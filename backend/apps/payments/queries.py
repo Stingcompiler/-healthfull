@@ -39,8 +39,10 @@ from domain.money import ZERO, money
 
 __all__ = [
     "banks",
+    "check_receipt",
     "current_shift",
     "handover_json",
+    "handover_receivers",
     "open_shifts_for_handover",
     "payment_detail",
     "payment_json",
@@ -235,12 +237,33 @@ def shift_report(shift_id: int, *, viewer: User) -> dict[str, Any]:
 
 
 def _incoming(user: User) -> list[dict[str, Any]]:
-    rows = _handovers().filter(
-        Q(to_user=user) | Q(to_user__isnull=True, to_shift__cashier=user),
-        received_at__isnull=True,
-        cancelled_at__isnull=True,
+    """Cash waiting for ``user``: handed to them or their shift, and, for a supervisor or an
+    accountant, cash sent to the safe or the bank that nobody has confirmed yet (7.6)."""
+    mine = Q(to_user=user) | Q(to_user__isnull=True, to_shift__cashier=user)
+    if pay.can_receive_for_the_center(user):
+        mine |= Q(to_user__isnull=True, to_shift__isnull=True)
+    rows = (
+        _handovers()
+        .filter(mine, received_at__isnull=True, cancelled_at__isnull=True)
+        .exclude(shift__cashier=user)
+        .exclude(handed_by=user)
     )
     return [handover_json(h) for h in rows]
+
+
+def handover_receivers(user: User) -> list[dict[str, Any]]:
+    """Active people other than ``user`` who can confirm cash for the center (7.6)."""
+    people = User.objects.filter(is_active=True).exclude(pk=user.pk).order_by("username")
+    return [
+        {
+            "id": u.pk,
+            "username": u.username,
+            "full_name_ar": u.full_name_ar,
+            "full_name_en": u.full_name_en,
+        }
+        for u in people
+        if pay.can_receive_for_the_center(u)
+    ]
 
 
 def current_shift(user: User) -> dict[str, Any]:
@@ -426,7 +449,33 @@ def rejection_json(rejection: pay.Rejection) -> dict[str, Any]:
 
 def _verify_code(p: Payment) -> str:
     """What a receipt's QR carries: number, amount and day, checked against the system."""
-    return f"{p.number}|{money(p.amount)}|{timezone.localdate(p.created_at).isoformat()}"
+    return dp.receipt_code(p.number, money(p.amount), timezone.localdate(p.created_at))
+
+
+def check_receipt(code: str) -> dict[str, Any]:
+    """Check a scanned receipt QR or a typed receipt number against the system (6.9, 15.1).
+
+    Raises:
+        Payment.DoesNotExist: no payment has that number (404).
+    """
+    parsed = dp.parse_receipt_code(code)
+    p = _payments().get(number__iexact=parsed.number)
+    day = timezone.localdate(p.created_at)
+    standing = dp.receipt_standing(
+        parsed,
+        amount=p.amount,
+        day=day,
+        verification=dp.Verification(p.verification),
+        reversed_=Payment.objects.filter(reversal_of=p).exists(),
+        is_reversal=p.reversal_of_id is not None,
+    )
+    return {
+        "standing": str(standing),
+        "code_amount": _m(parsed.amount) if parsed.amount is not None else None,
+        "code_day": parsed.day,
+        "day": day,
+        "payment": payment_json(p),
+    }
 
 
 def receipt(payment_id: int) -> dict[str, Any]:

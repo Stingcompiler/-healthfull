@@ -277,6 +277,25 @@ class ReceiptInvoiceOut(Schema):
     lines: list[ReceiptLineOut]
 
 
+ReceiptStandingCode = Literal["valid", "pending", "rejected", "reversed", "mismatch"]
+
+
+class ReceiptCheckOut(Schema):
+    """A printed receipt checked against the system (FEATURES 6.9, 15.1)."""
+
+    standing: ReceiptStandingCode = Field(
+        ...,
+        description=(
+            "valid; pending (transfer not yet confirmed by the bank); rejected (the transfer "
+            "bounced); reversed; mismatch (the code's amount or day differs from the payment)"
+        ),
+    )
+    code_amount: MoneyStr | None = Field(None, description="The amount the scanned code carries")
+    code_day: date | None = None
+    day: date
+    payment: PaymentOut
+
+
 class ReceiptOut(Schema):
     center: CenterOut
     payment: PaymentOut
@@ -336,6 +355,7 @@ class HandoverIn(Schema):
     amount: MoneyIn
     destination: HandoverDestinationCode
     to_shift_id: int | None = None
+    to_user_id: int | None = None
     bank_reference: str = Field("", max_length=100)
     note: str = Field("", max_length=500)
 
