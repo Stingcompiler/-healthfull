@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVisitList } from "@/features/visits/api";
-import { CancelVisitDialog } from "@/features/visits/components/CancelVisitDialog";
+import { CancelVisitDialog, type CancelVisitTarget } from "@/features/visits/components/CancelVisitDialog";
 import { VisitTimeline } from "@/features/visits/components/VisitTimeline";
 import type { Visit } from "@/features/visits/types";
 import { usePermission } from "@/lib/auth/hooks";
@@ -16,30 +16,34 @@ import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 import { cn } from "@/lib/utils";
 
+import { QueryErrorAlert } from "./QueryErrorAlert";
+
 const STATUS_VARIANT = { open: "info", closed: "success", cancelled: "outline" } as const;
 
-/** The person's visits, newest first, each with its timeline (FEATURES 2.4). */
+/**
+ * The person's visits, newest first, each with its timeline (FEATURES 2.4). A new visit is
+ * opened from the page header; the empty state offers it too.
+ */
 export function PatientVisits({ patientId, onNewVisit }: { patientId: number; onNewVisit?: () => void }) {
   const { t } = useTranslation(["patients", "visits"]);
   const visits = useVisitList({ patientId, pageSize: 50 });
-  const [cancelling, setCancelling] = useState<{ id: number; number: string } | null>(null);
+  const [cancelling, setCancelling] = useState<CancelVisitTarget | null>(null);
   const rows = visits.data?.items ?? [];
 
   return (
     <section aria-labelledby="visits-heading" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="visits-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
-          <History className="size-5 text-muted" aria-hidden="true" />
-          {t("profile.visits")}
-        </h2>
-        {onNewVisit ? (
-          <Button size="sm" variant="outline" onClick={onNewVisit}>
-            <Plus aria-hidden="true" />
-            {t("visits:create.open")}
-          </Button>
-        ) : null}
-      </div>
-      {visits.isPending ? (
+      <h2 id="visits-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
+        <History className="size-5 text-muted" aria-hidden="true" />
+        {t("profile.visits")}
+      </h2>
+      {visits.isError ? (
+        <QueryErrorAlert
+          title={t("profile.visitsLoadFailed")}
+          error={visits.error}
+          onRetry={() => void visits.refetch()}
+          retrying={visits.isFetching}
+        />
+      ) : visits.isPending ? (
         <Skeleton className="h-20" />
       ) : rows.length === 0 ? (
         <EmptyState
@@ -47,6 +51,14 @@ export function PatientVisits({ patientId, onNewVisit }: { patientId: number; on
           icon={<History />}
           title={t("profile.noVisits")}
           description={t("profile.noVisitsHint")}
+          action={
+            onNewVisit ? (
+              <Button size="sm" variant="outline" onClick={onNewVisit}>
+                <Plus aria-hidden="true" />
+                {t("visits:create.open")}
+              </Button>
+            ) : undefined
+          }
         />
       ) : (
         <ul className="grid gap-2">
@@ -65,7 +77,7 @@ export function PatientVisits({ patientId, onNewVisit }: { patientId: number; on
   );
 }
 
-function VisitItem({ visit, onCancel }: { visit: Visit; onCancel: (v: { id: number; number: string }) => void }) {
+function VisitItem({ visit, onCancel }: { visit: Visit; onCancel: (v: CancelVisitTarget) => void }) {
   const { t } = useTranslation(["patients", "visits"]);
   const language = useLanguage();
   const [open, setOpen] = useState(false);
@@ -101,7 +113,7 @@ function VisitItem({ visit, onCancel }: { visit: Visit; onCancel: (v: { id: numb
               size="sm"
               variant="destructive-soft"
               onClick={() => {
-                onCancel({ id: visit.id, number: visit.number });
+                onCancel({ id: visit.id, number: visit.number, billed: visit.billed });
               }}
             >
               <Ban aria-hidden="true" />

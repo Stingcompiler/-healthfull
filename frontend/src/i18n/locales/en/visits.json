@@ -12,16 +12,16 @@
   },
   "visitStatus": {
     "open": "Open",
-    "closed": "Closed",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "closed": "Closed"
   },
   "queueStatus": {
     "waiting": "Waiting",
     "called": "Called",
     "in_progress": "With the doctor",
     "done": "Done",
-    "no_show": "Did not answer",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "no_show": "Not present"
   },
   "appointmentStatus": {
     "booked": "Booked",
@@ -57,7 +57,10 @@
     "visit": "Visit",
     "confirm": "Cancel visit",
     "done": "Visit {{number, bidi}} cancelled",
-    "reasonShown": "Cancelled: {{reason}}"
+    "reasonShown": "Cancelled: {{reason}}",
+    "needsSupervisorTitle": "A supervisor must cancel this visit",
+    "needsSupervisor": "This visit has invoiced or paid orders, so cancelling it issues a credit note that a cashier supervisor approves. Ask them to cancel the visit.",
+    "descriptionBilled": "The visit has invoiced orders: a credit note is issued in your name and anything paid becomes patient credit for a refund."
   },
   "timeline": {
     "title": "Timeline",
@@ -78,15 +81,17 @@
       "discharged": "Discharged",
       "visit_closed": "Visit closed",
       "visit_cancelled": "Visit cancelled"
-    }
+    },
+    "loadFailed": "The timeline could not be loaded"
   },
   "token": {
     "title": "Queue token",
-    "description": "Give the slip to the patient. It prints on the 80 mm receipt printer.",
     "print": "Print token",
     "number": "Your number",
     "ahead_one": "{{count}} patient ahead of you",
-    "ahead_other": "{{count}} patients ahead of you"
+    "ahead_other": "{{count}} patients ahead of you",
+    "description": "Give the slip to the patient. It prints on the 80 mm receipt printer.",
+    "loadFailed": "The slip could not be loaded"
   },
   "board": {
     "department": "Clinic",
@@ -128,20 +133,25 @@
       "start": "Token {{token}} is with the doctor",
       "finish": "Token {{token}} finished",
       "requeue": "Token {{token}} is waiting again",
-      "no_show": "Token {{token}} marked as not answering"
-    }
+      "no_show": "Token {{token}} marked as not present"
+    },
+    "loadFailed": "The queue could not be loaded",
+    "noShowConfirmTitle": "Mark as not present?",
+    "noShowConfirm": "Token {{token}} ({{name}}) will be marked as not present. It can go back to waiting if the patient comes."
   },
   "display": {
     "title": "Waiting room",
-    "exit": "Leave screen",
     "nowServing": "Now calling",
     "nobodyCalled": "Please wait to be called",
-    "recentlyCalled": "Recently called",
     "waiting_one": "Waiting ({{n}})",
     "waiting_other": "Waiting ({{n}})",
     "noneWaiting": "Nobody is waiting.",
     "goTo": "Please go to {{place}}",
-    "withDoctor": "With {{place}}"
+    "withDoctor": "With {{place}}",
+    "recentlyCalled": "Recently called",
+    "offlineTitle": "Connection lost",
+    "offlineDescription": "This screen is not updating. It comes back by itself when the connection returns; please listen for calls at reception.",
+    "loading": "Loading the queue…"
   },
   "appointments": {
     "title": "Appointments",
@@ -154,7 +164,6 @@
     "today": "Today",
     "dayOf": "{{doctor}}, {{day}}",
     "agenda": "Day schedule",
-    "free": "Free slot",
     "book": "Book",
     "bookAt": "Book at {{time}}",
     "offDayTitle": "No clinic hours this day",
@@ -179,15 +188,19 @@
     "noFreeSlots": "No free slots on this day.",
     "rescheduled": "Appointment moved",
     "noShow": "Did not come",
-    "markedNoShow": "Marked as not come",
     "cancel": "Cancel appointment",
     "cancelTitle": "Cancel the appointment",
-    "cancelReason": "Reason the caller gave",
     "cancelled": "Appointment cancelled",
     "cancelledBecause": "Cancelled: {{note}}",
     "checkIn": "Check in",
     "checkInTitle": "Patient arrived",
     "fileForCaller": "Patient file of the caller",
-    "checkedIn": "Visit {{number, bidi}} opened from the appointment"
+    "checkedIn": "Visit {{number, bidi}} opened from the appointment",
+    "markedNoShow": "Marked as a no show",
+    "noShowConfirmTitle": "Mark as no show?",
+    "noShowConfirm": "The {{time}} appointment of {{name}} will be marked as a no show.",
+    "loadFailed": "The appointments could not be loaded",
+    "freeSlots_one": "1 free slot",
+    "freeSlots_other": "{{count}} free slots"
   }
 }

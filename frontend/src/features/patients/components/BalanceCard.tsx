@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isNegativeAmount, isZeroAmount } from "@/lib/format";
 
 import { useBalance } from "../api";
+import { QueryErrorAlert } from "./QueryErrorAlert";
 
 /**
  * The person's money position (FEATURES 1.5): credit, spendable credit, unverified transfers and
@@ -25,7 +26,14 @@ export function BalanceCard({ patientId }: { patientId: number }) {
         <Wallet className="size-5 text-muted" aria-hidden="true" />
         {t("balance.title")}
       </h2>
-      {!b ? (
+      {balance.isError ? (
+        <QueryErrorAlert
+          title={t("balance.loadFailed")}
+          error={balance.error}
+          onRetry={() => void balance.refetch()}
+          retrying={balance.isFetching}
+        />
+      ) : !b ? (
         <Skeleton className="h-24" />
       ) : (
         <>

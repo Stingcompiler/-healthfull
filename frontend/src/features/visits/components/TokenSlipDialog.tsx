@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorAlert } from "@/features/patients/components/QueryErrorAlert";
 import { patientName } from "@/features/patients/lib";
 import { formatNumber } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
@@ -22,12 +23,14 @@ import { useTokenSlip } from "../api";
 import type { TokenSlip } from "../types";
 
 /**
- * Thermal 80 mm page: only the slip prints. System colors with a light color scheme keep the
+ * Thermal 80 mm page: only the slip prints. `size` takes one or two lengths (a length with
+ * `auto` is invalid and would fall back to A4), so the page is 80 x 150 mm, longer than the
+ * slip; roll printers cut after the content. System colors with a light color scheme keep the
  * text black on paper whatever the screen theme (no raw colors).
  */
 const PRINT_CSS = `
 @media print {
-  @page { size: 80mm auto; margin: 0; }
+  @page { size: 80mm 150mm; margin: 0; }
   body > :not(#token-print-root) { display: none !important; }
   #token-print-root { display: block !important; color-scheme: light; color: CanvasText; background: Canvas; }
 }
@@ -53,6 +56,13 @@ export function TokenSlipDialog({ entryId, onOpenChange }: TokenSlipDialogProps)
           <div className="rounded-control border border-dashed border-border-strong p-4">
             <SlipBody slip={slip.data} />
           </div>
+        ) : slip.isError ? (
+          <QueryErrorAlert
+            title={t("token.loadFailed")}
+            error={slip.error}
+            onRetry={() => void slip.refetch()}
+            retrying={slip.isFetching}
+          />
         ) : (
           <Skeleton className="h-56" />
         )}

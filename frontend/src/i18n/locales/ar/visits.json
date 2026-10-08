@@ -12,16 +12,16 @@
   },
   "visitStatus": {
     "open": "مفتوحة",
-    "closed": "مختومة",
-    "cancelled": "ملغاة"
+    "cancelled": "ملغاة",
+    "closed": "مغلقة"
   },
   "queueStatus": {
     "waiting": "في الانتظار",
     "called": "تمت المناداة",
     "in_progress": "عند الطبيب",
     "done": "انتهى",
-    "no_show": "لم يستجب",
-    "cancelled": "ملغى"
+    "cancelled": "ملغى",
+    "no_show": "لم يحضر"
   },
   "appointmentStatus": {
     "booked": "محجوز",
@@ -57,7 +57,10 @@
     "visit": "الزيارة",
     "confirm": "إلغاء الزيارة",
     "done": "تم إلغاء الزيارة {{number, bidi}}",
-    "reasonShown": "ملغاة: {{reason}}"
+    "reasonShown": "ملغاة: {{reason}}",
+    "needsSupervisorTitle": "الإلغاء يحتاج مشرفاً",
+    "needsSupervisor": "على هذه الزيارة طلبات مفوترة أو مدفوعة، فإلغاؤها يصدر إشعاراً دائناً يعتمده مشرف الخزينة. اطلب منه إلغاء الزيارة.",
+    "descriptionBilled": "على الزيارة طلبات مفوترة: يصدر إشعار دائن باسمك، ويصبح المدفوع رصيداً للمريض قابلاً للاسترداد."
   },
   "timeline": {
     "title": "السجل الزمني",
@@ -78,11 +81,11 @@
       "discharged": "خروج",
       "visit_closed": "خُتمت الزيارة",
       "visit_cancelled": "أُلغيت الزيارة"
-    }
+    },
+    "loadFailed": "تعذر تحميل السجل الزمني"
   },
   "token": {
     "title": "رقم الطابور",
-    "description": "سلّم الإيصال للمريض. يُطبع على طابعة الإيصالات ٨٠ مم.",
     "print": "طباعة الرقم",
     "number": "رقمك",
     "ahead_zero": "لا أحد قبلك",
@@ -90,7 +93,9 @@
     "ahead_two": "مريضان قبلك",
     "ahead_few": "{{count}} مرضى قبلك",
     "ahead_many": "{{count}} مريضاً قبلك",
-    "ahead_other": "{{count}} مريض قبلك"
+    "ahead_other": "{{count}} مريض قبلك",
+    "description": "سلّم الإيصال للمريض. يُطبع على طابعة الإيصالات 80 مم.",
+    "loadFailed": "تعذر تحميل الإيصال"
   },
   "board": {
     "department": "العيادة",
@@ -132,15 +137,16 @@
       "start": "الرقم {{token}} عند الطبيب",
       "finish": "انتهى الرقم {{token}}",
       "requeue": "الرقم {{token}} في الانتظار مجدداً",
-      "no_show": "سُجل الرقم {{token}} لم يستجب"
-    }
+      "no_show": "سُجّل الرقم {{token}} غائباً"
+    },
+    "loadFailed": "تعذر تحميل الطابور",
+    "noShowConfirmTitle": "تسجيل الغياب؟",
+    "noShowConfirm": "سيُسجَّل الرقم {{token}} ({{name}}) غائباً. يمكن إعادته إلى الانتظار إذا حضر."
   },
   "display": {
     "title": "صالة الانتظار",
-    "exit": "مغادرة الشاشة",
     "nowServing": "المناداة الآن",
     "nobodyCalled": "يرجى الانتظار حتى المناداة",
-    "recentlyCalled": "نوديت مؤخراً",
     "waiting_zero": "في الانتظار ({{n}})",
     "waiting_one": "في الانتظار ({{n}})",
     "waiting_two": "في الانتظار ({{n}})",
@@ -149,7 +155,11 @@
     "waiting_other": "في الانتظار ({{n}})",
     "noneWaiting": "لا أحد في الانتظار.",
     "goTo": "تفضل إلى {{place}}",
-    "withDoctor": "عند {{place}}"
+    "withDoctor": "عند {{place}}",
+    "recentlyCalled": "تمت مناداتهم مؤخراً",
+    "offlineTitle": "انقطع الاتصال",
+    "offlineDescription": "الشاشة لا تتحدث الآن. ستعود تلقائياً عند عودة الاتصال؛ تابعوا المناداة عند الاستقبال.",
+    "loading": "جارٍ تحميل الطابور…"
   },
   "appointments": {
     "title": "المواعيد",
@@ -162,7 +172,6 @@
     "today": "اليوم",
     "dayOf": "{{doctor}}، {{day}}",
     "agenda": "جدول اليوم",
-    "free": "موعد متاح",
     "book": "حجز",
     "bookAt": "حجز الساعة {{time}}",
     "offDayTitle": "لا توجد عيادة في هذا اليوم",
@@ -187,15 +196,23 @@
     "noFreeSlots": "لا توجد مواعيد متاحة في هذا اليوم.",
     "rescheduled": "تم نقل الموعد",
     "noShow": "لم يحضر",
-    "markedNoShow": "سُجل لم يحضر",
     "cancel": "إلغاء الموعد",
     "cancelTitle": "إلغاء الموعد",
-    "cancelReason": "السبب الذي ذكره المتصل",
     "cancelled": "تم إلغاء الموعد",
     "cancelledBecause": "ملغى: {{note}}",
     "checkIn": "تسجيل الحضور",
     "checkInTitle": "حضر المريض",
     "fileForCaller": "ملف المريض المتصل",
-    "checkedIn": "فُتحت الزيارة {{number, bidi}} من الموعد"
+    "checkedIn": "فُتحت الزيارة {{number, bidi}} من الموعد",
+    "markedNoShow": "سُجّل المريض غائباً",
+    "noShowConfirmTitle": "تسجيل عدم الحضور؟",
+    "noShowConfirm": "سيُسجَّل موعد {{name}} الساعة {{time}} بأنه لم يحضر.",
+    "loadFailed": "تعذر تحميل المواعيد",
+    "freeSlots_zero": "لا مواعيد متاحة",
+    "freeSlots_one": "موعد متاح",
+    "freeSlots_two": "موعدان متاحان",
+    "freeSlots_few": "{{count}} مواعيد متاحة",
+    "freeSlots_many": "{{count}} موعداً متاحاً",
+    "freeSlots_other": "{{count}} موعد متاح"
   }
 }

@@ -1,5 +1,5 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { CalendarDays, GitMerge, Pencil, Plus, UserRound } from "lucide-react";
+import { CalendarDays, Ellipsis, GitMerge, Pencil, Plus, RotateCcw, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -12,14 +12,22 @@ import { ArrowNext } from "@/components/icons";
 import { PageHeader } from "@/components/PageHeader";
 import { PatientCard } from "@/components/PatientCard";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUpcomingAppointments } from "@/features/visits/api";
 import { CreateVisitDialog } from "@/features/visits/components/CreateVisitDialog";
 import { TokenSlipDialog } from "@/features/visits/components/TokenSlipDialog";
 import { isApiError } from "@/lib/api/errors";
+import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
+import { cn } from "@/lib/utils";
 import { translateKey } from "@/lib/validation";
 
 import { useMerges, usePatient } from "../api";
@@ -40,6 +48,10 @@ export function PatientProfilePage() {
   const profile = usePatient(id);
   const merges = useMerges(id);
   const canSeeVisits = usePermission("visits.view");
+  const canSeeBalance = usePermission("patients.view_balance");
+  const canMerge = usePermission("patients.merge");
+  const canEdit = usePermission("patients.edit");
+  const translateError = useTranslateError();
   const upcoming = useUpcomingAppointments(id, canSeeVisits);
   const [editOpen, setEditOpen] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
@@ -56,17 +68,30 @@ export function PatientProfilePage() {
   }
   if (profile.isError) {
     const notFound = isApiError(profile.error) && profile.error.status === 404;
+    const title = notFound ? t("profile.notFoundTitle") : t("profile.loadFailed");
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader icon={<UserRound />} title={t("profile.notFoundTitle")} />
+        <PageHeader icon={<UserRound />} title={title} />
         <EmptyState
           icon={<UserRound />}
-          title={notFound ? t("profile.notFoundTitle") : t("profile.loadFailed")}
-          description={t("profile.notFoundDescription")}
+          title={title}
+          description={
+            notFound
+              ? t("profile.notFoundDescription")
+              : `${translateError(profile.error)} ${t("profile.loadFailedDescription")}`
+          }
           action={
-            <Button asChild>
-              <Link to="/patients">{t("profile.backToList")}</Link>
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              {notFound ? null : (
+                <Button loading={profile.isFetching} onClick={() => void profile.refetch()} data-testid="query-retry">
+                  <RotateCcw aria-hidden="true" />
+                  {t("common:actions.retry")}
+                </Button>
+              )}
+              <Button asChild variant={notFound ? "default" : "outline"}>
+                <Link to="/patients">{t("profile.backToList")}</Link>
+              </Button>
+            </div>
           }
         />
       </div>
@@ -74,6 +99,8 @@ export function PatientProfilePage() {
   }
 
   const { patient, merged_into: mergedInto } = profile.data;
+  const hasUpcoming = canSeeVisits && (upcoming.data ?? []).length > 0;
+  const cards = 2 + Number(canSeeBalance) + Number(hasUpcoming);
   const active = patient.is_active && !mergedInto;
   const name = patientName(patient, language);
 
@@ -82,33 +109,69 @@ export function PatientProfilePage() {
       <PageHeader
         icon={<UserRound />}
         eyebrow={<Link to="/patients">{t("title")}</Link>}
-        title={name}
+        // On phones the identity card right below shows the name; the heading stays for readers.
+        title={<span className="max-md:sr-only">{name}</span>}
         documentTitle={`${name} · ${patient.file_no}`}
         actions={
           active ? (
             <>
-              <Can permission="patients.merge">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setMergeOpen(true);
-                  }}
-                >
-                  <GitMerge aria-hidden="true" />
-                  {t("merge.open")}
-                </Button>
-              </Can>
-              <Can permission="patients.edit">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setEditOpen(true);
-                  }}
-                >
-                  <Pencil aria-hidden="true" />
-                  {patient.is_incomplete ? t("edit.completeOpen") : t("edit.open")}
-                </Button>
-              </Can>
+              {canMerge || canEdit ? (
+                <>
+                  <div className="hidden flex-wrap gap-2 sm:flex">
+                    {canMerge ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setMergeOpen(true);
+                        }}
+                      >
+                        <GitMerge aria-hidden="true" />
+                        {t("merge.open")}
+                      </Button>
+                    ) : null}
+                    {canEdit ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditOpen(true);
+                        }}
+                      >
+                        <Pencil aria-hidden="true" />
+                        {patient.is_incomplete ? t("edit.completeOpen") : t("edit.open")}
+                      </Button>
+                    ) : null}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" className="sm:hidden" aria-label={t("profile.moreActions")}>
+                        <Ellipsis aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {canEdit ? (
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            setEditOpen(true);
+                          }}
+                        >
+                          <Pencil />
+                          {patient.is_incomplete ? t("edit.completeOpen") : t("edit.open")}
+                        </DropdownMenuItem>
+                      ) : null}
+                      {canMerge ? (
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            setMergeOpen(true);
+                          }}
+                        >
+                          <GitMerge />
+                          {t("merge.open")}
+                        </DropdownMenuItem>
+                      ) : null}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : null}
               <Can permission="visits.create">
                 <Button
                   onClick={() => {
@@ -149,11 +212,8 @@ export function PatientProfilePage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <CoverageSection patientId={id} readOnly={!active} />
-        <Can permission="patients.view_balance">
-          <BalanceCard patientId={id} />
-        </Can>
-        <DetailsCard patient={patient} />
-        {canSeeVisits && (upcoming.data ?? []).length > 0 ? (
+        {canSeeBalance ? <BalanceCard patientId={id} /> : null}
+        {hasUpcoming ? (
           <section aria-labelledby="upcoming-heading" className="card-surface flex flex-col gap-3 p-4 md:p-5">
             <h2 id="upcoming-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
               <CalendarDays className="size-5 text-muted" aria-hidden="true" />
@@ -169,6 +229,8 @@ export function PatientProfilePage() {
             </ul>
           </section>
         ) : null}
+        {/* Details close the grid; alone on its row it takes the full width. */}
+        <DetailsCard patient={patient} wide={cards % 2 === 1} />
       </div>
 
       {canSeeVisits ? (
@@ -198,7 +260,11 @@ export function PatientProfilePage() {
                   <ArrowNext className="inline size-3.5" aria-hidden="true" />{" "}
                   <bdi className="tabular">{m.target.file_no}</bdi>
                   {" · "}
-                  {m.reason_code ? translateKey(tAny, `patients:merge.reason.${m.reason_code}`) : null}
+                  {m.reason
+                    ? pickName({ ar: m.reason.label_ar, en: m.reason.label_en }, language)
+                    : m.reason_code
+                      ? translateKey(tAny, `patients:merge.reason.${m.reason_code}`)
+                      : null}
                   {m.note ? ` · ${m.note}` : null}
                 </span>
                 <span className="text-xs text-muted">
@@ -232,7 +298,13 @@ export function PatientProfilePage() {
   );
 }
 
-function DetailsCard({ patient }: { patient: NonNullable<ReturnType<typeof usePatient>["data"]>["patient"] }) {
+function DetailsCard({
+  patient,
+  wide,
+}: {
+  patient: NonNullable<ReturnType<typeof usePatient>["data"]>["patient"];
+  wide: boolean;
+}) {
   const { t } = useTranslation("patients");
   const rows: [string, string, boolean][] = [
     [t("form.phoneAlt"), patient.phone_alt, true],
@@ -244,7 +316,10 @@ function DetailsCard({ patient }: { patient: NonNullable<ReturnType<typeof usePa
   ];
   const shown = rows.filter(([, value]) => value);
   return (
-    <section aria-labelledby="details-heading" className="card-surface flex flex-col gap-3 p-4 md:p-5">
+    <section
+      aria-labelledby="details-heading"
+      className={cn("card-surface flex flex-col gap-3 p-4 md:p-5", wide && "lg:col-span-2")}
+    >
       <h2 id="details-heading" className="text-base font-semibold text-fg">
         {t("profile.details")}
       </h2>

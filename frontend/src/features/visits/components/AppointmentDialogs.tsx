@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { AlertCard } from "@/components/AlertCard";
+import { ReasonDialog } from "@/components/ReasonDialog";
 import { DateText } from "@/components/DateText";
-import { Form, SelectField, TextareaField, TextField } from "@/components/form";
+import { Form, SelectField, TextField } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,9 +30,16 @@ import { useTranslateError } from "@/lib/api/translate-error";
 import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
-import { requiredString, vmsg } from "@/lib/validation";
+import { vmsg } from "@/lib/validation";
 
-import { useAgenda, useBookAppointment, useCancelAppointment, useCheckIn, useRescheduleAppointment } from "../api";
+import {
+  useAgenda,
+  useBookAppointment,
+  useCancelAppointment,
+  useCheckIn,
+  useRescheduleAppointment,
+  useVisitOptions,
+} from "../api";
 import type { Appointment, Doctor, VisitDetail } from "../types";
 
 function useDialogError() {
@@ -328,9 +336,6 @@ function RescheduleBody({
 
 // --- cancel ---------------------------------------------------------------------------------
 
-const cancelSchema = z.object({ note: requiredString.max(300) });
-
-/** Cancel a booking with the caller's reason (invariant 4: reason, who, when). */
 export function CancelAppointmentDialog({
   appointment,
   onOpenChange,
@@ -341,6 +346,7 @@ export function CancelAppointmentDialog({
   return appointment ? <CancelBody appointment={appointment} onOpenChange={onOpenChange} /> : null;
 }
 
+/** Cancel a booking with a configurable reason and the caller's words (invariant 4). */
 function CancelBody({
   appointment,
   onOpenChange,
@@ -351,55 +357,26 @@ function CancelBody({
   const { t } = useTranslation(["visits", "common"]);
   const language = useLanguage();
   const cancel = useCancelAppointment();
-  const { error, clear, fail } = useDialogError();
-  const form = useForm<{ note: string }>({ resolver: zodResolver(cancelSchema), defaultValues: { note: "" } });
-
-  const submit = form.handleSubmit(async ({ note }) => {
-    clear();
-    try {
-      await cancel.mutateAsync({ id: appointment.id, note });
-      toast.success(t("appointments.cancelled"));
-      onOpenChange(false);
-    } catch (e) {
-      fail(e);
-    }
-  });
-
+  const options = useVisitOptions();
+  const reasons = (options.data?.appointment_cancel_reasons ?? []).map((r) => ({
+    code: r.code,
+    label: pickName({ ar: r.label_ar, en: r.label_en }, language),
+  }));
   return (
-    <DialogShell
+    <ReasonDialog
       open
       onOpenChange={onOpenChange}
       title={t("appointments.cancelTitle")}
       description={`${appointmentWho(appointment, language)} · ${formatDate(appointment.starts_at, language, "datetime")}`}
-    >
-      <Form {...form}>
-        <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4">
-          <TextareaField
-            control={form.control}
-            name="note"
-            label={t("appointments.cancelReason")}
-            required
-            rows={3}
-            maxLength={300}
-          />
-          <ErrorBox error={error} />
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-              }}
-            >
-              {t("common:actions.back")}
-            </Button>
-            <Button type="submit" variant="destructive" loading={cancel.isPending}>
-              {t("appointments.cancel")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </Form>
-    </DialogShell>
+      reasons={reasons}
+      noteRequired={false}
+      destructive
+      confirmLabel={t("appointments.cancel")}
+      onSubmit={async ({ code, note }) => {
+        await cancel.mutateAsync({ id: appointment.id, reasonCode: code, note });
+        toast.success(t("appointments.cancelled"));
+      }}
+    />
   );
 }
 

@@ -10,7 +10,9 @@
     "results": "Matching patients",
     "noResults": "No patient matches this search.",
     "hint": "Type at least two letters or digits.",
-    "change": "Change"
+    "change": "Change",
+    "picked": "Picked {{name}}, file {{fileNo, bidi}}",
+    "failed": "The search failed. Try again."
   },
   "list": {
     "caption": "Patient files",
@@ -23,12 +25,14 @@
     "searchLabel": "Search patients",
     "searchPlaceholder": "Name in Arabic or English, phone, or file number",
     "incompleteOnly": "Incomplete emergency files only",
-    "truncated": "Showing the newest {{shown}} of {{total}} files. Search to narrow the list.",
     "openFile": "Open the file of {{name}}",
     "emptyTitle": "No patient files yet",
     "emptyDescription": "Register the first patient to start.",
     "noMatchTitle": "No matching patients",
-    "noMatchDescription": "Check the spelling, or search by phone or file number."
+    "noMatchDescription": "Check the spelling, or search by phone or file number.",
+    "loadFailed": "The patient list could not be loaded",
+    "truncated_one": "Showing the newest file of {{total}}. Search to narrow the list.",
+    "truncated_other": "Showing the newest {{count}} of {{total}} files. Search to narrow the list."
   },
   "form": {
     "nameAr": "Full name (Arabic)",
@@ -65,12 +69,12 @@
     "review": "Review",
     "openFile": "Open file",
     "back": "Back to the form",
-    "registerAnyway": "Different person: register",
     "reason": {
       "phone": "Same phone",
       "national_id": "Same national ID",
       "name_dob": "Similar name and same birth date"
-    }
+    },
+    "registerAnyway": "Different person: register a new file"
   },
   "emergency": {
     "open": "Emergency registration",
@@ -120,7 +124,8 @@
     "validFrom": "Valid from",
     "validTo": "Valid to",
     "makeDefault": "Default coverage for new visits",
-    "openEnded": "open"
+    "openEnded": "open",
+    "loadFailed": "The coverage could not be loaded"
   },
   "balance": {
     "title": "Patient balance",
@@ -131,7 +136,8 @@
     "settled": "Nothing owed and no credit.",
     "netCredit": "The patient has a credit of",
     "netOwes": "The patient owes",
-    "openInvoices": "Open invoices"
+    "openInvoices": "Open invoices",
+    "loadFailed": "The balance could not be loaded"
   },
   "merge": {
     "open": "Merge duplicate",
@@ -172,6 +178,79 @@
     "notFoundTitle": "Patient file not found",
     "loadFailed": "The file could not be loaded",
     "notFoundDescription": "Check the link or search for the patient again.",
-    "backToList": "Back to patients"
+    "backToList": "Back to patients",
+    "visitsLoadFailed": "The visits could not be loaded",
+    "loadFailedDescription": "Check the connection, then try again.",
+    "moreActions": "More actions on this file"
+  },
+  "quickSearch": {
+    "trigger": "Search patients or pages…",
+    "placeholder": "Patient name, phone or file number, or a page…",
+    "group": "Patients",
+    "searching": "Searching patients…",
+    "failed": "Patients could not be searched. Try again.",
+    "more_one": "Show the result",
+    "more_other": "Show all {{count}} results"
+  },
+  "import": {
+    "open": "Import from Excel",
+    "title": "Import patients from Excel",
+    "description": "Upload a patient sheet, review every row, then register the valid ones.",
+    "notAllowedTitle": "Import is not available to you",
+    "notAllowed": "Importing data needs the system administrator's permission.",
+    "uploadTitle": "Patient sheet",
+    "columnsHelp": "The first row names the columns, in Arabic or English. Required: a name (Arabic or English) and the sex. Optional: date of birth or age, phone, other phone, address, national ID, emergency contact and phone, notes. Up to 2,000 patients per file.",
+    "templateAr": "Download template (Arabic)",
+    "templateEn": "Download template (English)",
+    "file": "Excel or CSV file",
+    "check": "Check the file",
+    "uploadFailed": "The file could not be read",
+    "doneDescription": "Rows skipped: {{skipped}}. Rows with errors, not imported: {{errors}}.",
+    "openList": "Open the patient list",
+    "another": "Import another file",
+    "summary": "File summary",
+    "total": "Rows",
+    "valid": "Valid",
+    "errors": "With errors",
+    "duplicates": "Possible duplicates",
+    "filterProblems": "Errors and duplicates",
+    "filterAll": "All rows",
+    "filterImported": "Imported",
+    "rowsFailed": "The rows could not be loaded",
+    "caption": "Rows of {{file}}",
+    "row": "Row",
+    "rowN": "Row {{row}}",
+    "status": "Status",
+    "issues": "Notes",
+    "noProblems": "No errors or duplicates in this file.",
+    "noRows": "No rows.",
+    "confirmTitle": "Register the patients",
+    "errorsNotImported": "Rows with errors are not imported; fix them in the file and upload it again.",
+    "confirm": "Register patients",
+    "startOver": "Start over",
+    "rowStatus": {
+      "valid": "Valid",
+      "warning": "Valid with a note",
+      "error": "Error",
+      "duplicate": "Possible duplicate",
+      "imported": "Registered",
+      "skipped": "Skipped"
+    },
+    "hint": {
+      "phone": "Same phone as file {{fileNo, bidi}} ({{name}})",
+      "national_id": "Same national ID as file {{fileNo, bidi}} ({{name}})",
+      "name_dob": "Similar name and same birth date as file {{fileNo, bidi}} ({{name}})",
+      "in_file": "Repeats row {{row}} of this file"
+    },
+    "truncated_one": "Showing the first row of {{total}}.",
+    "truncated_other": "Showing the first {{count}} of {{total}} rows.",
+    "doneTitle_one": "1 patient registered",
+    "doneTitle_other": "{{count}} patients registered",
+    "includeDuplicates_one": "Also register the possible duplicate (I checked it is a different person)",
+    "includeDuplicates_other": "Also register the {{count}} possible duplicates (I checked them)",
+    "willImport_one": "1 patient will be registered.",
+    "willImport_other": "{{count}} patients will be registered.",
+    "confirmDescription_one": "1 patient will be registered with a new file number.",
+    "confirmDescription_other": "{{count}} patients will be registered with new file numbers."
   }
 }

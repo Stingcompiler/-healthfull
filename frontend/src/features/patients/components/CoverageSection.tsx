@@ -41,6 +41,7 @@ import { pickName } from "@/lib/names";
 import { vmsg } from "@/lib/validation";
 
 import { useAddCoverage, useCoverages, useEndCoverage, usePayers, useUpdateCoverage } from "../api";
+import { QueryErrorAlert } from "./QueryErrorAlert";
 import type { Coverage } from "../types";
 
 const schema = z.object({
@@ -114,7 +115,14 @@ export function CoverageSection({ patientId, readOnly = false }: { patientId: nu
           </Button>
         ) : null}
       </div>
-      {coverages.isPending ? (
+      {coverages.isError ? (
+        <QueryErrorAlert
+          title={t("coverage.loadFailed")}
+          error={coverages.error}
+          onRetry={() => void coverages.refetch()}
+          retrying={coverages.isFetching}
+        />
+      ) : coverages.isPending ? (
         <Skeleton className="h-16" />
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted">{t("coverage.none")}</p>

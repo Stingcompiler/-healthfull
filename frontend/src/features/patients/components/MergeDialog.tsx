@@ -15,10 +15,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/i18n-hooks";
+import { pickName } from "@/lib/names";
 
-import { useMergePatient } from "../api";
+import { useMergePatient, useMergeReasons } from "../api";
 import { patientName } from "../lib";
-import { MERGE_REASON_CODES, type PatientFile, type PatientListItem } from "../types";
+import type { PatientFile, PatientListItem } from "../types";
 import { PatientPicker } from "./PatientPicker";
 
 export interface MergeDialogProps {
@@ -44,7 +45,11 @@ function MergeFlow({ target, open, onOpenChange }: MergeDialogProps) {
   const [duplicate, setDuplicate] = useState<PatientListItem | null>(null);
   const [reasonOpen, setReasonOpen] = useState(false);
 
-  const reasons = MERGE_REASON_CODES.map((code) => ({ code, label: t(`merge.reason.${code}`) }));
+  const mergeReasons = useMergeReasons();
+  const reasons = (mergeReasons.data ?? []).map((r) => ({
+    code: r.code,
+    label: pickName({ ar: r.label_ar, en: r.label_en }, language),
+  }));
 
   return (
     <>
@@ -100,7 +105,7 @@ function MergeFlow({ target, open, onOpenChange }: MergeDialogProps) {
           if (!duplicate) return;
           await merge.mutateAsync({
             duplicate_id: duplicate.id,
-            reason_code: code as (typeof MERGE_REASON_CODES)[number],
+            reason_code: code,
             note,
           });
           toast.success(t("merge.done", { fileNo: duplicate.file_no }));

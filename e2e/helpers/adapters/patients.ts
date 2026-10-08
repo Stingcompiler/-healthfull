@@ -36,7 +36,8 @@ registerAdapter("createPatient", {
       body: {
         full_name_ar: named ? (options.full_name_ar ?? "") : `${pick(FIRST)} ${pick(FATHER)} ${pick(FATHER)}`,
         full_name_en: options.full_name_en ?? "",
-        sex: options.sex === "female" ? "female" : "male",
+        // As given: the server refuses "unknown" outside emergency registration.
+        sex: options.sex ?? "male",
         date_of_birth: options.date_of_birth ?? (options.age_years === undefined ? "1990-01-15" : null),
         age_years: options.age_years ?? null,
         phone: options.phone ?? randomPhone(),

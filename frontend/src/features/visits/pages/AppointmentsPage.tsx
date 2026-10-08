@@ -11,10 +11,11 @@ import {
   Phone,
   UserX,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
 import { ChevronNext, ChevronPrev } from "@/components/icons";
@@ -32,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorAlert } from "@/features/patients/components/QueryErrorAlert";
 import { addDays, centerToday, patientName } from "@/features/patients/lib";
 import { toApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
@@ -76,14 +78,17 @@ export function AppointmentsPage() {
   const agenda = useAgenda(doctorId, day);
   const noShow = useAppointmentNoShow();
   const canCheckIn = usePermission("visits.create");
+  const canBook = usePermission("visits.manage_appointments");
 
   const [booking, setBooking] = useState<BookSlot | null>(null);
   const [rescheduling, setRescheduling] = useState<Appointment | null>(null);
   const [cancelling, setCancelling] = useState<Appointment | null>(null);
   const [checkingIn, setCheckingIn] = useState<Appointment | null>(null);
+  const [noShowing, setNoShowing] = useState<Appointment | null>(null);
   const [tokenEntry, setTokenEntry] = useState<number | null>(null);
 
   const items = agenda.data?.items ?? [];
+  const groups = useMemo(() => groupFreeSlots(agenda.data?.items ?? []), [agenda.data]);
 
   const markNoShow = async (a: Appointment) => {
     try {
@@ -139,6 +144,7 @@ export function AppointmentsPage() {
               dir="ltr"
               className="w-auto min-w-0 flex-1 sm:w-44 sm:flex-none"
               value={day}
+              aria-describedby="agenda-day-text"
               onChange={(e) => {
                 if (e.target.value) setDay(e.target.value);
               }}
@@ -165,6 +171,10 @@ export function AppointmentsPage() {
               {t("appointments.today")}
             </Button>
           </div>
+          {/* The native picker writes the date in the browser's format; this line in the app's. */}
+          <p id="agenda-day-text" className="text-xs text-muted">
+            {formatDate(`${day}T12:00:00`, language, "long")}
+          </p>
         </div>
       </div>
 
@@ -177,7 +187,14 @@ export function AppointmentsPage() {
               })
             : t("appointments.pickDoctor")}
         </h2>
-        {agenda.isPending && doctorId !== null ? (
+        {agenda.isError ? (
+          <QueryErrorAlert
+            title={t("appointments.loadFailed")}
+            error={agenda.error}
+            onRetry={() => void agenda.refetch()}
+            retrying={agenda.isFetching}
+          />
+        ) : agenda.isPending && doctorId !== null ? (
           <div className="grid gap-2">
             <Skeleton className="h-16" />
             <Skeleton className="h-16" />
@@ -202,44 +219,56 @@ export function AppointmentsPage() {
           />
         ) : (
           <ul className="grid gap-2" aria-label={t("appointments.agenda")}>
-            {items.map((item) => (
-              <li key={item.appointment ? `a${String(item.appointment.id)}` : `s${item.starts_at}`}>
-                {item.appointment ? (
+            {groups.map((group) =>
+              group.kind === "appointment" ? (
+                <li key={`a${String(group.appointment.id)}`}>
                   <AppointmentRow
-                    item={item}
-                    appointment={item.appointment}
+                    item={group.item}
+                    appointment={group.appointment}
                     canCheckIn={canCheckIn}
+                    canManage={canBook}
                     onCheckIn={setCheckingIn}
                     onReschedule={setRescheduling}
                     onCancel={setCancelling}
-                    onNoShow={(a) => void markNoShow(a)}
+                    onNoShow={setNoShowing}
                   />
-                ) : (
-                  <div
-                    className="flex items-center gap-3 rounded-card border border-dashed border-border-strong px-4 py-3"
-                    data-testid="free-slot"
-                  >
-                    <span className="w-24 shrink-0 tabular text-sm font-medium text-fg">
-                      <DateText value={item.starts_at} format="time" />
-                    </span>
-                    <span className="min-w-0 flex-1 text-sm text-muted">{t("appointments.free")}</span>
-                    {doctor ? (
-                      <Button
-                        size="sm"
-                        variant="soft"
-                        aria-label={t("appointments.bookAt", { time: formatDate(item.starts_at, language, "time") })}
-                        onClick={() => {
-                          setBooking({ doctor, startsAt: item.starts_at, endsAt: item.ends_at });
-                        }}
-                      >
-                        <CalendarPlus aria-hidden="true" />
-                        {t("appointments.book")}
-                      </Button>
-                    ) : null}
+                </li>
+              ) : (
+                <li key={`s${group.slots[0]?.starts_at ?? ""}`}>
+                  {/* Free time as compact chips: the bookings stay easy to find. */}
+                  <div className="rounded-card border border-dashed border-border-strong p-3">
+                    <p className="mb-2 text-xs text-muted">
+                      {t("appointments.freeSlots", { count: group.slots.length })}
+                    </p>
+                    <ul className="flex flex-wrap gap-2">
+                      {group.slots.map((slot) => (
+                        <li key={slot.starts_at} data-testid="free-slot">
+                          {doctor && canBook ? (
+                            <Button
+                              size="sm"
+                              variant="soft"
+                              aria-label={t("appointments.bookAt", {
+                                time: formatDate(slot.starts_at, language, "time"),
+                              })}
+                              onClick={() => {
+                                setBooking({ doctor, startsAt: slot.starts_at, endsAt: slot.ends_at });
+                              }}
+                            >
+                              <CalendarPlus aria-hidden="true" />
+                              <DateText value={slot.starts_at} format="time" />
+                            </Button>
+                          ) : (
+                            <span className="inline-flex h-9 items-center rounded-control bg-subtle px-3 tabular text-sm text-fg">
+                              <DateText value={slot.starts_at} format="time" />
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                )}
-              </li>
-            ))}
+                </li>
+              ),
+            )}
           </ul>
         )}
       </section>
@@ -277,14 +306,53 @@ export function AppointmentsPage() {
           if (!open) setTokenEntry(null);
         }}
       />
+      <ConfirmDialog
+        open={noShowing !== null}
+        onOpenChange={(open) => {
+          if (!open) setNoShowing(null);
+        }}
+        title={t("appointments.noShowConfirmTitle")}
+        description={
+          noShowing
+            ? t("appointments.noShowConfirm", {
+                name: noShowing.patient ? patientName(noShowing.patient, language) : noShowing.contact_name,
+                time: formatDate(noShowing.starts_at, language, "time"),
+              })
+            : undefined
+        }
+        confirmLabel={t("appointments.noShow")}
+        destructive
+        onConfirm={async () => {
+          if (noShowing) await markNoShow(noShowing);
+        }}
+      />
     </div>
   );
+}
+
+type AgendaGroup =
+  { kind: "appointment"; item: AgendaItem; appointment: Appointment } | { kind: "free"; slots: AgendaItem[] };
+
+/** Runs of free slots between appointments, in time order. */
+function groupFreeSlots(items: readonly AgendaItem[]): AgendaGroup[] {
+  const out: AgendaGroup[] = [];
+  for (const item of items) {
+    if (item.appointment) {
+      out.push({ kind: "appointment", item, appointment: item.appointment });
+      continue;
+    }
+    const last = out.at(-1);
+    if (last?.kind === "free") last.slots.push(item);
+    else out.push({ kind: "free", slots: [item] });
+  }
+  return out;
 }
 
 function AppointmentRow({
   item,
   appointment: a,
   canCheckIn,
+  canManage,
   onCheckIn,
   onReschedule,
   onCancel,
@@ -293,6 +361,7 @@ function AppointmentRow({
   item: AgendaItem;
   appointment: Appointment;
   canCheckIn: boolean;
+  canManage: boolean;
   onCheckIn: (a: Appointment) => void;
   onReschedule: (a: Appointment) => void;
   onCancel: (a: Appointment) => void;
@@ -330,16 +399,25 @@ function AppointmentRow({
           ) : null}
         </span>
         {a.notes ? <p className="text-sm break-words text-fg">{a.notes}</p> : null}
-        {a.status === "cancelled" && a.cancel_note ? (
+        {a.status === "cancelled" && (a.cancel_reason || a.cancel_note) ? (
           <p className="text-xs break-words text-muted">
-            {t("appointments.cancelledBecause", { note: a.cancel_note })}
+            {t("appointments.cancelledBecause", {
+              note: [
+                a.cancel_reason
+                  ? pickName({ ar: a.cancel_reason.label_ar, en: a.cancel_reason.label_en }, language)
+                  : "",
+                a.cancel_note,
+              ]
+                .filter(Boolean)
+                .join(" · "),
+            })}
           </p>
         ) : null}
         <span>
           <Badge variant={STATUS_VARIANT[a.status]}>{t(`appointmentStatus.${a.status}`)}</Badge>
         </span>
       </div>
-      {open ? (
+      {open && (canManage || canCheckIn) ? (
         <div className="flex items-center gap-2 max-sm:basis-full max-sm:justify-end">
           {canCheckIn ? (
             <Button
@@ -352,41 +430,43 @@ function AppointmentRow({
               {t("appointments.checkIn")}
             </Button>
           ) : null}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" aria-label={t("appointments.moreFor", { name })}>
-                <MoreHorizontal aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={() => {
-                  onReschedule(a);
-                }}
-              >
-                <CalendarClock aria-hidden="true" />
-                {t("appointments.reschedule")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  onNoShow(a);
-                }}
-              >
-                <UserX aria-hidden="true" />
-                {t("appointments.noShow")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={() => {
-                  onCancel(a);
-                }}
-              >
-                <Ban aria-hidden="true" />
-                {t("appointments.cancel")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canManage ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" aria-label={t("appointments.moreFor", { name })}>
+                  <MoreHorizontal aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    onReschedule(a);
+                  }}
+                >
+                  <CalendarClock aria-hidden="true" />
+                  {t("appointments.reschedule")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    onNoShow(a);
+                  }}
+                >
+                  <UserX aria-hidden="true" />
+                  {t("appointments.noShow")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => {
+                    onCancel(a);
+                  }}
+                >
+                  <Ban aria-hidden="true" />
+                  {t("appointments.cancel")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
       ) : a.status === "arrived" ? (
         <CheckCircle2 className="size-5 text-success" aria-hidden="true" />

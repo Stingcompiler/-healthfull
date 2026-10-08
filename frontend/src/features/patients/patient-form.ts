@@ -15,7 +15,10 @@ export const patientFormSchema = z
   .object({
     full_name_ar: z.string().trim().max(200),
     full_name_en: z.string().trim().max(200),
-    sex: z.enum(["male", "female", "unknown"], { message: vmsg("validation.selectOption") }),
+    // Starts empty: the clerk must choose (a preselected sex would register silently wrong).
+    sex: z
+      .enum(["male", "female", "unknown", ""], { message: vmsg("validation.selectOption") })
+      .refine((v) => v.length > 0, vmsg("validation.selectOption")),
     dob_mode: z.enum(["date", "age"]),
     date_of_birth: z.string(),
     age_years: z.string().trim(),
@@ -41,7 +44,7 @@ export type PatientFormValues = z.infer<typeof patientFormSchema>;
 export const emptyPatientForm: PatientFormValues = {
   full_name_ar: "",
   full_name_en: "",
-  sex: "male",
+  sex: "",
   dob_mode: "date",
   date_of_birth: "",
   age_years: "",
@@ -79,12 +82,15 @@ function birth(values: PatientFormValues): Pick<PatientInput, "date_of_birth" | 
   return { date_of_birth: values.date_of_birth || null, age_years: null };
 }
 
-/** Registration body. `sex` "unknown" is only for emergency files and is refused here by the server. */
+/**
+ * Registration body. The chosen sex is sent as it is: the server accepts male or female only
+ * ("unknown" is for emergency files) and answers anything else with a validation error.
+ */
 export function toPatientInput(values: PatientFormValues, confirmNotDuplicate = false): PatientInput {
   return {
     full_name_ar: values.full_name_ar,
     full_name_en: values.full_name_en,
-    sex: values.sex === "female" ? "female" : "male",
+    sex: values.sex as PatientInput["sex"],
     ...birth(values),
     phone: values.phone,
     phone_alt: values.phone_alt,
@@ -102,7 +108,7 @@ export function toPatientPatch(values: PatientFormValues): PatientPatch {
   const patch: PatientPatch = {
     full_name_ar: values.full_name_ar,
     full_name_en: values.full_name_en,
-    sex: values.sex,
+    sex: values.sex as NonNullable<PatientPatch["sex"]>,
     phone: values.phone,
     phone_alt: values.phone_alt,
     national_id: values.national_id,

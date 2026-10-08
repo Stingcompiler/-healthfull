@@ -21,11 +21,9 @@ export type CoveragePatch = S["CoveragePatch"];
 export type Balance = S["BalanceOut"];
 export type PatientPage = S["Page_PatientListOut_"];
 
+export type MergeReason = S["MergeReasonOut"];
+
 export type Sex = PatientListItem["sex"];
-export type MergeReasonCode = MergeInput["reason_code"];
-export const MERGE_REASON_CODES: readonly MergeReasonCode[] = [
-  "DUPLICATE_REGISTRATION",
-  "EMERGENCY_IDENTIFIED",
-  "SPELLING_VARIANT",
-  "OTHER",
-];
+
+export type ImportJob = S["ImportJobOut"];
+export type ImportRow = S["ImportRowOut"];

@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { DateText } from "@/components/DateText";
 import { MoneyText } from "@/components/MoneyText";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorAlert } from "@/features/patients/components/QueryErrorAlert";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 import { translateKey } from "@/lib/validation";
@@ -62,7 +63,17 @@ export function VisitTimeline({ visitId }: { visitId: number }) {
       </div>
     );
   }
-  const events = timeline.data ?? [];
+  if (timeline.isError) {
+    return (
+      <QueryErrorAlert
+        title={t("timeline.loadFailed")}
+        error={timeline.error}
+        onRetry={() => void timeline.refetch()}
+        retrying={timeline.isFetching}
+      />
+    );
+  }
+  const events = timeline.data;
   if (events.length === 0) return <p className="text-sm text-muted">{t("timeline.empty")}</p>;
   return (
     <ol className="relative grid gap-3 border-s border-border ps-4" aria-label={t("timeline.title")}>

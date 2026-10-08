@@ -10,7 +10,9 @@
     "results": "المرضى المطابقون",
     "noResults": "لا يوجد مريض يطابق هذا البحث.",
     "hint": "اكتب حرفين أو رقمين على الأقل.",
-    "change": "تغيير"
+    "change": "تغيير",
+    "picked": "تم اختيار {{name}}، ملف {{fileNo, bidi}}",
+    "failed": "تعذر البحث. حاول مرة أخرى."
   },
   "list": {
     "caption": "ملفات المرضى",
@@ -23,12 +25,18 @@
     "searchLabel": "البحث عن المرضى",
     "searchPlaceholder": "الاسم بالعربية أو الإنجليزية أو الهاتف أو رقم الملف",
     "incompleteOnly": "ملفات الطوارئ غير المكتملة فقط",
-    "truncated": "تظهر أحدث {{shown}} ملفات من {{total}}. ابحث لتضييق القائمة.",
     "openFile": "فتح ملف {{name}}",
     "emptyTitle": "لا توجد ملفات مرضى بعد",
     "emptyDescription": "سجّل أول مريض للبدء.",
     "noMatchTitle": "لا يوجد مرضى مطابقون",
-    "noMatchDescription": "راجع الإملاء، أو ابحث بالهاتف أو رقم الملف."
+    "noMatchDescription": "راجع الإملاء، أو ابحث بالهاتف أو رقم الملف.",
+    "loadFailed": "تعذر تحميل قائمة المرضى",
+    "truncated_zero": "لا تظهر أي ملفات من {{total}}. ابحث لتضييق القائمة.",
+    "truncated_one": "يظهر أحدث ملف من {{total}}. ابحث لتضييق القائمة.",
+    "truncated_two": "يظهر أحدث ملفين من {{total}}. ابحث لتضييق القائمة.",
+    "truncated_few": "تظهر أحدث {{count}} ملفات من {{total}}. ابحث لتضييق القائمة.",
+    "truncated_many": "يظهر أحدث {{count}} ملفاً من {{total}}. ابحث لتضييق القائمة.",
+    "truncated_other": "يظهر أحدث {{count}} ملف من {{total}}. ابحث لتضييق القائمة."
   },
   "form": {
     "nameAr": "الاسم الكامل (بالعربية)",
@@ -69,12 +77,12 @@
     "review": "مراجعة",
     "openFile": "فتح الملف",
     "back": "العودة إلى النموذج",
-    "registerAnyway": "شخص آخر: سجّل",
     "reason": {
       "phone": "الهاتف نفسه",
       "national_id": "الرقم الوطني نفسه",
       "name_dob": "اسم مشابه وتاريخ الميلاد نفسه"
-    }
+    },
+    "registerAnyway": "شخص آخر، سجّل ملفاً جديداً"
   },
   "emergency": {
     "open": "تسجيل طوارئ",
@@ -124,7 +132,8 @@
     "validFrom": "سارية من",
     "validTo": "سارية حتى",
     "makeDefault": "التغطية الافتراضية للزيارات الجديدة",
-    "openEnded": "مفتوح"
+    "openEnded": "مفتوح",
+    "loadFailed": "تعذر تحميل التغطية"
   },
   "balance": {
     "title": "رصيد المريض",
@@ -135,7 +144,8 @@
     "settled": "لا مستحقات ولا رصيد.",
     "netCredit": "للمريض رصيد قدره",
     "netOwes": "على المريض",
-    "openInvoices": "فواتير مفتوحة"
+    "openInvoices": "فواتير مفتوحة",
+    "loadFailed": "تعذر تحميل الرصيد"
   },
   "merge": {
     "open": "دمج ملف مكرر",
@@ -176,6 +186,103 @@
     "notFoundTitle": "ملف المريض غير موجود",
     "loadFailed": "تعذر تحميل الملف",
     "notFoundDescription": "تحقق من الرابط أو ابحث عن المريض مجدداً.",
-    "backToList": "العودة إلى المرضى"
+    "backToList": "العودة إلى المرضى",
+    "visitsLoadFailed": "تعذر تحميل الزيارات",
+    "loadFailedDescription": "تحقق من الاتصال ثم أعد المحاولة.",
+    "moreActions": "إجراءات أخرى على الملف"
+  },
+  "quickSearch": {
+    "trigger": "ابحث عن مريض أو صفحة…",
+    "placeholder": "اسم المريض أو هاتفه أو رقم ملفه، أو اسم صفحة…",
+    "group": "المرضى",
+    "searching": "جارٍ البحث عن المرضى…",
+    "failed": "تعذر البحث عن المرضى. حاول مرة أخرى.",
+    "more_zero": "عرض كل النتائج",
+    "more_one": "عرض النتيجة",
+    "more_two": "عرض النتيجتين",
+    "more_few": "عرض كل النتائج ({{count}})",
+    "more_many": "عرض كل النتائج ({{count}})",
+    "more_other": "عرض كل النتائج ({{count}})"
+  },
+  "import": {
+    "open": "استيراد من Excel",
+    "title": "استيراد المرضى من Excel",
+    "description": "ارفع ملف المرضى، راجع كل صف، ثم سجّل الصفوف السليمة.",
+    "notAllowedTitle": "الاستيراد غير متاح لك",
+    "notAllowed": "استيراد البيانات يحتاج صلاحية مسؤول النظام.",
+    "uploadTitle": "ملف المرضى",
+    "columnsHelp": "الصف الأول يحمل أسماء الأعمدة بالعربية أو الإنجليزية. المطلوب: الاسم (بالعربية أو الإنجليزية) والجنس. الاختياري: تاريخ الميلاد أو العمر، الهاتف، هاتف آخر، العنوان، الرقم الوطني، جهة الاتصال للطوارئ وهاتفها، ملاحظات. حتى 2000 مريض في الملف.",
+    "templateAr": "تنزيل النموذج (عربي)",
+    "templateEn": "تنزيل النموذج (إنجليزي)",
+    "file": "ملف Excel أو CSV",
+    "check": "فحص الملف",
+    "uploadFailed": "تعذر قراءة الملف",
+    "doneDescription": "صفوف متخطاة: {{skipped}}. صفوف بها أخطاء لم تُستورد: {{errors}}.",
+    "openList": "فتح قائمة المرضى",
+    "another": "استيراد ملف آخر",
+    "summary": "ملخص الملف",
+    "total": "الصفوف",
+    "valid": "سليمة",
+    "errors": "بها أخطاء",
+    "duplicates": "مكررة محتملة",
+    "filterProblems": "الأخطاء والمكرر",
+    "filterAll": "كل الصفوف",
+    "filterImported": "المستوردة",
+    "rowsFailed": "تعذر تحميل الصفوف",
+    "caption": "صفوف الملف {{file}}",
+    "row": "الصف",
+    "rowN": "الصف {{row}}",
+    "status": "الحالة",
+    "issues": "الملاحظات",
+    "noProblems": "لا أخطاء ولا تكرار في هذا الملف.",
+    "noRows": "لا توجد صفوف.",
+    "confirmTitle": "تسجيل المرضى",
+    "errorsNotImported": "الصفوف التي بها أخطاء لا تُستورد؛ صحّحها في الملف وارفعه من جديد.",
+    "confirm": "تسجيل المرضى",
+    "startOver": "البدء من جديد",
+    "rowStatus": {
+      "valid": "سليم",
+      "warning": "سليم مع ملاحظة",
+      "error": "به خطأ",
+      "duplicate": "مكرر محتمل",
+      "imported": "سُجّل",
+      "skipped": "تُخطّي"
+    },
+    "hint": {
+      "phone": "الهاتف نفسه في الملف {{fileNo, bidi}} ({{name}})",
+      "national_id": "الرقم الوطني نفسه في الملف {{fileNo, bidi}} ({{name}})",
+      "name_dob": "اسم مشابه وتاريخ الميلاد نفسه في الملف {{fileNo, bidi}} ({{name}})",
+      "in_file": "يكرر الصف {{row}} في هذا الملف"
+    },
+    "truncated_zero": "تظهر الصفوف الأولى من {{total}}.",
+    "truncated_one": "يظهر الصف الأول من {{total}}.",
+    "truncated_two": "يظهر أول صفين من {{total}}.",
+    "truncated_few": "تظهر أول {{count}} صفوف من {{total}}.",
+    "truncated_many": "يظهر أول {{count}} صفاً من {{total}}.",
+    "truncated_other": "يظهر أول {{count}} صف من {{total}}.",
+    "doneTitle_zero": "لم يُسجَّل أي مريض",
+    "doneTitle_one": "سُجّل مريض واحد",
+    "doneTitle_two": "سُجّل مريضان",
+    "doneTitle_few": "سُجّل {{count}} مرضى",
+    "doneTitle_many": "سُجّل {{count}} مريضاً",
+    "doneTitle_other": "سُجّل {{count}} مريض",
+    "includeDuplicates_zero": "سجّل الصفوف المكررة المحتملة أيضاً",
+    "includeDuplicates_one": "سجّل الصف المكرر المحتمل أيضاً (راجعته وهو شخص آخر)",
+    "includeDuplicates_two": "سجّل الصفين المكررين المحتملين أيضاً (راجعتهما)",
+    "includeDuplicates_few": "سجّل الصفوف المكررة المحتملة ({{count}}) أيضاً (راجعتها)",
+    "includeDuplicates_many": "سجّل الصفوف المكررة المحتملة ({{count}}) أيضاً (راجعتها)",
+    "includeDuplicates_other": "سجّل الصفوف المكررة المحتملة ({{count}}) أيضاً (راجعتها)",
+    "willImport_zero": "لن يُسجَّل أي مريض.",
+    "willImport_one": "سيُسجَّل مريض واحد.",
+    "willImport_two": "سيُسجَّل مريضان.",
+    "willImport_few": "سيُسجَّل {{count}} مرضى.",
+    "willImport_many": "سيُسجَّل {{count}} مريضاً.",
+    "willImport_other": "سيُسجَّل {{count}} مريض.",
+    "confirmDescription_zero": "لن يُسجَّل أي مريض.",
+    "confirmDescription_one": "سيُسجَّل مريض واحد برقم ملف جديد.",
+    "confirmDescription_two": "سيُسجَّل مريضان بأرقام ملفات جديدة.",
+    "confirmDescription_few": "سيُسجَّل {{count}} مرضى بأرقام ملفات جديدة.",
+    "confirmDescription_many": "سيُسجَّل {{count}} مريضاً بأرقام ملفات جديدة.",
+    "confirmDescription_other": "سيُسجَّل {{count}} مريض بأرقام ملفات جديدة."
   }
 }

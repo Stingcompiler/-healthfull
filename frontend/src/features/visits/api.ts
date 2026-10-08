@@ -204,11 +204,11 @@ export function useRescheduleAppointment() {
 export function useCancelAppointment() {
   const invalidate = useInvalidateVisits();
   return useMutation({
-    mutationFn: ({ id, note }: { id: number; note: string }) =>
+    mutationFn: ({ id, reasonCode, note }: { id: number; reasonCode: string; note: string }) =>
       unwrap(
         api.POST("/api/visits/appointments/{appointment_id}/cancel", {
           params: { path: { appointment_id: id } },
-          body: { note },
+          body: { reason_code: reasonCode, note },
         }),
       ),
     onSuccess: invalidate,

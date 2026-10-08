@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ShieldCheck, Siren, UserPlus, Users } from "lucide-react";
+import { FileSpreadsheet, ShieldCheck, Siren, UserPlus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -20,6 +20,7 @@ import { pickName } from "@/lib/names";
 
 import { usePatientList } from "../api";
 import { EmergencyDialog } from "../components/EmergencyDialog";
+import { QueryErrorAlert } from "../components/QueryErrorAlert";
 import { patientName } from "../lib";
 import type { PatientListItem } from "../types";
 
@@ -31,7 +32,8 @@ export function PatientsPage() {
   const { t } = useTranslation(["patients", "common"]);
   const language = useLanguage();
   const navigate = useNavigate();
-  const [term, setTerm] = useState("");
+  const search: { q?: string } = useSearch({ strict: false });
+  const [term, setTerm] = useState(search.q ?? "");
   const [incomplete, setIncomplete] = useState(false);
   const [emergencyOpen, setEmergencyOpen] = useState(false);
   const list = usePatientList({ q: term, page: 1, pageSize: PAGE_SIZE, incomplete });
@@ -124,6 +126,14 @@ export function PatientsPage() {
                 {t("emergency.open")}
               </Button>
             </Can>
+            <Can permission="imports.run">
+              <Button asChild variant="outline">
+                <Link to="/patients/import">
+                  <FileSpreadsheet aria-hidden="true" />
+                  {t("import.open")}
+                </Link>
+              </Button>
+            </Can>
             <Can permission="patients.create">
               <Button asChild>
                 <Link to="/patients/new">
@@ -140,6 +150,7 @@ export function PatientsPage() {
         <SearchInput
           label={t("list.searchLabel")}
           placeholder={t("list.searchPlaceholder")}
+          defaultValue={search.q ?? ""}
           onSearch={setTerm}
           loading={list.isFetching}
           className="sm:max-w-md"
@@ -151,54 +162,65 @@ export function PatientsPage() {
         </label>
       </div>
 
+      {list.isError ? (
+        <QueryErrorAlert
+          title={t("list.loadFailed")}
+          error={list.error}
+          onRetry={() => void list.refetch()}
+          retrying={list.isFetching}
+        />
+      ) : null}
+
       {total > rows.length ? (
         <p className="text-sm text-muted" role="status">
-          {t("list.truncated", { shown: formatNumber(rows.length, language), total: formatNumber(total, language) })}
+          {t("list.truncated", { count: rows.length, total: formatNumber(total, language) })}
         </p>
       ) : null}
 
-      <DataTable
-        caption={t("list.caption")}
-        columns={columns}
-        data={rows}
-        loading={list.isPending}
-        getRowId={(p) => String(p.id)}
-        onRowClick={open}
-        rowLabel={(p) => t("list.openFile", { name: patientName(p, language) })}
-        pageSize={25}
-        minTableWidth={760}
-        renderCard={(p, { open: openCard, openLabel }) => (
-          <div className="card-surface relative flex flex-col gap-2 p-4">
-            {openCard ? (
-              <DataTableOpenButton onOpen={openCard} label={openLabel}>
-                <span className="font-semibold break-words text-fg">{patientName(p, language)}</span>
-              </DataTableOpenButton>
-            ) : null}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-              <bdi className="tabular font-semibold text-fg">{p.file_no}</bdi>
-              <span>{[t(`common:sex.${p.sex}`), ageText(p)].filter(Boolean).join(" · ")}</span>
-              {p.phone ? <bdi className="tabular">{p.phone}</bdi> : null}
+      {list.isError ? null : (
+        <DataTable
+          caption={t("list.caption")}
+          columns={columns}
+          data={rows}
+          loading={list.isPending}
+          getRowId={(p) => String(p.id)}
+          onRowClick={open}
+          rowLabel={(p) => t("list.openFile", { name: patientName(p, language) })}
+          pageSize={25}
+          minTableWidth={760}
+          renderCard={(p, { open: openCard, openLabel }) => (
+            <div className="card-surface relative flex flex-col gap-2 p-4">
+              {openCard ? (
+                <DataTableOpenButton onOpen={openCard} label={openLabel}>
+                  <span className="font-semibold break-words text-fg">{patientName(p, language)}</span>
+                </DataTableOpenButton>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+                <bdi className="tabular font-semibold text-fg">{p.file_no}</bdi>
+                <span>{[t(`common:sex.${p.sex}`), ageText(p)].filter(Boolean).join(" · ")}</span>
+                {p.phone ? <bdi className="tabular">{p.phone}</bdi> : null}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <CoverageBadge patient={p} />
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              <CoverageBadge patient={p} />
-            </div>
-          </div>
-        )}
-        emptyState={
-          <EmptyState
-            icon={<Users />}
-            title={term ? t("list.noMatchTitle") : t("list.emptyTitle")}
-            description={term ? t("list.noMatchDescription") : t("list.emptyDescription")}
-            action={
-              <Can permission="patients.create">
-                <Button asChild>
-                  <Link to="/patients/new">{t("new.open")}</Link>
-                </Button>
-              </Can>
-            }
-          />
-        }
-      />
+          )}
+          emptyState={
+            <EmptyState
+              icon={<Users />}
+              title={term ? t("list.noMatchTitle") : t("list.emptyTitle")}
+              description={term ? t("list.noMatchDescription") : t("list.emptyDescription")}
+              action={
+                <Can permission="patients.create">
+                  <Button asChild>
+                    <Link to="/patients/new">{t("new.open")}</Link>
+                  </Button>
+                </Can>
+              }
+            />
+          }
+        />
+      )}
       <EmergencyDialog open={emergencyOpen} onOpenChange={setEmergencyOpen} />
     </div>
   );
