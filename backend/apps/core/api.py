@@ -374,7 +374,7 @@ def delete_center_logo(request: HttpRequest) -> CenterProfile:
     summary="The center logo image (any signed-in user: it is printed on documents)",
     openapi_extra={
         "responses": {
-            "200": {
+            200: {
                 "description": "The logo image",
                 "content": {"image/*": {"schema": {"type": "string", "format": "binary"}}},
             }
