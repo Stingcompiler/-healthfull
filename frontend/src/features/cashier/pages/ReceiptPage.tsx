@@ -1,4 +1,4 @@
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { ReceiptText } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,8 +17,9 @@ import { cn } from "@/lib/utils";
 import { useReceipt } from "../api";
 import { PrintFrame, type PrintFormat } from "../components/PrintFrame";
 import { QrCode } from "../components/QrCode";
+import { parseCashierSearch } from "../lib/search";
 import { useNames } from "../lib/use-names";
-import type { Center, Receipt } from "../types";
+import type { Center, Payment, Receipt } from "../types";
 
 export function DocHeader({ center, title, format }: { center: Center; title: ReactNode; format: PrintFormat }) {
   const names = useNames();
@@ -49,11 +50,50 @@ function Line({ label, value }: { label: ReactNode; value: ReactNode }) {
   );
 }
 
+/**
+ * What a printed receipt must say about its own standing: a transfer still waiting for the
+ * bank, a rejected transfer or a reversed payment (never printed as if it were valid money).
+ */
+export function PaymentStandingNote({ payment }: { payment: Payment }) {
+  const { t } = useTranslation("cashier");
+  if (payment.verification === "rejected") {
+    return (
+      <p
+        className="flex flex-wrap items-center gap-2 rounded-control border-2 border-danger-border p-2 font-semibold"
+        data-testid="receipt-invalid"
+      >
+        <StatusBadge status="rejected" size="sm" withHint={false} />
+        {t("receipt.rejectedNote")}
+      </p>
+    );
+  }
+  if (payment.reversal_number || payment.reversal_of_number) {
+    return (
+      <p
+        className="flex flex-wrap items-center gap-2 rounded-control border-2 border-danger-border p-2 font-semibold"
+        data-testid="receipt-invalid"
+      >
+        {payment.reversal_number
+          ? t("receipt.reversedNote", { number: payment.reversal_number })
+          : t("receipt.reversalNote", { number: payment.reversal_of_number ?? "" })}
+      </p>
+    );
+  }
+  if (payment.verification === "pending") {
+    return (
+      <p className="flex flex-wrap items-center gap-2 rounded-control border border-warning-border p-2">
+        <StatusBadge status="pending_verification" size="sm" withHint={false} />
+        {t("receipt.pendingNote")}
+      </p>
+    );
+  }
+  return null;
+}
+
 function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintFormat }) {
   const { t } = useTranslation(["cashier", "common"]);
   const names = useNames();
   const p = receipt.payment;
-  const pending = p.verification === "pending";
   return (
     <div className="flex flex-col gap-3" data-testid="receipt">
       <DocHeader center={receipt.center} title={t("receipt.title")} format={format} />
@@ -67,12 +107,7 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
         {p.reference ? <Line label={t("payment.reference")} value={<bdi>{p.reference}</bdi>} /> : null}
         <Line label={t("receipt.cashier")} value={names.user(receipt.cashier)} />
       </dl>
-      {pending ? (
-        <p className="flex flex-wrap items-center gap-2 rounded-control border border-warning-border p-2">
-          <StatusBadge status="pending_verification" size="sm" withHint={false} />
-          {t("receipt.pendingNote")}
-        </p>
-      ) : null}
+      <PaymentStandingNote payment={p} />
       {receipt.invoices.map((inv) => (
         <section key={inv.id} className="flex flex-col gap-1 border-t border-border pt-2">
           <p className="font-semibold">
@@ -84,7 +119,7 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
                 <span className="min-w-0 break-words">
                   {t("receipt.lineQty", { name: names.text(l.description_ar, l.description_en), qty: l.quantity })}
                 </span>
-                <MoneyText value={l.patient_share} currency={false} />
+                <MoneyText value={l.patient_share} />
               </li>
             ))}
           </ul>
@@ -109,10 +144,10 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
           label={t("receipt.qrLabel")}
           className={format === "thermal" ? "size-32" : "size-36"}
         />
-        <bdi dir="ltr" className="text-[10px] break-all text-muted">
+        <bdi dir="ltr" className="text-xs break-all text-muted">
           {receipt.verify_code}
         </bdi>
-        <p className="text-center text-[11px] text-muted">{t("receipt.verifyHint")}</p>
+        <p className="text-center text-xs text-muted">{t("receipt.verifyHint")}</p>
       </div>
     </div>
   );
@@ -123,6 +158,7 @@ export function ReceiptPage() {
   const { t } = useTranslation(["cashier", "errors"]);
   const translateError = useTranslateError();
   const { paymentId } = useParams({ strict: false });
+  const { visit } = parseCashierSearch(useSearch({ strict: false }));
   const receipt = useReceipt(Number(paymentId));
 
   return (
@@ -134,7 +170,7 @@ export function ReceiptPage() {
         className="print:hidden"
         actions={
           <Button asChild variant="outline">
-            <Link to="/cashier">
+            <Link to="/cashier" search={visit ? { visit } : {}} data-testid="receipt-back">
               <ArrowBack aria-hidden="true" />
               {t("receipt.back")}
             </Link>

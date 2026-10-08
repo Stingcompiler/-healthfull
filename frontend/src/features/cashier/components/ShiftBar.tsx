@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Clock3, LockOpen } from "lucide-react";
+import { CircleSlash, Clock3 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -63,7 +63,7 @@ export function ShiftBar() {
       ) : (
         <>
           <div className="flex min-w-0 items-center gap-2">
-            <LockOpen className="size-4 text-muted" aria-hidden="true" />
+            <CircleSlash className="size-4 text-muted" aria-hidden="true" />
             <span className="font-medium">{t("shift.none")}</span>
             <span className="hidden text-sm text-muted sm:inline">{t("shift.noneHint")}</span>
           </div>

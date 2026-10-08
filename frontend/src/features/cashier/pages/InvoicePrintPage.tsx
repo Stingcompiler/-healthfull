@@ -73,15 +73,26 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
         <ul className="flex flex-col gap-1.5 border-t border-border pt-2">
           {inv.lines.map((l) => (
             <li key={l.id} className="flex flex-col">
-              <span>
+              <span className="font-medium">
                 {t("receipt.lineQty", { name: names.text(l.description_ar, l.description_en), qty: l.quantity })}
               </span>
-              <span className="flex justify-between gap-2 text-muted">
-                <span>
-                  {l.payer ? names.name(l.payer) : t("invoice.cash")}{" "}
-                  <MoneyText value={l.payer_share} currency={false} />
+              {l.discount !== "0.00" ? (
+                <span className="flex justify-between gap-2">
+                  <span>{t("invoice.discount")}</span>
+                  <MoneyText value={l.discount} />
                 </span>
-                <MoneyText value={l.patient_share} currency={false} className="text-fg" />
+              ) : null}
+              {l.payer ? (
+                <span className="flex justify-between gap-2">
+                  <span className="min-w-0">
+                    {t("invoice.payerShare")} ({names.name(l.payer)})
+                  </span>
+                  <MoneyText value={l.payer_share} />
+                </span>
+              ) : null}
+              <span className="flex justify-between gap-2 font-semibold">
+                <span>{t("invoice.patientShare")}</span>
+                <MoneyText value={l.patient_share} />
               </span>
             </li>
           ))}
@@ -133,7 +144,7 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
         {inv.paid !== null ? <Line label={t("invoice.paid")} value={inv.paid} /> : null}
         {inv.outstanding !== null ? <Line label={t("invoice.outstanding")} value={inv.outstanding} strong /> : null}
       </dl>
-      <p className="text-center text-[11px] text-muted">{t("invoicePrint.payerNote")}</p>
+      <p className="text-center text-xs text-muted">{t("invoicePrint.payerNote")}</p>
     </div>
   );
 }

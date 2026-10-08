@@ -105,6 +105,7 @@ export function TransfersPage() {
             <bdi className="text-xs text-muted" data-testid="transfer-reference">
               {row.original.payment.reference}
             </bdi>
+            <TransferSender payment={row.original.payment} />
           </span>
         ),
       },
@@ -206,9 +207,12 @@ export function TransfersPage() {
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
                   <span>{names.name(r.payment.bank)}</span>
                   <bdi data-testid="transfer-reference">{r.payment.reference}</bdi>
-                  <span>{t("report.ageDays", { count: r.payment.age_days })}</span>
+                  <span>
+                    {t("transfers.columns.age")}: {t("report.ageDays", { count: r.payment.age_days })}
+                  </span>
                   <DateText value={r.payment.created_at} format="datetime" />
                 </span>
+                <TransferSender payment={r.payment} />
                 <MoneyText value={r.payment.amount} className="text-base" />
               </div>
             )}
@@ -255,5 +259,25 @@ export function TransfersPage() {
         }}
       />
     </div>
+  );
+}
+
+/** What the supervisor matches against the bank statement besides the reference. */
+function TransferSender({ payment }: { payment: Transfer["payment"] }) {
+  const { t } = useTranslation("cashier");
+  if (!payment.sender_name && !payment.transfer_date) return null;
+  return (
+    <span className="flex flex-wrap gap-x-2 text-xs text-muted" data-testid="transfer-sender">
+      {payment.sender_name ? (
+        <span>
+          {t("transfers.sender")}: <bdi>{payment.sender_name}</bdi>
+        </span>
+      ) : null}
+      {payment.transfer_date ? (
+        <span>
+          {t("transfers.sentOn")}: <DateText value={payment.transfer_date} format="date" />
+        </span>
+      ) : null}
+    </span>
   );
 }

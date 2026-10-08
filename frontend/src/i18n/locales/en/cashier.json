@@ -9,7 +9,8 @@
     "creditNotes": "Credit notes",
     "refunds": "Refunds",
     "performFirst": "Perform first",
-    "review": "Shift review"
+    "review": "Shift review",
+    "receiptCheck": "Check receipt"
   },
   "validation": {
     "amount": "Enter an amount, e.g. 15000 or 2500.50",
@@ -65,7 +66,8 @@
     "outstanding": "Owes",
     "credit": "Credit",
     "unbilled_one": "{{count}} to bill",
-    "unbilled_other": "{{count}} to bill"
+    "unbilled_other": "{{count}} to bill",
+    "unbilled_zero": "Nothing to bill"
   },
   "billing": {
     "title": "Billing",
@@ -86,7 +88,10 @@
     "qty_other": "Qty {{count}}",
     "authorized": "Perform first",
     "onDraft": "On a draft",
-    "changePayer": "Bill to…"
+    "changePayer": "Bill to…",
+    "changePayerFor": "Change who pays for {{name}}",
+    "unbilledTitle_zero": "No requested lines",
+    "createInvoice_zero": "Invoice lines"
   },
   "linePayer": {
     "title": "Bill this line to",
@@ -115,6 +120,7 @@
     "excluded": "Not covered",
     "needsPreapproval": "Pre-approval needed",
     "linesCaption": "Invoice lines",
+    "lineActionsFor": "Actions for {{name}}",
     "noLines": "No lines on this draft.",
     "grossTotal": "Gross",
     "discountTotal": "Discounts",
@@ -136,6 +142,7 @@
     "cancelDescription": "The line is cancelled and leaves the invoice (for example, the patient refused the test).",
     "actions": {
       "discount": "Discount",
+      "discountInvoice": "Discount invoice",
       "preapproval": "Pre-approval number",
       "remove": "Take off the draft",
       "cancel": "Cancel service"
@@ -143,8 +150,10 @@
   },
   "discount": {
     "title": "Discount the patient share",
+    "invoiceTitle": "Discount the whole invoice",
     "description": "Discounts apply to the patient share only, need a reason, and show on the shift report with the approver's name.",
     "patientShare": "Patient share",
+    "wholeInvoice": "All lines, in proportion to the patient share",
     "mode": "Discount by",
     "byAmount": "Amount",
     "byPercent": "Percent",
@@ -170,6 +179,8 @@
   "payment": {
     "title": "Payment",
     "due": "Due",
+    "otherVisitsDue": "Other visits owe",
+    "includeOthers": "Pay them too, oldest first",
     "amount": "Amount to record",
     "tendered": "Cash handed over",
     "changeDue": "Change due",
@@ -184,6 +195,8 @@
     "doneTitle": "Payment {{number, bidi}} recorded",
     "printReceipt": "Print receipt",
     "toCredit": "Kept as patient credit",
+    "spendRemainder": "Spend on open invoices",
+    "spendRemainderHint": "Oldest invoices first, any visit of this patient.",
     "noShiftTitle": "Open your shift first",
     "noShiftBody": "Money is only taken into the cashier's own open shift.",
     "method": {
@@ -216,6 +229,9 @@
     "total": "Amount paid",
     "toCredit": "Kept as credit",
     "pendingNote": "Transfer awaiting bank verification.",
+    "rejectedNote": "Transfer rejected by the bank. This receipt is not valid.",
+    "reversedNote": "Payment reversed ({{number, bidi}}). This receipt is not valid.",
+    "reversalNote": "Reversal of payment {{number, bidi}}. Not a receipt for money received.",
     "qrLabel": "Receipt verification code",
     "verifyHint": "Scan to check this receipt at the center.",
     "back": "Back to the desk"
@@ -267,7 +283,9 @@
     "refundsTitle": "Refunds",
     "refundsPaid": "Refunds paid",
     "handoversTitle": "Cash handovers",
-    "none": "None."
+    "none": "None.",
+    "pendingTitle_zero": "No transfers pending verification",
+    "ageDays_zero": "Today"
   },
   "shiftPage": {
     "title": "My shift",
@@ -275,7 +293,8 @@
   },
   "shiftDetail": {
     "title": "Shift {{number, bidi}}",
-    "description": "The shift report as it stood at close; later effects show in the shift where they were booked."
+    "description": "The shift report as it stood at close; later effects show in the shift where they were booked.",
+    "descriptionOpen": "Live report of an open shift. It freezes when the shift closes."
   },
   "close": {
     "title": "Close shift",
@@ -297,13 +316,18 @@
     "amount": "Amount",
     "toShift": "Receiving shift",
     "toShiftPlaceholder": "Choose the next shift",
+    "toUser": "Receiving supervisor",
+    "toUserPlaceholder": "Choose who receives the cash",
     "bankReference": "Deposit slip number",
+    "centerHint": "A supervisor or an accountant confirms they received it. Until then it shows as in transit.",
     "submit": "Record handover",
     "inTransit": "Waiting to be received",
     "cancel": "Cancel handover",
+    "cancelFor": "Cancel handover {{number, bidi}}",
     "cancelTitle": "Cancel this handover?",
     "cancelDescription": "The cash comes back to your drawer.",
     "receive": "Receive",
+    "receiveFor": "Receive handover {{number, bidi}}",
     "incomingTitle_one": "{{count}} cash handover waits for you",
     "incomingTitle_other": "{{count}} cash handovers wait for you",
     "incomingAction": "Count and receive it",
@@ -314,8 +338,8 @@
       "supervisor": "Supervisor"
     },
     "state": {
-      "done": "Done",
       "inTransit": "In transit",
+      "received": "Received by {{name}}",
       "cancelled": "Cancelled"
     }
   },
@@ -333,10 +357,12 @@
       "patient": "Patient",
       "bank": "Bank and reference",
       "amount": "Amount",
-      "age": "Age",
+      "age": "Waiting",
       "shift": "Cashier and shift"
     },
     "empty": "No transfers here.",
+    "sender": "Sender",
+    "sentOn": "Sent on",
     "confirm": "Confirm",
     "confirmTitle": "Confirm transfer {{number, bidi}}",
     "confirmDescription": "Confirm only after you saw the money in the bank statement or app.",
@@ -464,6 +490,33 @@
       "flagged": "Flagged"
     },
     "submit": "Record review"
+  },
+  "receiptCheck": {
+    "title": "Check a receipt",
+    "description": "Scan a printed receipt's QR code, or type its number, to see whether the money stands.",
+    "label": "Receipt QR code or number",
+    "placeholder": "Receipt number or scanned code",
+    "submit": "Check",
+    "hint": "A barcode scanner types the code and presses Enter by itself.",
+    "openReceipt": "Open receipt",
+    "codeAmount": "Amount on the code",
+    "codeDay": "Date on the code",
+    "notFoundTitle": "Receipt not found",
+    "notFound": "No payment has this receipt number. Check the number, or treat the receipt as not genuine.",
+    "standing": {
+      "valid": "Valid receipt",
+      "pending": "Transfer waiting for the bank",
+      "rejected": "Transfer rejected",
+      "reversed": "Payment reversed",
+      "mismatch": "Code does not match the payment"
+    },
+    "standingHint": {
+      "valid": "The payment was received and stands.",
+      "pending": "The money is recorded, but the bank has not confirmed the transfer yet.",
+      "rejected": "The bank did not receive this transfer. The receipt is not valid.",
+      "reversed": "This payment was reversed ({{number, bidi}}). The receipt is not valid.",
+      "mismatch": "The amount or date on this receipt differs from the payment. The receipt may have been altered."
+    }
   },
   "pager": {
     "label": "Pages",

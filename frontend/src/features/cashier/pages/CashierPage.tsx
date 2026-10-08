@@ -1,5 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { MousePointerClick, Wallet } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
@@ -34,6 +35,19 @@ export function CashierPage() {
   const canShift = usePermission("payments.open_shift");
   const shift = useCurrentShift(canShift);
   const shiftOpen = Boolean(shift.data?.report);
+  const billHeading = useRef<HTMLHeadingElement>(null);
+  const focusBill = useRef(false);
+  const billReady = billing.data?.visit.id === visitId && !billing.isPending;
+
+  // After a visit is picked, move to its bill: below the lg breakpoint the bill sits under the
+  // results (out of view), and keyboard users would otherwise Tab through every result.
+  useEffect(() => {
+    if (!focusBill.current || !billReady) return;
+    focusBill.current = false;
+    const stacked = !window.matchMedia("(min-width: 1024px)").matches;
+    billHeading.current?.focus({ preventScroll: !stacked });
+    if (stacked) billHeading.current?.parentElement?.scrollIntoView({ block: "start" });
+  }, [billReady, visitId]);
 
   useShortcut(
     LOOKUP_SHORTCUT,
@@ -65,6 +79,7 @@ export function CashierPage() {
           selectedVisitId={visitId}
           onSelectVisit={(visit) => {
             setSearch({ ...search, visit });
+            focusBill.current = true;
           }}
         />
         <div className="flex min-w-0 flex-col gap-4">
@@ -80,7 +95,7 @@ export function CashierPage() {
             </AlertCard>
           ) : (
             <>
-              <BillingPanel billing={billing.data} loading={billing.isPending} />
+              <BillingPanel billing={billing.data} loading={billing.isPending} headingRef={billHeading} />
               {billing.data &&
               (isPositiveAmount(billing.data.balance.outstanding) || billing.data.invoices.length > 0) ? (
                 <PaymentPanel billing={billing.data} shiftOpen={shiftOpen} />

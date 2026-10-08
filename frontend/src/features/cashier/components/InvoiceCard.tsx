@@ -9,7 +9,9 @@ import { type DataTableRowAction } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
 import { KbdCombo } from "@/components/Kbd";
 import { MoneyText } from "@/components/MoneyText";
+import { AlertCard } from "@/components/AlertCard";
 import { ReasonDialog } from "@/components/ReasonDialog";
+import { ServiceLineCard } from "@/components/ServiceLineCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { useShortcut } from "@/lib/hooks/use-shortcut";
 
@@ -28,7 +31,7 @@ import { negate } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import type { Invoice, InvoiceLine, PaymentMethod } from "../types";
 import { CreditNoteDialog } from "./CreditNoteDialog";
-import { DiscountDialog } from "./DiscountDialog";
+import { DiscountDialog, type DiscountTarget } from "./DiscountDialog";
 import { NoteDialog } from "./NoteDialog";
 import { PreapprovalDialog } from "./PreapprovalDialog";
 
@@ -59,12 +62,15 @@ function LineCard({ line, actions, approved }: { line: InvoiceLine; actions: Rea
   const { t } = useTranslation("cashier");
   const names = useNames();
   return (
-    <div className="flex h-full flex-col gap-2 rounded-control border border-border p-3" data-testid="invoice-line">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="font-medium break-words">{names.name(line.service)}</span>
-          <span className="flex flex-wrap items-center gap-1.5">
-            <StatusBadge status={line.state} size="sm" />
+    <div className="h-full" data-testid="invoice-line">
+      <ServiceLineCard
+        name={names.name(line.service)}
+        quantity={line.quantity}
+        unitPrice={line.unit_price}
+        status={line.state}
+        className="h-full p-3 ps-4 shadow-none"
+        meta={
+          <span className="mt-1 flex flex-wrap items-center gap-1.5">
             <Badge variant={line.payer ? "info" : "neutral"}>
               {line.payer ? names.name(line.payer) : t("invoice.cash")}
             </Badge>
@@ -73,18 +79,19 @@ function LineCard({ line, actions, approved }: { line: InvoiceLine; actions: Rea
               <Badge variant="warning">{t("invoice.needsPreapproval")}</Badge>
             ) : null}
           </span>
-        </div>
-        {actions}
-      </div>
-      <dl className="grid gap-1 text-sm">
-        <Amount label={t("invoice.qtyPrice", { qty: line.quantity })} value={line.gross} />
-        {line.discount !== "0.00" ? <Amount label={t("invoice.discount")} value={negate(line.discount)} /> : null}
-        <Amount label={t("invoice.payerShare")} value={line.payer_share} testId="payer-share" />
-        <Amount label={t("invoice.patientShare")} value={line.patient_share} strong testId="patient-share" />
-        {approved && line.outstanding !== null ? (
-          <Amount label={t("invoice.outstanding")} value={line.outstanding} />
-        ) : null}
-      </dl>
+        }
+        actions={actions}
+      >
+        <dl className="grid gap-1 text-sm">
+          <Amount label={t("invoice.gross")} value={line.gross} />
+          {line.discount !== "0.00" ? <Amount label={t("invoice.discount")} value={negate(line.discount)} /> : null}
+          <Amount label={t("invoice.payerShare")} value={line.payer_share} testId="payer-share" />
+          <Amount label={t("invoice.patientShare")} value={line.patient_share} strong testId="patient-share" />
+          {approved && line.outstanding !== null ? (
+            <Amount label={t("invoice.outstanding")} value={line.outstanding} />
+          ) : null}
+        </dl>
+      </ServiceLineCard>
     </div>
   );
 }
@@ -100,19 +107,22 @@ export function InvoiceCard({
   /** The draft the F8 shortcut approves (the first draft of the visit). */
   primary?: boolean;
 }) {
-  const { t } = useTranslation(["cashier", "common"]);
+  const { t } = useTranslation(["cashier", "common", "errors"]);
+  const translateError = useTranslateError();
   const names = useNames();
   const isDraft = invoice.status === "draft";
   const approved = invoice.status === "approved";
   const canEdit = usePermission("billing.create_invoice");
   const canDiscount = usePermission("billing.apply_discount");
-  const canCancel = usePermission("orders.cancel_line");
+  // Cancelling a draft line needs the billing desk's code and the cancel code (the server's rule).
+  const canCancel = usePermission(["billing.create_invoice", "orders.cancel_line"], "all");
   const approve = useApproveInvoice();
   const voidInvoice = useVoidInvoice();
   const remove = useRemoveDraftLine();
   const cancel = useCancelDraftLine();
   const cancelReasons = useReasons("line_cancel", isDraft && canCancel);
-  const [discountLine, setDiscountLine] = useState<InvoiceLine | null>(null);
+  const [discountTarget, setDiscountTarget] = useState<DiscountTarget | null>(null);
+  const [lineError, setLineError] = useState<string | null>(null);
   const [cancelLine, setCancelLine] = useState<InvoiceLine | null>(null);
   const [preapprovalLine, setPreapprovalLine] = useState<InvoiceLine | null>(null);
   const [voidOpen, setVoidOpen] = useState(false);
@@ -135,7 +145,7 @@ export function InvoiceCard({
         label: t("invoice.actions.discount"),
         icon: <BadgePercent />,
         onSelect: () => {
-          setDiscountLine(line);
+          setDiscountTarget({ kind: "line", line });
         },
       });
     if (canEdit && line.payer && line.requires_pre_approval)
@@ -150,7 +160,10 @@ export function InvoiceCard({
         label: t("invoice.actions.remove"),
         icon: <Trash2 />,
         onSelect: () => {
-          void remove.mutateAsync({ invoiceId: invoice.id, lineId: line.id });
+          setLineError(null);
+          remove.mutateAsync({ invoiceId: invoice.id, lineId: line.id }).catch((e: unknown) => {
+            setLineError(translateError(e));
+          });
         },
         separated: true,
       });
@@ -230,12 +243,25 @@ export function InvoiceCard({
               <LineCard
                 line={line}
                 approved={approved}
-                actions={isDraft ? <LineActions actions={rowActions(line)} /> : null}
+                actions={isDraft ? <LineActions actions={rowActions(line)} name={names.name(line.service)} /> : null}
               />
             </li>
           ))}
         </ul>
       )}
+
+      {lineError ? (
+        <AlertCard
+          variant="danger"
+          title={t("errors:title")}
+          live
+          onDismiss={() => {
+            setLineError(null);
+          }}
+        >
+          {lineError}
+        </AlertCard>
+      ) : null}
 
       <dl className="grid gap-1 text-sm sm:ms-auto sm:w-80" data-testid="invoice-totals">
         <Amount label={t("invoice.grossTotal")} value={invoice.gross_total} />
@@ -296,6 +322,18 @@ export function InvoiceCard({
 
       {isDraft ? (
         <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+          {canDiscount && invoice.lines.length > 0 ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDiscountTarget({ kind: "invoice", invoice });
+              }}
+              data-testid="discount-invoice"
+            >
+              <BadgePercent aria-hidden="true" />
+              {t("invoice.actions.discountInvoice")}
+            </Button>
+          ) : null}
           <Can permission="billing.void_draft">
             <Button
               variant="ghost"
@@ -331,10 +369,10 @@ export function InvoiceCard({
 
       <DiscountDialog
         invoiceId={invoice.id}
-        line={discountLine}
-        open={discountLine !== null}
+        target={discountTarget}
+        open={discountTarget !== null}
         onOpenChange={(o) => {
-          if (!o) setDiscountLine(null);
+          if (!o) setDiscountTarget(null);
         }}
       />
       <PreapprovalDialog
@@ -378,13 +416,18 @@ export function InvoiceCard({
 }
 
 /** The actions of one draft line (discount, pre-approval, take off, cancel). */
-function LineActions({ actions }: { actions: DataTableRowAction[] }) {
-  const { t } = useTranslation();
+function LineActions({ actions, name }: { actions: DataTableRowAction[]; name: string }) {
+  const { t } = useTranslation("cashier");
   if (actions.length === 0) return null;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("table.rowActions")} data-testid="line-actions">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={t("invoice.lineActionsFor", { name })}
+          data-testid="line-actions"
+        >
           <MoreHorizontal aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>

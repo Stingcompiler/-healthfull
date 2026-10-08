@@ -39,7 +39,7 @@ export function LookupPanel({
   return (
     <section
       aria-labelledby="lookup-title"
-      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5 lg:sticky lg:top-20 lg:self-start"
+      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto"
     >
       <div className="flex items-center justify-between gap-2">
         <h2 id="lookup-title" className="text-base font-semibold">

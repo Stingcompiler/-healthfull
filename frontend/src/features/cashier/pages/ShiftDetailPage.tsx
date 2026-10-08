@@ -17,6 +17,7 @@ import { vmsg } from "@/lib/validation";
 
 import { useReviewShift, useShift } from "../api";
 import { CashierNav } from "../components/CashierNav";
+import { PrintArea } from "../components/PrintFrame";
 import { ShiftReportView } from "../components/ShiftReportView";
 import type { ShiftReport } from "../types";
 
@@ -40,8 +41,18 @@ export function ShiftDetailPage() {
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
-        title={t("shiftDetail.title", { number: shift.data?.shift.number ?? "" })}
-        description={t("shiftDetail.description")}
+        title={
+          shift.data ? (
+            t("shiftDetail.title", { number: shift.data.shift.number })
+          ) : (
+            <Skeleton className="h-7 w-48" aria-label={t("common:loading")} />
+          )
+        }
+        description={
+          shift.data
+            ? t(shift.data.shift.status === "open" ? "shiftDetail.descriptionOpen" : "shiftDetail.description")
+            : undefined
+        }
         icon={<ClipboardCheck />}
         actions={
           <Button
@@ -68,7 +79,9 @@ export function ShiftDetailPage() {
           {canReview && shift.data.shift.status === "closed" && !shift.data.shift.review ? (
             <ReviewForm report={shift.data} />
           ) : null}
-          <ShiftReportView report={shift.data} />
+          <PrintArea>
+            <ShiftReportView report={shift.data} />
+          </PrintArea>
         </>
       )}
     </div>

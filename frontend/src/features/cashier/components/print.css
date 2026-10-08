@@ -1,10 +1,12 @@
 /*
- * Printing of cashier documents (receipt, invoice, FEATURES 0.10 / 6.9): only the element
- * marked data-print-root is printed; the app shell and the screen controls are hidden. The
- * page size (80 mm thermal roll or A4) is set by the page itself with an @page rule.
+ * Printing of cashier documents (receipt, invoice, shift report, FEATURES 0.10 / 6.9): on a
+ * page that has an element marked data-print-root, only that element is printed; the app
+ * shell and the screen controls are hidden. Pages without one print as they are (the rule is
+ * scoped with :has, so this stylesheet never blanks another module's screen). The page size
+ * (80 mm thermal roll or A4) is set by the page itself with an @page rule.
  */
 @media print {
-  body * {
+  body:has([data-print-root]) * {
     visibility: hidden !important;
   }
 
@@ -24,6 +26,19 @@
 
   [data-print-root][data-print-format="thermal"] {
     width: 72mm !important;
+    font-size: 12px !important;
+  }
+
+  /* 1-bit thermal heads drop grey: labels print in full contrast, never below 11 px. */
+  [data-print-root][data-print-format="thermal"] .text-muted,
+  [data-print-root][data-print-format="thermal"] .text-fg-muted {
+    color: var(--fg) !important;
+  }
+
+  [data-print-root][data-print-format="thermal"] .text-\[10px\],
+  [data-print-root][data-print-format="thermal"] .text-\[11px\],
+  [data-print-root][data-print-format="thermal"] .text-xs {
+    font-size: 11px !important;
   }
 
   [data-print-root][data-print-format="a4"] {

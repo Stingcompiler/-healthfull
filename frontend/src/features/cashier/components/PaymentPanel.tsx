@@ -23,22 +23,31 @@ import { MoneyText } from "@/components/MoneyText";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { useShortcut } from "@/lib/hooks/use-shortcut";
 import { vmsg } from "@/lib/validation";
 
-import { useBanks, useReasons, useRecordPayment } from "../api";
-import { compareAmounts, isAmount, isPositiveAmount, normalizeAmountInput, subtractAmounts } from "../lib/money";
+import { useAllocatePayment, useBanks, useReasons, useRecordPayment } from "../api";
+import {
+  compareAmounts,
+  isAmount,
+  isPositiveAmount,
+  normalizeAmountInput,
+  subtractAmounts,
+  sumAmounts,
+} from "../lib/money";
 import { useNames } from "../lib/use-names";
 import { PAYMENT_METHODS, REFERENCE_METHODS, type Payment, type PaymentMethod, type VisitBilling } from "../types";
 import { ApproverFields } from "./ApproverFields";
 
 export const PAY_SHORTCUT = "mod+enter";
 export const AMOUNT_SHORTCUT = "f9";
-export const AMOUNT_INPUT_ID = "payment-amount";
 
 const METHOD_ICONS = {
   cash: Banknote,
@@ -108,8 +117,10 @@ function defaults(amount: string): Values {
 
 /**
  * Take the patient's money into the cashier's own open shift (FEATURES 6.1-6.5). The amount
- * goes to the oldest open invoices; anything above them stays as patient credit. Transfers,
- * QR and card start pending until a supervisor confirms them.
+ * goes to this visit's open invoices (the server allocates oldest first within the visit);
+ * the cashier may also include the patient's other visits. Anything above them stays as
+ * patient credit, which can be spent on open invoices afterwards. Transfers, QR and card start
+ * pending until a supervisor confirms them.
  */
 export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; shiftOpen: boolean }) {
   const { t } = useTranslation(["cashier", "common", "errors"]);
@@ -117,21 +128,29 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
   const names = useNames();
   const canPay = usePermission("payments.take_payment");
   const record = useRecordPayment();
+  const allocate = useAllocatePayment();
   const banks = useBanks(canPay);
   const overrideReasons = useReasons("override", canPay);
   const [error, setError] = useState<string | null>(null);
   const [paid, setPaid] = useState<{ payment: Payment; change: string | null } | null>(null);
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: defaults(billing.balance.outstanding) });
+  const [allocateError, setAllocateError] = useState<string | null>(null);
+  const [includeOthers, setIncludeOthers] = useState(false);
+  const visitId = billing.visit.id;
+  const visitDue =
+    sumAmounts(billing.open_invoices.filter((i) => i.visit_id === visitId).map((i) => i.outstanding)) ?? "0.00";
+  const otherDue = subtractAmounts(billing.balance.outstanding, visitDue) ?? "0.00";
+  const hasOthers = isPositiveAmount(otherDue);
+  const due = includeOthers && hasOthers ? billing.balance.outstanding : visitDue;
+  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: defaults(due) });
   const { control, setValue } = form;
   const method = useWatch({ control, name: "method" });
   const amount = useWatch({ control, name: "amount" });
   const tendered = useWatch({ control, name: "tendered" });
   const override = useWatch({ control, name: "override" });
   const withApprover = useWatch({ control, name: "withApprover" });
-  const outstanding = billing.balance.outstanding;
   useEffect(() => {
-    setValue("amount", outstanding);
-  }, [outstanding, setValue]);
+    setValue("amount", due);
+  }, [due, setValue]);
   const isReference = (REFERENCE_METHODS as readonly string[]).includes(method);
   const spendable = billing.balance.spendable;
   const methods = PAYMENT_METHODS.filter((m) => m !== "patient_credit" || isPositiveAmount(spendable));
@@ -151,6 +170,7 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
         transfer_date: isRef && v.transferDate ? v.transferDate : null,
         sender_name: isRef ? v.senderName : "",
         auto: true,
+        visit_id: includeOthers ? null : visitId,
         note: "",
         override:
           isRef && v.override
@@ -162,7 +182,8 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
             : null,
       });
       setPaid({ payment, change: v.method === "cash" && v.tendered ? subtractAmounts(v.tendered, v.amount) : null });
-      form.reset(defaults(billing.balance.outstanding));
+      setAllocateError(null);
+      form.reset(defaults(due));
     } catch (e) {
       setValue("password", "");
       if (isApiError(e) && e.code === "DUPLICATE_REFERENCE") setValue("override", true);
@@ -174,10 +195,21 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
   useShortcut(
     AMOUNT_SHORTCUT,
     () => {
-      document.getElementById(AMOUNT_INPUT_ID)?.focus();
+      form.setFocus("amount", { shouldSelect: true });
     },
     { enabled: canPay && shiftOpen, allowInInputs: true },
   );
+
+  const spendRemainder = async () => {
+    if (!paid) return;
+    setAllocateError(null);
+    try {
+      const payment = await allocate.mutateAsync({ paymentId: paid.payment.id, visitId: null });
+      setPaid({ ...paid, payment });
+    } catch (e) {
+      setAllocateError(translateError(e));
+    }
+  };
   useShortcut(
     ["alt+1", "alt+2", "alt+3", "alt+4", "alt+5"],
     (event) => {
@@ -200,10 +232,28 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
         <h2 id="payment-title" className="text-base font-semibold">
           {t("payment.title")}
         </h2>
-        <span className="text-sm text-muted">
-          {t("payment.due")} <MoneyText value={billing.balance.outstanding} className="text-fg" />
+        <span className="text-sm text-muted" data-testid="payment-due">
+          {t("payment.due")} <MoneyText value={due} className="text-fg" />
         </span>
       </div>
+      {hasOthers ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-control border border-border px-3 py-2 text-sm">
+          <span className="text-muted">
+            {t("payment.otherVisitsDue")} <MoneyText value={otherDue} className="text-fg" />
+          </span>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="payment-include-others"
+              checked={includeOthers}
+              onCheckedChange={(value) => {
+                setIncludeOthers(value === true);
+              }}
+              data-testid="include-other-visits"
+            />
+            <Label htmlFor="payment-include-others">{t("payment.includeOthers")}</Label>
+          </div>
+        </div>
+      ) : null}
 
       {paid ? (
         <AlertCard
@@ -218,6 +268,7 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
               <Link
                 to="/cashier/receipts/$paymentId"
                 params={{ paymentId: String(paid.payment.id) }}
+                search={{ visit: visitId }}
                 data-testid="print-receipt"
               >
                 <Printer aria-hidden="true" />
@@ -238,11 +289,28 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
               </span>
             ) : null}
             {paid.payment.unallocated !== "0.00" ? (
-              <span>
+              <span data-testid="payment-unallocated">
                 {t("payment.toCredit")} <MoneyText value={paid.payment.unallocated} />
               </span>
             ) : null}
           </span>
+          {paid.payment.unallocated !== "0.00" &&
+          paid.payment.verification !== "rejected" &&
+          isPositiveAmount(billing.balance.outstanding) ? (
+            <span className="mt-2 flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                loading={allocate.isPending}
+                onClick={() => void spendRemainder()}
+                data-testid="spend-remainder"
+              >
+                {t("payment.spendRemainder")}
+              </Button>
+              <span className="text-xs text-muted">{t("payment.spendRemainderHint")}</span>
+            </span>
+          ) : null}
+          {allocateError ? <span className="mt-2 block text-sm text-danger-fg">{allocateError}</span> : null}
         </AlertCard>
       ) : null}
 
@@ -264,16 +332,17 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
                 {methods.map((m, i) => {
                   const Icon = METHOD_ICONS[m];
                   return (
-                    <TabsTrigger
-                      key={m}
-                      value={m}
-                      className="h-11 flex-none md:h-9"
-                      data-testid={`method-${m}`}
-                      title={`Alt+${String(i + 1)}`}
-                    >
-                      <Icon aria-hidden="true" />
-                      {t(`payment.method.${m}`)}
-                    </TabsTrigger>
+                    <Tooltip key={m}>
+                      <TooltipTrigger asChild>
+                        <TabsTrigger value={m} className="h-11 flex-none md:h-9" data-testid={`method-${m}`}>
+                          <Icon aria-hidden="true" />
+                          {t(`payment.method.${m}`)}
+                        </TabsTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <KbdCombo combo={`alt+${String(i + 1)}`} />
+                      </TooltipContent>
+                    </Tooltip>
                   );
                 })}
               </TabsList>

@@ -157,10 +157,8 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
         </Block>
       </div>
 
-      <Block title={t("report.pendingTitle", { count: report.pending.length })} testId="report-pending">
-        {report.pending.length === 0 ? (
-          <p className="text-sm text-muted">{t("report.none")}</p>
-        ) : (
+      {report.pending.length === 0 ? null : (
+        <Block title={t("report.pendingTitle", { count: report.pending.length })} testId="report-pending">
           <ul className="flex flex-col divide-y divide-border text-sm">
             {report.pending.map((p) => (
               <li key={p.payment_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
@@ -178,8 +176,8 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
               </li>
             ))}
           </ul>
-        )}
-      </Block>
+        </Block>
+      )}
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-2">
         <Block title={t("report.confirmedTitle")}>
@@ -251,19 +249,15 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
                   <bdi>{h.number}</bdi>
                   <span>{t(`handover.destination.${h.destination}`)}</span>
                   {h.to_shift_number ? <bdi className="text-muted">{h.to_shift_number}</bdi> : null}
-                  <Badge
-                    variant={
-                      h.cancelled_at
-                        ? "neutral"
-                        : h.received_at || h.destination !== "next_shift"
-                          ? "success"
-                          : "warning"
-                    }
-                  >
+                  {h.to_user && h.destination !== "next_shift" ? (
+                    <span className="text-muted">{names.user(h.to_user)}</span>
+                  ) : null}
+                  {/* Cash is in transit until someone else confirms it, whatever the destination. */}
+                  <Badge variant={h.cancelled_at ? "neutral" : h.received_at ? "success" : "warning"}>
                     {h.cancelled_at
                       ? t("handover.state.cancelled")
-                      : h.received_at || h.destination !== "next_shift"
-                        ? t("handover.state.done")
+                      : h.received_at
+                        ? t("handover.state.received", { name: names.user(h.received_by) })
                         : t("handover.state.inTransit")}
                   </Badge>
                 </span>

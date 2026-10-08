@@ -1,5 +1,5 @@
 import { FilePlus2, ListChecks } from "lucide-react";
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
@@ -21,12 +21,21 @@ import { useNames } from "../lib/use-names";
 import type { ServiceLine, VisitBilling } from "../types";
 import { InvoiceCard } from "./InvoiceCard";
 import { LinePayerDialog } from "./LinePayerDialog";
-import { PatientHeader } from "./PatientHeader";
+import { VisitPatientCard } from "./VisitPatientCard";
 
 export const INVOICE_SHORTCUT = "f4";
 
 /** The visit's billing (FLOW step 4): requested lines, drafts and approved invoices. */
-export function BillingPanel({ billing, loading }: { billing: VisitBilling | undefined; loading: boolean }) {
+export function BillingPanel({
+  billing,
+  loading,
+  headingRef,
+}: {
+  billing: VisitBilling | undefined;
+  loading: boolean;
+  /** Receives focus when the cashier picks a visit, so the bill is where they land. */
+  headingRef?: Ref<HTMLHeadingElement>;
+}) {
   const { t } = useTranslation("cashier");
   if (loading || !billing) {
     return (
@@ -37,14 +46,16 @@ export function BillingPanel({ billing, loading }: { billing: VisitBilling | und
     );
   }
   return (
-    <section aria-label={t("billing.title")} className="flex min-w-0 flex-col gap-4" data-testid="billing-panel">
-      <div className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5">
-        <PatientHeader
-          patient={billing.patient}
-          visitNumber={billing.visit.number}
-          department={billing.visit.department}
-          payer={billing.visit.payer}
-        />
+    <section aria-labelledby="billing-title" className="flex min-w-0 flex-col gap-4" data-testid="billing-panel">
+      <h2 id="billing-title" ref={headingRef} tabIndex={-1} className="sr-only">
+        {t("billing.title")}
+      </h2>
+      <VisitPatientCard
+        patient={billing.patient}
+        visitNumber={billing.visit.number}
+        department={billing.visit.department}
+        payer={billing.visit.payer}
+      >
         <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm" data-testid="patient-balance">
           <div className="flex items-center gap-1.5">
             <dt className="text-muted">{t("billing.outstanding")}</dt>
@@ -67,7 +78,7 @@ export function BillingPanel({ billing, loading }: { billing: VisitBilling | und
             </div>
           ) : null}
         </dl>
-      </div>
+      </VisitPatientCard>
       <UnbilledLines key={billing.visit.id} billing={billing} />
       {billing.drafts.map((inv, i) => (
         <InvoiceCard key={inv.id} invoice={inv} primary={i === 0} />
@@ -181,6 +192,7 @@ function UnbilledLines({ billing }: { billing: VisitBilling }) {
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={t("billing.changePayerFor", { name: names.name(line.service) })}
                   onClick={() => {
                     setPayerLine(line);
                   }}

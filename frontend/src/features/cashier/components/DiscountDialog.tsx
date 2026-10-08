@@ -19,10 +19,10 @@ import {
 import { useTranslateError } from "@/lib/api/translate-error";
 import { vmsg } from "@/lib/validation";
 
-import { useDiscountLine, useReasons } from "../api";
+import { useDiscountInvoice, useDiscountLine, useReasons } from "../api";
 import { isAmount, normalizeAmountInput } from "../lib/money";
 import { useNames } from "../lib/use-names";
-import type { InvoiceLine } from "../types";
+import type { Invoice, InvoiceLine } from "../types";
 import { ApproverFields } from "./ApproverFields";
 
 const schema = z
@@ -53,20 +53,26 @@ const EMPTY: Values = {
   password: "",
 };
 
+/** What is discounted: one draft line, or the whole draft spread by patient share. */
+export type DiscountTarget = { kind: "line"; line: InvoiceLine } | { kind: "invoice"; invoice: Invoice };
+
 /** Mounted only while open, so every opening starts with a fresh form. */
 export function DiscountDialog(props: Parameters<typeof DiscountDialogOpen>[0]) {
-  return props.open && props.line !== null ? <DiscountDialogOpen {...props} /> : null;
+  return props.open && props.target !== null ? <DiscountDialogOpen {...props} /> : null;
 }
 
-/** Discount one draft line's patient share (FEATURES 5.9): reason, limit, desk approval. */
+/**
+ * Discount a draft's patient share (FEATURES 5.9): one line, or the whole invoice (the server
+ * spreads it over the lines by patient share). Reason, role limit, desk approval.
+ */
 function DiscountDialogOpen({
   invoiceId,
-  line,
+  target,
   open,
   onOpenChange,
 }: {
   invoiceId: number;
-  line: InvoiceLine | null;
+  target: DiscountTarget | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -74,7 +80,8 @@ function DiscountDialogOpen({
   const translateError = useTranslateError();
   const names = useNames();
   const reasons = useReasons("discount", open);
-  const discount = useDiscountLine();
+  const discountLine = useDiscountLine();
+  const discountInvoice = useDiscountInvoice();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: EMPTY });
   const { control } = form;
@@ -82,21 +89,19 @@ function DiscountDialogOpen({
   const mode = useWatch({ control, name: "mode" });
 
   const submit = form.handleSubmit(async (v) => {
-    if (!line) return;
+    if (!target) return;
     setError(null);
     const value = normalizeAmountInput(v.value);
+    const body = {
+      reason: v.reason,
+      note: v.note,
+      amount: v.mode === "amount" ? value : null,
+      percent: v.mode === "percent" ? value : null,
+      approver: v.withApprover ? { username: v.username, password: v.password } : null,
+    };
     try {
-      await discount.mutateAsync({
-        invoiceId,
-        lineId: line.id,
-        body: {
-          reason: v.reason,
-          note: v.note,
-          amount: v.mode === "amount" ? value : null,
-          percent: v.mode === "percent" ? value : null,
-          approver: v.withApprover ? { username: v.username, password: v.password } : null,
-        },
-      });
+      if (target.kind === "line") await discountLine.mutateAsync({ invoiceId, lineId: target.line.id, body });
+      else await discountInvoice.mutateAsync({ invoiceId, body });
       onOpenChange(false);
     } catch (e) {
       form.setValue("password", "");
@@ -108,14 +113,17 @@ function DiscountDialogOpen({
     <Dialog open={open} onOpenChange={(next) => !form.formState.isSubmitting && onOpenChange(next)}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t("discount.title")}</DialogTitle>
+          <DialogTitle>{target?.kind === "invoice" ? t("discount.invoiceTitle") : t("discount.title")}</DialogTitle>
           <DialogDescription>{t("discount.description")}</DialogDescription>
         </DialogHeader>
-        {line ? (
+        {target ? (
           <p className="flex flex-wrap items-center justify-between gap-2 rounded-control bg-subtle px-3 py-2 text-sm">
-            <span className="min-w-0 font-medium">{names.name(line.service)}</span>
+            <span className="min-w-0 font-medium">
+              {target.kind === "line" ? names.name(target.line.service) : t("discount.wholeInvoice")}
+            </span>
             <span className="text-muted">
-              {t("discount.patientShare")} <MoneyText value={line.patient_share} />
+              {t("discount.patientShare")}{" "}
+              <MoneyText value={target.kind === "line" ? target.line.patient_share : target.invoice.patient_total} />
             </span>
           </p>
         ) : null}

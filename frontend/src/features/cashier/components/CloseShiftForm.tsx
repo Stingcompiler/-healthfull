@@ -112,7 +112,52 @@ export function CloseShiftForm({ report, onClosed }: { report: ShiftReport; onCl
           });
           onClosed(closed);
         }}
-      />
+      >
+        {confirming ? <CloseSummary report={report} values={confirming} /> : null}
+      </ConfirmDialog>
     </section>
+  );
+}
+
+/** What the cashier is about to freeze (invariant 3): the count, the expected cash, the variance. */
+function CloseSummary({ report, values }: { report: ShiftReport; values: Values }) {
+  const { t } = useTranslation(["cashier", "common"]);
+  const names = useNames();
+  const reasons = useReasons("variance");
+  const counted = normalizeAmountInput(values.counted);
+  const variance = subtractAmounts(counted, report.expected_cash);
+  const reason = reasons.data?.find((r) => r.code === values.reason);
+  return (
+    <dl className="grid gap-1 rounded-control bg-subtle px-3 py-2 text-sm" data-testid="close-summary">
+      <div className="flex items-baseline justify-between gap-3">
+        <dt className="text-muted">{t("close.counted")}</dt>
+        <dd className="font-semibold">
+          <MoneyText value={counted} />
+        </dd>
+      </div>
+      <div className="flex items-baseline justify-between gap-3">
+        <dt className="text-muted">{t("report.expectedCash")}</dt>
+        <dd>
+          <MoneyText value={report.expected_cash} />
+        </dd>
+      </div>
+      {variance !== null ? (
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-muted">{t("report.variance")}</dt>
+          <dd className={compareAmounts(variance, "0") === 0 ? undefined : "font-semibold text-warning-fg"}>
+            <MoneyText value={variance} signed />
+          </dd>
+        </div>
+      ) : null}
+      {reason ? (
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-muted">{t("close.reason")}</dt>
+          <dd className="text-end">
+            {names.label(reason)}
+            {values.note ? ` · ${values.note}` : ""}
+          </dd>
+        </div>
+      ) : null}
+    </dl>
   );
 }

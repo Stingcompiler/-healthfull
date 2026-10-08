@@ -36,6 +36,8 @@ export const cashierKeys = {
   shift: (shiftId: number) => ["cashier", "shift", shiftId] as const,
   shifts: (filters: { status?: string; reviewed?: boolean; page: number }) => ["cashier", "shifts", filters] as const,
   handoverTargets: ["cashier", "handover-targets"] as const,
+  handoverReceivers: ["cashier", "handover-receivers"] as const,
+  receiptCheck: (code: string) => ["cashier", "receipt-check", code] as const,
   payment: (paymentId: number) => ["cashier", "payment", paymentId] as const,
   receipt: (paymentId: number) => ["cashier", "receipt", paymentId] as const,
   transfers: (verification: Verification, page: number) => ["cashier", "transfers", verification, page] as const,
@@ -149,6 +151,27 @@ export function useHandoverTargets(enabled: boolean) {
     queryKey: cashierKeys.handoverTargets,
     queryFn: () => unwrap(api.GET("/api/payments/shifts/handover-targets")),
     enabled,
+  });
+}
+
+export function useHandoverReceivers(enabled: boolean) {
+  return useQuery({
+    queryKey: cashierKeys.handoverReceivers,
+    queryFn: () => unwrap(api.GET("/api/payments/handover-receivers")),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+/** Check a printed receipt by its scanned QR text or its number (FEATURES 6.9, 15.1). */
+export function useReceiptCheck(code: string) {
+  const term = code.trim();
+  return useQuery({
+    queryKey: cashierKeys.receiptCheck(term),
+    queryFn: () => unwrap(api.GET("/api/payments/receipts/check", { params: { query: { code: term } } })),
+    enabled: term.length > 0,
+    retry: false,
+    staleTime: 0,
   });
 }
 
@@ -344,6 +367,17 @@ export function useDiscountLine() {
   );
 }
 
+export function useDiscountInvoice() {
+  return useCashierMutation(({ invoiceId, body }: { invoiceId: number; body: DiscountIn }) =>
+    unwrap(
+      api.POST("/api/billing/invoices/{invoice_id}/discount", {
+        params: { path: { invoice_id: invoiceId } },
+        body,
+      }),
+    ),
+  );
+}
+
 export function useSetLinePayer() {
   return useCashierMutation(
     ({ serviceLineId, payerId, note }: { serviceLineId: number; payerId: number | null; note: string }) =>
@@ -380,6 +414,18 @@ export function useApproveCreditNote() {
 
 export function useRecordPayment() {
   return useCashierMutation((body: PaymentIn) => unwrap(api.POST("/api/payments/payments", { body })));
+}
+
+/** Spend a payment's unallocated remainder on open invoices (one visit's, or oldest first). */
+export function useAllocatePayment() {
+  return useCashierMutation(({ paymentId, visitId }: { paymentId: number; visitId: number | null }) =>
+    unwrap(
+      api.POST("/api/payments/payments/{payment_id}/allocate", {
+        params: { path: { payment_id: paymentId } },
+        body: { auto: true, visit_id: visitId },
+      }),
+    ),
+  );
 }
 
 export function useConfirmTransfer() {

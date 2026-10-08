@@ -13,7 +13,13 @@ import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { vmsg } from "@/lib/validation";
 
-import { useCancelHandover, useCreateHandover, useHandoverTargets, useReceiveHandover } from "../api";
+import {
+  useCancelHandover,
+  useCreateHandover,
+  useHandoverReceivers,
+  useHandoverTargets,
+  useReceiveHandover,
+} from "../api";
 import { isAmount, isPositiveAmount, normalizeAmountInput } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import type { Handover, HandoverIn, ShiftReport } from "../types";
@@ -30,6 +36,7 @@ const schema = z
       .min(1, vmsg("validation.required"))
       .refine((v) => isAmount(v) && isPositiveAmount(v), vmsg("cashier:validation.positiveAmount")),
     toShift: z.string(),
+    toUser: z.string(),
     bankReference: z.string().trim().max(100),
     note: z.string().trim().max(500),
   })
@@ -37,9 +44,28 @@ const schema = z
     if (v.destination === "next_shift" && !v.toShift) {
       ctx.addIssue({ code: "custom", path: ["toShift"], message: vmsg("validation.selectOption") });
     }
+    if (v.destination === "supervisor" && !v.toUser) {
+      ctx.addIssue({ code: "custom", path: ["toUser"], message: vmsg("validation.selectOption") });
+    }
   });
 
 type Values = z.infer<typeof schema>;
+
+const EMPTY: Values = { destination: "safe", amount: "", toShift: "", toUser: "", bankReference: "", note: "" };
+
+/** Where a handover went: the receiving shift, the named person, or the safe / the bank. */
+function useRecipient() {
+  const { t } = useTranslation("cashier");
+  const names = useNames();
+  return (h: Handover) =>
+    [
+      t(`handover.destination.${h.destination}`),
+      h.to_shift_number ?? null,
+      h.to_user && h.destination !== "next_shift" ? names.user(h.to_user) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+}
 
 /** Cash leaving the drawer (FEATURES 7.6): to the next shift, the safe, the bank or a supervisor. */
 export function HandoverPanel({ report }: { report: ShiftReport }) {
@@ -50,18 +76,19 @@ export function HandoverPanel({ report }: { report: ShiftReport }) {
   const create = useCreateHandover();
   const cancel = useCancelHandover();
   const targets = useHandoverTargets(canHand);
+  const receivers = useHandoverReceivers(canHand);
+  const recipient = useRecipient();
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<Handover | null>(null);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { destination: "safe", amount: "", toShift: "", bankReference: "", note: "" },
+    defaultValues: EMPTY,
   });
   const destination = useWatch({ control: form.control, name: "destination" });
   if (!canHand) return null;
 
-  const outgoing = report.handovers.filter(
-    (h) => h.shift_id === report.shift.id && h.destination === "next_shift" && !h.received_at && !h.cancelled_at,
-  );
+  // Every handover of this drawer that nobody confirmed yet is still in transit (any destination).
+  const outgoing = report.handovers.filter((h) => h.shift_id === report.shift.id && !h.received_at && !h.cancelled_at);
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
@@ -69,12 +96,13 @@ export function HandoverPanel({ report }: { report: ShiftReport }) {
       amount: normalizeAmountInput(v.amount),
       destination: v.destination,
       to_shift_id: v.destination === "next_shift" ? Number(v.toShift) : null,
+      to_user_id: v.destination === "supervisor" ? Number(v.toUser) : null,
       bank_reference: v.destination === "bank_deposit" ? v.bankReference : "",
       note: v.note,
     };
     try {
       await create.mutateAsync({ shiftId: report.shift.id, body });
-      form.reset({ destination: "safe", amount: "", toShift: "", bankReference: "", note: "" });
+      form.reset(EMPTY);
     } catch (e) {
       setError(translateError(e));
     }
@@ -116,10 +144,23 @@ export function HandoverPanel({ report }: { report: ShiftReport }) {
                 required
               />
             ) : null}
+            {destination === "supervisor" ? (
+              <SelectField
+                control={form.control}
+                name="toUser"
+                label={t("handover.toUser")}
+                placeholder={t("handover.toUserPlaceholder")}
+                options={(receivers.data ?? []).map((u) => ({ value: String(u.id), label: names.user(u) }))}
+                required
+              />
+            ) : null}
             {destination === "bank_deposit" ? (
               <TextField control={form.control} name="bankReference" label={t("handover.bankReference")} dir="ltr" />
             ) : null}
           </div>
+          {destination === "safe" || destination === "bank_deposit" ? (
+            <p className="text-sm text-muted">{t("handover.centerHint")}</p>
+          ) : null}
           <TextareaField control={form.control} name="note" label={t("common:reason.note")} rows={2} />
           {error ? (
             <AlertCard variant="danger" title={t("errors:title")} live>
@@ -134,19 +175,20 @@ export function HandoverPanel({ report }: { report: ShiftReport }) {
         </form>
       </Form>
       {outgoing.length > 0 ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2" data-testid="handovers-in-transit">
           <h3 className="text-sm font-medium">{t("handover.inTransit")}</h3>
           <ul className="flex flex-col divide-y divide-border text-sm">
             {outgoing.map((h) => (
               <li key={h.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="flex flex-wrap items-center gap-2">
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
                   <bdi>{h.number}</bdi>
-                  <bdi className="text-muted">{h.to_shift_number}</bdi>
+                  <span className="text-muted">{recipient(h)}</span>
                   <MoneyText value={h.amount} />
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={t("handover.cancelFor", { number: h.number })}
                   onClick={() => {
                     setCancelling(h);
                   }}
@@ -179,6 +221,7 @@ export function IncomingHandovers({ handovers }: { handovers: readonly Handover[
   const { t } = useTranslation(["cashier", "errors"]);
   const translateError = useTranslateError();
   const names = useNames();
+  const recipient = useRecipient();
   const receive = useReceiveHandover();
   const [error, setError] = useState<string | null>(null);
   if (handovers.length === 0) return null;
@@ -190,12 +233,16 @@ export function IncomingHandovers({ handovers }: { handovers: readonly Handover[
           <li key={h.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
             <span className="flex flex-wrap items-center gap-2">
               <bdi>{h.number}</bdi>
-              <span className="text-muted">{names.user(h.handed_by)}</span>
+              <span className="text-muted">
+                {names.user(h.handed_by)} · <bdi>{h.shift_number}</bdi>
+              </span>
+              <span className="text-muted">{recipient(h)}</span>
               <DateText value={h.handed_at} format="time" />
               <MoneyText value={h.amount} />
             </span>
             <Button
               size="sm"
+              aria-label={t("handover.receiveFor", { number: h.number })}
               loading={receive.isPending && receive.variables === h.id}
               onClick={() => {
                 setError(null);

@@ -30,7 +30,7 @@ import { CashierNav } from "../components/CashierNav";
 import { LookupPanel } from "../components/LookupPanel";
 import { NoteDialog } from "../components/NoteDialog";
 import { Pager } from "../components/Pager";
-import { PatientHeader } from "../components/PatientHeader";
+import { VisitPatientCard } from "../components/VisitPatientCard";
 import { useNames } from "../lib/use-names";
 import type { Authorization, PerformFirstVisit } from "../types";
 
@@ -126,11 +126,12 @@ function AuthorizeForm({ data }: { data: PerformFirstVisit }) {
 
   return (
     <section className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5" data-testid="perform-first-form">
-      <PatientHeader
+      <VisitPatientCard
         patient={data.patient}
         visitNumber={data.visit.number}
         department={data.visit.department}
         payer={data.visit.payer}
+        className="border-0 p-0 shadow-none md:p-0"
       />
       {done ? (
         <AlertCard

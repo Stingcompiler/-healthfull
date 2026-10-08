@@ -34,6 +34,7 @@ export type OpenShiftRef = S["OpenShiftRefOut"];
 export type PaymentIn = S["PaymentIn"];
 export type Payment = S["PaymentOut"];
 export type Receipt = S["ReceiptOut"];
+export type ReceiptCheck = S["ReceiptCheckOut"];
 export type Transfer = S["TransferOut"];
 export type Rejection = S["RejectionOut"];
 export type Refund = S["RefundOut"];

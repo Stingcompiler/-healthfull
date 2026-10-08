@@ -14,8 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslateError } from "@/lib/api/translate-error";
 
-import { PAGE_SIZE, useShifts } from "../api";
+import { PAGE_SIZE, useCurrentShift, useShifts } from "../api";
 import { CashierNav } from "../components/CashierNav";
+import { IncomingHandovers } from "../components/HandoverPanel";
 import { Pager } from "../components/Pager";
 import { useNames } from "../lib/use-names";
 import type { ShiftListItem } from "../types";
@@ -30,6 +31,8 @@ export function ReviewPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("toReview");
   const [page, setPage] = useState(1);
+  // Cash sent to the safe, the bank or this supervisor waits here until they confirm it (7.6).
+  const current = useCurrentShift();
   const shifts = useShifts({
     status: filter === "open" ? "open" : "closed",
     ...(filter === "toReview" ? { reviewed: false } : {}),
@@ -106,6 +109,7 @@ export function ReviewPage() {
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader title={t("review.pageTitle")} description={t("review.pageDescription")} icon={<ClipboardCheck />} />
       <CashierNav />
+      <IncomingHandovers handovers={current.data?.incoming_handovers ?? []} />
       <Tabs
         value={filter}
         onValueChange={(v) => {

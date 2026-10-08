@@ -5,6 +5,7 @@ import { CashierPage } from "./pages/CashierPage";
 import { CreditNotesPage } from "./pages/CreditNotesPage";
 import { InvoicePrintPage } from "./pages/InvoicePrintPage";
 import { PerformFirstPage } from "./pages/PerformFirstPage";
+import { ReceiptCheckPage } from "./pages/ReceiptCheckPage";
 import { ReceiptPage } from "./pages/ReceiptPage";
 import { RefundsPage } from "./pages/RefundsPage";
 import { ReviewPage } from "./pages/ReviewPage";
@@ -43,6 +44,13 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     getParentRoute: () => parent,
     path: "/cashier/receipts/$paymentId",
     component: ReceiptPage,
+    validateSearch: parseCashierSearch,
+  });
+  const receiptCheck = createRoute({
+    getParentRoute: () => parent,
+    path: "/cashier/receipt-check",
+    component: ReceiptCheckPage,
+    validateSearch: parseCashierSearch,
   });
   const invoicePrint = createRoute({
     getParentRoute: () => parent,
@@ -59,6 +67,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     refunds,
     performFirst,
     receipt,
+    receiptCheck,
     invoicePrint,
   ] as const;
 }

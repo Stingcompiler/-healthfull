@@ -36,6 +36,19 @@ describe("PatientCard", () => {
     expect(screen.getByText("Allergies not recorded")).toBeInTheDocument();
   });
 
+  it("shows no allergy badge where the screen does not carry them", async () => {
+    await i18n.changeLanguage("en");
+    const { allergies: _omit, ...withoutAllergies } = base;
+    render(
+      <PatientCard patient={withoutAllergies}>
+        <p>Visit V-1</p>
+      </PatientCard>,
+    );
+    expect(screen.queryByText("Allergies not recorded")).not.toBeInTheDocument();
+    expect(screen.queryByText("No known allergies")).not.toBeInTheDocument();
+    expect(screen.getByText("Visit V-1")).toBeInTheDocument();
+  });
+
   it("picks the name for the language and shows the other below", async () => {
     await i18n.changeLanguage("ar");
     render(<PatientCard patient={base} />);

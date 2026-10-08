@@ -1,7 +1,8 @@
 import "./print.css";
 
 import { Printer } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,42 @@ export function PrintFrame({
           {children(format)}
         </article>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Marks the part of a screen that prints (the shift report): everything else on the page is
+ * hidden on paper. On screen it follows the app theme; while printing it switches to the light
+ * theme, as printed on white.
+ */
+export function PrintArea({ children, className }: { children: ReactNode; className?: string }) {
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    const before = () => {
+      flushSync(() => {
+        setPrinting(true);
+      });
+    };
+    const after = () => {
+      setPrinting(false);
+    };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
+  return (
+    <div
+      data-print-root
+      data-print-format="a4"
+      data-theme={printing ? "light" : undefined}
+      className={cn("min-w-0", printing && "bg-surface text-fg", className)}
+    >
+      <style>{PAGE_RULES.a4}</style>
+      {children}
     </div>
   );
 }
