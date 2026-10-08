@@ -1287,7 +1287,7 @@ def update_room(actor: User, room_id: int, **fields: Any) -> Room:
 def list_doctors(
     *, department_id: int | None = None, active: bool | None = None
 ) -> QuerySet[DoctorProfile]:
-    from apps.visits.schedules import schedule_prefetch
+    from apps.visits.services import schedule_prefetch
 
     qs = DoctorProfile.objects.select_related(
         "user", "department", "consultation_service"
@@ -1316,6 +1316,16 @@ def _consultation_service(service_id: int | None) -> Any:
             service=service.code,
         )
     return service
+
+
+def list_doctor_candidates() -> QuerySet[User]:
+    """Active users with the doctor role and no clinical profile yet (the doctor picker of
+    the departments screen, which must not need ``core.manage_users``)."""
+    return (
+        User.objects.filter(is_active=True, roles__code=roles.DOCTOR, doctor_profile__isnull=True)
+        .distinct()
+        .order_by("username")
+    )
 
 
 def create_doctor(
@@ -1389,7 +1399,7 @@ def set_doctor_schedule(
     Raises:
         DomainError: ``SCHEDULE_*`` (see ``domain.schedule``), ``ROOM_INACTIVE``.
     """
-    from apps.visits import schedules
+    from apps.visits import services as visit_services
 
     items = list(sessions)
     room_ids = {s["room_id"] for s in items if s.get("room_id") is not None}
@@ -1400,10 +1410,10 @@ def set_doctor_schedule(
             raise Room.DoesNotExist(f"Room {room_id}")
         if not room.active:
             raise DomainError("ROOM_INACTIVE", "The room is inactive", room=room.code)
-    schedules.replace_weekly_schedule(
+    visit_services.replace_weekly_schedule(
         DoctorProfile.objects.get(pk=doctor_id),
         [
-            schedules.SessionInput(
+            visit_services.SessionInput(
                 weekday=s["weekday"],
                 start=s["start_time"],
                 end=s["end_time"],

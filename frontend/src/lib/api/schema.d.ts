@@ -516,6 +516,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/versions/{version_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove a version that has not started yet, with a reason (audited)
+         * @description Returns the price list. 409 REASON_REQUIRED, PRICE_VERSION_LOCKED (already effective), PRICE_VERSION_IN_USE (a later version is based on it).
+         */
+        post: operations["catalog_withdraw_price_version"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/claims/ping": {
         parameters: {
             query?: never;
@@ -643,6 +663,23 @@ export interface paths {
          * @description 409 DOCTOR_ROLE_REQUIRED, DOCTOR_PROFILE_EXISTS, DEPARTMENT_INACTIVE, CONSULTATION_SERVICE_INVALID.
          */
         post: operations["core_create_doctor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/doctors/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active users with the doctor role and no doctor profile yet (names only) */
+        get: operations["core_list_doctor_candidates"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1552,6 +1589,20 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /**
+         * DoctorCandidateOut
+         * @description A user who can be given a doctor profile: names only, no account details.
+         */
+        DoctorCandidateOut: {
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
+        };
         /** DoctorIn */
         DoctorIn: {
             /**
@@ -2231,6 +2282,11 @@ export interface components {
         PriceListOut: {
             /** Active */
             active: boolean;
+            /**
+             * Can Start Today
+             * @description A new version may start today (nothing is effective yet)
+             */
+            can_start_today: boolean;
             /** Code */
             code: string;
             /** Current Version Id */
@@ -2838,6 +2894,11 @@ export interface components {
              * @enum {string}
              */
             status: "past" | "current" | "scheduled";
+        };
+        /** VersionWithdrawIn */
+        VersionWithdrawIn: {
+            /** Reason */
+            reason: string;
         };
     };
     responses: never;
@@ -4974,6 +5035,77 @@ export interface operations {
             };
         };
     };
+    catalog_withdraw_price_version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionWithdrawIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceListOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     claims_get_ping: {
         parameters: {
             query?: never;
@@ -5670,6 +5802,62 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_doctor_candidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorCandidateOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

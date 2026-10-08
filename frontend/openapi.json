@@ -1157,6 +1157,35 @@
         "title": "DepartmentPatch",
         "type": "object"
       },
+      "DoctorCandidateOut": {
+        "description": "A user who can be given a doctor profile: names only, no account details.",
+        "properties": {
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "DoctorCandidateOut",
+        "type": "object"
+      },
       "DoctorIn": {
         "properties": {
           "active": {
@@ -3128,6 +3157,11 @@
             "title": "Active",
             "type": "boolean"
           },
+          "can_start_today": {
+            "description": "A new version may start today (nothing is effective yet)",
+            "title": "Can Start Today",
+            "type": "boolean"
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -3204,6 +3238,7 @@
           "payer_codes",
           "current_version_id",
           "next_version_id",
+          "can_start_today",
           "versions"
         ],
         "title": "PriceListOut",
@@ -4904,6 +4939,21 @@
           "created_at"
         ],
         "title": "VersionOut",
+        "type": "object"
+      },
+      "VersionWithdrawIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "VersionWithdrawIn",
         "type": "object"
       }
     },
@@ -7920,6 +7970,104 @@
         ]
       }
     },
+    "/api/catalog/versions/{version_id}/withdraw": {
+      "post": {
+        "description": "Returns the price list. 409 REASON_REQUIRED, PRICE_VERSION_LOCKED (already effective), PRICE_VERSION_IN_USE (a later version is based on it).",
+        "operationId": "catalog_withdraw_price_version",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionWithdrawIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceListOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Remove a version that has not started yet, with a reason (audited)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/claims/ping": {
       "get": {
         "operationId": "claims_get_ping",
@@ -8852,6 +9000,77 @@
           }
         ],
         "summary": "Give a user with the doctor role a clinical profile",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/doctors/candidates": {
+      "get": {
+        "operationId": "core_list_doctor_candidates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorCandidateOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Active users with the doctor role and no doctor profile yet (names only)",
         "tags": [
           "core"
         ]

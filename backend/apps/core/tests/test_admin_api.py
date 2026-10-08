@@ -16,6 +16,7 @@ from apps.core.models import (
     AuthEvent,
     AuthEventKind,
     CenterProfile,
+    Department,
     DoctorProfile,
     Policy,
     ReasonCode,
@@ -523,6 +524,34 @@ def test_departments_rooms_doctors_schedule(client: ApiClient, make_user: Any) -
     assert depts["ENT"]["doctor_count"] == 1
 
 
+def test_doctor_candidates_need_only_manage_departments(make_user: Any) -> None:
+    """The doctor picker works for a role holding manage_departments without manage_users."""
+    make_user("dr_free", roles=["doctor"], full_name_en="Free Doctor")
+    taken = make_user("dr_taken", roles=["doctor"])
+    make_user("dr_off", roles=["doctor"], is_active=False)
+    make_user("nurse_x", roles=["nurse"])
+    dept = Department.objects.create(code="CANDX", name_ar="ق", name_en="Cand")
+    DoctorProfile.objects.create(user=taken, department=dept)
+    head = make_user("head", roles=["manager"])
+    role = Role.objects.get(code="manager")
+    RolePermission.objects.update_or_create(
+        role=role, code="core.manage_departments", defaults={"allowed": True}
+    )
+    RolePermission.objects.update_or_create(
+        role=role, code="core.manage_users", defaults={"allowed": False}
+    )
+    assert "core.manage_users" not in effective_permissions(head)
+    api = ApiClient()
+    assert api.login("head").status_code == 200
+    _error(api.get("/api/core/users?role=doctor"), 403, "PERMISSION_DENIED")
+    response = api.get("/api/core/doctors/candidates")
+    assert response.status_code == 200, response.content
+    rows = response.json()
+    assert [r["username"] for r in rows] == ["dr_free"]
+    assert set(rows[0]) == {"id", "username", "full_name_ar", "full_name_en"}
+    assert rows[0]["full_name_en"] == "Free Doctor"
+
+
 def test_department_writes_need_permission(cashier_client: ApiClient) -> None:
     assert cashier_client.get("/api/core/departments").status_code == 200
     _error(
@@ -531,6 +560,7 @@ def test_department_writes_need_permission(cashier_client: ApiClient) -> None:
         "PERMISSION_DENIED",
     )
     _error(cashier_client.get("/api/core/doctors"), 403, "PERMISSION_DENIED")
+    _error(cashier_client.get("/api/core/doctors/candidates"), 403, "PERMISSION_DENIED")
 
 
 # --- Reason codes ---------------------------------------------------------------------------
@@ -661,6 +691,12 @@ def test_core_api_surface_is_pinned() -> None:
         ("POST", "/rooms", "core_create_room", "core.manage_departments"),
         ("PATCH", "/rooms/{room_id}", "core_update_room", "core.manage_departments"),
         ("GET", "/doctors", "core_list_doctors", "core.manage_departments"),
+        (
+            "GET",
+            "/doctors/candidates",
+            "core_list_doctor_candidates",
+            "core.manage_departments",
+        ),
         ("POST", "/doctors", "core_create_doctor", "core.manage_departments"),
         ("PATCH", "/doctors/{doctor_id}", "core_update_doctor", "core.manage_departments"),
         (

@@ -33,6 +33,7 @@ from apps.core.schemas import (
     DepartmentListParams,
     DepartmentOut,
     DepartmentPatch,
+    DoctorCandidateOut,
     DoctorIn,
     DoctorListParams,
     DoctorOut,
@@ -495,6 +496,17 @@ def update_room(request: HttpRequest, room_id: int, payload: RoomPatch) -> Room:
 @require_perm("core.manage_departments")
 def list_doctors(request: HttpRequest, params: Query[DoctorListParams]) -> list[DoctorProfile]:
     return list(services.list_doctors(department_id=params.department_id, active=params.active))
+
+
+@core_router.get(
+    "/doctors/candidates",
+    response={200: list[DoctorCandidateOut], **_READ},
+    operation_id="core_list_doctor_candidates",
+    summary="Active users with the doctor role and no doctor profile yet (names only)",
+)
+@require_perm("core.manage_departments")
+def list_doctor_candidates(request: HttpRequest) -> list[User]:
+    return list(services.list_doctor_candidates())
 
 
 @core_router.post(

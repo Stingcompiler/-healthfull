@@ -63,12 +63,14 @@ from apps.visits.models import (
     VisitStatus,
     VisitType,
 )
+from apps.visits.schedules import SessionInput, replace_weekly_schedule, schedule_prefetch
 from domain import coverage as dc
 from domain.errors import DomainError
 
 __all__ = [
     "EMERGENCY_PRIORITY",
     "FINANCIAL_EVENTS",
+    "SessionInput",
     "TimelineEvent",
     "admit",
     "available_slots",
@@ -94,8 +96,10 @@ __all__ = [
     "mark_no_show",
     "queue",
     "reassign_future_appointments",
+    "replace_weekly_schedule",
     "requeue",
     "reschedule_appointment",
+    "schedule_prefetch",
     "start_consultation",
     "timeline",
     "transfer_bed",
