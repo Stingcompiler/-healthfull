@@ -1,6 +1,425 @@
 {
   "components": {
     "schemas": {
+      "AgendaItemOut": {
+        "properties": {
+          "appointment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppointmentOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null = a free slot"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at",
+          "ends_at",
+          "appointment"
+        ],
+        "title": "AgendaItemOut",
+        "type": "object"
+      },
+      "AgendaParams": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "doctor_id": {
+            "title": "Doctor Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doctor_id",
+          "day"
+        ],
+        "title": "AgendaParams",
+        "type": "object"
+      },
+      "AllergyOut": {
+        "properties": {
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label_ar",
+          "label_en",
+          "severity"
+        ],
+        "title": "AllergyOut",
+        "type": "object"
+      },
+      "AppointmentCancelIn": {
+        "properties": {
+          "note": {
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "AppointmentCancelIn",
+        "type": "object"
+      },
+      "AppointmentIn": {
+        "properties": {
+          "contact_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Contact Name",
+            "type": "string"
+          },
+          "contact_phone": {
+            "default": "",
+            "maxLength": 30,
+            "title": "Contact Phone",
+            "type": "string"
+          },
+          "doctor_id": {
+            "title": "Doctor Id",
+            "type": "integer"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Default: the schedule's slot length",
+            "title": "Ends At"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Notes",
+            "type": "string"
+          },
+          "patient_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patient Id"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "doctor_id",
+          "starts_at"
+        ],
+        "title": "AppointmentIn",
+        "type": "object"
+      },
+      "AppointmentOut": {
+        "properties": {
+          "cancel_note": {
+            "title": "Cancel Note",
+            "type": "string"
+          },
+          "contact_name": {
+            "title": "Contact Name",
+            "type": "string"
+          },
+          "contact_phone": {
+            "title": "Contact Phone",
+            "type": "string"
+          },
+          "department": {
+            "$ref": "#/components/schemas/DepartmentOut"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/DoctorOut"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "patient": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PatientBriefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rescheduled_from_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rescheduled From Id"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "booked",
+              "arrived",
+              "cancelled",
+              "no_show",
+              "rescheduled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The visit opened at check-in",
+            "title": "Visit Id"
+          }
+        },
+        "required": [
+          "id",
+          "patient",
+          "contact_name",
+          "contact_phone",
+          "doctor",
+          "department",
+          "starts_at",
+          "ends_at",
+          "status",
+          "rescheduled_from_id",
+          "notes",
+          "visit_id",
+          "cancel_note"
+        ],
+        "title": "AppointmentOut",
+        "type": "object"
+      },
+      "AppointmentPatch": {
+        "properties": {
+          "contact_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Name"
+          },
+          "contact_phone": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Phone"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "AppointmentPatch",
+        "type": "object"
+      },
+      "BalanceOut": {
+        "description": "The person's money position (FEATURES 1.5); decimal strings in SDG.",
+        "properties": {
+          "credit": {
+            "description": "Patient credit (negative: the patient owes it)",
+            "title": "Credit",
+            "type": "string"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/OpenInvoiceOut"
+            },
+            "title": "Invoices",
+            "type": "array"
+          },
+          "net": {
+            "description": "outstanding - credit; positive: the patient owes",
+            "title": "Net",
+            "type": "string"
+          },
+          "outstanding": {
+            "description": "Patient share still owed on approved invoices",
+            "title": "Outstanding",
+            "type": "string"
+          },
+          "pending": {
+            "description": "Unallocated transfer money awaiting verification",
+            "title": "Pending",
+            "type": "string"
+          },
+          "spendable": {
+            "description": "Credit that may be spent or refunded now",
+            "title": "Spendable",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credit",
+          "spendable",
+          "pending",
+          "outstanding",
+          "net",
+          "invoices"
+        ],
+        "title": "BalanceOut",
+        "type": "object"
+      },
+      "BoardParams": {
+        "properties": {
+          "department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Id"
+          },
+          "doctor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctor Id"
+          },
+          "include_finished": {
+            "default": false,
+            "title": "Include Finished",
+            "type": "boolean"
+          }
+        },
+        "title": "BoardParams",
+        "type": "object"
+      },
+      "CallNextIn": {
+        "properties": {
+          "department_id": {
+            "title": "Department Id",
+            "type": "integer"
+          },
+          "doctor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctor Id"
+          }
+        },
+        "required": [
+          "department_id"
+        ],
+        "title": "CallNextIn",
+        "type": "object"
+      },
+      "CenterOut": {
+        "properties": {
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name_ar",
+          "name_en",
+          "phone"
+        ],
+        "title": "CenterOut",
+        "type": "object"
+      },
       "ChangePasswordIn": {
         "properties": {
           "new_password": {
@@ -21,6 +440,693 @@
           "new_password"
         ],
         "title": "ChangePasswordIn",
+        "type": "object"
+      },
+      "CheckInIn": {
+        "description": "Open the visit of a booking on arrival (a caller without a file names one).",
+        "properties": {
+          "card_number": {
+            "default": "",
+            "maxLength": 60,
+            "title": "Card Number",
+            "type": "string"
+          },
+          "chief_complaint": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Chief Complaint",
+            "type": "string"
+          },
+          "coverage_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Id"
+          },
+          "patient_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patient Id"
+          },
+          "use_default_coverage": {
+            "default": true,
+            "title": "Use Default Coverage",
+            "type": "boolean"
+          }
+        },
+        "title": "CheckInIn",
+        "type": "object"
+      },
+      "CoverageBriefOut": {
+        "description": "The default coverage shown beside a patient's name.",
+        "properties": {
+          "card_number": {
+            "title": "Card Number",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "payer_code": {
+            "title": "Payer Code",
+            "type": "string"
+          },
+          "payer_id": {
+            "title": "Payer Id",
+            "type": "integer"
+          },
+          "payer_name_ar": {
+            "title": "Payer Name Ar",
+            "type": "string"
+          },
+          "payer_name_en": {
+            "title": "Payer Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "payer_id",
+          "payer_code",
+          "payer_name_ar",
+          "payer_name_en",
+          "card_number"
+        ],
+        "title": "CoverageBriefOut",
+        "type": "object"
+      },
+      "CoverageIn": {
+        "properties": {
+          "card_number": {
+            "default": "",
+            "maxLength": 60,
+            "title": "Card Number",
+            "type": "string"
+          },
+          "is_default": {
+            "default": true,
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "member_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Member Name",
+            "type": "string"
+          },
+          "patient_percent_override": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patient Percent Override"
+          },
+          "payer_id": {
+            "title": "Payer Id",
+            "type": "integer"
+          },
+          "relation": {
+            "default": "",
+            "maxLength": 30,
+            "title": "Relation",
+            "type": "string"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "required": [
+          "payer_id"
+        ],
+        "title": "CoverageIn",
+        "type": "object"
+      },
+      "CoverageListParams": {
+        "properties": {
+          "include_inactive": {
+            "default": false,
+            "title": "Include Inactive",
+            "type": "boolean"
+          }
+        },
+        "title": "CoverageListParams",
+        "type": "object"
+      },
+      "CoverageOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "card_number": {
+            "title": "Card Number",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_default": {
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "member_name": {
+            "title": "Member Name",
+            "type": "string"
+          },
+          "patient_id": {
+            "title": "Patient Id",
+            "type": "integer"
+          },
+          "patient_percent_override": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Patient share percent for this member (decimal string); null = payer rule",
+            "title": "Patient Percent Override"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/PayerOut"
+          },
+          "relation": {
+            "title": "Relation",
+            "type": "string"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "required": [
+          "id",
+          "patient_id",
+          "payer",
+          "card_number",
+          "member_name",
+          "relation",
+          "valid_from",
+          "valid_to",
+          "patient_percent_override",
+          "is_default",
+          "active",
+          "created_at"
+        ],
+        "title": "CoverageOut",
+        "type": "object"
+      },
+      "CoveragePatch": {
+        "properties": {
+          "card_number": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Number"
+          },
+          "is_default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Default"
+          },
+          "member_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Name"
+          },
+          "patient_percent_override": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patient Percent Override"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "title": "CoveragePatch",
+        "type": "object"
+      },
+      "DayAgendaOut": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/DoctorOut"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgendaItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "works": {
+            "title": "Works",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "doctor",
+          "day",
+          "works",
+          "items"
+        ],
+        "title": "DayAgendaOut",
+        "type": "object"
+      },
+      "DepartmentOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "DepartmentOut",
+        "type": "object"
+      },
+      "DisplayEntryOut": {
+        "description": "A token on the waiting-room screen: abbreviated name only.",
+        "properties": {
+          "called_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Called At"
+          },
+          "department": {
+            "$ref": "#/components/schemas/DepartmentOut"
+          },
+          "doctor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DoctorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoomOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "waiting",
+              "called",
+              "in_progress",
+              "done",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "token_no": {
+            "title": "Token No",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "token_no",
+          "name_ar",
+          "name_en",
+          "status",
+          "department",
+          "doctor",
+          "room",
+          "called_at"
+        ],
+        "title": "DisplayEntryOut",
+        "type": "object"
+      },
+      "DisplayParams": {
+        "properties": {
+          "department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Id"
+          }
+        },
+        "title": "DisplayParams",
+        "type": "object"
+      },
+      "DoctorOut": {
+        "properties": {
+          "department_id": {
+            "title": "Department Id",
+            "type": "integer"
+          },
+          "has_consultation_fee": {
+            "title": "Has Consultation Fee",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "specialty_ar": {
+            "title": "Specialty Ar",
+            "type": "string"
+          },
+          "specialty_en": {
+            "title": "Specialty En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "department_id",
+          "name_ar",
+          "name_en",
+          "specialty_ar",
+          "specialty_en",
+          "has_consultation_fee"
+        ],
+        "title": "DoctorOut",
+        "type": "object"
+      },
+      "DuplicateOut": {
+        "properties": {
+          "patient": {
+            "$ref": "#/components/schemas/PatientListOut"
+          },
+          "reasons": {
+            "items": {
+              "enum": [
+                "phone",
+                "national_id",
+                "name_dob"
+              ],
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "similarity": {
+            "description": "Name similarity 0-1 (name_dob matches)",
+            "title": "Similarity",
+            "type": "number"
+          }
+        },
+        "required": [
+          "patient",
+          "reasons",
+          "similarity"
+        ],
+        "title": "DuplicateOut",
+        "type": "object"
+      },
+      "DuplicateParams": {
+        "description": "What the registration form has typed so far (live duplicate warning, FEATURES 1.3).",
+        "properties": {
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "exclude_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The file being edited",
+            "title": "Exclude Id"
+          },
+          "full_name_ar": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "national_id": {
+            "default": "",
+            "maxLength": 50,
+            "title": "National Id",
+            "type": "string"
+          },
+          "phone": {
+            "default": "",
+            "maxLength": 30,
+            "title": "Phone",
+            "type": "string"
+          },
+          "phone_alt": {
+            "default": "",
+            "maxLength": 30,
+            "title": "Phone Alt",
+            "type": "string"
+          }
+        },
+        "title": "DuplicateParams",
+        "type": "object"
+      },
+      "EmergencyIn": {
+        "description": "Emergency registration with a name (or a placeholder) and sex only (FEATURES 1.2).",
+        "properties": {
+          "age_years": {
+            "anyOf": [
+              {
+                "maximum": 130,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Years"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "default": "",
+            "maxLength": 30,
+            "title": "Phone",
+            "type": "string"
+          },
+          "sex": {
+            "enum": [
+              "male",
+              "female",
+              "unknown"
+            ],
+            "title": "Sex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "sex"
+        ],
+        "title": "EmergencyIn",
         "type": "object"
       },
       "ErrorOut": {
@@ -86,6 +1192,68 @@
           "time"
         ],
         "title": "HealthOut",
+        "type": "object"
+      },
+      "LineOut": {
+        "description": "A service line of the visit with its display state; never a price.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "order_source": {
+            "title": "Order Source",
+            "type": "string"
+          },
+          "ordered_at": {
+            "format": "date-time",
+            "title": "Ordered At",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          },
+          "service_code": {
+            "title": "Service Code",
+            "type": "string"
+          },
+          "service_name_ar": {
+            "title": "Service Name Ar",
+            "type": "string"
+          },
+          "service_name_en": {
+            "title": "Service Name En",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "requested",
+              "invoiced",
+              "paid",
+              "performed",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "service_code",
+          "service_name_ar",
+          "service_name_en",
+          "kind",
+          "quantity",
+          "order_source",
+          "state",
+          "ordered_at"
+        ],
+        "title": "LineOut",
         "type": "object"
       },
       "LoginIn": {
@@ -196,6 +1364,914 @@
         "title": "MeOut",
         "type": "object"
       },
+      "MergeIn": {
+        "description": "Merge ``duplicate_id`` into this (surviving) file (FEATURES 1.4).",
+        "properties": {
+          "duplicate_id": {
+            "title": "Duplicate Id",
+            "type": "integer"
+          },
+          "note": {
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "enum": [
+              "DUPLICATE_REGISTRATION",
+              "EMERGENCY_IDENTIFIED",
+              "SPELLING_VARIANT",
+              "OTHER"
+            ],
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "duplicate_id",
+          "reason_code",
+          "note"
+        ],
+        "title": "MergeIn",
+        "type": "object"
+      },
+      "MergeOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "merged_at": {
+            "format": "date-time",
+            "title": "Merged At",
+            "type": "string"
+          },
+          "merged_by": {
+            "$ref": "#/components/schemas/UserRefOut"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "description": "Merge reason code; empty for older free-text notes",
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/PatientRefOut"
+          },
+          "target": {
+            "$ref": "#/components/schemas/PatientRefOut"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "target",
+          "reason_code",
+          "note",
+          "merged_by",
+          "merged_at"
+        ],
+        "title": "MergeOut",
+        "type": "object"
+      },
+      "OpenInvoiceOut": {
+        "properties": {
+          "invoice_id": {
+            "title": "Invoice Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "outstanding": {
+            "title": "Outstanding",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "number",
+          "outstanding"
+        ],
+        "title": "OpenInvoiceOut",
+        "type": "object"
+      },
+      "Page_PatientListOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PatientListOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[PatientListOut]",
+        "type": "object"
+      },
+      "Page_VisitOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VisitOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[VisitOut]",
+        "type": "object"
+      },
+      "PatientBriefOut": {
+        "description": "The patient on a visit, queue token or appointment.",
+        "properties": {
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_incomplete": {
+            "title": "Is Incomplete",
+            "type": "boolean"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "sex": {
+            "enum": [
+              "male",
+              "female",
+              "unknown"
+            ],
+            "title": "Sex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "file_no",
+          "full_name_ar",
+          "full_name_en",
+          "sex",
+          "date_of_birth",
+          "phone",
+          "is_incomplete"
+        ],
+        "title": "PatientBriefOut",
+        "type": "object"
+      },
+      "PatientIn": {
+        "description": "Registration (FEATURES 1.1). Either name is enough; ``age_years`` estimates the birth\ndate when it is not known.",
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Address",
+            "type": "string"
+          },
+          "age_years": {
+            "anyOf": [
+              {
+                "maximum": 130,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Years"
+          },
+          "confirm_not_duplicate": {
+            "default": false,
+            "description": "Register even though the duplicate check found similar files",
+            "title": "Confirm Not Duplicate",
+            "type": "boolean"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "emergency_contact_name": {
+            "default": "",
+            "maxLength": 150,
+            "title": "Emergency Contact Name",
+            "type": "string"
+          },
+          "emergency_contact_phone": {
+            "default": "",
+            "maxLength": 30,
+            "title": "Emergency Contact Phone",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "national_id": {
+            "default": "",
+            "maxLength": 50,
+            "title": "National Id",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "phone": {
+            "default": "",
+            "maxLength": 30,
+            "title": "Phone",
+            "type": "string"
+          },
+          "phone_alt": {
+            "default": "",
+            "maxLength": 30,
+            "title": "Phone Alt",
+            "type": "string"
+          },
+          "sex": {
+            "enum": [
+              "male",
+              "female"
+            ],
+            "title": "Sex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sex"
+        ],
+        "title": "PatientIn",
+        "type": "object"
+      },
+      "PatientListOut": {
+        "description": "A row of the patient list and of the duplicate warning.",
+        "properties": {
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverageBriefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active default coverage on file; null = self-pay"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "dob_is_estimated": {
+            "title": "Dob Is Estimated",
+            "type": "boolean"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "is_incomplete": {
+            "title": "Is Incomplete",
+            "type": "boolean"
+          },
+          "merged_into_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merged Into Id"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "sex": {
+            "enum": [
+              "male",
+              "female",
+              "unknown"
+            ],
+            "title": "Sex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "file_no",
+          "full_name_ar",
+          "full_name_en",
+          "sex",
+          "date_of_birth",
+          "dob_is_estimated",
+          "phone",
+          "is_incomplete",
+          "is_active",
+          "merged_into_id",
+          "created_at"
+        ],
+        "title": "PatientListOut",
+        "type": "object"
+      },
+      "PatientOut": {
+        "description": "A whole patient file (FEATURES 1.1).",
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverageBriefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active default coverage on file; null = self-pay"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "dob_is_estimated": {
+            "title": "Dob Is Estimated",
+            "type": "boolean"
+          },
+          "emergency_contact_name": {
+            "title": "Emergency Contact Name",
+            "type": "string"
+          },
+          "emergency_contact_phone": {
+            "title": "Emergency Contact Phone",
+            "type": "string"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "is_incomplete": {
+            "title": "Is Incomplete",
+            "type": "boolean"
+          },
+          "merged_into_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merged Into Id"
+          },
+          "national_id": {
+            "title": "National Id",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "phone_alt": {
+            "title": "Phone Alt",
+            "type": "string"
+          },
+          "sex": {
+            "enum": [
+              "male",
+              "female",
+              "unknown"
+            ],
+            "title": "Sex",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "file_no",
+          "full_name_ar",
+          "full_name_en",
+          "sex",
+          "date_of_birth",
+          "dob_is_estimated",
+          "phone",
+          "is_incomplete",
+          "is_active",
+          "merged_into_id",
+          "created_at",
+          "phone_alt",
+          "address",
+          "national_id",
+          "emergency_contact_name",
+          "emergency_contact_phone",
+          "notes",
+          "updated_at"
+        ],
+        "title": "PatientOut",
+        "type": "object"
+      },
+      "PatientPatch": {
+        "description": "Edit demographics; completes an emergency file once sex, birth date and phone exist.",
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "age_years": {
+            "anyOf": [
+              {
+                "maximum": 130,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Years"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "dob_is_estimated": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dob Is Estimated"
+          },
+          "emergency_contact_name": {
+            "anyOf": [
+              {
+                "maxLength": 150,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emergency Contact Name"
+          },
+          "emergency_contact_phone": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emergency Contact Phone"
+          },
+          "full_name_ar": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name Ar"
+          },
+          "full_name_en": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name En"
+          },
+          "national_id": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "phone_alt": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Alt"
+          },
+          "sex": {
+            "anyOf": [
+              {
+                "enum": [
+                  "male",
+                  "female",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sex"
+          }
+        },
+        "title": "PatientPatch",
+        "type": "object"
+      },
+      "PatientProfileOut": {
+        "description": "A file with what reception shows around it.",
+        "properties": {
+          "allergies": {
+            "description": "Active allergies of the person; empty = none recorded",
+            "items": {
+              "$ref": "#/components/schemas/AllergyOut"
+            },
+            "title": "Allergies",
+            "type": "array"
+          },
+          "merged_into": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PatientRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The surviving file when this one was merged away"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientOut"
+          }
+        },
+        "required": [
+          "patient",
+          "merged_into",
+          "allergies"
+        ],
+        "title": "PatientProfileOut",
+        "type": "object"
+      },
+      "PatientRefOut": {
+        "description": "A file named by its number (merge history, merged-into links).",
+        "properties": {
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "file_no",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "PatientRefOut",
+        "type": "object"
+      },
+      "PatientSearchParams": {
+        "properties": {
+          "include_inactive": {
+            "default": false,
+            "description": "Also list merged (inactive) files",
+            "title": "Include Inactive",
+            "type": "boolean"
+          },
+          "incomplete": {
+            "default": false,
+            "description": "Only emergency files still to complete",
+            "title": "Incomplete",
+            "type": "boolean"
+          },
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          }
+        },
+        "title": "PatientSearchParams",
+        "type": "object"
+      },
+      "PayerOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "requires_card_number": {
+            "title": "Requires Card Number",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en",
+          "kind",
+          "requires_card_number"
+        ],
+        "title": "PayerOut",
+        "type": "object"
+      },
+      "PayerRefOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "PayerRefOut",
+        "type": "object"
+      },
       "PingOut": {
         "description": "Body of ``GET /api/<module>/ping``: proves the module router is mounted.",
         "properties": {
@@ -246,6 +2322,795 @@
           }
         },
         "title": "PreferencesPatch",
+        "type": "object"
+      },
+      "QueueMoveIn": {
+        "properties": {
+          "action": {
+            "enum": [
+              "call",
+              "start",
+              "finish",
+              "no_show",
+              "requeue"
+            ],
+            "title": "Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "QueueMoveIn",
+        "type": "object"
+      },
+      "QueueRowOut": {
+        "description": "A token on the reception board.",
+        "properties": {
+          "called_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Called At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "department": {
+            "$ref": "#/components/schemas/DepartmentOut"
+          },
+          "doctor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DoctorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "done_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Done At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientBriefOut"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "queue_date": {
+            "format": "date",
+            "title": "Queue Date",
+            "type": "string"
+          },
+          "ready": {
+            "description": "Consultation fee paid or authorized (or none due)",
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoomOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "waiting",
+              "called",
+              "in_progress",
+              "done",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "token_no": {
+            "title": "Token No",
+            "type": "integer"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "visit_id",
+          "visit_number",
+          "patient",
+          "department",
+          "doctor",
+          "room",
+          "queue_date",
+          "token_no",
+          "priority",
+          "status",
+          "ready",
+          "created_at",
+          "called_at",
+          "started_at",
+          "done_at"
+        ],
+        "title": "QueueRowOut",
+        "type": "object"
+      },
+      "ReasonOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "requires_note": {
+            "title": "Requires Note",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "label_ar",
+          "label_en",
+          "requires_note"
+        ],
+        "title": "ReasonOut",
+        "type": "object"
+      },
+      "RescheduleIn": {
+        "properties": {
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at"
+        ],
+        "title": "RescheduleIn",
+        "type": "object"
+      },
+      "RoomOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "RoomOut",
+        "type": "object"
+      },
+      "TimelineOut": {
+        "description": "One event of the visit timeline (FEATURES 2.4).",
+        "properties": {
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "title": "Detail",
+            "type": "object"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "ref_id": {
+            "title": "Ref Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "kind",
+          "ref_id",
+          "actor",
+          "detail"
+        ],
+        "title": "TimelineOut",
+        "type": "object"
+      },
+      "TokenSlipOut": {
+        "description": "What the 80 mm token slip prints (FEATURES 2.6).",
+        "properties": {
+          "ahead": {
+            "title": "Ahead",
+            "type": "integer"
+          },
+          "center": {
+            "$ref": "#/components/schemas/CenterOut"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/QueueRowOut"
+          }
+        },
+        "required": [
+          "entry",
+          "ahead",
+          "center"
+        ],
+        "title": "TokenSlipOut",
+        "type": "object"
+      },
+      "UpcomingParams": {
+        "properties": {
+          "patient_id": {
+            "title": "Patient Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "patient_id"
+        ],
+        "title": "UpcomingParams",
+        "type": "object"
+      },
+      "UserRefOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "UserRefOut",
+        "type": "object"
+      },
+      "VisitCancelIn": {
+        "description": "Cancel with a ``visit_cancel`` reason code (FEATURES 2.7, invariant 4).",
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "maxLength": 40,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason_code"
+        ],
+        "title": "VisitCancelIn",
+        "type": "object"
+      },
+      "VisitDetailOut": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "queue_entry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QueueRowOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "queue_ready": {
+            "title": "Queue Ready",
+            "type": "boolean"
+          },
+          "visit": {
+            "$ref": "#/components/schemas/VisitOut"
+          }
+        },
+        "required": [
+          "visit",
+          "lines",
+          "queue_entry",
+          "queue_ready"
+        ],
+        "title": "VisitDetailOut",
+        "type": "object"
+      },
+      "VisitIn": {
+        "description": "Open a visit (FEATURES 2.1). The consultation line and queue token are automatic.",
+        "properties": {
+          "card_number": {
+            "default": "",
+            "maxLength": 60,
+            "title": "Card Number",
+            "type": "string"
+          },
+          "chief_complaint": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Chief Complaint",
+            "type": "string"
+          },
+          "coverage_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A coverage on file; null = see below",
+            "title": "Coverage Id"
+          },
+          "department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Id"
+          },
+          "doctor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctor Id"
+          },
+          "patient_id": {
+            "title": "Patient Id",
+            "type": "integer"
+          },
+          "use_default_coverage": {
+            "default": true,
+            "description": "Without coverage_id: the default coverage on file (false = cash)",
+            "title": "Use Default Coverage",
+            "type": "boolean"
+          },
+          "visit_type": {
+            "default": "new",
+            "enum": [
+              "new",
+              "follow_up",
+              "emergency"
+            ],
+            "title": "Visit Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "patient_id"
+        ],
+        "title": "VisitIn",
+        "type": "object"
+      },
+      "VisitListParams": {
+        "properties": {
+          "day": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Visits opened that day",
+            "title": "Day"
+          },
+          "department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Id"
+          },
+          "doctor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctor Id"
+          },
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "patient_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Every visit of the person (merged files)",
+            "title": "Patient Id"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "open",
+                  "closed",
+                  "cancelled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "VisitListParams",
+        "type": "object"
+      },
+      "VisitOptionsOut": {
+        "description": "What the create-visit form chooses from.",
+        "properties": {
+          "cancel_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ReasonOut"
+            },
+            "title": "Cancel Reasons",
+            "type": "array"
+          },
+          "departments": {
+            "items": {
+              "$ref": "#/components/schemas/DepartmentOut"
+            },
+            "title": "Departments",
+            "type": "array"
+          },
+          "doctors": {
+            "items": {
+              "$ref": "#/components/schemas/DoctorOut"
+            },
+            "title": "Doctors",
+            "type": "array"
+          },
+          "follow_up_window_days": {
+            "title": "Follow Up Window Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "departments",
+          "doctors",
+          "cancel_reasons",
+          "follow_up_window_days"
+        ],
+        "title": "VisitOptionsOut",
+        "type": "object"
+      },
+      "VisitOut": {
+        "properties": {
+          "appointment_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appointment Id"
+          },
+          "cancel_note": {
+            "title": "Cancel Note",
+            "type": "string"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "card_number": {
+            "title": "Card Number",
+            "type": "string"
+          },
+          "chief_complaint": {
+            "title": "Chief Complaint",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/UserRefOut"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DepartmentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "doctor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DoctorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "follow_up_of_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up Of Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientBriefOut"
+          },
+          "payer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PayerRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null = self-pay (cash)"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "closed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "visit_type": {
+            "enum": [
+              "new",
+              "follow_up",
+              "emergency",
+              "pharmacy_sale",
+              "inpatient"
+            ],
+            "title": "Visit Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "patient",
+          "visit_type",
+          "status",
+          "department",
+          "doctor",
+          "payer",
+          "card_number",
+          "follow_up_of_id",
+          "appointment_id",
+          "chief_complaint",
+          "created_at",
+          "created_by",
+          "closed_at",
+          "cancelled_at",
+          "cancel_reason",
+          "cancel_note"
+        ],
+        "title": "VisitOut",
+        "type": "object"
+      },
+      "WaitingRoomOut": {
+        "properties": {
+          "serving": {
+            "items": {
+              "$ref": "#/components/schemas/DisplayEntryOut"
+            },
+            "title": "Serving",
+            "type": "array"
+          },
+          "waiting": {
+            "items": {
+              "$ref": "#/components/schemas/DisplayEntryOut"
+            },
+            "title": "Waiting",
+            "type": "array"
+          }
+        },
+        "required": [
+          "serving",
+          "waiting"
+        ],
+        "title": "WaitingRoomOut",
         "type": "object"
       }
     },
@@ -981,6 +3846,729 @@
         ]
       }
     },
+    "/api/patients": {
+      "get": {
+        "description": "Arabic spelling variants are folded (أ/إ/آ, ة/ه, ى/ي, diacritics) and names also match by similarity. A file number matches exactly; digits match phone numbers and the end of file numbers. Without q: newest files first.",
+        "operationId": "patients_list_patients",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Also list merged (inactive) files",
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Also list merged (inactive) files",
+              "title": "Include Inactive",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only emergency files still to complete",
+            "in": "query",
+            "name": "incomplete",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only emergency files still to complete",
+              "title": "Incomplete",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PatientListOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Search patient files by name, phone or file number (paged)",
+        "tags": [
+          "patients"
+        ]
+      },
+      "post": {
+        "description": "409 DUPLICATE_PATIENT with details.candidates [{id, file_no, reasons}] when similar files exist; send confirm_not_duplicate=true to register anyway. 409 NATIONAL_ID_TAKEN, NAME_REQUIRED, INVALID_DATE_OF_BIRTH, INVALID_AGE.",
+        "operationId": "patients_create_patient",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Register a patient file",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/coverages/{coverage_id}": {
+      "patch": {
+        "operationId": "patients_update_coverage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "coverage_id",
+            "required": true,
+            "schema": {
+              "title": "Coverage Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoveragePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Edit a coverage on file (card, validity, member share, default)",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/coverages/{coverage_id}/end": {
+      "post": {
+        "operationId": "patients_end_coverage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "coverage_id",
+            "required": true,
+            "schema": {
+              "title": "Coverage Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "End a coverage on file (kept in history)",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/duplicates": {
+      "get": {
+        "operationId": "patients_find_duplicates",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "full_name_ar",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Full Name Ar",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "full_name_en",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Full Name En",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "phone",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 30,
+              "title": "Phone",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "phone_alt",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 30,
+              "title": "Phone Alt",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_of_birth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date Of Birth"
+            }
+          },
+          {
+            "in": "query",
+            "name": "national_id",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 50,
+              "title": "National Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The file being edited",
+            "in": "query",
+            "name": "exclude_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The file being edited",
+              "title": "Exclude Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DuplicateOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Files that may be the same person (live duplicate warning)",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/emergency": {
+      "post": {
+        "operationId": "patients_register_emergency",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmergencyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Emergency registration with a name and sex only (flagged incomplete)",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/payers": {
+      "get": {
+        "operationId": "patients_list_payers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PayerOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Active payers a coverage can be recorded with",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
     "/api/patients/ping": {
       "get": {
         "operationId": "patients_get_ping",
@@ -1023,6 +4611,621 @@
           }
         ],
         "summary": "Check that the /api/patients router is reachable",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/{patient_id}": {
+      "get": {
+        "operationId": "patients_get_patient",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientProfileOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A patient file with its allergies and the file it was merged into",
+        "tags": [
+          "patients"
+        ]
+      },
+      "patch": {
+        "operationId": "patients_update_patient",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Edit a patient file (completes an emergency file)",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/{patient_id}/balance": {
+      "get": {
+        "operationId": "patients_get_balance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Patient credit, pending transfers and open invoices of the person",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/{patient_id}/coverages": {
+      "get": {
+        "operationId": "patients_list_coverages",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Inactive",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CoverageOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Coverages on file, the default first",
+        "tags": [
+          "patients"
+        ]
+      },
+      "post": {
+        "description": "409 PAYER_INACTIVE, CARD_NUMBER_REQUIRED, INVALID_DATE_RANGE, INVALID_PERCENT.",
+        "operationId": "patients_create_coverage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Record a payer on the patient's file",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/{patient_id}/merge": {
+      "post": {
+        "description": "The duplicate stays as an inactive file pointing here; nothing is deleted and money does not move. 409 REASON_REQUIRED, MERGE_SAME_FILE, PATIENT_MERGED.",
+        "operationId": "patients_merge_patient",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Merge a duplicate file into this one (supervisor, with a reason)",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/api/patients/{patient_id}/merges": {
+      "get": {
+        "operationId": "patients_list_merges",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MergeOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Merges into or out of this file, newest first",
         "tags": [
           "patients"
         ]
@@ -1216,6 +5419,1091 @@
         ]
       }
     },
+    "/api/visits": {
+      "get": {
+        "operationId": "visits_list_visits",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Every visit of the person (merged files)",
+            "in": "query",
+            "name": "patient_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Every visit of the person (merged files)",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "description": "Visits opened that day",
+            "in": "query",
+            "name": "day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Visits opened that day",
+              "title": "Day"
+            }
+          },
+          {
+            "in": "query",
+            "name": "department_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Department Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "doctor_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Doctor Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "closed",
+                    "cancelled"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_VisitOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Visits, newest first: of a patient, a day, a department or a doctor (paged)",
+        "tags": [
+          "visits"
+        ]
+      },
+      "post": {
+        "description": "A visit with the same doctor (or department) inside the follow-up window becomes a follow-up (free at 100% follow-up discount: no consultation line). 409 PATIENT_MERGED, DEPARTMENT_REQUIRED, DOCTOR_INACTIVE, COVERAGE_INVALID, CARD_NUMBER_REQUIRED, PAYER_CONTRACT_EXPIRED.",
+        "operationId": "visits_create_visit",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Open a visit with its consultation line and queue token",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/appointments": {
+      "post": {
+        "description": "409 APPOINTMENT_CONFLICT (details.appointments), OUTSIDE_SCHEDULE, INVALID_SLOT, APPOINTMENT_IN_PAST, PATIENT_OR_CONTACT_REQUIRED, DOCTOR_INACTIVE.",
+        "operationId": "visits_book_appointment",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Book a slot with a doctor (for a patient or a named caller)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/appointments/day": {
+      "get": {
+        "operationId": "visits_get_agenda",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "doctor_id",
+            "required": true,
+            "schema": {
+              "title": "Doctor Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Day",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DayAgendaOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A doctor's day: free slots still ahead and every appointment",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/appointments/upcoming": {
+      "get": {
+        "operationId": "visits_list_upcoming_appointments",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Booked appointments of a patient that have not ended yet",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/appointments/{appointment_id}": {
+      "patch": {
+        "operationId": "visits_update_appointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Edit a booking's notes or caller details",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/appointments/{appointment_id}/cancel": {
+      "post": {
+        "description": "409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED.",
+        "operationId": "visits_cancel_appointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentCancelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Cancel a booking with the caller's reason",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/appointments/{appointment_id}/check-in": {
+      "post": {
+        "description": "A booking for a caller without a file needs patient_id. 409 APPOINTMENT_NOT_BOOKED, PATIENT_REQUIRED, APPOINTMENT_PATIENT_MISMATCH and the create-visit errors.",
+        "operationId": "visits_check_in_appointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The patient arrived: open the visit from the booking",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/appointments/{appointment_id}/no-show": {
+      "post": {
+        "operationId": "visits_mark_appointment_no_show",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The patient did not come",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/appointments/{appointment_id}/reschedule": {
+      "post": {
+        "description": "409 APPOINTMENT_NOT_BOOKED, APPOINTMENT_CONFLICT, OUTSIDE_SCHEDULE.",
+        "operationId": "visits_reschedule_appointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Move a booking to another slot (the old one is kept as rescheduled)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/options": {
+      "get": {
+        "operationId": "visits_get_options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitOptionsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Departments, doctors, cancel reasons and the follow-up window",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
     "/api/visits/ping": {
       "get": {
         "operationId": "visits_get_ping",
@@ -1258,6 +6546,724 @@
           }
         ],
         "summary": "Check that the /api/visits router is reachable",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/queue/board": {
+      "get": {
+        "operationId": "visits_get_board",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "department_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Department Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "doctor_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Doctor Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_finished",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Finished",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QueueRowOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Today's tokens in serving order, paid or not (reception board)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/queue/call-next": {
+      "post": {
+        "description": "Emergencies first, then token order; unpaid tokens are skipped. 409 QUEUE_EMPTY.",
+        "operationId": "visits_call_next",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CallNextIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueRowOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Call the first paid waiting token of the department",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/queue/display": {
+      "get": {
+        "operationId": "visits_get_display",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "department_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Department Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitingRoomOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Waiting-room screen feed: paid tokens, abbreviated names",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/queue/{entry_id}/move": {
+      "post": {
+        "description": "409 QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY (fee neither paid nor authorized).",
+        "operationId": "visits_move_queue_entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "title": "Entry Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueMoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueRowOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Call, start, finish, mark no-show or requeue a token",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/queue/{entry_id}/token": {
+      "get": {
+        "operationId": "visits_get_token_slip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "title": "Entry Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenSlipOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "What the 80 mm queue token slip prints",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/{visit_id}": {
+      "get": {
+        "operationId": "visits_get_visit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A visit with its service line states (no prices) and its queue token",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/{visit_id}/cancel": {
+      "post": {
+        "description": "Open lines are cancelled; invoiced or paid lines get an approved credit note and the patient money becomes refundable credit (the actor needs billing.approve_credit_note then). 409 VISIT_NOT_OPEN, VISIT_HAS_PERFORMED_WORK, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
+        "operationId": "visits_cancel_visit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitCancelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Cancel an open visit with a reason (paid lines go through a credit note)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/{visit_id}/timeline": {
+      "get": {
+        "description": "Orders, results, dispenses, admission and closing for every reader; invoices, payments, credit notes and refunds only for holders of billing.view.",
+        "operationId": "visits_get_timeline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TimelineOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Everything linked to the visit, oldest first",
         "tags": [
           "visits"
         ]

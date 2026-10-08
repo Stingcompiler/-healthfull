@@ -1,4 +1,4 @@
-"""Schemas of ``/api/patients`` (ARCHITECTURE 4.11: ``<Thing>In``, ``<Thing>Out``, ``<Thing>Patch``).
+"""Schemas of ``/api/patients`` (ARCHITECTURE 4.11: ``<Thing>In``, ``<Thing>Out``, ``*Patch``).
 
 Money is serialized as decimal strings. Every field here is visible to holders of
 ``patients.view`` (all clinical and front-desk roles); the balance has its own permission

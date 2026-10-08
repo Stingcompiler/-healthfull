@@ -101,8 +101,10 @@ __all__ = [
     "cancel_appointment",
     "cancel_queue_entry",
     "cancel_visit",
+    "cancel_visit_view",
     "change_coverage",
     "charge_bed_days",
+    "check_in",
     "close_visit",
     "convert_appointment",
     "create_bed",
@@ -116,6 +118,7 @@ __all__ = [
     "mark_appointment_no_show",
     "mark_no_show",
     "move_entry",
+    "open_visit",
     "queue",
     "reassign_future_appointments",
     "requeue",
@@ -1317,6 +1320,7 @@ def visit_view(visit: Visit) -> VisitView:
     entry = (
         _entry_rows()
         .filter(visit=fresh)
+        .annotate(blocked=_unpaid_consultation())
         .exclude(status=QueueStatus.CANCELLED)
         .order_by("-queue_date", "-id")
         .first()
@@ -1494,7 +1498,7 @@ class TokenSlip:
 
 
 def token_slip(entry: QueueEntry) -> TokenSlip:
-    fresh = _entry_rows().get(pk=entry.pk)
+    fresh = board_row(entry.pk)
     same_day = QueueEntry.objects.filter(
         department_id=fresh.department_id,
         queue_date=fresh.queue_date,
@@ -1598,6 +1602,25 @@ def update_appointment(
             )
         locked.save(update_fields=fields)
     return locked
+
+
+def open_visit(*, patient: Patient, actor: User, **kwargs: Any) -> VisitView:
+    """:func:`create_visit`, returned as the reception screen shows it (:func:`visit_view`)."""
+    return visit_view(create_visit(patient=patient, actor=actor, **kwargs))
+
+
+def cancel_visit_view(visit: Visit, *, actor: User, reason_code: str, note: str = "") -> VisitView:
+    """:func:`cancel_visit` (the actor approves any credit note), returned as a view."""
+    return visit_view(cancel_visit(visit, actor=actor, reason_code=reason_code, note=note))
+
+
+def check_in(
+    appointment: Appointment, *, actor: User, patient: Patient | None = None, **visit_kwargs: Any
+) -> VisitView:
+    """The booked patient arrived (FEATURES 2.5): :func:`convert_appointment` as a view."""
+    return visit_view(
+        convert_appointment(appointment, actor=actor, patient=patient, **visit_kwargs)
+    )
 
 
 def upcoming_appointments(patient: Patient, *, now: datetime | None = None) -> list[Appointment]:

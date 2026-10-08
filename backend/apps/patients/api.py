@@ -94,6 +94,17 @@ def find_duplicates(request: HttpRequest, params: Query[DuplicateParams]) -> lis
     return services.find_duplicates(**params.dict())
 
 
+@patients_router.get(
+    "/payers",
+    response={200: list[PayerOut], **_READ},
+    operation_id="patients_list_payers",
+    summary="Active payers a coverage can be recorded with",
+)
+@require_perm("patients.view")
+def list_payers(request: HttpRequest) -> list[Any]:
+    return list(services.active_payers())
+
+
 @patients_router.post(
     "",
     response={201: PatientOut, **_WRITE},
@@ -134,7 +145,7 @@ def register_emergency(request: HttpRequest, payload: EmergencyIn) -> Status[Pat
 
 
 @patients_router.get(
-    "/{patient_id}",
+    "/{int:patient_id}",
     response={200: PatientProfileOut, **_READ},
     operation_id="patients_get_patient",
     summary="A patient file with its allergies and the file it was merged into",
@@ -145,7 +156,7 @@ def get_patient(request: HttpRequest, patient_id: int) -> Any:
 
 
 @patients_router.patch(
-    "/{patient_id}",
+    "/{int:patient_id}",
     response={200: PatientOut, **_WRITE},
     operation_id="patients_update_patient",
     summary="Edit a patient file (completes an emergency file)",
@@ -161,7 +172,7 @@ def update_patient(request: HttpRequest, patient_id: int, payload: PatientPatch)
 
 
 @patients_router.post(
-    "/{patient_id}/merge",
+    "/{int:patient_id}/merge",
     response={201: MergeOut, **_WRITE},
     operation_id="patients_merge_patient",
     summary="Merge a duplicate file into this one (supervisor, with a reason)",
@@ -183,7 +194,7 @@ def merge_patient(request: HttpRequest, patient_id: int, payload: MergeIn) -> St
 
 
 @patients_router.get(
-    "/{patient_id}/merges",
+    "/{int:patient_id}/merges",
     response={200: list[MergeOut], **_READ},
     operation_id="patients_list_merges",
     summary="Merges into or out of this file, newest first",
@@ -197,18 +208,7 @@ def list_merges(request: HttpRequest, patient_id: int) -> list[Any]:
 
 
 @patients_router.get(
-    "/payers",
-    response={200: list[PayerOut], **_READ},
-    operation_id="patients_list_payers",
-    summary="Active payers a coverage can be recorded with",
-)
-@require_perm("patients.view")
-def list_payers(request: HttpRequest) -> list[Any]:
-    return list(services.active_payers())
-
-
-@patients_router.get(
-    "/{patient_id}/coverages",
+    "/{int:patient_id}/coverages",
     response={200: list[CoverageOut], **_READ},
     operation_id="patients_list_coverages",
     summary="Coverages on file, the default first",
@@ -221,7 +221,7 @@ def list_coverages(
 
 
 @patients_router.post(
-    "/{patient_id}/coverages",
+    "/{int:patient_id}/coverages",
     response={201: CoverageOut, **_WRITE},
     operation_id="patients_create_coverage",
     summary="Record a payer on the patient's file",
@@ -233,12 +233,14 @@ def create_coverage(
 ) -> Status[PatientCoverage]:
     data = payload.dict()
     payer = get_object_or_404(Payer, pk=data.pop("payer_id"))
-    created = services.add_coverage(_patient(patient_id), payer=payer, actor=_actor(request), **data)
+    created = services.add_coverage(
+        _patient(patient_id), payer=payer, actor=_actor(request), **data
+    )
     return Status(201, created)
 
 
 @patients_router.patch(
-    "/coverages/{coverage_id}",
+    "/coverages/{int:coverage_id}",
     response={200: CoverageOut, **_WRITE},
     operation_id="patients_update_coverage",
     summary="Edit a coverage on file (card, validity, member share, default)",
@@ -254,7 +256,7 @@ def update_coverage(
 
 
 @patients_router.post(
-    "/coverages/{coverage_id}/end",
+    "/coverages/{int:coverage_id}/end",
     response={200: CoverageOut, **_WRITE},
     operation_id="patients_end_coverage",
     summary="End a coverage on file (kept in history)",
@@ -269,7 +271,7 @@ def end_coverage(request: HttpRequest, coverage_id: int) -> PatientCoverage:
 
 
 @patients_router.get(
-    "/{patient_id}/balance",
+    "/{int:patient_id}/balance",
     response={200: BalanceOut, **_READ},
     operation_id="patients_get_balance",
     summary="Patient credit, pending transfers and open invoices of the person",
