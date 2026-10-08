@@ -83,7 +83,8 @@ test.describe("@admin catalog and prices", () => {
     // Editing a price of a scheduled version.
     await page.getByTestId(`price-${serviceCode}`).fill("16000");
     await page.getByRole("button", { name: tr("en", "admin:prices.saveChanges") }).click();
-    await expect(page.getByText(tr("en", "admin:prices.saved")).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: tr("en", "admin:prices.saveChanges") })).toBeHidden();
+    await expect(page.getByTestId(`price-${serviceCode}`)).toHaveValue("16000.00");
     await page.getByTestId(`price-${serviceCode}`).fill("15000");
     await page.getByRole("button", { name: tr("en", "admin:prices.saveChanges") }).click();
     await expect(page.getByTestId(`price-${serviceCode}`)).toHaveValue("15000.00");

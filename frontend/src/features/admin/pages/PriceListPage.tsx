@@ -276,15 +276,17 @@ function VersionItems({ version }: { version: VersionOut }) {
   const draftsValue = useMemo(() => ({ drafts, setDraft, setDrafts, editable }), [drafts, setDraft, editable]);
 
   const submit = async () => {
+    const sent = new Map(drafts);
     try {
       await save.mutateAsync({
         versionId: version.id,
-        items: [...drafts.entries()].map(([service_id, price]) => ({
+        items: [...sent.entries()].map(([service_id, price]) => ({
           service_id,
           unit_price: price === null ? null : price.trim(),
         })),
       });
-      setDrafts(new Map());
+      // Keep what was typed while saving; drop only the drafts that were saved.
+      setDrafts((current) => new Map([...current].filter(([id, value]) => sent.get(id) !== value)));
       toast.success(t("prices.saved"));
     } catch (e) {
       toast.error(translateError(e));

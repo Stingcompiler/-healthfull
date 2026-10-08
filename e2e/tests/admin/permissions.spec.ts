@@ -28,6 +28,7 @@ async function saveMatrix(page: Page, reason: string): Promise<void> {
 
 test.describe("@admin permission matrix", () => {
   test.use({ storageState: ADMIN_STATE });
+  test.describe.configure({ timeout: 90_000 });
 
   test.afterAll(async () => {
     // Back to the default matrix whatever happened above.

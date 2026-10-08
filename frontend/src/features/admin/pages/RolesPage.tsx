@@ -162,8 +162,8 @@ export function RolesPage() {
         onSubmit={async (values) => {
           await save.mutateAsync({ changes, reason: values.reason });
           toast.success(t("roles.saved"));
-          setPending(new Map());
           setConfirming(false);
+          setPending(new Map());
           form.reset();
         }}
       >
