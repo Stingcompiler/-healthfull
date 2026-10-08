@@ -198,9 +198,7 @@ def test_manage_users_alone_cannot_grant_admin_or_elevate_self(admin: User, make
     assert response.json()["roles"] == ["doctor", "nurse"]
 
 
-def test_manage_users_alone_cannot_take_over_an_administrator(
-    admin: User, make_user: Any
-) -> None:
+def test_manage_users_alone_cannot_take_over_an_administrator(admin: User, make_user: Any) -> None:
     """Reset, unlock and (de)activate of an account holding admin rights need manage_roles."""
     manager, api = _manager_with_manage_users(make_user)
     make_user("boss2", roles=["admin"])  # a second admin, so LAST_ADMIN never applies
@@ -211,9 +209,7 @@ def test_manage_users_alone_cannot_take_over_an_administrator(
 
     for target in (admin, peer):
         for response in (
-            api.post(
-                f"/api/core/users/{target.pk}/reset-password", {"new_password": NEW_PASSWORD}
-            ),
+            api.post(f"/api/core/users/{target.pk}/reset-password", {"new_password": NEW_PASSWORD}),
             api.post(f"/api/core/users/{target.pk}/unlock", {"reason": "Called the desk"}),
             api.patch(f"/api/core/users/{target.pk}", {"is_active": False}),
         ):
