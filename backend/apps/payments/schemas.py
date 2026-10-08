@@ -13,13 +13,13 @@ from ninja import Field, Schema
 
 from apps.billing.schemas import (
     ApproverIn,
-    CenterOut,
+    BillingCenterOut,
+    BillingReasonOut,
+    BillingUserRefOut,
     MoneyIn,
     MoneyStr,
     NameOut,
     PatientSummaryOut,
-    ReasonOut,
-    UserRefOut,
 )
 
 PaymentMethodCode = Literal["cash", "bank_transfer", "qr", "card", "patient_credit"]
@@ -35,7 +35,7 @@ ReviewOutcomeCode = Literal["approved", "flagged"]
 class ShiftReviewOut(Schema):
     outcome: ReviewOutcomeCode
     note: str
-    reviewed_by: UserRefOut | None
+    reviewed_by: BillingUserRefOut | None
     reviewed_at: datetime
 
 
@@ -43,16 +43,16 @@ class ShiftOut(Schema):
     id: int
     number: str
     status: Literal["open", "closed"]
-    cashier: UserRefOut
+    cashier: BillingUserRefOut
     till: NameOut | None
     opened_at: datetime
     opening_float: MoneyStr
     closed_at: datetime | None
-    closed_by: UserRefOut | None
+    closed_by: BillingUserRefOut | None
     expected_cash: MoneyStr = Field(..., description="Live while open, frozen at close")
     counted_cash: MoneyStr | None
     variance: MoneyStr | None
-    variance_reason: ReasonOut | None
+    variance_reason: BillingReasonOut | None
     variance_note: str
     review: ShiftReviewOut | None
 
@@ -84,12 +84,12 @@ class ReportTransferOut(Schema):
 
 
 class ApproverTotalOut(Schema):
-    user: UserRefOut | None
+    user: BillingUserRefOut | None
     amount: MoneyStr
 
 
 class ReasonTotalOut(Schema):
-    reason: ReasonOut | None
+    reason: BillingReasonOut | None
     code: str
     count: int
     amount: MoneyStr
@@ -103,14 +103,14 @@ class HandoverOut(Schema):
     destination: HandoverDestinationCode
     to_shift_id: int | None
     to_shift_number: str | None
-    to_user: UserRefOut | None
+    to_user: BillingUserRefOut | None
     amount: MoneyStr
     bank_reference: str
-    handed_by: UserRefOut | None
+    handed_by: BillingUserRefOut | None
     handed_at: datetime
-    received_by: UserRefOut | None
+    received_by: BillingUserRefOut | None
     received_at: datetime | None
-    cancelled_by: UserRefOut | None
+    cancelled_by: BillingUserRefOut | None
     cancelled_at: datetime | None
     cancel_note: str
     note: str
@@ -232,19 +232,19 @@ class PaymentOut(Schema):
     transfer_date: date | None
     sender_name: str
     verification: VerificationCode
-    verified_by: UserRefOut | None
+    verified_by: BillingUserRefOut | None
     verified_at: datetime | None
-    rejection_reason: ReasonOut | None
+    rejection_reason: BillingReasonOut | None
     rejection_note: str
     duplicate_override: bool
     duplicate_of_number: str | None
-    override_by: UserRefOut | None
-    override_reason: ReasonOut | None
+    override_by: BillingUserRefOut | None
+    override_reason: BillingReasonOut | None
     override_note: str
     reversal_of_number: str | None
     reversal_number: str | None
     note: str
-    created_by: UserRefOut | None
+    created_by: BillingUserRefOut | None
     created_at: datetime
     age_days: int
     allocations: list[AllocationOut]
@@ -257,7 +257,7 @@ class RejectionOut(Schema):
     uncovered: MoneyStr
 
 
-class ConfirmIn(Schema):
+class TransferConfirmIn(Schema):
     note: str = Field(..., min_length=1, max_length=1000, description="What was checked")
 
 
@@ -301,10 +301,10 @@ class ReceiptCheckOut(Schema):
 
 
 class ReceiptOut(Schema):
-    center: CenterOut
+    center: BillingCenterOut
     payment: PaymentOut
     invoices: list[ReceiptInvoiceOut]
-    cashier: UserRefOut | None
+    cashier: BillingUserRefOut | None
     verify_code: str = Field(..., description="Encoded in the receipt's QR (FEATURES 6.9)")
 
 
@@ -313,7 +313,7 @@ class ReceiptOut(Schema):
 
 class TransferOut(Schema):
     payment: PaymentOut
-    cashier: UserRefOut | None
+    cashier: BillingUserRefOut | None
 
 
 # --- refunds ---------------------------------------------------------------------------------
@@ -339,16 +339,16 @@ class RefundOut(Schema):
     method: str
     credit_note_id: int | None
     credit_note_number: str | None
-    reason: ReasonOut | None
+    reason: BillingReasonOut | None
     reason_note: str
     status: RefundStatusCode
-    requested_by: UserRefOut | None
+    requested_by: BillingUserRefOut | None
     requested_at: datetime
-    decided_by: UserRefOut | None
+    decided_by: BillingUserRefOut | None
     decided_at: datetime | None
     decision_note: str
     shift_number: str | None
-    paid_by: UserRefOut | None
+    paid_by: BillingUserRefOut | None
     paid_at: datetime | None
 
 
@@ -371,5 +371,5 @@ class HandoverCancelIn(Schema):
 class OpenShiftRefOut(Schema):
     id: int
     number: str
-    cashier: UserRefOut
+    cashier: BillingUserRefOut
     opened_at: datetime

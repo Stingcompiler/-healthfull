@@ -18,11 +18,11 @@ from api.pagination import PageParams
 from api.permissions import require_perm
 from api.schemas import ERROR_RESPONSES, ErrorOut, Page
 from apps.billing.schemas import (
+    BillingReasonOut,
+    BillingUserRefOut,
     LineState,
     PatientSummaryOut,
-    ReasonOut,
     ServiceRefOut,
-    UserRefOut,
     VisitRefOut,
 )
 from apps.core.models import User
@@ -70,13 +70,13 @@ class AuthorizationOut(Schema):
     visit_number: str
     patient: PatientSummaryOut
     kind: AuthorizationKindCode
-    reason: ReasonOut | None
+    reason: BillingReasonOut | None
     reason_note: str
     approval_reference: str
-    requested_by: UserRefOut | None
-    authorized_by: UserRefOut | None
+    requested_by: BillingUserRefOut | None
+    authorized_by: BillingUserRefOut | None
     authorized_at: datetime
-    revoked_by: UserRefOut | None
+    revoked_by: BillingUserRefOut | None
     revoked_at: datetime | None
     revoke_note: str
     lines: list[AuthorizableLineOut]

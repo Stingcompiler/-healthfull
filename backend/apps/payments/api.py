@@ -18,14 +18,13 @@ from api.pagination import PageParams
 from api.permissions import require_perm
 from api.ping import add_ping
 from api.schemas import ERROR_RESPONSES, ErrorOut, Page
-from apps.billing.schemas import NameOut, UserRefOut
+from apps.billing.schemas import BillingUserRefOut, NameOut
 from apps.core.models import User
 from apps.payments import desk, queries
 from apps.payments.approvals import ApproverLogin
 from apps.payments.schemas import (
     AllocateIn,
     AllocationIn,
-    ConfirmIn,
     CurrentShiftOut,
     DecisionIn,
     HandoverCancelIn,
@@ -46,6 +45,7 @@ from apps.payments.schemas import (
     ShiftOpenIn,
     ShiftReportOut,
     ShiftReviewIn,
+    TransferConfirmIn,
     TransferOut,
     VerificationCode,
 )
@@ -161,7 +161,7 @@ def handover_targets(request: HttpRequest) -> Any:
 
 @payments_router.get(
     "/handover-receivers",
-    response={200: list[UserRefOut], **_READ},
+    response={200: list[BillingUserRefOut], **_READ},
     operation_id="payments_list_handover_receivers",
     summary="The supervisors and accountants who can receive cash handed over by the user",
 )
@@ -382,7 +382,7 @@ def list_transfers(
     summary="Confirm a pending transfer, saying what was checked",
 )
 @require_perm("payments.confirm_transfer")
-def confirm_transfer(request: HttpRequest, payment_id: int, payload: ConfirmIn) -> Any:
+def confirm_transfer(request: HttpRequest, payment_id: int, payload: TransferConfirmIn) -> Any:
     return desk.confirm_transfer(payment_id, actor=_user(request), note=payload.note)
 
 

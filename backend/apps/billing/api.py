@@ -19,6 +19,7 @@ from api.ping import add_ping
 from api.schemas import ERROR_RESPONSES, ErrorOut, Page
 from apps.billing import desk, queries
 from apps.billing.schemas import (
+    BillingReasonOut,
     CreditNoteApproveIn,
     CreditNoteIn,
     CreditNoteOut,
@@ -33,7 +34,6 @@ from apps.billing.schemas import (
     LookupOut,
     PreApprovalIn,
     ReasonCategoryCode,
-    ReasonOut,
     ServiceLineOut,
     VisitBillingOut,
     VoidIn,
@@ -116,7 +116,7 @@ def set_line_payer(request: HttpRequest, service_line_id: int, payload: LinePaye
 
 @billing_router.get(
     "/reasons",
-    response={200: list[ReasonOut], **_READ},
+    response={200: list[BillingReasonOut], **_READ},
     operation_id="billing_list_reasons",
     summary="Active reasons of one cashier list (discount, credit note, variance, ...)",
 )

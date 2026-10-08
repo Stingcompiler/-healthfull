@@ -475,7 +475,7 @@
           "user": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -559,7 +559,7 @@
           "authorized_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -593,7 +593,7 @@
           "reason": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReasonOut"
+                "$ref": "#/components/schemas/BillingReasonOut"
               },
               {
                 "type": "null"
@@ -607,7 +607,7 @@
           "requested_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -633,7 +633,7 @@
           "revoked_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -717,6 +717,53 @@
         "type": "object"
       },
       "BalanceOut": {
+        "description": "The person's money position (FEATURES 1.5); decimal strings in SDG.",
+        "properties": {
+          "credit": {
+            "description": "Patient credit (negative: the patient owes it)",
+            "title": "Credit",
+            "type": "string"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/OpenInvoiceOut"
+            },
+            "title": "Invoices",
+            "type": "array"
+          },
+          "net": {
+            "description": "outstanding - credit; positive: the patient owes",
+            "title": "Net",
+            "type": "string"
+          },
+          "outstanding": {
+            "description": "Patient share still owed on approved invoices",
+            "title": "Outstanding",
+            "type": "string"
+          },
+          "pending": {
+            "description": "Unallocated transfer money awaiting verification",
+            "title": "Pending",
+            "type": "string"
+          },
+          "spendable": {
+            "description": "Credit that may be spent or refunded now",
+            "title": "Spendable",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credit",
+          "spendable",
+          "pending",
+          "outstanding",
+          "net",
+          "invoices"
+        ],
+        "title": "BalanceOut",
+        "type": "object"
+      },
+      "BillingBalanceOut": {
         "description": "The person's money position (FEATURES 1.5), every merged file included.",
         "properties": {
           "credit": {
@@ -762,7 +809,133 @@
           "pending",
           "outstanding"
         ],
-        "title": "BalanceOut",
+        "title": "BillingBalanceOut",
+        "type": "object"
+      },
+      "BillingCenterOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "registration_no": {
+            "title": "Registration No",
+            "type": "string"
+          },
+          "tax_no": {
+            "title": "Tax No",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name_ar",
+          "name_en",
+          "address",
+          "phone",
+          "registration_no",
+          "tax_no"
+        ],
+        "title": "BillingCenterOut",
+        "type": "object"
+      },
+      "BillingOpenInvoiceOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "outstanding": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Outstanding",
+            "type": "string"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "visit_id",
+          "outstanding"
+        ],
+        "title": "BillingOpenInvoiceOut",
+        "type": "object"
+      },
+      "BillingReasonOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "requires_note": {
+            "title": "Requires Note",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "label_ar",
+          "label_en",
+          "requires_note"
+        ],
+        "title": "BillingReasonOut",
+        "type": "object"
+      },
+      "BillingUserRefOut": {
+        "properties": {
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "BillingUserRefOut",
         "type": "object"
       },
       "BoardParams": {
@@ -1147,10 +1320,6 @@
       },
       "CenterOut": {
         "properties": {
-          "address": {
-            "title": "Address",
-            "type": "string"
-          },
           "name_ar": {
             "title": "Name Ar",
             "type": "string"
@@ -1162,23 +1331,12 @@
           "phone": {
             "title": "Phone",
             "type": "string"
-          },
-          "registration_no": {
-            "title": "Registration No",
-            "type": "string"
-          },
-          "tax_no": {
-            "title": "Tax No",
-            "type": "string"
           }
         },
         "required": [
           "name_ar",
           "name_en",
-          "address",
-          "phone",
-          "registration_no",
-          "tax_no"
+          "phone"
         ],
         "title": "CenterOut",
         "type": "object"
@@ -2424,7 +2582,7 @@
           "approved_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -2439,7 +2597,7 @@
           "created_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -2519,7 +2677,7 @@
             "type": "string"
           },
           "reason": {
-            "$ref": "#/components/schemas/ReasonOut"
+            "$ref": "#/components/schemas/BillingReasonOut"
           },
           "reason_note": {
             "title": "Reason Note",
@@ -3673,7 +3831,7 @@
           "cancelled_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -3698,7 +3856,7 @@
           "handed_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -3732,7 +3890,7 @@
           "received_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -3772,7 +3930,7 @@
           "to_user": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -4131,7 +4289,7 @@
           "discount_approved_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -4156,7 +4314,7 @@
           "discount_reason": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReasonOut"
+                "$ref": "#/components/schemas/BillingReasonOut"
               },
               {
                 "type": "null"
@@ -4309,7 +4467,7 @@
           "approved_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -4324,7 +4482,7 @@
           "created_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -4528,7 +4686,7 @@
       "InvoicePrintOut": {
         "properties": {
           "center": {
-            "$ref": "#/components/schemas/CenterOut"
+            "$ref": "#/components/schemas/BillingCenterOut"
           },
           "invoice": {
             "$ref": "#/components/schemas/InvoiceOut"
@@ -4693,7 +4851,7 @@
       "LookupPatientOut": {
         "properties": {
           "balance": {
-            "$ref": "#/components/schemas/BalanceOut"
+            "$ref": "#/components/schemas/BillingBalanceOut"
           },
           "patient": {
             "$ref": "#/components/schemas/PatientSummaryOut"
@@ -4734,7 +4892,7 @@
           "doctor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -5141,8 +5299,8 @@
       },
       "OpenInvoiceOut": {
         "properties": {
-          "id": {
-            "title": "Id",
+          "invoice_id": {
+            "title": "Invoice Id",
             "type": "integer"
           },
           "number": {
@@ -5150,22 +5308,13 @@
             "type": "string"
           },
           "outstanding": {
-            "examples": [
-              "15000.00"
-            ],
-            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
             "title": "Outstanding",
             "type": "string"
-          },
-          "visit_id": {
-            "title": "Visit Id",
-            "type": "integer"
           }
         },
         "required": [
-          "id",
+          "invoice_id",
           "number",
-          "visit_id",
           "outstanding"
         ],
         "title": "OpenInvoiceOut",
@@ -5174,7 +5323,7 @@
       "OpenShiftRefOut": {
         "properties": {
           "cashier": {
-            "$ref": "#/components/schemas/UserRefOut"
+            "$ref": "#/components/schemas/BillingUserRefOut"
           },
           "id": {
             "title": "Id",
@@ -7310,7 +7459,7 @@
           "created_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -7358,7 +7507,7 @@
           "override_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -7372,7 +7521,7 @@
           "override_reason": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReasonOut"
+                "$ref": "#/components/schemas/BillingReasonOut"
               },
               {
                 "type": "null"
@@ -7393,7 +7542,7 @@
           "rejection_reason": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReasonOut"
+                "$ref": "#/components/schemas/BillingReasonOut"
               },
               {
                 "type": "null"
@@ -7482,7 +7631,7 @@
           "verified_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -8762,7 +8911,7 @@
           "reason": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReasonOut"
+                "$ref": "#/components/schemas/BillingReasonOut"
               },
               {
                 "type": "null"
@@ -8927,7 +9076,7 @@
           "cashier": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -8935,7 +9084,7 @@
             ]
           },
           "center": {
-            "$ref": "#/components/schemas/CenterOut"
+            "$ref": "#/components/schemas/BillingCenterOut"
           },
           "invoices": {
             "items": {
@@ -9059,7 +9208,7 @@
           "decided_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -9097,7 +9246,7 @@
           "paid_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -9110,7 +9259,7 @@
           "reason": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReasonOut"
+                "$ref": "#/components/schemas/BillingReasonOut"
               },
               {
                 "type": "null"
@@ -9129,7 +9278,7 @@
           "requested_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -10476,7 +10625,7 @@
       "ShiftOut": {
         "properties": {
           "cashier": {
-            "$ref": "#/components/schemas/UserRefOut"
+            "$ref": "#/components/schemas/BillingUserRefOut"
           },
           "closed_at": {
             "anyOf": [
@@ -10493,7 +10642,7 @@
           "closed_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -10595,7 +10744,7 @@
           "variance_reason": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReasonOut"
+                "$ref": "#/components/schemas/BillingReasonOut"
               },
               {
                 "type": "null"
@@ -10837,7 +10986,7 @@
           "reviewed_by": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -10933,12 +11082,28 @@
         "title": "TokenSlipOut",
         "type": "object"
       },
+      "TransferConfirmIn": {
+        "properties": {
+          "note": {
+            "description": "What was checked",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "TransferConfirmIn",
+        "type": "object"
+      },
       "TransferOut": {
         "properties": {
           "cashier": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -11511,7 +11676,7 @@
         "description": "Everything the billing panel shows for one visit (FLOW step 4).",
         "properties": {
           "balance": {
-            "$ref": "#/components/schemas/BalanceOut"
+            "$ref": "#/components/schemas/BillingBalanceOut"
           },
           "drafts": {
             "items": {
@@ -11530,7 +11695,7 @@
           "open_invoices": {
             "description": "Person-wide, oldest first",
             "items": {
-              "$ref": "#/components/schemas/OpenInvoiceOut"
+              "$ref": "#/components/schemas/BillingOpenInvoiceOut"
             },
             "title": "Open Invoices",
             "type": "array"
@@ -12037,7 +12202,7 @@
           "doctor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UserRefOut"
+                "$ref": "#/components/schemas/BillingUserRefOut"
               },
               {
                 "type": "null"
@@ -14105,7 +14270,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/ReasonOut"
+                    "$ref": "#/components/schemas/BillingReasonOut"
                   },
                   "title": "Response",
                   "type": "array"
@@ -22747,7 +22912,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/UserRefOut"
+                    "$ref": "#/components/schemas/BillingUserRefOut"
                   },
                   "title": "Response",
                   "type": "array"
@@ -23312,7 +23477,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmIn"
+                "$ref": "#/components/schemas/TransferConfirmIn"
               }
             }
           },

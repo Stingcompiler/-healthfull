@@ -4,10 +4,10 @@ import type { components } from "@/lib/api/schema";
 type S = components["schemas"];
 
 export type NameRef = S["NameOut"];
-export type UserRef = S["UserRefOut"];
-export type Reason = S["ReasonOut"];
+export type UserRef = S["BillingUserRefOut"];
+export type Reason = S["BillingReasonOut"];
 export type PatientSummary = S["PatientSummaryOut"];
-export type Balance = S["BalanceOut"];
+export type Balance = S["BillingBalanceOut"];
 export type LookupResult = S["LookupOut"];
 export type LookupPatient = S["LookupPatientOut"];
 export type LookupVisit = S["LookupVisitOut"];
@@ -43,7 +43,7 @@ export type PerformFirstVisit = S["PerformFirstVisitOut"];
 export type AuthorizableLine = S["AuthorizableLineOut"];
 export type Authorization = S["AuthorizationOut"];
 export type AuthorizeIn = S["AuthorizeIn"];
-export type Center = S["CenterOut"];
+export type Center = S["BillingCenterOut"];
 
 export type PaymentMethod = PaymentIn["method"];
 export type ReasonCategory =

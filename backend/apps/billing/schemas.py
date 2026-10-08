@@ -45,14 +45,14 @@ class ServiceRefOut(NameOut):
     kind: str
 
 
-class UserRefOut(Schema):
+class BillingUserRefOut(Schema):
     id: int
     username: str
     full_name_ar: str
     full_name_en: str
 
 
-class ReasonOut(Schema):
+class BillingReasonOut(Schema):
     code: str
     label_ar: str
     label_en: str
@@ -71,7 +71,7 @@ class PatientSummaryOut(Schema):
     merged_into_id: int | None
 
 
-class BalanceOut(Schema):
+class BillingBalanceOut(Schema):
     """The person's money position (FEATURES 1.5), every merged file included."""
 
     credit: MoneyStr = Field(..., description="Pooled patient credit; negative when owed")
@@ -80,7 +80,7 @@ class BalanceOut(Schema):
     outstanding: MoneyStr = Field(..., description="Patient money still owed on invoices")
 
 
-class OpenInvoiceOut(Schema):
+class BillingOpenInvoiceOut(Schema):
     id: int
     number: str
     visit_id: int
@@ -104,7 +104,7 @@ class LookupVisitOut(Schema):
     status: str
     created_at: datetime
     department: NameOut | None
-    doctor: UserRefOut | None
+    doctor: BillingUserRefOut | None
     payer: NameOut | None
     unbilled_count: int
     draft_invoice_count: int
@@ -114,7 +114,7 @@ class LookupVisitOut(Schema):
 class LookupPatientOut(Schema):
     patient: PatientSummaryOut
     visits: list[LookupVisitOut]
-    balance: BalanceOut
+    balance: BillingBalanceOut
 
 
 class LookupOut(Schema):
@@ -153,9 +153,9 @@ class InvoiceLineOut(Schema):
     gross: MoneyStr
     discount: MoneyStr
     discount_percent: str | None
-    discount_reason: ReasonOut | None
+    discount_reason: BillingReasonOut | None
     discount_note: str
-    discount_approved_by: UserRefOut | None
+    discount_approved_by: BillingUserRefOut | None
     payer: NameOut | None
     payer_share: MoneyStr
     patient_share: MoneyStr
@@ -195,9 +195,9 @@ class InvoiceOut(Schema):
     patient: PatientSummaryOut
     priced_on: date | None
     created_at: datetime
-    created_by: UserRefOut | None
+    created_by: BillingUserRefOut | None
     approved_at: datetime | None
-    approved_by: UserRefOut | None
+    approved_by: BillingUserRefOut | None
     gross_total: MoneyStr
     discount_total: MoneyStr
     payer_total: MoneyStr
@@ -216,7 +216,7 @@ class VisitRefOut(Schema):
     status: str
     created_at: datetime
     department: NameOut | None
-    doctor: UserRefOut | None
+    doctor: BillingUserRefOut | None
     payer: NameOut | None
     card_number: str
 
@@ -230,8 +230,8 @@ class VisitBillingOut(Schema):
     unbilled: list[ServiceLineOut]
     drafts: list[InvoiceOut]
     invoices: list[InvoiceOut]
-    balance: BalanceOut
-    open_invoices: list[OpenInvoiceOut] = Field(..., description="Person-wide, oldest first")
+    balance: BillingBalanceOut
+    open_invoices: list[BillingOpenInvoiceOut] = Field(..., description="Person-wide, oldest first")
 
 
 class InvoiceCreateIn(Schema):
@@ -313,11 +313,11 @@ class CreditNoteOut(Schema):
     invoice_id: int
     invoice_number: str | None
     patient: PatientSummaryOut
-    reason: ReasonOut
+    reason: BillingReasonOut
     reason_note: str
-    created_by: UserRefOut | None
+    created_by: BillingUserRefOut | None
     created_at: datetime
-    approved_by: UserRefOut | None
+    approved_by: BillingUserRefOut | None
     approved_at: datetime | None
     gross_total: MoneyStr
     discount_total: MoneyStr
@@ -336,7 +336,7 @@ class CreditOutcomeOut(Schema):
     replacement_line_ids: list[int]
 
 
-class CenterOut(Schema):
+class BillingCenterOut(Schema):
     name_ar: str
     name_en: str
     address: str
@@ -346,5 +346,5 @@ class CenterOut(Schema):
 
 
 class InvoicePrintOut(Schema):
-    center: CenterOut
+    center: BillingCenterOut
     invoice: InvoiceOut

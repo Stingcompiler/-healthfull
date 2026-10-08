@@ -2814,7 +2814,7 @@ export interface components {
              * @example 15000.00
              */
             amount: string;
-            user: components["schemas"]["UserRefOut"] | null;
+            user: components["schemas"]["BillingUserRefOut"] | null;
         };
         /** AuthorizableLineOut */
         AuthorizableLineOut: {
@@ -2849,7 +2849,7 @@ export interface components {
              * Format: date-time
              */
             authorized_at: string;
-            authorized_by: components["schemas"]["UserRefOut"] | null;
+            authorized_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Id */
             id: number;
             /**
@@ -2860,15 +2860,15 @@ export interface components {
             /** Lines */
             lines: components["schemas"]["AuthorizableLineOut"][];
             patient: components["schemas"]["PatientSummaryOut"];
-            reason: components["schemas"]["ReasonOut"] | null;
+            reason: components["schemas"]["BillingReasonOut"] | null;
             /** Reason Note */
             reason_note: string;
-            requested_by: components["schemas"]["UserRefOut"] | null;
+            requested_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Revoke Note */
             revoke_note: string;
             /** Revoked At */
             revoked_at: string | null;
-            revoked_by: components["schemas"]["UserRefOut"] | null;
+            revoked_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Visit Id */
             visit_id: number;
             /** Visit Number */
@@ -2899,9 +2899,42 @@ export interface components {
         };
         /**
          * BalanceOut
-         * @description The person's money position (FEATURES 1.5), every merged file included.
+         * @description The person's money position (FEATURES 1.5); decimal strings in SDG.
          */
         BalanceOut: {
+            /**
+             * Credit
+             * @description Patient credit (negative: the patient owes it)
+             */
+            credit: string;
+            /** Invoices */
+            invoices: components["schemas"]["OpenInvoiceOut"][];
+            /**
+             * Net
+             * @description outstanding - credit; positive: the patient owes
+             */
+            net: string;
+            /**
+             * Outstanding
+             * @description Patient share still owed on approved invoices
+             */
+            outstanding: string;
+            /**
+             * Pending
+             * @description Unallocated transfer money awaiting verification
+             */
+            pending: string;
+            /**
+             * Spendable
+             * @description Credit that may be spent or refunded now
+             */
+            spendable: string;
+        };
+        /**
+         * BillingBalanceOut
+         * @description The person's money position (FEATURES 1.5), every merged file included.
+         */
+        BillingBalanceOut: {
             /**
              * Credit
              * @description Pooled patient credit; negative when owed
@@ -2926,6 +2959,57 @@ export interface components {
              * @example 15000.00
              */
             spendable: string;
+        };
+        /** BillingCenterOut */
+        BillingCenterOut: {
+            /** Address */
+            address: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+            /** Registration No */
+            registration_no: string;
+            /** Tax No */
+            tax_no: string;
+        };
+        /** BillingOpenInvoiceOut */
+        BillingOpenInvoiceOut: {
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /** Visit Id */
+            visit_id: number;
+        };
+        /** BillingReasonOut */
+        BillingReasonOut: {
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Requires Note */
+            requires_note: boolean;
+        };
+        /** BillingUserRefOut */
+        BillingUserRefOut: {
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
         };
         /** BoardParams */
         BoardParams: {
@@ -3078,18 +3162,12 @@ export interface components {
         };
         /** CenterOut */
         CenterOut: {
-            /** Address */
-            address: string;
             /** Name Ar */
             name_ar: string;
             /** Name En */
             name_en: string;
             /** Phone */
             phone: string;
-            /** Registration No */
-            registration_no: string;
-            /** Tax No */
-            tax_no: string;
         };
         /** CenterProfileIn */
         CenterProfileIn: {
@@ -3542,13 +3620,13 @@ export interface components {
         CreditNoteOut: {
             /** Approved At */
             approved_at: string | null;
-            approved_by: components["schemas"]["UserRefOut"] | null;
+            approved_by: components["schemas"]["BillingUserRefOut"] | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            created_by: components["schemas"]["UserRefOut"] | null;
+            created_by: components["schemas"]["BillingUserRefOut"] | null;
             /**
              * Discount Total
              * @example 15000.00
@@ -3580,7 +3658,7 @@ export interface components {
              * @example 15000.00
              */
             payer_total: string;
-            reason: components["schemas"]["ReasonOut"];
+            reason: components["schemas"]["BillingReasonOut"];
             /** Reason Note */
             reason_note: string;
             /**
@@ -3995,7 +4073,7 @@ export interface components {
             cancel_note: string;
             /** Cancelled At */
             cancelled_at: string | null;
-            cancelled_by: components["schemas"]["UserRefOut"] | null;
+            cancelled_by: components["schemas"]["BillingUserRefOut"] | null;
             /**
              * Destination
              * @enum {string}
@@ -4006,7 +4084,7 @@ export interface components {
              * Format: date-time
              */
             handed_at: string;
-            handed_by: components["schemas"]["UserRefOut"] | null;
+            handed_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Id */
             id: number;
             /** Note */
@@ -4015,7 +4093,7 @@ export interface components {
             number: string;
             /** Received At */
             received_at: string | null;
-            received_by: components["schemas"]["UserRefOut"] | null;
+            received_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Shift Id */
             shift_id: number;
             /** Shift Number */
@@ -4024,7 +4102,7 @@ export interface components {
             to_shift_id: number | null;
             /** To Shift Number */
             to_shift_number: string | null;
-            to_user: components["schemas"]["UserRefOut"] | null;
+            to_user: components["schemas"]["BillingUserRefOut"] | null;
         };
         /** HealthOut */
         HealthOut: {
@@ -4187,12 +4265,12 @@ export interface components {
              * @example 15000.00
              */
             discount: string;
-            discount_approved_by: components["schemas"]["UserRefOut"] | null;
+            discount_approved_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Discount Note */
             discount_note: string;
             /** Discount Percent */
             discount_percent: string | null;
-            discount_reason: components["schemas"]["ReasonOut"] | null;
+            discount_reason: components["schemas"]["BillingReasonOut"] | null;
             /** Excluded */
             excluded: boolean;
             /**
@@ -4244,13 +4322,13 @@ export interface components {
         InvoiceOut: {
             /** Approved At */
             approved_at: string | null;
-            approved_by: components["schemas"]["UserRefOut"] | null;
+            approved_by: components["schemas"]["BillingUserRefOut"] | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            created_by: components["schemas"]["UserRefOut"] | null;
+            created_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Credit Notes */
             credit_notes: components["schemas"]["CreditNoteRefOut"][];
             /**
@@ -4319,7 +4397,7 @@ export interface components {
         };
         /** InvoicePrintOut */
         InvoicePrintOut: {
-            center: components["schemas"]["CenterOut"];
+            center: components["schemas"]["BillingCenterOut"];
             invoice: components["schemas"]["InvoiceOut"];
         };
         /** LineCancelIn */
@@ -4386,7 +4464,7 @@ export interface components {
         };
         /** LookupPatientOut */
         LookupPatientOut: {
-            balance: components["schemas"]["BalanceOut"];
+            balance: components["schemas"]["BillingBalanceOut"];
             patient: components["schemas"]["PatientSummaryOut"];
             /** Visits */
             visits: components["schemas"]["LookupVisitOut"][];
@@ -4399,7 +4477,7 @@ export interface components {
              */
             created_at: string;
             department: components["schemas"]["NameOut"] | null;
-            doctor: components["schemas"]["UserRefOut"] | null;
+            doctor: components["schemas"]["BillingUserRefOut"] | null;
             /** Draft Invoice Count */
             draft_invoice_count: number;
             /** Id */
@@ -4568,21 +4646,16 @@ export interface components {
         };
         /** OpenInvoiceOut */
         OpenInvoiceOut: {
-            /** Id */
-            id: number;
+            /** Invoice Id */
+            invoice_id: number;
             /** Number */
             number: string;
-            /**
-             * Outstanding
-             * @example 15000.00
-             */
+            /** Outstanding */
             outstanding: string;
-            /** Visit Id */
-            visit_id: number;
         };
         /** OpenShiftRefOut */
         OpenShiftRefOut: {
-            cashier: components["schemas"]["UserRefOut"];
+            cashier: components["schemas"]["BillingUserRefOut"];
             /** Id */
             id: number;
             /** Number */
@@ -5391,7 +5464,7 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
-            created_by: components["schemas"]["UserRefOut"] | null;
+            created_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Duplicate Of Number */
             duplicate_of_number: string | null;
             /** Duplicate Override */
@@ -5407,16 +5480,16 @@ export interface components {
             note: string;
             /** Number */
             number: string;
-            override_by: components["schemas"]["UserRefOut"] | null;
+            override_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Override Note */
             override_note: string;
-            override_reason: components["schemas"]["ReasonOut"] | null;
+            override_reason: components["schemas"]["BillingReasonOut"] | null;
             patient: components["schemas"]["PatientSummaryOut"];
             /** Reference */
             reference: string;
             /** Rejection Note */
             rejection_note: string;
-            rejection_reason: components["schemas"]["ReasonOut"] | null;
+            rejection_reason: components["schemas"]["BillingReasonOut"] | null;
             /** Reversal Number */
             reversal_number: string | null;
             /** Reversal Of Number */
@@ -5443,7 +5516,7 @@ export interface components {
             verification: "pending" | "confirmed" | "rejected";
             /** Verified At */
             verified_at: string | null;
-            verified_by: components["schemas"]["UserRefOut"] | null;
+            verified_by: components["schemas"]["BillingUserRefOut"] | null;
         };
         /** PerformFirstVisitOut */
         PerformFirstVisitOut: {
@@ -5888,7 +5961,7 @@ export interface components {
             code: string;
             /** Count */
             count: number;
-            reason: components["schemas"]["ReasonOut"] | null;
+            reason: components["schemas"]["BillingReasonOut"] | null;
         };
         /**
          * ReceiptCheckOut
@@ -5950,8 +6023,8 @@ export interface components {
         };
         /** ReceiptOut */
         ReceiptOut: {
-            cashier: components["schemas"]["UserRefOut"] | null;
-            center: components["schemas"]["CenterOut"];
+            cashier: components["schemas"]["BillingUserRefOut"] | null;
+            center: components["schemas"]["BillingCenterOut"];
             /** Invoices */
             invoices: components["schemas"]["ReceiptInvoiceOut"][];
             payment: components["schemas"]["PaymentOut"];
@@ -5997,7 +6070,7 @@ export interface components {
             credit_note_number: string | null;
             /** Decided At */
             decided_at: string | null;
-            decided_by: components["schemas"]["UserRefOut"] | null;
+            decided_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Decision Note */
             decision_note: string;
             /** Id */
@@ -6008,9 +6081,9 @@ export interface components {
             number: string;
             /** Paid At */
             paid_at: string | null;
-            paid_by: components["schemas"]["UserRefOut"] | null;
+            paid_by: components["schemas"]["BillingUserRefOut"] | null;
             patient: components["schemas"]["PatientSummaryOut"];
-            reason: components["schemas"]["ReasonOut"] | null;
+            reason: components["schemas"]["BillingReasonOut"] | null;
             /** Reason Note */
             reason_note: string;
             /**
@@ -6018,7 +6091,7 @@ export interface components {
              * Format: date-time
              */
             requested_at: string;
-            requested_by: components["schemas"]["UserRefOut"] | null;
+            requested_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Shift Number */
             shift_number: string | null;
             /**
@@ -6498,10 +6571,10 @@ export interface components {
         };
         /** ShiftOut */
         ShiftOut: {
-            cashier: components["schemas"]["UserRefOut"];
+            cashier: components["schemas"]["BillingUserRefOut"];
             /** Closed At */
             closed_at: string | null;
-            closed_by: components["schemas"]["UserRefOut"] | null;
+            closed_by: components["schemas"]["BillingUserRefOut"] | null;
             /** Counted Cash */
             counted_cash: string | null;
             /**
@@ -6535,7 +6608,7 @@ export interface components {
             variance: string | null;
             /** Variance Note */
             variance_note: string;
-            variance_reason: components["schemas"]["ReasonOut"] | null;
+            variance_reason: components["schemas"]["BillingReasonOut"] | null;
         };
         /**
          * ShiftReportOut
@@ -6631,7 +6704,7 @@ export interface components {
              * Format: date-time
              */
             reviewed_at: string;
-            reviewed_by: components["schemas"]["UserRefOut"] | null;
+            reviewed_by: components["schemas"]["BillingUserRefOut"] | null;
         };
         /** TemplateParams */
         TemplateParams: {
@@ -6672,9 +6745,17 @@ export interface components {
             center: components["schemas"]["CenterOut"];
             entry: components["schemas"]["QueueRowOut"];
         };
+        /** TransferConfirmIn */
+        TransferConfirmIn: {
+            /**
+             * Note
+             * @description What was checked
+             */
+            note: string;
+        };
         /** TransferOut */
         TransferOut: {
-            cashier: components["schemas"]["UserRefOut"] | null;
+            cashier: components["schemas"]["BillingUserRefOut"] | null;
             payment: components["schemas"]["PaymentOut"];
         };
         /** UpcomingParams */
@@ -6878,7 +6959,7 @@ export interface components {
          * @description Everything the billing panel shows for one visit (FLOW step 4).
          */
         VisitBillingOut: {
-            balance: components["schemas"]["BalanceOut"];
+            balance: components["schemas"]["BillingBalanceOut"];
             /** Drafts */
             drafts: components["schemas"]["InvoiceOut"][];
             /** Invoices */
@@ -6887,7 +6968,7 @@ export interface components {
              * Open Invoices
              * @description Person-wide, oldest first
              */
-            open_invoices: components["schemas"]["OpenInvoiceOut"][];
+            open_invoices: components["schemas"]["BillingOpenInvoiceOut"][];
             patient: components["schemas"]["PatientSummaryOut"];
             /**
              * Payers
@@ -7064,7 +7145,7 @@ export interface components {
              */
             created_at: string;
             department: components["schemas"]["NameOut"] | null;
-            doctor: components["schemas"]["UserRefOut"] | null;
+            doctor: components["schemas"]["BillingUserRefOut"] | null;
             /** Id */
             id: number;
             /** Number */
@@ -8526,7 +8607,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ReasonOut"][];
+                    "application/json": components["schemas"]["BillingReasonOut"][];
                 };
             };
             /** @description Unauthorized */
@@ -14617,7 +14698,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserRefOut"][];
+                    "application/json": components["schemas"]["BillingUserRefOut"][];
                 };
             };
             /** @description Unauthorized */
@@ -15041,7 +15122,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ConfirmIn"];
+                "application/json": components["schemas"]["TransferConfirmIn"];
             };
         };
         responses: {
