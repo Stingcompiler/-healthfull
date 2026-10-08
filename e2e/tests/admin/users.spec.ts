@@ -8,7 +8,7 @@
 import { expect, test } from "@playwright/test";
 
 import { ADMIN_STATE, ANONYMOUS_STATE } from "../../fixtures/state";
-import { apiAs, disposeApiClients, reseed, setPrefs, submitLogin, tr } from "../../helpers";
+import { apiAs, csrfHeaders, disposeApiClients, reseed, setPrefs, submitLogin, tr } from "../../helpers";
 
 const TEMP_PASSWORD = "Temp-Pass-2026-e2e";
 const NEW_PASSWORD = "Fresh-Pass-2026-e2e";
@@ -74,12 +74,14 @@ test.describe("@admin users", () => {
     const username = `e2e_lock_${String(Date.now())}`;
     await admin.post("/api/core/users", { username, roles: ["nurse"], password: TEMP_PASSWORD });
     // Five wrong passwords lock the account (ADR 0004).
+    const headers = await csrfHeaders(page.context());
     for (let i = 0; i < 5; i += 1) {
-      await page.context().request.post("/api/auth/login", {
+      const response = await page.context().request.post("/api/auth/login", {
         data: { username, password: "wrong-password" },
-        headers: { "X-CSRFToken": await admin.csrfToken() },
+        headers,
         failOnStatusCode: false,
       });
+      expect([401, 423]).toContain(response.status());
     }
 
     await setPrefs(page, { theme: "light", lang: "en" });
