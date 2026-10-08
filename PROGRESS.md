@@ -72,6 +72,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - Print: referral letters and prescriptions have no print view yet; add them on the shared
   A4/80mm templates of FEATURES 0.10 when those land (hide the app shell under `@media print`).
+- Results tab screenshots show the empty state only: approved results need the lab module's
+  endpoints (FEATURES 4.x lab); add a populated capture to `e2e/tests/clinic/states.spec.ts`
+  then.
 - Nurses: vitals (FEATURES 3.4) are entered from the doctor's workspace; a nurse has no list
   of visits to reach it until the nursing screens of FEATURES 10.3.
 - Work lists and exception reports (FEATURES 4.3, 4.5) exist as tested services

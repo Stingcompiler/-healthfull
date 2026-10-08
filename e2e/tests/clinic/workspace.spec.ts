@@ -133,6 +133,34 @@ test.describe("@clinic doctor workspace", () => {
     await results.getByRole("option", { name: /B54/ }).click();
     await page.getByTestId("diagnosis-add").click();
     await expect(page.getByTestId("diagnosis-list")).toContainText("B54");
+    // A diagnosis written in error is removed with a stated reason (kept in the audit history).
+    await page
+      .getByTestId("diagnosis-form")
+      .getByLabel(tr("en", "clinic:diagnosis.text"))
+      .fill("Viral fever");
+    await page.getByTestId("diagnosis-add").click();
+    await expect(page.getByTestId("diagnosis-list")).toContainText("Viral fever");
+    await page
+      .getByRole("button", {
+        name: tr("en", "clinic:diagnosis.removeNamed", { name: "Viral fever" }),
+      })
+      .click();
+    const removeDialog = page.getByRole("dialog");
+    await removeDialog
+      .getByRole("button", { name: tr("en", "clinic:diagnosis.remove") })
+      .click();
+    // The reason is required before anything is removed.
+    await expect(page.getByTestId("diagnosis-list")).toContainText("Viral fever");
+    await removeDialog
+      .getByLabel(tr("en", "common:reason.code"))
+      .fill("Entered on the wrong visit");
+    await removeDialog
+      .getByRole("button", { name: tr("en", "clinic:diagnosis.remove") })
+      .click();
+    await expect(removeDialog).toBeHidden();
+    await expect(page.getByTestId("diagnosis-list")).not.toContainText(
+      "Viral fever",
+    );
 
     await page.getByTestId("note-sign").click();
     await page
@@ -161,13 +189,16 @@ test.describe("@clinic doctor workspace", () => {
       ).toBeVisible();
     }
     await search.fill("amoxicillin");
-    await page
+    const amoxResult = page
       .getByTestId("catalog-results")
-      .locator('[data-service-code="DRG-AMOX500"]')
-      .click();
+      .locator('[data-service-code="DRG-AMOX500"]');
+    // The penicillin allergy marks the drug in the results and on its draft card at once.
+    await expect(amoxResult).toHaveAttribute("data-allergy", "true");
+    await amoxResult.click();
     const rx = page.locator(
       '[data-testid="draft-item"][data-service-code="DRG-AMOX500"]',
     );
+    await expect(rx.getByTestId("draft-allergy")).toContainText(/penicillin/i);
     await rx.getByTestId("rx-frequency").click();
     await page.getByTestId("rx-frequency-TID").click();
     await rx.getByTestId("rx-days").fill("7");
@@ -234,7 +265,25 @@ test.describe("@clinic doctor workspace", () => {
       .getByRole("button", { name: tr("en", "clinic:queue.complete") })
       .click();
     await expect(page.getByTestId("queue-complete")).toBeHidden();
-    await page.goto("/clinic");
+    // Leaving with the unplaced draft order asks first; staying keeps it.
+    const back = page.getByRole("link", {
+      name: tr("en", "clinic:workspace.backToQueue"),
+    });
+    await back.click();
+    const leave = page.getByRole("alertdialog");
+    await expect(leave).toContainText(tr("en", "common:unsaved.title"));
+    await leave
+      .getByRole("button", { name: tr("en", "common:unsaved.stay") })
+      .click();
+    await expect(
+      page.locator('[data-testid="draft-item"][data-service-code="LAB-RBS"]'),
+    ).toBeVisible();
+    await back.click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: tr("en", "common:unsaved.leave") })
+      .click();
+    await expect(page).toHaveURL(/\/clinic$/);
     await expect(entry).toContainText(tr("en", "clinic:queueStatus.done"));
 
     // The allergy alert is a 409 answer by design; nothing else may fail.

@@ -1,8 +1,11 @@
 /**
  * The clinic's busiest states through the responsive matrix (ARCHITECTURE 5.3 and 6), as a
- * doctor sees them: a queue with waiting, called and in-progress patients, the orders tab with
- * a drug in the draft, the allergy override dialog and the allergy manager. Three viewports x
- * (ar light, en dark, ar warm), no horizontal scroll, screenshots to artifacts/screens/.
+ * doctor sees them: a queue with waiting, called and in-progress patients, a workspace that
+ * failed to load, open ICD-10 and catalog result lists, the referral form and the reason asked
+ * to cancel one, the orders tab with a drug in the draft (marked for its allergy), the favorite,
+ * allergy override and withdrawal dialogs, the allergy and condition managers, and the history
+ * and results tabs. Three viewports x (ar light, en dark, ar warm), no horizontal scroll,
+ * screenshots to artifacts/screens/.
  * The general matrix (tests/responsive.spec.ts) runs as the admin, whose clinic queue is empty.
  * Filter with `make e2e E2E_GREP=@clinic`.
  */
@@ -19,8 +22,10 @@ import {
   expectNoHorizontalScroll,
   login,
   paidVisit,
+  seededCatalog,
   setPrefs,
   snap,
+  tr,
   trackConsoleErrors,
   type Lang,
   type Theme,
@@ -68,12 +73,33 @@ async function drain(): Promise<void> {
 test.beforeAll(async () => {
   await drain();
   const doctor = await apiAs(DOCTOR);
-  const busy = await paidVisit({
+  const catalog = await seededCatalog();
+  // An earlier visit of the busy patient, seen and diagnosed: the history tab has content.
+  const earlier = await paidVisit({
     doctor: DOCTOR,
     patient_fields: {
       allergies: ["PENICILLIN"],
       full_name_en: "Mohamed Abdelrahim Osman Elhassan",
     },
+  });
+  const first = await doctor.get<(WorklistRow & { visit: { id: number } })[]>(
+    "/api/clinical/worklist",
+  );
+  const earlierEntry = first.find((r) => r.visit.id === earlier.visit.id)?.id;
+  for (const action of ["call", "start"]) {
+    await doctor.post(`/api/clinical/worklist/${String(earlierEntry)}/action`, {
+      action,
+    });
+  }
+  await doctor.post(`/api/clinical/visits/${String(earlier.visit.id)}/diagnoses`, {
+    text: "Uncomplicated malaria",
+  });
+  await doctor.post(`/api/clinical/worklist/${String(earlierEntry)}/action`, {
+    action: "complete",
+  });
+  const busy = await paidVisit({
+    doctor: DOCTOR,
+    patient: earlier.patient.id,
   });
   const called = await paidVisit({
     doctor: DOCTOR,
@@ -99,6 +125,17 @@ test.beforeAll(async () => {
     { action: "call" },
   );
   workspaceVisit = busy.visit.id;
+  // A placed (withdrawable) order and an issued referral of the doctor's own.
+  const cbc = catalog.services["LAB-CBC"];
+  if (!cbc) throw new Error("LAB-CBC is seeded");
+  await doctor.post(`/api/orders/visits/${String(busy.visit.id)}/lines`, {
+    items: [{ service_id: cbc.id }],
+  });
+  await doctor.post(`/api/clinical/visits/${String(busy.visit.id)}/referrals`, {
+    kind: "external",
+    reason: "CT scan of the chest",
+    external_facility: "Soba University Hospital",
+  });
 });
 
 test.afterAll(async () => {
@@ -153,24 +190,87 @@ for (const viewport of VIEWPORTS) {
       await expect(page.getByTestId("queue-entry").nth(2)).toBeVisible();
       await check(page, "clinic-queue");
 
-      // Orders tab with a drug in the draft and the prescription builder.
-      await page.goto(`/clinic/visits/${String(workspaceVisit)}`);
+      // The workspace when the server fails: the error card with a retry (before any draft, so
+      // leaving needs no confirmation).
+      const workspaceUrl = `/clinic/visits/${String(workspaceVisit)}`;
+      await page.route("**/api/clinical/visits/*/workspace", (route) =>
+        route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ code: "SERVER_ERROR", message: "", details: {} }),
+        }),
+      );
+      await page.goto(workspaceUrl);
+      // Two retries with backoff come first (lib/query.ts).
+      await expect(
+        page.getByText(tr(lang, "clinic:workspace.loadError")),
+      ).toBeVisible({ timeout: 15_000 });
+      await check(page, "clinic-visit-error");
+      await page.unroute("**/api/clinical/visits/*/workspace");
+
+      // An open ICD-10 result list on the note tab.
+      await page.goto(workspaceUrl);
+      const icd10 = page.getByTestId("icd10-search");
+      await icd10.fill("malaria");
+      const icdResults = page.getByTestId("icd10-results");
+      await expect(icdResults).toBeVisible();
+      await icdResults.scrollIntoViewIfNeeded();
+      await checkDialog(page, "clinic-visit-icd10-results", theme, lang);
+      await icd10.press("Escape");
+      await expect(icdResults).toBeHidden();
+
+      // The referral form, and the reason asked to cancel an issued referral.
+      await page
+        .getByRole("button", { name: tr(lang, "clinic:referral.new") })
+        .click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await checkDialog(page, "clinic-visit-referral", theme, lang);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
+      await page
+        .getByRole("button", { name: tr(lang, "clinic:referral.cancel") })
+        .first()
+        .click();
+      await expect(page.getByRole("dialog")).toContainText(
+        tr(lang, "clinic:referral.cancelTitle"),
+      );
+      await checkDialog(page, "clinic-visit-referral-cancel", theme, lang);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
+
+      // Orders tab: an open catalog list, then a drug in the draft and the prescription builder.
       await page.getByTestId("tab-orders").click();
       const search = page.getByTestId("catalog-search");
       await search.fill("DRG-AMOX500");
       await expect(search).toHaveAttribute("data-fresh", "true");
-      await page
+      const amoxResult = page
         .getByTestId("catalog-results")
-        .locator('[data-service-code="DRG-AMOX500"]')
-        .click();
+        .locator('[data-service-code="DRG-AMOX500"]');
+      // The patient's penicillin allergy marks the drug before it is even added.
+      await expect(amoxResult).toHaveAttribute("data-allergy", "true");
+      await amoxResult.scrollIntoViewIfNeeded();
+      await checkDialog(page, "clinic-visit-catalog-results", theme, lang);
+      await amoxResult.click();
       const rx = page.locator(
         '[data-testid="draft-item"][data-service-code="DRG-AMOX500"]',
       );
+      await expect(rx).toHaveAttribute("data-allergy", "true");
       await rx.getByTestId("rx-frequency").click();
       await page.getByTestId("rx-frequency-TID").click();
       await rx.getByTestId("rx-days").fill("5");
       await expect(rx.getByTestId("rx-quantity")).toContainText("15");
+      // A full-page capture from the top: sticky bars stay where the doctor sees them.
+      await page.evaluate(() => {
+        window.scrollTo(0, 0);
+      });
       await check(page, "clinic-visit-orders-draft");
+
+      // The favorite dialog.
+      await page.getByTestId("save-favorite").click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await checkDialog(page, "clinic-visit-favorite", theme, lang);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
 
       // The allergy override dialog.
       await page.getByTestId("place-orders").click();
@@ -179,15 +279,56 @@ for (const viewport of VIEWPORTS) {
       await checkDialog(page, "clinic-visit-override", theme, lang);
       await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden();
+      // Dismissing the override keeps the drug marked.
+      await expect(rx).toHaveAttribute("data-allergy", "true");
+
+      // The reason asked to withdraw a placed order.
+      await page
+        .locator('[data-testid="order-line"][data-service-code="LAB-CBC"]')
+        .getByRole("button", { name: tr(lang, "clinic:orders.withdraw") })
+        .click();
+      await expect(page.getByRole("dialog")).toContainText(
+        tr(lang, "clinic:orders.withdrawTitle"),
+      );
+      await checkDialog(page, "clinic-visit-withdraw", theme, lang);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
 
       // The allergy manager.
       await page.getByTestId("manage-allergies").click();
       await expect(page.getByTestId("allergy-form")).toBeVisible();
       await checkDialog(page, "clinic-visit-allergies", theme, lang);
       await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
 
+      // The chronic condition manager (behind the summary toggle below lg).
+      const toggle = page.getByTestId("summary-toggle");
+      if (await toggle.isVisible()) await toggle.click();
+      await page.getByTestId("manage-conditions").click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await checkDialog(page, "clinic-visit-conditions", theme, lang);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
+
+      // History with the earlier visit, and results (none until the lab module reports).
+      await page.getByTestId("tab-history").click();
+      await expect(page.getByText("Uncomplicated malaria")).toBeVisible();
+      await page.evaluate(() => {
+        window.scrollTo(0, 0);
+      });
+      await check(page, "clinic-visit-history");
+      await page.getByTestId("tab-results").click();
+      await expect(
+        page.getByText(tr(lang, "clinic:results.emptyTitle")),
+      ).toBeVisible();
+      await page.evaluate(() => {
+        window.scrollTo(0, 0);
+      });
+      await check(page, "clinic-visit-results");
+
+      // 409: the allergy alert, by design; 500: the forced workspace error above.
       expect(
-        logged.errors().filter((e) => !/status of 409/.test(e)),
+        logged.errors().filter((e) => !/status of (409|500)/.test(e)),
         "console errors",
       ).toEqual([]);
     });

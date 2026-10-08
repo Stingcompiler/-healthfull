@@ -37,3 +37,17 @@ doctor, as queue actions are.
 - Consequences: limiting writes to the visit's doctor, department or referral targets would be
   a new rule enforced in `apps/clinical/services.py` (`place_orders`, `save_note`,
   `add_diagnosis`, `record_vitals`) with its own tests, and recorded in a later ADR.
+
+## Addendum (second clinic review, 2026-10-08)
+- Withdrawing an order (`POST /api/orders/lines/{id}/withdraw`) answers with `DoctorLineOut`, so
+  it needs `clinical.view` besides `orders.cancel_line` (checked in
+  `orders.services.withdraw_order`). Cashiers, pharmacists and lab staff cancel lines through
+  their own modules. The doctor withdraws only what `can_withdraw` shows: unbilled, not started
+  and nothing given (409 `LINE_IN_PROGRESS` otherwise).
+- Completing a consultation from the clinic queue needs `visits.finish_consultation`, as
+  finishing from the visits board does.
+- A referral is cancelled only by the doctor who wrote it, on an open visit, with a reason;
+  reason, canceller and time are stored on the row (invariant 4). This follows the rule that
+  diagnoses are removed only by whoever recorded them.
+- Removing a diagnosis and marking an allergy or chronic condition entered in error need a
+  stated reason, kept with the actor and time in the audit history context.
