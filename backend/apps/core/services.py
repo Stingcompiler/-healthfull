@@ -743,6 +743,22 @@ def _set_roles(user: User, codes: list[str]) -> None:
         UserRole.objects.create(user=user, role=role)
 
 
+def _guard_role_change(actor: User, user: User | None, before: set[str], after: set[str]) -> None:
+    """Role assignment never grants more than ``core.manage_users`` itself allows.
+
+    Giving or taking the admin role, or adding any role to one's own account, needs
+    ``core.manage_roles`` (which can rewrite the matrix anyway). Otherwise a holder of
+    ``core.manage_users`` alone could make themselves (or an accomplice) administrator.
+
+    Raises:
+        PermissionRequired: HTTP 403 ``PERMISSION_DENIED`` (``details.permission``).
+    """
+    admin_changed = (roles.ADMIN in before) != (roles.ADMIN in after)
+    self_added = user is not None and user.pk == actor.pk and bool(after - before)
+    if admin_changed or self_added:
+        require_permission(actor, "core.manage_roles")
+
+
 def _protect_superuser(actor: User, user: User) -> None:
     if user.is_superuser and not actor.is_superuser:
         raise DomainError(
@@ -765,6 +781,7 @@ def create_user(
     Raises:
         DomainError: ``INVALID_USERNAME``, ``USERNAME_TAKEN``, ``ROLE_REQUIRED``,
             ``ROLE_UNKNOWN``, ``PASSWORD_INVALID`` (``details.messages`` lists why).
+        PermissionRequired: the admin role without ``core.manage_roles``.
     """
     name = (username or "").strip()
     if not _USERNAME_RE.match(name):
@@ -772,6 +789,7 @@ def create_user(
             "INVALID_USERNAME", "Usernames use letters, digits and @ . + - _ only", username=name
         )
     codes = _check_role_codes(role_codes)
+    _guard_role_change(actor, None, set(), set(codes))
     user = User(
         username=name,
         full_name_ar=full_name_ar.strip(),
@@ -816,6 +834,8 @@ def update_user(
     Raises:
         DomainError: ``SUPERUSER_PROTECTED``, ``CANNOT_DEACTIVATE_SELF``, ``ROLE_REQUIRED``,
             ``ROLE_UNKNOWN``, ``LAST_ADMIN`` (the last active administrator would go).
+        PermissionRequired: the admin role or one's own roles change without
+            ``core.manage_roles``.
     """
     codes = _check_role_codes(role_codes) if role_codes is not None else None
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit user"):
@@ -825,7 +845,9 @@ def update_user(
         if is_active is False and user.pk == actor.pk:
             raise DomainError("CANNOT_DEACTIVATE_SELF", "You cannot deactivate your own account")
         active_after = user.is_active if is_active is None else is_active
-        roles_after = user.role_codes() if codes is None else codes
+        roles_before = user.role_codes()
+        roles_after = roles_before if codes is None else codes
+        _guard_role_change(actor, user, set(roles_before), set(roles_after))
         if (
             user.pk in admins
             and len(admins) == 1
@@ -1124,6 +1146,8 @@ def update_policy(actor: User, **fields: Any) -> Policy:
             setattr(current, attr, value)
         if isinstance(current.perform_first_roles, list):
             current.perform_first_roles = sorted(set(current.perform_first_roles))
+        if isinstance(current.discount_limit_percent, dict):
+            current.discount_limit_percent = dict(sorted(current.discount_limit_percent.items()))
         current.full_clean()
         current.save()
     return current

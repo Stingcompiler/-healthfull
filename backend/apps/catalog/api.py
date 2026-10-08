@@ -266,7 +266,6 @@ def get_price_version(request: HttpRequest, version_id: int) -> Any:
 def list_price_items(
     request: HttpRequest, version_id: int, params: Query[VersionItemParams]
 ) -> dict[str, Any]:
-    services.get_version(version_id)  # 404 for an unknown version
     rows = services.version_items(version_id, q=params.q, kind=params.kind)
     return paginate(rows, params.page, params.page_size)
 
@@ -310,29 +309,8 @@ def _bulk_args(payload: BulkUpdateIn) -> dict[str, Any]:
     ),
 )
 @require_perm("catalog.manage_prices")
-def preview_bulk_update(
-    request: HttpRequest, price_list_id: int, payload: BulkUpdateIn
-) -> dict[str, Any]:
-    preview = services.preview_bulk_update(price_list_id, **_bulk_args(payload))
-    return {
-        "base_version": preview.base,
-        "effective_from": preview.effective_from,
-        "percent": f"{preview.percent:.2f}",
-        "changed_count": preview.changed_count,
-        "rows": [
-            {
-                "service_id": row.service.pk,
-                "service_code": row.service.code,
-                "service_name_ar": row.service.name_ar,
-                "service_name_en": row.service.name_en,
-                "service_kind": row.service.kind,
-                "old_price": str(row.old_price),
-                "new_price": str(row.new_price),
-                "changed": row.changed,
-            }
-            for row in preview.rows
-        ],
-    }
+def preview_bulk_update(request: HttpRequest, price_list_id: int, payload: BulkUpdateIn) -> Any:
+    return services.preview_bulk_update(price_list_id, **_bulk_args(payload))
 
 
 @catalog_router.post(
@@ -390,9 +368,7 @@ def list_payer_options(request: HttpRequest) -> list[Payer]:
 )
 @require_perm("catalog.manage_payers")
 def create_payer(request: HttpRequest, payload: PayerIn) -> Status[Payer]:
-    data = payload.dict()
-    code = data.pop("code")
-    return Status(201, services.create_payer(_actor(request), code=code, **data))
+    return Status(201, services.create_payer(_actor(request), **payload.dict()))
 
 
 @catalog_router.get(

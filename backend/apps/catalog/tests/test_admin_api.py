@@ -15,7 +15,7 @@ from apps.catalog import services as cat
 from apps.catalog.models import PriceList, PriceListVersion
 from apps.core.models import User
 from apps.core.tests import builders as b
-from conftest import ApiClient
+from conftest import ApiClient, router_operations
 
 pytestmark = pytest.mark.django_db
 
@@ -146,15 +146,34 @@ def test_price_list_versions_and_item_editing(client: ApiClient, today: Any) -> 
     plist = _new_list(client)
     assert plist["versions"] == []
 
-    # The first version of an empty list may start today.
+    # The first version of an empty list may start today, but only with prices: it is
+    # effective (read-only) at once, so an empty one would leave the list unpriced all day.
+    _error(
+        client.post(
+            f"/api/catalog/price-lists/{plist['id']}/versions",
+            {"effective_from": today.isoformat()},
+        ),
+        409,
+        "PRICE_VERSION_EMPTY",
+    )
+    assert PriceListVersion.objects.filter(price_list_id=plist["id"]).count() == 0
+    # It copies the prices of another list's version (here the cash list).
+    cash = b.price_version()
+    cat.PriceItem.objects.create(version=cash, service=s1, unit_price=Decimal("90.00"))
     first = client.post(
         f"/api/catalog/price-lists/{plist['id']}/versions",
-        {"effective_from": today.isoformat()},
+        {"effective_from": today.isoformat(), "copy_from_id": cash.pk},
     )
     assert first.status_code == 201, first.content
     v1 = first.json()
     assert v1["status"] == "current"
     assert v1["editable"] is False
+    assert v1["item_count"] == 1
+    assert v1["based_on_id"] == cash.pk
+    # Payers on the list are priced today.
+    assert cat.version_prices(
+        cat.effective_version(PriceList.objects.get(pk=plist["id"]), today)
+    ) == {s1.pk: Decimal("90.00")}
     _error(
         _put(
             client,
@@ -532,3 +551,61 @@ def test_effective_version_prices_are_read_only(admin: User, today: Any) -> None
     with pytest.raises(DomainError) as exc:
         cat.edit_version_prices(admin, version.pk, {b.service().pk: Decimal("1.00")}, today=today)
     assert exc.value.code == "PRICE_VERSION_LOCKED"
+
+
+# --- API surface ----------------------------------------------------------------------------
+
+
+def test_catalog_api_surface_is_pinned() -> None:
+    """Every catalog route with its operation id and permission: nothing added or dropped."""
+    view, manage = "catalog.view", "catalog.manage"
+    prices, set_prices, payers = (
+        "catalog.view_prices",
+        "catalog.manage_prices",
+        "catalog.manage_payers",
+    )
+    assert router_operations("/catalog") == {
+        ("GET", "/ping", "catalog_get_ping", None),
+        ("GET", "/services", "catalog_list_services", view),
+        ("POST", "/services", "catalog_create_service", manage),
+        ("GET", "/services/{service_id}", "catalog_get_service", view),
+        ("PATCH", "/services/{service_id}", "catalog_update_service", manage),
+        ("GET", "/categories", "catalog_list_categories", view),
+        ("POST", "/categories", "catalog_create_category", manage),
+        ("PATCH", "/categories/{category_id}", "catalog_update_category", manage),
+        ("GET", "/price-lists", "catalog_list_price_lists", prices),
+        ("POST", "/price-lists", "catalog_create_price_list", set_prices),
+        ("GET", "/price-lists/{price_list_id}", "catalog_get_price_list", prices),
+        ("PATCH", "/price-lists/{price_list_id}", "catalog_update_price_list", set_prices),
+        (
+            "POST",
+            "/price-lists/{price_list_id}/versions",
+            "catalog_create_price_version",
+            set_prices,
+        ),
+        ("GET", "/versions/{version_id}", "catalog_get_price_version", prices),
+        ("GET", "/versions/{version_id}/items", "catalog_list_price_items", prices),
+        ("PUT", "/versions/{version_id}/items", "catalog_set_price_items", set_prices),
+        (
+            "POST",
+            "/price-lists/{price_list_id}/bulk-preview",
+            "catalog_preview_bulk_update",
+            set_prices,
+        ),
+        (
+            "POST",
+            "/price-lists/{price_list_id}/bulk-update",
+            "catalog_apply_bulk_update",
+            set_prices,
+        ),
+        ("GET", "/payers", "catalog_list_payers", payers),
+        ("POST", "/payers", "catalog_create_payer", payers),
+        ("GET", "/payers/options", "catalog_list_payer_options", view),
+        ("GET", "/payers/{payer_id}", "catalog_get_payer", payers),
+        ("PATCH", "/payers/{payer_id}", "catalog_update_payer", payers),
+        ("POST", "/payers/{payer_id}/rules", "catalog_create_coverage_rule", payers),
+        ("PATCH", "/rules/{rule_id}", "catalog_update_coverage_rule", payers),
+        ("POST", "/payers/{payer_id}/exclusions", "catalog_create_exclusion", payers),
+        ("PATCH", "/exclusions/{exclusion_id}", "catalog_update_exclusion", payers),
+        ("POST", "/coverage/preview", "catalog_preview_coverage", payers),
+    }

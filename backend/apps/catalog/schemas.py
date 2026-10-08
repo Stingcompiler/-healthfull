@@ -266,7 +266,8 @@ class PriceListPatch(PatchSchema):
 class VersionIn(Schema):
     effective_from: date = Field(..., description="Tomorrow at the earliest (today for a first)")
     copy_from_id: int | None = Field(
-        None, description="Version of the same list to copy; default: the one effective then"
+        None,
+        description="Version (of any list) to copy; default: this list's version effective then",
     )
     note: str = Field("", max_length=300)
 
@@ -332,6 +333,8 @@ class BulkUpdateIn(Schema):
 
 
 class BulkPreviewRowOut(Schema):
+    """Built from ``services.BulkPreviewRow``."""
+
     service_id: int
     service_code: str
     service_name_ar: str
@@ -341,13 +344,51 @@ class BulkPreviewRowOut(Schema):
     new_price: MoneyStr
     changed: bool
 
+    @staticmethod
+    def resolve_service_id(obj: Any) -> int:
+        return int(obj.service.pk)
+
+    @staticmethod
+    def resolve_service_code(obj: Any) -> str:
+        return str(obj.service.code)
+
+    @staticmethod
+    def resolve_service_name_ar(obj: Any) -> str:
+        return str(obj.service.name_ar)
+
+    @staticmethod
+    def resolve_service_name_en(obj: Any) -> str:
+        return str(obj.service.name_en)
+
+    @staticmethod
+    def resolve_service_kind(obj: Any) -> str:
+        return str(obj.service.kind)
+
+    @staticmethod
+    def resolve_old_price(obj: Any) -> str:
+        return str(obj.old_price)
+
+    @staticmethod
+    def resolve_new_price(obj: Any) -> str:
+        return str(obj.new_price)
+
 
 class BulkPreviewOut(Schema):
+    """Built from ``services.BulkPreview``."""
+
     base_version: VersionOut
     effective_from: date
     percent: str
     changed_count: int
     rows: list[BulkPreviewRowOut]
+
+    @staticmethod
+    def resolve_base_version(obj: Any) -> Any:
+        return obj.base
+
+    @staticmethod
+    def resolve_percent(obj: Any) -> str:
+        return f"{obj.percent:.2f}"
 
 
 # --- Payers, coverage rules and exclusions --------------------------------------------------

@@ -19,11 +19,12 @@ from apps.core.models import (
     DoctorProfile,
     Policy,
     ReasonCode,
+    Role,
     RolePermission,
     User,
 )
 from apps.core.permissions import effective_permissions
-from conftest import TEST_PASSWORD, ApiClient
+from conftest import TEST_PASSWORD, ApiClient, router_operations
 
 pytestmark = pytest.mark.django_db
 
@@ -143,6 +144,58 @@ def test_update_user_roles_and_last_admin(client: ApiClient, admin: User, make_u
         client.patch(f"/api/core/users/{admin.pk}", {"roles": ["admin", "manager"]}).status_code
         == 200
     )
+
+
+def _manager_with_manage_users(make_user: Any) -> tuple[User, ApiClient]:
+    """A manager granted core.manage_users (not core.manage_roles) through the matrix."""
+    manager = make_user("chief", roles=["manager"])
+    role = Role.objects.get(code="manager")
+    RolePermission.objects.update_or_create(
+        role=role, code="core.manage_users", defaults={"allowed": True}
+    )
+    RolePermission.objects.update_or_create(
+        role=role, code="core.manage_roles", defaults={"allowed": False}
+    )
+    assert "core.manage_users" in effective_permissions(manager)
+    assert "core.manage_roles" not in effective_permissions(manager)
+    api = ApiClient()
+    assert api.login("chief").status_code == 200
+    return manager, api
+
+
+def test_manage_users_alone_cannot_grant_admin_or_elevate_self(admin: User, make_user: Any) -> None:
+    """Role assignment never bypasses core.manage_roles (no path to admin through users)."""
+    manager, api = _manager_with_manage_users(make_user)
+    nurse = make_user("n9", roles=["nurse"])
+
+    # Making themselves admin, or adding any role to their own account: refused.
+    for roles in (["manager", "admin"], ["manager", "pharmacist"]):
+        body = _error(
+            api.patch(f"/api/core/users/{manager.pk}", {"roles": roles}), 403, "PERMISSION_DENIED"
+        )
+        assert body["details"]["permission"] == "core.manage_roles"
+    # Giving or taking the admin role from someone else: refused.
+    _error(
+        api.patch(f"/api/core/users/{nurse.pk}", {"roles": ["nurse", "admin"]}),
+        403,
+        "PERMISSION_DENIED",
+    )
+    _error(
+        api.patch(f"/api/core/users/{admin.pk}", {"roles": ["manager"]}), 403, "PERMISSION_DENIED"
+    )
+    created = api.post(
+        "/api/core/users",
+        {"username": "sneaky", "roles": ["admin"], "password": NEW_PASSWORD},
+    )
+    _error(created, 403, "PERMISSION_DENIED")
+    assert not User.objects.filter(username="sneaky").exists()
+    assert sorted(manager.role_codes()) == ["manager"]
+    assert sorted(nurse.role_codes()) == ["nurse"]
+
+    # Ordinary role work on other accounts and dropping their own roles still works.
+    response = api.patch(f"/api/core/users/{nurse.pk}", {"roles": ["nurse", "doctor"]})
+    assert response.status_code == 200, response.content
+    assert response.json()["roles"] == ["doctor", "nurse"]
 
 
 def test_superuser_is_protected(client: ApiClient) -> None:
@@ -532,3 +585,68 @@ def test_print_templates(client: ApiClient, cashier_client: ApiClient) -> None:
     assert saved.json()["footer_en"] == "Thank you"
     assert _put(client, "/api/core/print-templates/nope/a4", {}).status_code == 422
     _error(cashier_client.get("/api/core/print-templates"), 403, "PERMISSION_DENIED")
+
+
+# --- API surface ----------------------------------------------------------------------------
+
+
+def test_core_api_surface_is_pinned() -> None:
+    """Every core route with its operation id and permission: nothing added or dropped unseen.
+
+    The two open reads are listed in ``api/tests/test_main.py::OPEN_OPERATIONS`` too.
+    """
+    assert router_operations("/core") == {
+        ("GET", "/ping", "core_get_ping", None),
+        ("GET", "/users", "core_list_users", "core.manage_users"),
+        ("POST", "/users", "core_create_user", "core.manage_users"),
+        ("GET", "/users/{user_id}", "core_get_user", "core.manage_users"),
+        ("PATCH", "/users/{user_id}", "core_update_user", "core.manage_users"),
+        ("POST", "/users/{user_id}/reset-password", "core_reset_password", "core.manage_users"),
+        ("POST", "/users/{user_id}/unlock", "core_unlock_user", "core.manage_users"),
+        ("GET", "/roles", "core_list_roles", "core.manage_users"),
+        ("GET", "/permissions/matrix", "core_get_permission_matrix", "core.manage_roles"),
+        ("PUT", "/permissions/matrix", "core_update_permission_matrix", "core.manage_roles"),
+        ("GET", "/center", "core_get_center_profile", "core.manage_settings"),
+        ("PUT", "/center", "core_update_center_profile", "core.manage_settings"),
+        ("POST", "/center/logo", "core_upload_center_logo", "core.manage_settings"),
+        ("DELETE", "/center/logo", "core_delete_center_logo", "core.manage_settings"),
+        ("GET", "/center/logo", "core_get_center_logo", None),
+        ("GET", "/policy", "core_get_policy", "core.manage_settings"),
+        ("PUT", "/policy", "core_update_policy", "core.manage_settings"),
+        ("GET", "/departments", "core_list_departments", "catalog.view"),
+        ("POST", "/departments", "core_create_department", "core.manage_departments"),
+        (
+            "PATCH",
+            "/departments/{department_id}",
+            "core_update_department",
+            "core.manage_departments",
+        ),
+        ("GET", "/rooms", "core_list_rooms", "core.manage_departments"),
+        ("POST", "/rooms", "core_create_room", "core.manage_departments"),
+        ("PATCH", "/rooms/{room_id}", "core_update_room", "core.manage_departments"),
+        ("GET", "/doctors", "core_list_doctors", "core.manage_departments"),
+        ("POST", "/doctors", "core_create_doctor", "core.manage_departments"),
+        ("PATCH", "/doctors/{doctor_id}", "core_update_doctor", "core.manage_departments"),
+        (
+            "PUT",
+            "/doctors/{doctor_id}/schedule",
+            "core_set_doctor_schedule",
+            "core.manage_departments",
+        ),
+        ("GET", "/reason-codes", "core_list_reason_codes", None),
+        ("POST", "/reason-codes", "core_create_reason_code", "core.manage_reason_codes"),
+        (
+            "PATCH",
+            "/reason-codes/{reason_id}",
+            "core_update_reason_code",
+            "core.manage_reason_codes",
+        ),
+        ("GET", "/sequences", "core_list_sequences", "core.manage_settings"),
+        ("GET", "/print-templates", "core_list_print_templates", "core.manage_print_templates"),
+        (
+            "PUT",
+            "/print-templates/{document}/{paper}",
+            "core_save_print_template",
+            "core.manage_print_templates",
+        ),
+    }

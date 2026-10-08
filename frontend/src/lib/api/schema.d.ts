@@ -1156,7 +1156,10 @@ export interface components {
             /** Active */
             active?: boolean | null;
         };
-        /** BulkPreviewOut */
+        /**
+         * BulkPreviewOut
+         * @description Built from ``services.BulkPreview``.
+         */
         BulkPreviewOut: {
             base_version: components["schemas"]["VersionOut"];
             /** Changed Count */
@@ -1171,7 +1174,10 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["BulkPreviewRowOut"][];
         };
-        /** BulkPreviewRowOut */
+        /**
+         * BulkPreviewRowOut
+         * @description Built from ``services.BulkPreviewRow``.
+         */
         BulkPreviewRowOut: {
             /** Changed */
             changed: boolean;
@@ -2756,7 +2762,7 @@ export interface components {
         VersionIn: {
             /**
              * Copy From Id
-             * @description Version of the same list to copy; default: the one effective then
+             * @description Version (of any list) to copy; default: this list's version effective then
              */
             copy_from_id?: number | null;
             /**

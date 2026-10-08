@@ -222,6 +222,7 @@
   "PRICE_VERSION_LOCKED": "This price list version has been in effect since {{effective_from, bidi}} and cannot be changed. Create a new version.",
   "PRICE_VERSION_BACKDATED": "A new price list version can start tomorrow at the earliest.",
   "PRICE_VERSION_DATE_TAKEN": "Another version of this price list already starts on {{effective_from, bidi}}. Choose another date.",
+  "PRICE_VERSION_EMPTY": "A version that starts today needs prices. Copy the prices of another list, or start it tomorrow.",
   "INVALID_PRICE": "The price is not valid. Enter an amount of zero or more with at most two decimal places.",
   "INVALID_ROUNDING_STEP": "The rounding step is not valid. Enter a positive amount with at most two decimal places.",
   "CLAIM_STATUS_INVALID": "This action is not allowed in the claim's current status.",

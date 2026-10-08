@@ -19,6 +19,7 @@
         "type": "object"
       },
       "BulkPreviewOut": {
+        "description": "Built from ``services.BulkPreview``.",
         "properties": {
           "base_version": {
             "$ref": "#/components/schemas/VersionOut"
@@ -55,6 +56,7 @@
         "type": "object"
       },
       "BulkPreviewRowOut": {
+        "description": "Built from ``services.BulkPreviewRow``.",
         "properties": {
           "changed": {
             "title": "Changed",
@@ -4725,7 +4727,7 @@
                 "type": "null"
               }
             ],
-            "description": "Version of the same list to copy; default: the one effective then",
+            "description": "Version (of any list) to copy; default: this list's version effective then",
             "title": "Copy From Id"
           },
           "effective_from": {

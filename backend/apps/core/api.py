@@ -412,9 +412,7 @@ def get_policy(request: HttpRequest) -> Policy:
 )
 @require_perm("core.manage_settings")
 def update_policy(request: HttpRequest, payload: PolicyIn) -> Policy:
-    data = payload.dict()
-    data["discount_limit_percent"] = dict(sorted(data["discount_limit_percent"].items()))
-    return services.update_policy(_current_user(request), **data)
+    return services.update_policy(_current_user(request), **payload.dict())
 
 
 # --- Departments, rooms, doctors ----------------------------------------------------------

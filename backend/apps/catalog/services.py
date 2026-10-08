@@ -215,7 +215,10 @@ def create_version(
         if not plist.active:
             raise DomainError("PRICE_LIST_INACTIVE", "The price list is inactive")
         pricing.validate_new_version(
-            _versions(plist), effective_from, today or timezone.localdate()
+            _versions(plist),
+            effective_from,
+            today or timezone.localdate(),
+            priced=bool(snapshot.prices),
         )
         _check_services([int(sid) for sid in snapshot.prices])
         version = PriceListVersion.objects.create(
@@ -753,11 +756,13 @@ def add_version(
 ) -> PriceListVersion:
     """A new dated version of the list (FEATURES 5.2), editable until it starts.
 
-    It starts as a copy of ``copy_from_id`` (a version of the same list) or, by default, of
-    the version effective on ``effective_from`` (empty when the list has none yet).
+    It starts as a copy of ``copy_from_id`` (a version of this or another list, e.g. to put
+    a new payer list live today with the cash prices) or, by default, of the version
+    effective on ``effective_from`` (empty when the list has none yet).
 
     Raises:
         DomainError: ``PRICE_VERSION_BACKDATED``, ``PRICE_VERSION_DATE_TAKEN``,
+            ``PRICE_VERSION_EMPTY`` (a first version starting today without prices),
             ``PRICE_LIST_INACTIVE``.
     """
     plist = PriceList.objects.get(pk=price_list_id)
@@ -765,7 +770,7 @@ def add_version(
         return derive_version(
             plist, effective_from=effective_from, actor=actor, changes={}, note=note, today=today
         )
-    source = PriceListVersion.objects.get(pk=copy_from_id, price_list=plist)
+    source = PriceListVersion.objects.get(pk=copy_from_id)
     return create_version(
         plist,
         effective_from=effective_from,
@@ -780,7 +785,13 @@ def add_version(
 def version_items(
     version_id: int, *, q: str | None = None, kind: str | None = None
 ) -> QuerySet[PriceItem]:
-    qs = PriceItem.objects.filter(version_id=version_id).select_related("service")
+    """Prices of one version by text and kind.
+
+    Raises:
+        PriceListVersion.DoesNotExist: an unknown version (HTTP 404).
+    """
+    version = PriceListVersion.objects.get(pk=version_id)
+    qs = PriceItem.objects.filter(version=version).select_related("service")
     text = (q or "").strip()
     if text:
         qs = qs.filter(
