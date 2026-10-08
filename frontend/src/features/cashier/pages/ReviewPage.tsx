@@ -17,7 +17,6 @@ import { useTranslateError } from "@/lib/api/translate-error";
 import { PAGE_SIZE, useCurrentShift, useShifts } from "../api";
 import { CashierNav } from "../components/CashierNav";
 import { IncomingHandovers } from "../components/HandoverPanel";
-import { Pager } from "../components/Pager";
 import { useNames } from "../lib/use-names";
 import type { ShiftListItem } from "../types";
 
@@ -137,8 +136,7 @@ export function ReviewPage() {
             caption={t("review.pageTitle")}
             onRowClick={open}
             rowLabel={(r) => t("review.open", { number: r.shift.number })}
-            pageSize={PAGE_SIZE}
-            pageSizeOptions={[PAGE_SIZE]}
+            serverPagination={{ page, pageSize: PAGE_SIZE, count: shifts.data?.count ?? 0, onPageChange: setPage }}
             emptyState={<EmptyState bare size="compact" title={t("review.empty")} icon={<ClipboardCheck />} />}
             renderCard={(r, ctx) => (
               <div className="card-surface flex flex-col gap-2 p-4" data-testid="shift-row">
@@ -172,7 +170,6 @@ export function ReviewPage() {
               </div>
             )}
           />
-          <Pager page={page} pageSize={PAGE_SIZE} count={shifts.data?.count ?? 0} onPage={setPage} />
         </>
       )}
     </div>

@@ -210,7 +210,7 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
             </dl>
           )}
         </Block>
-        <Block title={t("report.cancellationsTitle")}>
+        <Block title={t("report.cancellationsTitle")} testId="report-cancellations">
           <dl className="divide-y divide-border text-sm">
             <Row label={t("report.creditNotes")} value={report.credit_notes} />
             {report.cancellations.map((r) => (
@@ -223,6 +223,36 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
             <Row label={t("report.creditFromCancellations")} value={report.credit_from_cancellations} />
             <Row label={t("report.creditUnallocated")} value={report.credit_unallocated} />
           </dl>
+          {/* Desk cancellations before invoicing (FLOW 4) and voided drafts: no money moved,
+              but the manager reviews them with the shift (FLOW 9). */}
+          <h4 className="pt-2 text-sm font-medium">{t("report.lineCancellations")}</h4>
+          {report.line_cancellations.length === 0 ? (
+            <p className="text-sm text-muted">{t("report.none")}</p>
+          ) : (
+            <dl className="divide-y divide-border text-sm" data-testid="report-line-cancellations">
+              {report.line_cancellations.map((r) => (
+                <div key={r.code} className="flex items-baseline justify-between gap-3 py-1">
+                  <dt className="min-w-0 text-muted">{r.reason ? names.label(r.reason) : r.code}</dt>
+                  <dd className="tabular">{t("report.lineCount", { count: r.count })}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <h4 className="pt-2 text-sm font-medium">{t("report.voidedDrafts")}</h4>
+          {report.voided_drafts.length === 0 ? (
+            <p className="text-sm text-muted">{t("report.none")}</p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-border text-sm" data-testid="report-voided-drafts">
+              {report.voided_drafts.map((v) => (
+                <li key={v.invoice_id} className="flex flex-wrap items-baseline justify-between gap-2 py-1">
+                  <span className="min-w-0 break-words text-muted">
+                    {t("report.voidedDraftNote", { note: v.note })}
+                  </span>
+                  <MoneyText value={v.amount} />
+                </li>
+              ))}
+            </ul>
+          )}
         </Block>
         <Block title={t("report.refundsTitle")}>
           <dl className="divide-y divide-border text-sm">

@@ -11,8 +11,13 @@ import { cn } from "@/lib/utils";
 
 export type PrintFormat = "thermal" | "a4";
 
+/**
+ * `size` takes one or two lengths or a keyword, never a length with `auto` (the browser drops
+ * such a rule). A roll has no fixed height: 297 mm holds a typical receipt on one page and a
+ * longer document continues on the next. The thermal width is checked by the e2e print test.
+ */
 const PAGE_RULES: Record<PrintFormat, string> = {
-  thermal: "@page { size: 80mm auto; margin: 4mm; }",
+  thermal: "@page { size: 80mm 297mm; margin: 4mm; }",
   a4: "@page { size: A4; margin: 15mm; }",
 };
 

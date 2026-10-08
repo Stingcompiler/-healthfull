@@ -25,8 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { RadioGroup, RadioGroupSegment } from "@/components/ui/radio-group";
 import { isApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
@@ -321,32 +320,36 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
       ) : (
         <Form {...form}>
           <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4" data-testid="payment-form">
-            <Tabs
+            {/* A radio group, not tabs: the methods show no panel of their own (one form). */}
+            <RadioGroup
               value={method}
               onValueChange={(value) => {
                 setValue("method", value as PaymentMethod);
                 setError(null);
               }}
+              aria-label={t("payment.method.label")}
+              className="flex w-full flex-wrap justify-start gap-1 rounded-control bg-subtle p-1"
+              data-testid="payment-methods"
             >
-              <TabsList aria-label={t("payment.method.label")} className="flex h-auto w-full flex-wrap justify-start">
-                {methods.map((m, i) => {
-                  const Icon = METHOD_ICONS[m];
-                  return (
-                    <Tooltip key={m}>
-                      <TooltipTrigger asChild>
-                        <TabsTrigger value={m} className="h-11 flex-none md:h-9" data-testid={`method-${m}`}>
-                          <Icon aria-hidden="true" />
-                          {t(`payment.method.${m}`)}
-                        </TabsTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <KbdCombo combo={`alt+${String(i + 1)}`} />
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </TabsList>
-            </Tabs>
+              {methods.map((m, i) => {
+                const Icon = METHOD_ICONS[m];
+                return (
+                  <RadioGroupSegment
+                    key={m}
+                    value={m}
+                    className="h-11 flex-none md:h-9"
+                    data-testid={`method-${m}`}
+                    aria-keyshortcuts={`Alt+${String(i + 1)}`}
+                  >
+                    <Icon aria-hidden="true" />
+                    {t(`payment.method.${m}`)}
+                    <span aria-hidden="true" className="ms-1 hidden lg:inline-flex">
+                      <KbdCombo combo={`alt+${String(i + 1)}`} />
+                    </span>
+                  </RadioGroupSegment>
+                );
+              })}
+            </RadioGroup>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField

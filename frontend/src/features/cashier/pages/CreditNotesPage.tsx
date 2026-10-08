@@ -24,17 +24,30 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { usePermission } from "@/lib/auth/hooks";
+import { useCurrentUser, usePermission } from "@/lib/auth/hooks";
 
 import { PAGE_SIZE, useApproveCreditNote, useCreditNotes } from "../api";
 import { CashierNav } from "../components/CashierNav";
-import { Pager } from "../components/Pager";
 import { RefundRequestDialog } from "../components/RefundRequestDialog";
 import { isPositiveAmount } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import type { CreditNote } from "../types";
 
 type Filter = "draft" | "approved" | "all";
+
+function isOwnDraft(cn: CreditNote, meId: number | undefined): boolean {
+  return cn.status === "draft" && meId !== undefined && cn.created_by?.id === meId;
+}
+
+/** Why a draft has no Approve action for its author. */
+function OwnDraftHint() {
+  const { t } = useTranslation("cashier");
+  return (
+    <span className="text-xs text-muted" data-testid="credit-note-own-draft">
+      {t("creditNotes.ownDraft")}
+    </span>
+  );
+}
 
 /** Credit notes (FEATURES 5.11): the supervisor's approval queue and refund requests. */
 export function CreditNotesPage() {
@@ -47,12 +60,15 @@ export function CreditNotesPage() {
   const notes = useCreditNotes(filter === "all" ? undefined : filter, page);
   const canApprove = usePermission("billing.approve_credit_note");
   const canRefund = usePermission("payments.request_refund");
+  const meId = useCurrentUser()?.id;
+  // The person who drafted a note never approves it (ADR 0008).
+  const ownDraft = (cn: CreditNote) => isOwnDraft(cn, meId);
   const [approving, setApproving] = useState<CreditNote | null>(null);
   const [refunding, setRefunding] = useState<CreditNote | null>(null);
 
   const actions = (cn: CreditNote): DataTableRowAction[] => {
     const out: DataTableRowAction[] = [];
-    if (canApprove && cn.status === "draft")
+    if (canApprove && cn.status === "draft" && !ownDraft(cn))
       out.push({
         label: t("creditNotes.approve"),
         icon: <CheckCircle2 />,
@@ -87,10 +103,11 @@ export function CreditNotesPage() {
         meta: { label: t("creditNotes.columns.number") },
         cell: ({ row }) => (
           <span className="flex flex-col gap-1">
-            <bdi className="font-medium">{row.original.number ?? t("invoice.draft")}</bdi>
+            <bdi className="font-medium">{row.original.number ?? t("creditNotes.draft")}</bdi>
             <Badge variant={row.original.status === "approved" ? "success" : "warning"}>
               {t(`invoice.status.${row.original.status}`)}
             </Badge>
+            {isOwnDraft(row.original, meId) ? <OwnDraftHint /> : null}
           </span>
         ),
       },
@@ -125,7 +142,7 @@ export function CreditNotesPage() {
         cell: ({ row }) => <MoneyText value={row.original.refundable} />,
       },
     ],
-    [t, names],
+    [t, names, meId],
   );
 
   return (
@@ -158,18 +175,18 @@ export function CreditNotesPage() {
             getRowId={(r) => String(r.id)}
             caption={t("creditNotes.title")}
             rowActions={actions}
-            pageSize={PAGE_SIZE}
-            pageSizeOptions={[PAGE_SIZE]}
+            serverPagination={{ page, pageSize: PAGE_SIZE, count: notes.data?.count ?? 0, onPageChange: setPage }}
             minTableWidth={820}
             emptyState={<EmptyState bare size="compact" icon={<FileMinus />} title={t("creditNotes.empty")} />}
             renderCard={(cn, ctx) => (
               <div className="card-surface flex flex-col gap-2 p-4" data-testid="credit-note-row">
                 <div className="flex items-start justify-between gap-2">
                   <span className="flex min-w-0 flex-col gap-1">
-                    <bdi className="font-semibold">{cn.number ?? t("invoice.draft")}</bdi>
+                    <bdi className="font-semibold">{cn.number ?? t("creditNotes.draft")}</bdi>
                     <Badge variant={cn.status === "approved" ? "success" : "warning"}>
                       {t(`invoice.status.${cn.status}`)}
                     </Badge>
+                    {ownDraft(cn) ? <OwnDraftHint /> : null}
                   </span>
                   {ctx.actions}
                 </div>
@@ -188,7 +205,6 @@ export function CreditNotesPage() {
               </div>
             )}
           />
-          <Pager page={page} pageSize={PAGE_SIZE} count={notes.data?.count ?? 0} onPage={setPage} />
         </>
       )}
       <ApproveDialog

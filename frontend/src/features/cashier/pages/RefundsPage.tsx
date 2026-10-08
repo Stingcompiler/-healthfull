@@ -18,7 +18,6 @@ import { usePermission } from "@/lib/auth/hooks";
 import { PAGE_SIZE, useDecideRefund, usePayRefund, useRefunds } from "../api";
 import { CashierNav } from "../components/CashierNav";
 import { NoteDialog } from "../components/NoteDialog";
-import { Pager } from "../components/Pager";
 import { useNames } from "../lib/use-names";
 import type { Refund, RefundStatus } from "../types";
 
@@ -165,8 +164,7 @@ export function RefundsPage() {
             getRowId={(r) => String(r.id)}
             caption={t("refunds.title")}
             rowActions={actions}
-            pageSize={PAGE_SIZE}
-            pageSizeOptions={[PAGE_SIZE]}
+            serverPagination={{ page, pageSize: PAGE_SIZE, count: refunds.data?.count ?? 0, onPageChange: setPage }}
             minTableWidth={820}
             emptyState={<EmptyState bare size="compact" icon={<Undo2 />} title={t("refunds.empty")} />}
             renderCard={(r, ctx) => (
@@ -188,7 +186,6 @@ export function RefundsPage() {
               </div>
             )}
           />
-          <Pager page={page} pageSize={PAGE_SIZE} count={refunds.data?.count ?? 0} onPage={setPage} />
         </>
       )}
       <NoteDialog

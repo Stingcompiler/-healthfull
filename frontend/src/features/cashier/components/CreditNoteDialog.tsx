@@ -5,7 +5,16 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import { AlertCard } from "@/components/AlertCard";
-import { Form, FormControl, FormField, FormItem, FormLabel, SelectField, TextareaField } from "@/components/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  SelectField,
+  TextareaField,
+} from "@/components/form";
 import { MoneyText } from "@/components/MoneyText";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,19 +27,46 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { vmsg } from "@/lib/validation";
+import { translateMessage, vmsg } from "@/lib/validation";
 
 import { useCreateCreditNote, useReasons } from "../api";
+import { normalizeAmountInput } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import type { Invoice } from "../types";
 
-const schema = z.object({
-  reason: z.string().min(1, vmsg("validation.selectOption")),
-  note: z.string().trim().max(1000),
-  qty: z.record(z.string(), z.string()),
-});
+const WHOLE = /^\d+$/;
 
-type Values = z.infer<typeof schema>;
+/**
+ * Units per line are whole numbers from 0 to what is left of the line (Arabic-Indic digits
+ * accepted, as everywhere at the desk); at least one unit overall. Text inputs, not
+ * type=number: Chrome empties a number input typed in Arabic-Indic digits.
+ */
+function makeSchema(maxById: Record<string, number>) {
+  return z
+    .object({
+      reason: z.string().min(1, vmsg("validation.selectOption")),
+      note: z.string().trim().max(1000),
+      qty: z.record(z.string(), z.string()),
+    })
+    .superRefine((v, ctx) => {
+      let total = 0;
+      let invalid = false;
+      for (const [id, max] of Object.entries(maxById)) {
+        const raw = normalizeAmountInput(v.qty[id] ?? "");
+        if (raw === "") continue;
+        if (!WHOLE.test(raw) || Number(raw) > max) {
+          invalid = true;
+          ctx.addIssue({ code: "custom", path: ["qty", id], message: vmsg("cashier:creditNote.qtyInvalid", { max }) });
+          continue;
+        }
+        total += Number(raw);
+      }
+      if (!invalid && total === 0)
+        ctx.addIssue({ code: "custom", path: ["qty"], message: vmsg("cashier:creditNote.chooseLines") });
+    });
+}
+
+type Values = z.infer<ReturnType<typeof makeSchema>>;
 
 /** Mounted only while open, so every opening starts with a fresh form. */
 export function CreditNoteDialog(props: Parameters<typeof CreditNoteDialogOpen>[0]) {
@@ -58,17 +94,20 @@ function CreditNoteDialogOpen({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const creditable = invoice.lines.filter((l) => l.quantity - l.credited_quantity > 0);
+  const [schema] = useState(() =>
+    makeSchema(Object.fromEntries(creditable.map((l) => [String(l.id), l.quantity - l.credited_quantity]))),
+  );
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { reason: "", note: "", qty: {} } });
+  const { t: tCommon } = useTranslation();
+  // The "at least one unit" issue sits on `qty` itself; its type is the record's entries.
+  const qtyRoot = form.formState.errors.qty as { message?: unknown } | undefined;
+  const linesError = translateMessage(tCommon, typeof qtyRoot?.message === "string" ? qtyRoot.message : undefined);
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
     const lines = creditable
-      .map((l) => ({ invoice_line_id: l.id, quantity: Number.parseInt(v.qty[String(l.id)] ?? "0", 10) || 0 }))
+      .map((l) => ({ invoice_line_id: l.id, quantity: Number(normalizeAmountInput(v.qty[String(l.id)] ?? "")) }))
       .filter((l) => l.quantity > 0);
-    if (lines.length === 0) {
-      setError(t("creditNote.chooseLines"));
-      return;
-    }
     try {
       await create.mutateAsync({ invoiceId: invoice.id, body: { lines, reason: v.reason, note: v.note } });
       setDone(true);
@@ -117,7 +156,7 @@ function CreditNoteDialogOpen({
                       control={form.control}
                       name={`qty.${String(l.id)}`}
                       render={({ field }) => (
-                        <FormItem className="grid grid-cols-[1fr_6rem] items-center gap-3">
+                        <FormItem className="grid grid-cols-[1fr_6rem] items-center gap-x-3 gap-y-1">
                           <FormLabel className="flex min-w-0 flex-col items-start gap-0.5">
                             <span className="break-words">{names.name(l.service)}</span>
                             <span className="text-xs font-normal text-muted">
@@ -126,22 +165,26 @@ function CreditNoteDialogOpen({
                           </FormLabel>
                           <FormControl>
                             <Input
-                              type="number"
+                              type="text"
                               inputMode="numeric"
-                              min={0}
-                              max={max}
-                              step={1}
+                              autoComplete="off"
                               dir="ltr"
                               placeholder="0"
                               {...field}
                               data-testid={`credit-qty-${String(l.id)}`}
                             />
                           </FormControl>
+                          <FormMessage className="col-span-2" />
                         </FormItem>
                       )}
                     />
                   );
                 })}
+                {linesError ? (
+                  <p role="alert" className="text-xs font-medium text-danger-fg" data-testid="credit-lines-error">
+                    {linesError}
+                  </p>
+                ) : null}
               </fieldset>
               <SelectField
                 control={form.control}

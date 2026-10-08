@@ -265,7 +265,7 @@ export function InvoiceCard({
 
       <dl className="grid gap-1 text-sm sm:ms-auto sm:w-80" data-testid="invoice-totals">
         <Amount label={t("invoice.grossTotal")} value={invoice.gross_total} />
-        <Amount label={t("invoice.discountTotal")} value={invoice.discount_total} />
+        <Amount label={t("invoice.discountTotal")} value={negate(invoice.discount_total)} />
         <Amount label={t("invoice.payerTotal")} value={invoice.payer_total} />
         <Amount label={t("invoice.patientTotal")} value={invoice.patient_total} strong />
         {approved && invoice.paid !== null ? <Amount label={t("invoice.paid")} value={invoice.paid} /> : null}
@@ -280,7 +280,7 @@ export function InvoiceCard({
           <ul className="flex flex-col gap-1">
             {invoice.payments.map((p) => (
               <li key={p.payment_id} className="flex flex-wrap items-center justify-between gap-2">
-                <span className="flex items-center gap-2">
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
                   <bdi>{p.number}</bdi>
                   <span className="text-muted">{t(`payment.method.${p.method as PaymentMethod}`)}</span>
                   <StatusBadge
@@ -308,7 +308,7 @@ export function InvoiceCard({
             {invoice.credit_notes.map((cn) => (
               <li key={cn.id} className="flex flex-wrap items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
-                  <bdi>{cn.number ?? t("invoice.draft")}</bdi>
+                  <bdi>{cn.number ?? t("creditNotes.draft")}</bdi>
                   <Badge variant={cn.status === "approved" ? "success" : "warning"}>
                     {t(`invoice.status.${cn.status}`)}
                   </Badge>

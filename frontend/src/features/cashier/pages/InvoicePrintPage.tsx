@@ -14,6 +14,7 @@ import { useTranslateError } from "@/lib/api/translate-error";
 
 import { useInvoicePrint } from "../api";
 import { PrintFrame, type PrintFormat } from "../components/PrintFrame";
+import { negate } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import type { InvoicePrint } from "../types";
 import { DocHeader } from "./ReceiptPage";
@@ -79,7 +80,7 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
               {l.discount !== "0.00" ? (
                 <span className="flex justify-between gap-2">
                   <span>{t("invoice.discount")}</span>
-                  <MoneyText value={l.discount} />
+                  <MoneyText value={negate(l.discount)} />
                 </span>
               ) : null}
               {l.payer ? (
@@ -122,7 +123,7 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
                     <MoneyText value={l.unit_price} currency={false} />
                   </td>
                   <td className="py-1 text-end">
-                    <MoneyText value={l.discount} currency={false} />
+                    <MoneyText value={negate(l.discount)} currency={false} />
                   </td>
                   <td className="py-1 text-end">
                     <MoneyText value={l.payer_share} currency={false} />
@@ -138,7 +139,7 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
       )}
       <dl className="ms-auto grid w-full max-w-72 gap-0.5 border-t border-border pt-2">
         <Line label={t("invoice.grossTotal")} value={inv.gross_total} />
-        <Line label={t("invoice.discountTotal")} value={inv.discount_total} />
+        <Line label={t("invoice.discountTotal")} value={negate(inv.discount_total)} />
         <Line label={t("invoice.payerTotal")} value={inv.payer_total} />
         <Line label={t("invoice.patientTotal")} value={inv.patient_total} strong />
         {inv.paid !== null ? <Line label={t("invoice.paid")} value={inv.paid} /> : null}

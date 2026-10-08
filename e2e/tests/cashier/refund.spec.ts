@@ -24,8 +24,17 @@ test.describe("@cashier refund", () => {
     const invoice = cashier.getByTestId("approved-invoice");
     await invoice.getByTestId("open-credit-note").click();
     const dialog = cashier.getByTestId("credit-note-dialog");
-    await dialog.locator("input[type=number]").first().fill("1");
+    const qty = dialog.locator("[data-testid^=credit-qty-]").first();
     await choose(cashier, tr("en", "reason.code"), "Service cancelled");
+    // No unit chosen: a validation message under the lines, not a system error.
+    await dialog.getByRole("button", { name: t("cashier:creditNote.submit") }).click();
+    await expect(dialog.getByTestId("credit-lines-error")).toHaveText(t("cashier:creditNote.chooseLines"));
+    // More than the line holds is refused on the line itself.
+    await qty.fill("5");
+    await dialog.getByRole("button", { name: t("cashier:creditNote.submit") }).click();
+    await expect(dialog.getByText(t("cashier:creditNote.qtyInvalid", { max: "1" }))).toBeVisible();
+    // Arabic-Indic digits are read as the number they are.
+    await qty.fill("١");
     await dialog.getByRole("button", { name: t("cashier:creditNote.submit") }).click();
     await expect(dialog.getByText(t("cashier:creditNote.createdTitle"))).toBeVisible();
     await dialog.getByRole("button", { name: tr("en", "actions.close") }).first().click();

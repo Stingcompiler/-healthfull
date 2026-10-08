@@ -24,6 +24,7 @@ import {
   useAuthorize,
   usePerformFirstVisit,
   useReasons,
+  useRequesters,
   useRevokeAuthorization,
 } from "../api";
 import { CashierNav } from "../components/CashierNav";
@@ -35,6 +36,8 @@ import { useNames } from "../lib/use-names";
 import type { Authorization, PerformFirstVisit } from "../types";
 
 const KINDS = ["emergency", "insurance_approval", "credit_account", "other"] as const;
+/** The requester option meaning "nobody else asked": the authorizer is recorded. */
+const SELF = "self";
 
 const schema = z
   .object({
@@ -42,6 +45,7 @@ const schema = z
     reason: z.string().min(1, vmsg("validation.selectOption")),
     note: z.string().trim().max(1000),
     reference: z.string().trim().max(100),
+    requester: z.string(),
   })
   .superRefine((v, ctx) => {
     if (v.kind === "insurance_approval" && !v.reference) {
@@ -50,6 +54,8 @@ const schema = z
   });
 
 type Values = z.infer<typeof schema>;
+
+const EMPTY: Values = { kind: "emergency", reason: "", note: "", reference: "", requester: SELF };
 
 /**
  * Perform-first authorization (FEATURES 4.4, invariant 1): a supervisor documents who allowed
@@ -95,10 +101,8 @@ function AuthorizeForm({ data }: { data: PerformFirstVisit }) {
   const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Authorization | null>(null);
-  const form = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { kind: "emergency", reason: "", note: "", reference: "" },
-  });
+  const requesters = useRequesters();
+  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: EMPTY });
   const kind = useWatch({ control: form.control, name: "kind" });
   const authorizable = data.lines.filter((l) => l.authorizable);
 
@@ -115,10 +119,11 @@ function AuthorizeForm({ data }: { data: PerformFirstVisit }) {
         reason: v.reason,
         note: v.note,
         approval_reference: v.reference,
+        requested_by_id: v.requester === SELF ? null : Number(v.requester),
       });
       setDone(auth);
       setSelected(new Set());
-      form.reset({ kind: "emergency", reason: "", note: "", reference: "" });
+      form.reset(EMPTY);
     } catch (e) {
       setError(translateError(e));
     }
@@ -198,6 +203,15 @@ function AuthorizeForm({ data }: { data: PerformFirstVisit }) {
                 options={(reasons.data ?? []).map((r) => ({ value: r.code, label: names.label(r) }))}
                 required
               />
+              <SelectField
+                control={form.control}
+                name="requester"
+                label={t("performFirst.requester")}
+                options={[
+                  { value: SELF, label: t("performFirst.requesterSelf") },
+                  ...(requesters.data ?? []).map((u) => ({ value: String(u.id), label: names.user(u) })),
+                ]}
+              />
               {kind === "insurance_approval" ? (
                 <TextField
                   control={form.control}
@@ -258,6 +272,11 @@ function AuthorizationList() {
                   {names.label(a.reason)} · {names.user(a.authorized_by)} ·{" "}
                   <DateText value={a.authorized_at} format="datetime" />
                 </span>
+                {a.requested_by && a.requested_by.id !== a.authorized_by?.id ? (
+                  <span className="text-muted" data-testid="authorization-requester">
+                    {t("performFirst.requestedBy", { name: names.user(a.requested_by) })}
+                  </span>
+                ) : null}
                 <span className="text-muted">{names.list(a.lines.map((l) => names.name(l.service)))}</span>
               </div>
               <Button

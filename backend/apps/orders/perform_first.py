@@ -123,7 +123,7 @@ def authorize(
     return _auth_json(_auths().get(pk=auth.pk))
 
 
-def requesters(q: str | None = None, *, limit: int = 50) -> list[dict[str, Any]]:
+def requesters(q: str | None = None, *, limit: int = 200) -> list[dict[str, Any]]:
     """Active staff who may have asked for a perform-first exception, by username."""
     qs = User.objects.filter(is_active=True)
     if q and q.strip():

@@ -45,7 +45,7 @@
     "closedAt": "Closed",
     "expectedCash": "Expected cash",
     "pendingBank": "Pending transfers",
-    "goToClose": "Shift and close",
+    "goToClose": "View and close shift",
     "none": "No open shift",
     "noneHint": "Open your shift to take payments.",
     "open": "Open shift",
@@ -77,7 +77,7 @@
     "credit": "Patient credit",
     "pending": "Pending transfers",
     "pickTitle": "Choose a visit",
-    "pickDescription": "Find the patient on the left, then pick the visit to invoice and collect.",
+    "pickDescription": "Find the patient, then pick the visit to invoice and collect.",
     "nothingTitle": "Nothing to bill",
     "nothingDescription": "This visit has no requested lines and no invoices.",
     "unbilledTitle_one": "{{count}} requested line",
@@ -88,8 +88,8 @@
     "qty_other": "Qty {{count}}",
     "authorized": "Perform first",
     "onDraft": "On a draft",
-    "changePayer": "Bill to…",
-    "changePayerFor": "Change who pays for {{name}}",
+    "changePayer": "Change payer…",
+    "changePayerFor": "Change payer for {{name}}",
     "unbilledTitle_zero": "No requested lines",
     "createInvoice_zero": "Invoice lines"
   },
@@ -174,7 +174,8 @@
     "chooseLines": "Enter at least one unit to credit.",
     "submit": "Draft credit note",
     "createdTitle": "Credit note drafted",
-    "createdBody": "A cashier supervisor approves it under Credit notes. Released patient money then opens a refund request."
+    "createdBody": "A cashier supervisor approves it under Credit notes. Released patient money then opens a refund request.",
+    "qtyInvalid": "Enter a whole number from 0 to {{max}}."
   },
   "payment": {
     "title": "Payment",
@@ -261,8 +262,8 @@
     "openingFloat": "Opening float",
     "cashIn": "Cash taken",
     "cashRefunds": "Cash refunds",
-    "handoversOut": "Handed over",
-    "handoversIn": "Received",
+    "handoversOut": "Handed over to others",
+    "handoversIn": "Received from others",
     "collectionTitle": "Collection",
     "cashConfirmed": "Cash",
     "bankConfirmed": "Confirmed bank money",
@@ -285,7 +286,12 @@
     "handoversTitle": "Cash handovers",
     "none": "None.",
     "pendingTitle_zero": "No transfers pending verification",
-    "ageDays_zero": "Today"
+    "ageDays_zero": "Today",
+    "lineCancellations": "Lines cancelled at the desk",
+    "voidedDrafts": "Draft invoices voided",
+    "voidedDraftNote": "Reason: {{note}}",
+    "lineCount_one": "{{count}} line",
+    "lineCount_other": "{{count}} lines"
   },
   "shiftPage": {
     "title": "My shift",
@@ -372,7 +378,12 @@
     "rejectDescription": "Its invoices return to outstanding. After the shift closed, the reversal is booked in your own open shift and the manager is alerted.",
     "rejectedTitle": "Transfer {{number, bidi}} rejected",
     "reversalBooked": "Reversal {{number, bidi}} booked in shift {{shift, bidi}}.",
-    "reversedInShift": "Reversed in its own open shift."
+    "reversedInShift": "Reversed in its own open shift.",
+    "selfRecorded": "You took this payment, so another checker confirms it.",
+    "needsShiftTitle": "Transfers from closed shifts",
+    "needsOwnShift": "Rejecting a transfer from a closed shift books its reversal in your own open shift. Open your shift first, then reject it.",
+    "needsSupervisor": "Rejecting a transfer from a closed shift books its reversal in the open shift of whoever rejects it. You have no till, so ask a cashier supervisor with an open shift to reject it.",
+    "rejectBlocked": "Reject (needs an open shift)"
   },
   "creditNotes": {
     "title": "Credit notes",
@@ -399,7 +410,9 @@
     "rebill": "Re-bill as a correction",
     "rebillHint": "Creates a new requested line for each fully credited line.",
     "lineQty": "{{name}} × {{qty}}",
-    "openVisit": "Open at the desk"
+    "openVisit": "Open at the desk",
+    "draft": "Draft credit note",
+    "ownDraft": "You drafted this note, so someone else approves it."
   },
   "refunds": {
     "title": "Refunds",
@@ -459,7 +472,10 @@
     "noneActive": "No active authorizations.",
     "revoke": "Revoke",
     "revokeTitle": "Revoke authorization",
-    "revokeDescription": "Lines that have not started go back to pay-first. Work already performed stays covered."
+    "revokeDescription": "Lines that have not started go back to pay-first. Work already performed stays covered.",
+    "requester": "Asked for by",
+    "requesterSelf": "Nobody else (my own decision)",
+    "requestedBy": "Asked for by {{name}}"
   },
   "review": {
     "pageTitle": "Shift review",

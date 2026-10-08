@@ -19,7 +19,6 @@ import { usePermission } from "@/lib/auth/hooks";
 import { PAGE_SIZE, useConfirmTransfer, useReasons, useRejectTransfer, useTransfers } from "../api";
 import { CashierNav } from "../components/CashierNav";
 import { NoteDialog } from "../components/NoteDialog";
-import { Pager } from "../components/Pager";
 import { useNames } from "../lib/use-names";
 import type { Rejection, Transfer, Verification } from "../types";
 
@@ -41,6 +40,7 @@ export function TransfersPage() {
   const transfers = useTransfers(verification, page);
   const canConfirm = usePermission("payments.confirm_transfer");
   const canReject = usePermission("payments.reject_transfer");
+  const canOpenShift = usePermission("payments.open_shift");
   const confirm = useConfirmTransfer();
   const reject = useRejectTransfer();
   const rejectReasons = useReasons("transfer_reject", canReject);
@@ -51,7 +51,8 @@ export function TransfersPage() {
   const actions = (row: Transfer): DataTableRowAction[] => {
     const out: DataTableRowAction[] = [];
     const v = row.payment.verification;
-    if (canConfirm && v === "pending")
+    // The person who took the payment never confirms it (ADR 0008).
+    if (canConfirm && v === "pending" && !row.self_recorded)
       out.push({
         label: t("transfers.confirm"),
         icon: <BadgeCheck />,
@@ -59,11 +60,13 @@ export function TransfersPage() {
           setConfirming(row);
         },
       });
+    // A closed shift's transfer is rejected into the viewer's own open shift (FEATURES 6.8).
     if (canReject && v !== "rejected")
       out.push({
-        label: t("transfers.reject"),
+        label: row.reject_needs_open_shift ? t("transfers.rejectBlocked") : t("transfers.reject"),
         icon: <Ban />,
         destructive: true,
+        disabled: row.reject_needs_open_shift,
         onSelect: () => {
           setRejecting(row);
         },
@@ -98,11 +101,11 @@ export function TransfersPage() {
       {
         id: "bank",
         header: t("transfers.columns.bank"),
-        meta: { label: t("transfers.columns.bank") },
+        meta: { label: t("transfers.columns.bank"), className: "whitespace-normal" },
         cell: ({ row }) => (
-          <span className="flex flex-col">
+          <span className="flex min-w-0 flex-col">
             <span>{names.name(row.original.payment.bank)}</span>
-            <bdi className="text-xs text-muted" data-testid="transfer-reference">
+            <bdi className="text-xs break-all text-muted" data-testid="transfer-reference">
               {row.original.payment.reference}
             </bdi>
             <TransferSender payment={row.original.payment} />
@@ -113,29 +116,20 @@ export function TransfersPage() {
         id: "amount",
         header: t("transfers.columns.amount"),
         meta: { label: t("transfers.columns.amount"), align: "end" },
-        cell: ({ row }) => <MoneyText value={row.original.payment.amount} />,
-      },
-      {
-        id: "age",
-        header: t("transfers.columns.age"),
-        meta: { label: t("transfers.columns.age"), align: "end" },
-        cell: ({ row }) => t("report.ageDays", { count: row.original.payment.age_days }),
+        cell: ({ row }) => (
+          <span className="flex flex-col items-end">
+            <MoneyText value={row.original.payment.amount} />
+            <span className="text-xs text-muted">
+              {t("transfers.columns.age")}: {t("report.ageDays", { count: row.original.payment.age_days })}
+            </span>
+          </span>
+        ),
       },
       {
         id: "shift",
         header: t("transfers.columns.shift"),
-        meta: { label: t("transfers.columns.shift") },
-        cell: ({ row }) => (
-          <span className="flex flex-col">
-            <span>{names.user(row.original.cashier)}</span>
-            <span className="flex items-center gap-1 text-xs text-muted">
-              <bdi>{row.original.payment.shift_number}</bdi>
-              {row.original.payment.shift_status === "closed" ? (
-                <Badge variant="neutral">{t("shift.status.closed")}</Badge>
-              ) : null}
-            </span>
-          </span>
-        ),
+        meta: { label: t("transfers.columns.shift"), className: "whitespace-normal" },
+        cell: ({ row }) => <ShiftCell transfer={row.original} />,
       },
     ],
     [t, names],
@@ -177,6 +171,13 @@ export function TransfersPage() {
           </span>
         </AlertCard>
       ) : null}
+      {canReject && (transfers.data?.items ?? []).some((r) => r.reject_needs_open_shift) ? (
+        <div data-testid="reject-needs-shift">
+          <AlertCard variant="info" title={t("transfers.needsShiftTitle")}>
+            {canOpenShift ? t("transfers.needsOwnShift") : t("transfers.needsSupervisor")}
+          </AlertCard>
+        </div>
+      ) : null}
       {transfers.isError ? (
         <AlertCard variant="danger" title={t("errors:title")}>
           {translateError(transfers.error)}
@@ -190,9 +191,8 @@ export function TransfersPage() {
             getRowId={(r) => String(r.payment.id)}
             caption={t("transfers.title")}
             rowActions={actions}
-            pageSize={PAGE_SIZE}
-            pageSizeOptions={[PAGE_SIZE]}
-            minTableWidth={820}
+            serverPagination={{ page, pageSize: PAGE_SIZE, count: transfers.data?.count ?? 0, onPageChange: setPage }}
+            minTableWidth={760}
             emptyState={<EmptyState bare size="compact" icon={<Landmark />} title={t("transfers.empty")} />}
             renderCard={(r, ctx) => (
               <div className="card-surface flex flex-col gap-2 p-4" data-testid="transfer-row">
@@ -213,11 +213,11 @@ export function TransfersPage() {
                   <DateText value={r.payment.created_at} format="datetime" />
                 </span>
                 <TransferSender payment={r.payment} />
+                <ShiftCell transfer={r} />
                 <MoneyText value={r.payment.amount} className="text-base" />
               </div>
             )}
           />
-          <Pager page={page} pageSize={PAGE_SIZE} count={transfers.data?.count ?? 0} onPage={setPage} />
         </>
       )}
       <NoteDialog
@@ -259,6 +259,29 @@ export function TransfersPage() {
         }}
       />
     </div>
+  );
+}
+
+/** Who took the payment and in which shift; a closed shift and the viewer's own payment show. */
+function ShiftCell({ transfer }: { transfer: Transfer }) {
+  const { t } = useTranslation("cashier");
+  const names = useNames();
+  const p = transfer.payment;
+  return (
+    <span className="flex min-w-0 flex-col gap-1 text-sm">
+      <span>{names.user(transfer.cashier)}</span>
+      <bdi className="text-xs text-muted">{p.shift_number}</bdi>
+      {p.shift_status === "closed" ? (
+        <span>
+          <Badge variant="neutral">{t("shift.status.closed")}</Badge>
+        </span>
+      ) : null}
+      {transfer.self_recorded && p.verification === "pending" ? (
+        <span className="text-xs text-muted" data-testid="transfer-self-recorded">
+          {t("transfers.selfRecorded")}
+        </span>
+      ) : null}
+    </span>
   );
 }
 

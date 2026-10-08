@@ -46,6 +46,7 @@ export const cashierKeys = {
   performFirstVisit: (visitId: number) => ["cashier", "perform-first", "visit", visitId] as const,
   authorizations: (active: boolean | undefined, page: number) =>
     ["cashier", "perform-first", "list", active, page] as const,
+  requesters: ["cashier", "perform-first", "requesters"] as const,
 };
 
 /** Page size of the cashier queues. */
@@ -242,6 +243,15 @@ export function useAuthorizations(active: boolean | undefined, page: number) {
         }),
       ),
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Active staff who may have asked for a perform-first exception (FEATURES 4.4 "who"). */
+export function useRequesters() {
+  return useQuery({
+    queryKey: cashierKeys.requesters,
+    queryFn: () => unwrap(api.GET("/api/orders/perform-first/requesters")),
+    staleTime: 60_000,
   });
 }
 

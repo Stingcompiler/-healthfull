@@ -20,7 +20,7 @@ import {
   useHandoverTargets,
   useReceiveHandover,
 } from "../api";
-import { isAmount, isPositiveAmount, normalizeAmountInput } from "../lib/money";
+import { isAmount, isPositiveAmount, negate, normalizeAmountInput } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import type { Handover, HandoverIn, ShiftReport } from "../types";
 import { NoteDialog } from "./NoteDialog";
@@ -183,7 +183,8 @@ export function HandoverPanel({ report }: { report: ShiftReport }) {
                 <span className="flex min-w-0 flex-wrap items-center gap-2">
                   <bdi>{h.number}</bdi>
                   <span className="text-muted">{recipient(h)}</span>
-                  <MoneyText value={h.amount} />
+                  {/* Cash leaving this drawer: a minus, as in the shift report. */}
+                  <MoneyText value={negate(h.amount)} toneNegative />
                 </span>
                 <Button
                   variant="ghost"

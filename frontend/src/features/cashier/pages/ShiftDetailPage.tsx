@@ -76,12 +76,13 @@ export function ShiftDetailPage() {
         </AlertCard>
       ) : (
         <>
-          {canReview && shift.data.shift.status === "closed" && !shift.data.shift.review ? (
-            <ReviewForm report={shift.data} />
-          ) : null}
+          {/* The figures first, then the sign-off that asks the manager to check them. */}
           <PrintArea>
             <ShiftReportView report={shift.data} />
           </PrintArea>
+          {canReview && shift.data.shift.status === "closed" && !shift.data.shift.review ? (
+            <ReviewForm report={shift.data} />
+          ) : null}
         </>
       )}
     </div>
