@@ -4,7 +4,7 @@
 * Call next: the first entry in serving order that is waiting and ready. Ready means the
   consultation fee is settled or covered by a perform-first authorization, or none is due
   (invariant 1); an unpaid visit keeps its token but is never called.
-* Tokens ahead (printed on the token slip): entries still waiting or called that are
+* Tokens ahead (printed on the token slip): ready entries still waiting or called that are
   served before this one.
 * Waiting-room screens show a name only as the first name and the initial of the next
   name ("Ahmed M.", "عبد الله ط."): enough for a patient to recognise the call, never the

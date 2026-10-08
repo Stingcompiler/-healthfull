@@ -76,15 +76,22 @@
         "type": "object"
       },
       "AppointmentCancelIn": {
+        "description": "Cancel with an ``appointment_cancel`` reason code (invariant 4) and the caller's words.",
         "properties": {
           "note": {
+            "default": "",
             "maxLength": 300,
             "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "maxLength": 40,
+            "title": "Reason Code",
             "type": "string"
           }
         },
         "required": [
-          "note"
+          "reason_code"
         ],
         "title": "AppointmentCancelIn",
         "type": "object"
@@ -155,6 +162,16 @@
           "cancel_note": {
             "title": "Cancel Note",
             "type": "string"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "contact_name": {
             "title": "Contact Name",
@@ -246,6 +263,7 @@
           "rescheduled_from_id",
           "notes",
           "visit_id",
+          "cancel_reason",
           "cancel_note"
         ],
         "title": "AppointmentOut",
@@ -486,6 +504,18 @@
           }
         },
         "title": "CheckInIn",
+        "type": "object"
+      },
+      "ConfirmIn": {
+        "properties": {
+          "include_duplicates": {
+            "default": false,
+            "description": "Also register the rows flagged as possible duplicates",
+            "title": "Include Duplicates",
+            "type": "boolean"
+          }
+        },
+        "title": "ConfirmIn",
         "type": "object"
       },
       "CoverageBriefOut": {
@@ -1194,6 +1224,244 @@
         "title": "HealthOut",
         "type": "object"
       },
+      "ImportJobOut": {
+        "properties": {
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "confirmed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "duplicate_rows": {
+            "title": "Duplicate Rows",
+            "type": "integer"
+          },
+          "error_rows": {
+            "title": "Error Rows",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "imported_rows": {
+            "title": "Imported Rows",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          },
+          "skipped_rows": {
+            "title": "Skipped Rows",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "uploaded",
+              "validated",
+              "confirmed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total_rows": {
+            "title": "Total Rows",
+            "type": "integer"
+          },
+          "uploaded_by": {
+            "$ref": "#/components/schemas/UserRefOut"
+          },
+          "valid_rows": {
+            "title": "Valid Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "original_filename",
+          "total_rows",
+          "valid_rows",
+          "error_rows",
+          "duplicate_rows",
+          "imported_rows",
+          "skipped_rows",
+          "created_at",
+          "uploaded_by",
+          "confirmed_at",
+          "confirmed_by"
+        ],
+        "title": "ImportJobOut",
+        "type": "object"
+      },
+      "ImportPatientDataOut": {
+        "description": "A row as read from the sheet (empty strings for empty cells).",
+        "properties": {
+          "address": {
+            "default": "",
+            "title": "Address",
+            "type": "string"
+          },
+          "age_years": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Years"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "emergency_contact_name": {
+            "default": "",
+            "title": "Emergency Contact Name",
+            "type": "string"
+          },
+          "emergency_contact_phone": {
+            "default": "",
+            "title": "Emergency Contact Phone",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "default": "",
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "default": "",
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "national_id": {
+            "default": "",
+            "title": "National Id",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          },
+          "phone": {
+            "default": "",
+            "title": "Phone",
+            "type": "string"
+          },
+          "phone_alt": {
+            "default": "",
+            "title": "Phone Alt",
+            "type": "string"
+          },
+          "sex": {
+            "default": "",
+            "title": "Sex",
+            "type": "string"
+          }
+        },
+        "title": "ImportPatientDataOut",
+        "type": "object"
+      },
+      "ImportRowOut": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ImportPatientDataOut"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/RowErrorOut"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "result_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The patient file created from the row",
+            "title": "Result Id"
+          },
+          "row_no": {
+            "description": "The row number in the sheet (1 = header)",
+            "title": "Row No",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "valid",
+              "warning",
+              "error",
+              "duplicate",
+              "imported",
+              "skipped"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/RowHintOut"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "row_no",
+          "status",
+          "data",
+          "errors",
+          "warnings",
+          "result_id"
+        ],
+        "title": "ImportRowOut",
+        "type": "object"
+      },
       "LineOut": {
         "description": "A service line of the visit with its display state; never a price.",
         "properties": {
@@ -1377,12 +1645,8 @@
             "type": "string"
           },
           "reason_code": {
-            "enum": [
-              "DUPLICATE_REGISTRATION",
-              "EMERGENCY_IDENTIFIED",
-              "SPELLING_VARIANT",
-              "OTHER"
-            ],
+            "description": "A patient_merge reason code",
+            "maxLength": 40,
             "title": "Reason Code",
             "type": "string"
           }
@@ -1413,6 +1677,17 @@
             "title": "Note",
             "type": "string"
           },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MergeReasonOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null for merges recorded before codes"
+          },
           "reason_code": {
             "description": "Merge reason code; empty for older free-text notes",
             "title": "Reason Code",
@@ -1430,11 +1705,41 @@
           "source",
           "target",
           "reason_code",
+          "reason",
           "note",
           "merged_by",
           "merged_at"
         ],
         "title": "MergeOut",
+        "type": "object"
+      },
+      "MergeReasonOut": {
+        "description": "A configurable ``patient_merge`` reason code (FEATURES 13.5).",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "requires_note": {
+            "title": "Requires Note",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "label_ar",
+          "label_en",
+          "requires_note"
+        ],
+        "title": "MergeReasonOut",
         "type": "object"
       },
       "OpenInvoiceOut": {
@@ -1458,6 +1763,41 @@
           "outstanding"
         ],
         "title": "OpenInvoiceOut",
+        "type": "object"
+      },
+      "Page_ImportRowOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ImportRowOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[ImportRowOut]",
         "type": "object"
       },
       "Page_PatientListOut_": {
@@ -2347,6 +2687,11 @@
       "QueueRowOut": {
         "description": "A token on the reception board.",
         "properties": {
+          "billed": {
+            "description": "The visit has invoiced or paid open lines (see VisitOut.billed)",
+            "title": "Billed",
+            "type": "boolean"
+          },
           "called_at": {
             "anyOf": [
               {
@@ -2470,6 +2815,7 @@
           "priority",
           "status",
           "ready",
+          "billed",
           "created_at",
           "called_at",
           "started_at",
@@ -2558,6 +2904,155 @@
           "name_en"
         ],
         "title": "RoomOut",
+        "type": "object"
+      },
+      "RowErrorOut": {
+        "properties": {
+          "code": {
+            "description": "An errors-namespace code (NAME_REQUIRED, INVALID_SEX...)",
+            "title": "Code",
+            "type": "string"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "field"
+        ],
+        "title": "RowErrorOut",
+        "type": "object"
+      },
+      "RowHintOut": {
+        "description": "A possible duplicate: an existing file (phone, national_id, name_dob) or an earlier row.",
+        "properties": {
+          "code": {
+            "enum": [
+              "phone",
+              "national_id",
+              "name_dob",
+              "in_file"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "file_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File No"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "patient_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patient Id"
+          },
+          "row_no": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row No"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "RowHintOut",
+        "type": "object"
+      },
+      "RowParams": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "problems",
+                  "valid",
+                  "error",
+                  "duplicate",
+                  "imported",
+                  "skipped"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "problems = errors and duplicates",
+            "title": "Status"
+          }
+        },
+        "title": "RowParams",
+        "type": "object"
+      },
+      "TemplateParams": {
+        "properties": {
+          "language": {
+            "default": "en",
+            "enum": [
+              "ar",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          }
+        },
+        "title": "TemplateParams",
         "type": "object"
       },
       "TimelineOut": {
@@ -2890,6 +3385,13 @@
       "VisitOptionsOut": {
         "description": "What the create-visit form chooses from.",
         "properties": {
+          "appointment_cancel_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ReasonOut"
+            },
+            "title": "Appointment Cancel Reasons",
+            "type": "array"
+          },
           "cancel_reasons": {
             "items": {
               "$ref": "#/components/schemas/ReasonOut"
@@ -2920,6 +3422,7 @@
           "departments",
           "doctors",
           "cancel_reasons",
+          "appointment_cancel_reasons",
           "follow_up_window_days"
         ],
         "title": "VisitOptionsOut",
@@ -2937,6 +3440,11 @@
               }
             ],
             "title": "Appointment Id"
+          },
+          "billed": {
+            "description": "Open lines on an approved invoice: cancelling credits them, so only a holder of billing.approve_credit_note can cancel",
+            "title": "Billed",
+            "type": "boolean"
           },
           "cancel_note": {
             "title": "Cancel Note",
@@ -3084,7 +3592,8 @@
           "closed_at",
           "cancelled_at",
           "cancel_reason",
-          "cancel_note"
+          "cancel_note",
+          "billed"
         ],
         "title": "VisitOut",
         "type": "object"
@@ -3672,6 +4181,181 @@
         ]
       }
     },
+    "/api/imports/patients": {
+      "post": {
+        "description": "Excel (.xlsx) or CSV, first sheet, header row in Arabic or English. 409 IMPORT_FILE_INVALID, IMPORT_FILE_TOO_LARGE, IMPORT_HEADERS_MISSING, IMPORT_NO_ROWS, IMPORT_TOO_MANY_ROWS.",
+        "operationId": "imports_preview_patients",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "title": "File",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "title": "FileParams",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJobOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Upload a patient sheet: validate every row and flag duplicates (nothing saved)",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/patients/template": {
+      "get": {
+        "description": "The response is the .xlsx file itself (attachment).",
+        "operationId": "imports_get_patient_template",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "default": "en",
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "An empty patient import sheet (.xlsx) with the header row",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
     "/api/imports/ping": {
       "get": {
         "operationId": "imports_get_ping",
@@ -3714,6 +4398,412 @@
           }
         ],
         "summary": "Check that the /api/imports router is reachable",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/{job_id}": {
+      "get": {
+        "operationId": "imports_get_job",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJobOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "An import job with its row counts",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/{job_id}/cancel": {
+      "post": {
+        "description": "409 IMPORT_JOB_CLOSED.",
+        "operationId": "imports_cancel_job",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJobOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Drop a preview without importing",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/{job_id}/confirm": {
+      "post": {
+        "description": "409 IMPORT_JOB_CLOSED.",
+        "operationId": "imports_confirm_job",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJobOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Register the valid rows (and, if asked, the possible duplicates)",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/{job_id}/rows": {
+      "get": {
+        "operationId": "imports_list_rows",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "description": "problems = errors and duplicates",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "problems",
+                    "valid",
+                    "error",
+                    "duplicate",
+                    "imported",
+                    "skipped"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "problems = errors and duplicates",
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ImportRowOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The rows of an import in sheet order (paged, filtered by status)",
         "tags": [
           "imports"
         ]
@@ -4498,6 +5588,77 @@
         ]
       }
     },
+    "/api/patients/merge-reasons": {
+      "get": {
+        "operationId": "patients_list_merge_reasons",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MergeReasonOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The reason codes a supervisor gives for merging two files",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
     "/api/patients/payers": {
       "get": {
         "operationId": "patients_list_payers",
@@ -5054,7 +6215,7 @@
     },
     "/api/patients/{patient_id}/merge": {
       "post": {
-        "description": "The duplicate stays as an inactive file pointing here; nothing is deleted and money does not move. 409 REASON_REQUIRED, MERGE_SAME_FILE, PATIENT_MERGED.",
+        "description": "The duplicate stays as an inactive file pointing here; nothing is deleted and money does not move. 409 REASON_UNKNOWN, REASON_REQUIRED, REASON_NOTE_REQUIRED, MERGE_SAME_FILE, PATIENT_MERGED.",
         "operationId": "patients_merge_patient",
         "parameters": [
           {
@@ -5793,6 +6954,7 @@
     },
     "/api/visits/appointments/day": {
       "get": {
+        "description": "Read-only: every holder of visits.view (doctors see their own day).",
         "operationId": "visits_get_agenda",
         "parameters": [
           {
@@ -6058,7 +7220,7 @@
     },
     "/api/visits/appointments/{appointment_id}/cancel": {
       "post": {
-        "description": "409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED.",
+        "description": "409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
         "operationId": "visits_cancel_appointment",
         "parameters": [
           {
@@ -6148,7 +7310,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Cancel a booking with the caller's reason",
+        "summary": "Cancel a booking with a reason code and the caller's words",
         "tags": [
           "visits"
         ]
@@ -6839,7 +8001,7 @@
     },
     "/api/visits/queue/{entry_id}/move": {
       "post": {
-        "description": "409 QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY (fee neither paid nor authorized).",
+        "description": "finish performs the consultation line and needs visits.finish_consultation (403). 409 QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY (fee neither paid nor authorized).",
         "operationId": "visits_move_queue_entry",
         "parameters": [
           {

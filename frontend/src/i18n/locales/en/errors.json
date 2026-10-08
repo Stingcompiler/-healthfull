@@ -278,5 +278,12 @@
   "LEDGER_ACCOUNT_MISSING": "The chart of accounts is incomplete. Contact the system administrator.",
   "JOURNAL_UNBALANCED": "The accounting entry does not balance. Contact the system administrator.",
   "JOURNAL_LINE_INVALID": "An accounting entry line is not valid. Contact the system administrator.",
-  "JOURNAL_DIMENSIONS_INVALID": "An accounting entry line is missing required details. Contact the system administrator."
+  "JOURNAL_DIMENSIONS_INVALID": "An accounting entry line is missing required details. Contact the system administrator.",
+  "IMPORT_FILE_INVALID": "Upload an Excel (.xlsx) or CSV file that can be opened.",
+  "IMPORT_FILE_TOO_LARGE": "The file is larger than {{limit_mb}} MB. Split it into smaller files.",
+  "IMPORT_HEADERS_MISSING": "The first row must name the columns: a name (Arabic or English) and the sex are required.",
+  "IMPORT_NO_ROWS": "The file has no patient rows under the header row.",
+  "IMPORT_TOO_MANY_ROWS": "One file can hold at most {{limit}} patients. Split it into smaller files.",
+  "IMPORT_JOB_CLOSED": "This import was already confirmed or cancelled.",
+  "VALUE_TOO_LONG": "A value is too long."
 }

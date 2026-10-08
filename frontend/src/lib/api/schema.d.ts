@@ -197,6 +197,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/patients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a patient sheet: validate every row and flag duplicates (nothing saved)
+         * @description Excel (.xlsx) or CSV, first sheet, header row in Arabic or English. 409 IMPORT_FILE_INVALID, IMPORT_FILE_TOO_LARGE, IMPORT_HEADERS_MISSING, IMPORT_NO_ROWS, IMPORT_TOO_MANY_ROWS.
+         */
+        post: operations["imports_preview_patients"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/patients/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An empty patient import sheet (.xlsx) with the header row
+         * @description The response is the .xlsx file itself (attachment).
+         */
+        get: operations["imports_get_patient_template"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/ping": {
         parameters: {
             query?: never;
@@ -206,6 +246,80 @@ export interface paths {
         };
         /** Check that the /api/imports router is reachable */
         get: operations["imports_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An import job with its row counts */
+        get: operations["imports_get_job"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Drop a preview without importing
+         * @description 409 IMPORT_JOB_CLOSED.
+         */
+        post: operations["imports_cancel_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/{job_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register the valid rows (and, if asked, the possible duplicates)
+         * @description 409 IMPORT_JOB_CLOSED.
+         */
+        post: operations["imports_confirm_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/{job_id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The rows of an import in sheet order (paged, filtered by status) */
+        get: operations["imports_list_rows"];
         put?: never;
         post?: never;
         delete?: never;
@@ -360,6 +474,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/patients/merge-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The reason codes a supervisor gives for merging two files */
+        get: operations["patients_list_merge_reasons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/patients/payers": {
         parameters: {
             query?: never;
@@ -461,7 +592,7 @@ export interface paths {
         put?: never;
         /**
          * Merge a duplicate file into this one (supervisor, with a reason)
-         * @description The duplicate stays as an inactive file pointing here; nothing is deleted and money does not move. 409 REASON_REQUIRED, MERGE_SAME_FILE, PATIENT_MERGED.
+         * @description The duplicate stays as an inactive file pointing here; nothing is deleted and money does not move. 409 REASON_UNKNOWN, REASON_REQUIRED, REASON_NOTE_REQUIRED, MERGE_SAME_FILE, PATIENT_MERGED.
          */
         post: operations["patients_merge_patient"];
         delete?: never;
@@ -603,7 +734,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A doctor's day: free slots still ahead and every appointment */
+        /**
+         * A doctor's day: free slots still ahead and every appointment
+         * @description Read-only: every holder of visits.view (doctors see their own day).
+         */
         get: operations["visits_get_agenda"];
         put?: never;
         post?: never;
@@ -657,8 +791,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Cancel a booking with the caller's reason
-         * @description 409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED.
+         * Cancel a booking with a reason code and the caller's words
+         * @description 409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.
          */
         post: operations["visits_cancel_appointment"];
         delete?: never;
@@ -823,7 +957,7 @@ export interface paths {
         put?: never;
         /**
          * Call, start, finish, mark no-show or requeue a token
-         * @description 409 QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY (fee neither paid nor authorized).
+         * @description finish performs the consultation line and needs visits.finish_consultation (403). 409 QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY (fee neither paid nor authorized).
          */
         post: operations["visits_move_queue_entry"];
         delete?: never;
@@ -944,10 +1078,18 @@ export interface components {
             /** Severity */
             severity: string;
         };
-        /** AppointmentCancelIn */
+        /**
+         * AppointmentCancelIn
+         * @description Cancel with an ``appointment_cancel`` reason code (invariant 4) and the caller's words.
+         */
         AppointmentCancelIn: {
-            /** Note */
+            /**
+             * Note
+             * @default
+             */
             note: string;
+            /** Reason Code */
+            reason_code: string;
         };
         /** AppointmentIn */
         AppointmentIn: {
@@ -985,6 +1127,7 @@ export interface components {
         AppointmentOut: {
             /** Cancel Note */
             cancel_note: string;
+            cancel_reason: components["schemas"]["ReasonOut"] | null;
             /** Contact Name */
             contact_name: string;
             /** Contact Phone */
@@ -1120,6 +1263,15 @@ export interface components {
              * @default true
              */
             use_default_coverage: boolean;
+        };
+        /** ConfirmIn */
+        ConfirmIn: {
+            /**
+             * Include Duplicates
+             * @description Also register the rows flagged as possible duplicates
+             * @default false
+             */
+            include_duplicates: boolean;
         };
         /**
          * CoverageBriefOut
@@ -1407,6 +1559,124 @@ export interface components {
             /** Version */
             version: string;
         };
+        /** ImportJobOut */
+        ImportJobOut: {
+            /** Confirmed At */
+            confirmed_at: string | null;
+            confirmed_by: components["schemas"]["UserRefOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Duplicate Rows */
+            duplicate_rows: number;
+            /** Error Rows */
+            error_rows: number;
+            /** Id */
+            id: number;
+            /** Imported Rows */
+            imported_rows: number;
+            /** Kind */
+            kind: string;
+            /** Original Filename */
+            original_filename: string;
+            /** Skipped Rows */
+            skipped_rows: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "uploaded" | "validated" | "confirmed" | "failed" | "cancelled";
+            /** Total Rows */
+            total_rows: number;
+            uploaded_by: components["schemas"]["UserRefOut"];
+            /** Valid Rows */
+            valid_rows: number;
+        };
+        /**
+         * ImportPatientDataOut
+         * @description A row as read from the sheet (empty strings for empty cells).
+         */
+        ImportPatientDataOut: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /** Age Years */
+            age_years?: number | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /**
+             * Emergency Contact Name
+             * @default
+             */
+            emergency_contact_name: string;
+            /**
+             * Emergency Contact Phone
+             * @default
+             */
+            emergency_contact_phone: string;
+            /**
+             * Full Name Ar
+             * @default
+             */
+            full_name_ar: string;
+            /**
+             * Full Name En
+             * @default
+             */
+            full_name_en: string;
+            /**
+             * National Id
+             * @default
+             */
+            national_id: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Phone Alt
+             * @default
+             */
+            phone_alt: string;
+            /**
+             * Sex
+             * @default
+             */
+            sex: string;
+        };
+        /** ImportRowOut */
+        ImportRowOut: {
+            data: components["schemas"]["ImportPatientDataOut"];
+            /** Errors */
+            errors: components["schemas"]["RowErrorOut"][];
+            /**
+             * Result Id
+             * @description The patient file created from the row
+             */
+            result_id: number | null;
+            /**
+             * Row No
+             * @description The row number in the sheet (1 = header)
+             */
+            row_no: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped";
+            /** Warnings */
+            warnings: components["schemas"]["RowHintOut"][];
+        };
         /**
          * LineOut
          * @description A service line of the visit with its display state; never a price.
@@ -1488,9 +1758,9 @@ export interface components {
             note: string;
             /**
              * Reason Code
-             * @enum {string}
+             * @description A patient_merge reason code
              */
-            reason_code: "DUPLICATE_REGISTRATION" | "EMERGENCY_IDENTIFIED" | "SPELLING_VARIANT" | "OTHER";
+            reason_code: string;
         };
         /** MergeOut */
         MergeOut: {
@@ -1504,6 +1774,8 @@ export interface components {
             merged_by: components["schemas"]["UserRefOut"];
             /** Note */
             note: string;
+            /** @description null for merges recorded before codes */
+            reason: components["schemas"]["MergeReasonOut"] | null;
             /**
              * Reason Code
              * @description Merge reason code; empty for older free-text notes
@@ -1511,6 +1783,20 @@ export interface components {
             reason_code: string;
             source: components["schemas"]["PatientRefOut"];
             target: components["schemas"]["PatientRefOut"];
+        };
+        /**
+         * MergeReasonOut
+         * @description A configurable ``patient_merge`` reason code (FEATURES 13.5).
+         */
+        MergeReasonOut: {
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Requires Note */
+            requires_note: boolean;
         };
         /** OpenInvoiceOut */
         OpenInvoiceOut: {
@@ -1520,6 +1806,20 @@ export interface components {
             number: string;
             /** Outstanding */
             outstanding: string;
+        };
+        /** Page[ImportRowOut] */
+        Page_ImportRowOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ImportRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
         };
         /** Page[PatientListOut] */
         Page_PatientListOut_: {
@@ -1878,6 +2178,11 @@ export interface components {
          * @description A token on the reception board.
          */
         QueueRowOut: {
+            /**
+             * Billed
+             * @description The visit has invoiced or paid open lines (see VisitOut.billed)
+             */
+            billed: boolean;
             /** Called At */
             called_at: string | null;
             /**
@@ -1950,6 +2255,64 @@ export interface components {
             name_ar: string;
             /** Name En */
             name_en: string;
+        };
+        /** RowErrorOut */
+        RowErrorOut: {
+            /**
+             * Code
+             * @description An errors-namespace code (NAME_REQUIRED, INVALID_SEX...)
+             */
+            code: string;
+            /** Field */
+            field: string;
+        };
+        /**
+         * RowHintOut
+         * @description A possible duplicate: an existing file (phone, national_id, name_dob) or an earlier row.
+         */
+        RowHintOut: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "phone" | "national_id" | "name_dob" | "in_file";
+            /** File No */
+            file_no?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Patient Id */
+            patient_id?: number | null;
+            /** Row No */
+            row_no?: number | null;
+        };
+        /** RowParams */
+        RowParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+            /**
+             * Status
+             * @description problems = errors and duplicates
+             */
+            status?: ("problems" | "valid" | "error" | "duplicate" | "imported" | "skipped") | null;
+        };
+        /** TemplateParams */
+        TemplateParams: {
+            /**
+             * Language
+             * @default en
+             * @enum {string}
+             */
+            language: "ar" | "en";
         };
         /**
          * TimelineOut
@@ -2092,6 +2455,8 @@ export interface components {
          * @description What the create-visit form chooses from.
          */
         VisitOptionsOut: {
+            /** Appointment Cancel Reasons */
+            appointment_cancel_reasons: components["schemas"]["ReasonOut"][];
             /** Cancel Reasons */
             cancel_reasons: components["schemas"]["ReasonOut"][];
             /** Departments */
@@ -2105,6 +2470,11 @@ export interface components {
         VisitOut: {
             /** Appointment Id */
             appointment_id: number | null;
+            /**
+             * Billed
+             * @description Open lines on an approved invoice: cancelling credits them, so only a holder of billing.approve_credit_note can cancel
+             */
+            billed: boolean;
             /** Cancel Note */
             cancel_note: string;
             cancel_reason: components["schemas"]["ReasonOut"] | null;
@@ -2611,6 +2981,137 @@ export interface operations {
             };
         };
     };
+    imports_preview_patients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * File
+                     * Format: binary
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_get_patient_template: {
+        parameters: {
+            query?: {
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     imports_get_ping: {
         parameters: {
             query?: never;
@@ -2640,6 +3141,266 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_get_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_cancel_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_confirm_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_list_rows: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description problems = errors and duplicates */
+                status?: ("problems" | "valid" | "error" | "duplicate" | "imported" | "skipped") | null;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ImportRowOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3141,6 +3902,62 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    patients_list_merge_reasons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergeReasonOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
