@@ -17,6 +17,7 @@ from apps.core.models import (
     DoctorProfile,
     Notification,
     Policy,
+    PrintTemplate,
     ReasonCode,
     Role,
     RolePermission,
@@ -155,6 +156,14 @@ class PolicyAdmin(SingletonAdmin[Policy]):
         "session_idle_minutes",
         "updated_at",
     )
+
+
+@admin.register(PrintTemplate)
+class PrintTemplateAdmin(admin.ModelAdmin[PrintTemplate]):
+    """Header and footer of printed documents per paper size (FEATURES 0.10, 13.7)."""
+
+    list_display = ("document", "paper", "show_logo", "active", "updated_at")
+    list_filter = ("document", "paper", "active")
 
 
 @admin.register(Sequence)

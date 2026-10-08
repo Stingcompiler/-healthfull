@@ -30,6 +30,9 @@ __all__ = [
     "money",
     "percent_of",
     "q",
+    "require_money",
+    "require_non_negative",
+    "require_positive",
     "split_even",
     "split_percent",
     "sum_money",
@@ -126,6 +129,45 @@ def _require_money(value: Decimal, name: str) -> Decimal:
     if not is_money(value):
         raise _invalid(value, f"{name} must be finite with at most 2 decimal places")
     return q(value)
+
+
+def require_money(value: Decimal, name: str = "amount") -> Decimal:
+    """Return ``value`` if it is money (finite Decimal, at most 2 places).
+
+    Raises:
+        TypeError: if ``value`` is not a Decimal.
+        DomainError: ``INVALID_AMOUNT`` (``details.field`` = ``name``) otherwise.
+    """
+    if isinstance(value, bool) or not isinstance(value, Decimal):
+        raise TypeError(f"{name} must be Decimal, got {type(value).__name__}")
+    if not is_money(value):
+        raise DomainError(
+            "INVALID_AMOUNT",
+            f"{name} must be finite with at most 2 decimal places",
+            field=name,
+            value=str(value),
+        )
+    return q(value)
+
+
+def require_non_negative(value: Decimal, name: str = "amount") -> Decimal:
+    """:func:`require_money` plus ``value >= 0`` (``INVALID_AMOUNT`` otherwise)."""
+    amount = require_money(value, name)
+    if amount < 0:
+        raise DomainError(
+            "INVALID_AMOUNT", f"{name} must not be negative", field=name, value=str(amount)
+        )
+    return amount
+
+
+def require_positive(value: Decimal, name: str = "amount") -> Decimal:
+    """:func:`require_money` plus ``value > 0`` (``INVALID_AMOUNT`` otherwise)."""
+    amount = require_money(value, name)
+    if amount <= 0:
+        raise DomainError(
+            "INVALID_AMOUNT", f"{name} must be greater than zero", field=name, value=str(amount)
+        )
+    return amount
 
 
 def _require_percent(percent: Decimal | int) -> Decimal:

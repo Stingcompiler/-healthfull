@@ -92,83 +92,101 @@ api (ninja router)  ->  services  ->  domain (pure)
 
 ### 4.4 The service line (FLOW.md section "حالات سطر الخدمة")
 
-A `ServiceLine` is one ordered unit of service on a visit. It has two orthogonal status fields plus a derived display state.
+A `ServiceLine` is one ordered unit of service on a visit. It has two orthogonal status fields plus a derived display state. Rules live in `domain/service_line.py` (property-tested); every change goes through `apps/orders/services.py`; the DB trigger `line_guard` repeats them (4.9). Decisions behind this section: ADR 0006.
 
 | Field | Values |
 |---|---|
-| `billing_status` | `unbilled` → `invoiced` → `settled`; `credited` (removed by credit note) |
-| `fulfilment_status` | `pending` → `in_progress` (optional, e.g. sample received) → `performed`; or `cancelled` |
-| `authorization` | nullable FK to PerformAuthorization (perform-first exception) |
+| `billing_status` | `unbilled` → `invoiced` ⇄ `settled`; `invoiced`/`settled` → `credited` (every unit credited by approved credit notes) |
+| `fulfilment_status` | `pending` → `in_progress` (optional) → `performed`; `pending`/`in_progress` → `cancelled` |
+| `authorization` | nullable FK to PerformAuthorization (perform-first exception, revocable) |
+| `quantity` / `performed_quantity` | units ordered / units actually given when a line is closed partly performed |
 
-Derived `state` for UI and reports: `cancelled` if fulfilment cancelled; else `performed` if performed; else `paid` if settled; else `invoiced` if invoiced; else `requested`.
+Derived `state` for UI and reports: `cancelled` if fulfilment cancelled; else `performed` if performed; else `paid` if settled; else `invoiced` if invoiced; else `requested`. The doctor sees `requested`, `paid` (settled or authorized), `in_progress`, `done`, `cancelled`, never prices.
 
-Rules (implemented in `domain/service_line.py`, property-tested):
-1. Eligible for work lists ⇔ fulfilment `pending|in_progress` AND (billing `settled` OR authorization present).
-2. `settled` ⇔ invoiced AND patient outstanding on that line = 0 (lines with zero patient share settle at invoice approval).
-3. Cancelling a line that is `invoiced` or `settled` requires a credit note line; if patient money was allocated it becomes patient credit, refundable.
-4. `performed` and `cancelled` are terminal for fulfilment. A performed line cannot be cancelled; it can only be credited financially with a reason.
-5. Every transition records actor, timestamp, and reason where required.
+Rules:
+1. Eligible (work lists, start, perform, dispense) ⇔ fulfilment `pending|in_progress` AND (billing `settled` OR an unrevoked authorization of the same visit). Pay-first is always on (`Policy.default_pay_first` is fixed true); perform-first exists only as a documented authorization.
+2. `settled` ⇔ invoiced AND patient outstanding on that line = 0 (zero patient share settles at invoice approval). A transfer rejection or a payer rebill can take a settled line back to `invoiced`.
+3. `in_progress` is entered by the first work step (sample collected, first part dispensed) through `start_line`, needs eligibility, and never goes back to `pending`. Procedures go straight to `performed`. An authorization cannot be revoked while unpaid work under it is in progress; work performed before a revocation stays covered.
+4. Credited units are never given: `open_quantity = ordered − credited − given`. A credit of an open line takes back only ungiven units (`CREDIT_EXCEEDS_UNGIVEN`); a performed quantity is at most ordered − credited.
+5. Cancelling an unbilled line cancels it and drops it from draft invoices. An invoiced or settled line is cancelled only by a credit note (`CREDIT_NOTE_REQUIRED`), approved by a holder of `billing.approve_credit_note`: when approved credits cover every unit the line becomes `credited`, and an open line also `cancelled`. Patient money on it becomes patient credit with a refund request opened. A line with dispensed units is never cancelled: the given units are performed and only the rest is closed (`cancel_line_remainder`); an unbilled line is then invoiced for the performed quantity.
+6. `performed` and `cancelled` are terminal. A performed line is only credited financially. A correction re-bills through a replacement line (`replacement()`): a fresh requested line for a cancelled original, or an unbilled line already performed under a new authorization for a performed original.
+7. Every transition records actor and timestamp, and a reason where required; DB checks require the documenting columns of `in_progress`, `performed`, `cancelled`, `invoiced` and `credited`.
 
 ### 4.5 Invoices
 
 - `Invoice.status`: `draft` → `approved`; `void` only for drafts. Approved invoices are immutable (DB trigger). InvoiceLine has `frozen` set true at approval; trigger blocks UPDATE/DELETE when `OLD.frozen`.
-- Invoice lines are created only from the visit's `unbilled` service lines. No free-amount lines.
-- Each line freezes: unit price from the PriceListVersion effective on approval date for the line's payer price list, quantity, gross, discount, payer (nullable = cash), payer_share, patient_share.
-- Coverage per line (domain/coverage.py): payer rule = percentage, fixed patient copay, or payer ceiling; exclusions route 100% to patient. `payer_share` computed, `patient_share = gross − discount − payer_share`, never negative.
+- Invoice lines are created only from the visit's `unbilled`, open service lines. No free-amount lines.
+- A draft shows today's prices; at approval each line is priced again and frozen from the PriceListVersion effective on the approval date (`Invoice.priced_on`) for the line's payer price list: unit price, quantity, gross, discount, payer (nullable = cash), payer_share, patient_share.
+- Price list versions start tomorrow at the earliest, one per date (`PRICE_VERSION_BACKDATED`, `PRICE_VERSION_DATE_TAKEN`); only the first version of a list with nothing effective may start today. A version's prices change only before it starts. DB `version_guard` and `item_guard` refuse a version that would reprice frozen invoices and any change to a version a frozen line used.
+- Coverage per line (`domain/coverage.py`): payer rule = percentage, fixed patient copay, or payer ceiling; exclusions route 100% to patient. `payer_share` computed, `patient_share = gross − discount − payer_share`, never negative.
 - Discounts apply to the patient share only, limited by role policy, reason mandatory.
-- Corrections only by CreditNote (approved, immutable) linked to the original invoice lines.
+- Corrections only by CreditNote (approved, immutable, number `CN`) linked to the original lines. A credit line credits whole units; partial credits use cumulative rounding so all credits of a line add up to it exactly. Approval posts the mirror entry, applies 4.4 rule 5, and de-allocates the patient money the credited lines held above their new due into patient credit (it never drifts onto other lines). `rebill=True` creates replacement lines.
+- A payer share already on a claim is credited only by withdrawing its claim line: always while the payer has not answered; after an answer only when nothing was paid, resolved or written off and the credit covers the whole claimed amount. Otherwise `CLAIM_LINE_LOCKED`.
+- A rejected payer share rebilled to the patient adds to the patient due of the original invoice line; the invoice itself does not change.
 
 ### 4.6 Payments, allocation, shifts
 
-- A cashier must have exactly one open Shift to take or refund money. Payments and refunds belong to a shift.
-- `Payment.method`: `cash`, `bank_transfer`, `qr`, `card`, `patient_credit`. Bank/QR/card carry `bank` + `reference`. Unique constraint on `(bank, reference)` for non-cash methods; override needs `cashier_supervisor` permission + reason (stored, and the duplicate flagged).
-- `Payment.verification`: cash = `confirmed`; others start `pending` and move to `confirmed` or `rejected` by a user with `payments.confirm_transfer`. Pending money settles service lines (so service proceeds) but is NEVER reported as confirmed collection.
-- Allocation: payment amount → invoices (patient side). Sum of allocations ≤ payment amount; remainder is patient credit. Allocation to an invoice applies to its lines in line order to decide which lines are settled.
-- Partial payment of an invoice allowed only if `Policy.allow_partial_payment`.
-- Rejecting a confirmed-or-pending transfer reverses its allocations (lines may return to `invoiced`, notification to manager). If the original shift is closed, the reversal posts to the acting user's current open shift, linked to the original.
-- Refund: only from patient credit created by a credit note or cancellation; supervisor approval; paid from the current shift.
-- Shift close: expected cash = opening float + confirmed cash in − cash refunds − cash handovers out; counted cash entered; variance requires explanation when non-zero; closed shift immutable (trigger).
+- A cashier has at most one open Shift (lock plus partial unique index). Money is taken, refunded or handed over only in the actor's own open shift; every money row that names a shift requires it open (trigger).
+- `Payment.method`: `cash`, `bank_transfer`, `qr`, `card`, `patient_credit`. Bank/QR/card carry `bank` + `reference`. The reference is unique per bank after normalization (`reference_norm`); a duplicate needs a holder of `payments.override_duplicate` and a reason, and is stored flagged.
+- `Payment.verification`: cash and spent credit = `confirmed`; others start `pending`. Confirming needs `payments.confirm_transfer` and a note saying what was checked (reason, approver, time stored). Rejecting (pending or confirmed) needs `payments.reject_transfer` and a reason code. Pending money settles service lines (so service proceeds) but is NEVER reported as confirmed collection.
+- Allocation rows are append-only and signed (reversals and de-allocations are negative rows). A payment's allocations ≤ its amount; the remainder is patient credit, one pooled balance per patient file (ledger `PATIENT_CREDIT`). Spendable credit excludes the unallocated part of pending transfers. Allocation to an invoice applies to its lines in line order to decide which lines are settled. Partial payment of an invoice only if `Policy.allow_partial_payment`.
+- Rejecting a transfer reverses its allocations (lines may return to `invoiced`), recovers credit it funded that was spent (newest first), and takes its amount out of patient credit. What cannot be recovered (refunded in cash) stays as a negative credit balance (`uncovered`) and managers are notified. If the original shift is closed, the rejection books a negative payment linked to the original in the actor's current open shift.
+- Refund: cash only, from credit created by an approved credit note (less earlier refunds of it) and within spendable credit. Requested by one person, approved by another (`SELF_APPROVAL_NOT_ALLOWED`, DB check), paid from the paying user's own open shift when its expected cash covers it. Overpayments are not refundable; they stay as credit.
+- Handover (`next_shift`, `safe`, `bank_deposit`, `supervisor`): at most the drawer's expected cash. Cash for the next shift is in transit until its cashier receives it; an unreceived handover may be cancelled with a reason while the sending shift is open. A shift cannot close while cash handed to it waits (`HANDOVER_PENDING`).
+- Shift close: expected cash = opening float + cash payments + payer cash − cash refunds paid − handovers out (not cancelled) + handovers in (received). Counted cash is entered; a non-zero variance needs a variance reason (and a note when the reason asks for one) and alerts managers. The report is frozen in `Shift.close_report` and served from it; a closed shift is immutable (trigger) and later effects show in the shift where they are booked. A manager other than the cashier reviews it.
+- Merged patient files (FEATURES 1.4): a merge moves no money. Balances, spendable credit and open invoices of a person sum all files; new money is taken on the surviving file only; refunds are opened per file the money came from.
 
 ### 4.7 Ledger (append-only double entry)
 
-Fixed chart in `domain/ledger.py` and seeded `ledger.Account` rows:
+Fixed chart in `domain/ledger.py` and seeded `ledger.Account` rows (`apps/ledger/chart.py`):
 
 | Code | Meaning | Dimensions |
 |---|---|---|
-| `CASH` | cash in drawer | shift |
-| `BANK_PENDING` | transfers awaiting verification | |
+| `CASH` | cash in a drawer | shift |
+| `CASH_SAFE` | cash in the safe, with a supervisor, or in transit between shifts | |
+| `BANK_PENDING` | transfers awaiting verification, uncleared payer cheques | |
 | `BANK` | verified bank money | |
 | `AR_PATIENT` | patient receivable | patient, invoice |
 | `AR_PAYER` | payer receivable | payer, invoice |
 | `PATIENT_CREDIT` | money held for patient (liability) | patient |
 | `REVENUE` | service revenue | department, service kind |
 | `DISCOUNT` | discounts given (contra revenue) | |
-| `WRITE_OFF` | payer rejections written off | payer |
+| `WRITE_OFF` | payer rejections and short payments written off | payer |
 | `CASH_OVER_SHORT` | shift variances | shift |
 
-Postings (each a balanced JournalEntry with `source_type`, `source_id`):
+Postings (each a balanced JournalEntry with `source_type`, `source_id` and, when there is one, the open shift it is booked in; late effects follow 4.6):
 - Invoice approved: Dr AR_PATIENT (patient share), Dr AR_PAYER (payer share), Dr DISCOUNT (discount) / Cr REVENUE (gross).
-- Payment received: Dr CASH or BANK_PENDING / Cr PATIENT_CREDIT.
-- Allocation: Dr PATIENT_CREDIT / Cr AR_PATIENT.
-- Transfer confirmed: Dr BANK / Cr BANK_PENDING. Rejected: reverse allocations (Dr AR_PATIENT / Cr PATIENT_CREDIT) then Dr PATIENT_CREDIT / Cr BANK_PENDING (or BANK if it was confirmed).
-- Credit note: reverse the credited shares (Dr REVENUE / Cr AR_PATIENT, Cr AR_PAYER, Cr DISCOUNT). If the invoice becomes over-allocated, de-allocate the excess: Dr AR_PATIENT / Cr PATIENT_CREDIT.
-- Refund: Dr PATIENT_CREDIT / Cr CASH.
-- Shift variance: CASH vs CASH_OVER_SHORT.
-- Payer rejection rebilled: Dr AR_PATIENT / Cr AR_PAYER. Written off: Dr WRITE_OFF / Cr AR_PAYER. Payer payment: Dr BANK / Cr AR_PAYER.
+- Payment received: Dr CASH (shift) or BANK_PENDING / Cr PATIENT_CREDIT. Spending patient credit posts nothing; only its allocations post.
+- Allocation (signed): Dr PATIENT_CREDIT (paying file) / Cr AR_PATIENT (invoice's file); a negative row posts the opposite.
+- Transfer confirmed: Dr BANK / Cr BANK_PENDING. Rejected: negative allocation rows first, then Dr PATIENT_CREDIT / Cr BANK_PENDING (or BANK if it was confirmed).
+- Credit note: Dr REVENUE / Cr AR_PATIENT, Cr AR_PAYER, Cr DISCOUNT (mirror of the credited shares), then de-allocation rows.
+- Refund: Dr PATIENT_CREDIT / Cr CASH (paying shift).
+- Shift opened: Dr CASH / Cr CASH_SAFE (opening float). Handover: Dr CASH_SAFE (safe, supervisor, next shift) or BANK (deposit) / Cr CASH. Received by a shift: Dr CASH / Cr CASH_SAFE. Cancelled: the opposite of the handover.
+- Shift closed: variance CASH vs CASH_OVER_SHORT, then the counted cash Dr CASH_SAFE / Cr CASH. An open shift's CASH equals its expected cash; a closed shift's CASH is zero.
+- Payer rejection rebilled: Dr AR_PATIENT / Cr AR_PAYER. Written off (a rejection or an accepted amount short-paid): Dr WRITE_OFF / Cr AR_PAYER. Payer payment (always fully allocated; no payer advance account): Dr BANK (transfer), BANK_PENDING (cheque) or CASH (recording user's open shift) / Cr AR_PAYER. Cheque cleared: Dr BANK / Cr BANK_PENDING. Reversed (bounced transfer or cheque): the opposite, from where the money sits; payer cash is never reversed.
 
-JournalEntry and JournalLine are append-only (trigger blocks UPDATE/DELETE). Inventory is tracked by StockMove, not the money ledger.
+`apps/ledger/services.post` is the only writer. JournalEntry and JournalLine are append-only; a deferred trigger refuses an entry with fewer than two lines or debits ≠ credits at commit; a line trigger checks the account's dimensions. Inventory is tracked by StockMove, not the money ledger.
 
 ### 4.8 Stock
 
-- StockMove is the append-only stock ledger: `(item, batch, store, qty_base_units signed, kind, source)`. On-hand = sum of moves. Kinds: receipt, dispense, adjustment, transfer_out, transfer_in, count_correction, return.
-- Quantities stored in base units (e.g. tablet). UnitConversion defines box→strip→tablet factors.
-- Dispense picks batches FEFO (earliest expiry, non-expired, positive on-hand) via `domain/stock.py`; pharmacist may override batch with reason.
-- Stock never goes negative (domain check under `select_for_update` on batch rows).
+- StockMove is the append-only stock ledger: `(item, batch, store, qty_base signed, kind, source)`. Kinds: receipt, dispense, adjustment, transfer_out, transfer_in, count_correction, return. `StockBalance` (one row per batch and store) is maintained only by the `stock_balance` trigger and has `CHECK (qty_base >= 0)`.
+- Quantities are whole base units (e.g. tablet). UnitConversion defines box→strip→tablet factors.
+- Stock never goes negative: services lock the StockBalance rows they read `FOR UPDATE` in id order and check the whole set of moves with `domain.stock.apply_moves` before inserting them; the CHECK is the backstop.
+- A batch is usable through its expiry date (`expiry >= today + min_days_left`, default 0). Dispense suggests FEFO (earliest expiry, usable, positive on-hand); another batch needs `pharmacy.override_batch` and a reason; an expired batch is never dispensed. Expired goods are refused at receipt.
+- Dispense only eligible drug and consumable lines (4.4 rule 1) and at most their open units (DB `dispense_line_eligible`). The first part moves a line to `in_progress`; the rest stays open or is closed with a refund (`Policy.partial_dispense_remainder`, or per request); when every open unit is given the line is performed.
+- Returns put units back with a reason, at most dispensed − returned. Transfers write a move out and a move in; a shortage at receipt needs an approval. Adjustments need an approver; stock counts turn differences into count_correction moves.
 - Stock decrements at dispense, never at invoicing.
 
-### 4.9 Immutability and audit
+### 4.9 Immutability, database guards and audit
 
-- `django-pgtrigger` protections: approved Invoice/InvoiceLine, approved CreditNote, closed Shift, JournalEntry/Line, StockMove, approved ResultVersion, Allocation (reversal = new negative allocation row, never edit).
+- `django-pgtrigger` guards (each raises `<CODE>: <message>`):
+  - Append-only: JournalEntry/Line, Allocation, StockMove, Dispense/DispenseLine/DispenseReturn, PayerPaymentAllocation, ShiftReview, PatientMerge, AuthEvent.
+  - Frozen by status: approved Invoice/InvoiceLine and CreditNote/CreditNoteLine (lines only under a draft parent), closed Shift, final Refund and rejected Payment, money fields of Payment and PayerPayment, approved/amended ResultVersion and its values, closed/void Claim, posted stock documents, PriceListVersion/PriceItem once a frozen line used them.
+  - Transition guards: `line_guard` (4.4), `claim_line_guard` (claim line edges, never claims more than accrued), `dispense_line_eligible` (4.8), `authorization_guard`, `payment_verification_forward`, `refund_forward`, `handover_guard`, `version_guard`.
+  - `shift_must_be_open` on every row that names a shift; the deferred balance trigger on journal entries.
+  - `truncate_guard` on the 22 money, claim, service-line, stock and lab result tables: `TRUNCATE` is refused unless the session role is a member of the table owner.
+  - `pgtrigger`'s ignore switch is replaced after every `migrate` by a function that never ignores a trigger.
+- Database roles: production runs the application as a non-owner role with DML grants only; the owner runs migrations. The table owner or a superuser can still truncate or disable triggers, so the guards hold only under that split (ADR 0006 (m); roles set up by `infra/db/`).
 - `django-pghistory` tracks every mutable model with context (user id, request id, reason). Services set context via `pghistory.context(user=..., reason=...)`. Middleware attaches the request user.
 
 ### 4.10 Permissions

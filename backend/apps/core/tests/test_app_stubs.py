@@ -1,4 +1,4 @@
-"""Every module app from ARCHITECTURE 4.1 exists as a package, ready for its phase."""
+"""Every module app from ARCHITECTURE 4.1 exists as a package and is installed (Phase 1)."""
 
 from __future__ import annotations
 
@@ -41,8 +41,9 @@ def test_app_config_is_importable_and_named(label: str) -> None:
 
 
 @pytest.mark.parametrize("label", STUB_APPS)
-def test_stub_apps_are_not_installed_yet(label: str) -> None:
-    assert not apps.is_installed(f"apps.{label}")
+def test_module_apps_are_installed(label: str) -> None:
+    assert apps.is_installed(f"apps.{label}")
+    assert apps.get_app_config(label).verbose_name
 
 
 def test_core_and_ops_are_installed() -> None:

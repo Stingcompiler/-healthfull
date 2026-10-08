@@ -96,19 +96,28 @@ infra/compose.sh up -d app
 curl -s http://127.0.0.1/api/ops/health
 ```
 
-`restore-dump.sh` verifies the checksum, restores into a new database beside the live one, then
-swaps names. The previous database stays as `<db>_before_<stamp>`. After users confirm the data:
+`restore-dump.sh` verifies the checksum, restores into a new database beside the live one, hands
+that copy and every object in it to the owner role (`DB_OWNER_USER`), grants the app role
+(`DB_APP_USER`) its row rights again, verifies both, and only then swaps names. If the roles cannot
+be applied it stops and the live database is untouched. The previous database stays as
+`<db>_before_<stamp>`. After users confirm the data (`-U` is `POSTGRES_USER`, the superuser):
 
 ```bash
 infra/compose.sh exec db psql -U hospital -d postgres -c 'DROP DATABASE "hospital_before_<stamp>"'
 ```
+
+**Restored by hand?** A database restored any other way (plain `pg_restore`, an old db image) is
+owned by the superuser and the app role cannot read it: the app answers errors. Run
+`infra/db-roles.sh` (hands everything to the owner, re-grants, verifies), then
+`infra/compose.sh up -d app`.
 
 ## New server after a disaster — خادم جديد بعد كارثة
 
 Target: clinic working again within 2 hours with last night's data.
 
 1. Install a new server per [install.md](install.md) steps 1-5. Use the saved `.env`
-   (same `POSTGRES_PASSWORD`, `DJANGO_SECRET_KEY`, cipher passphrases).
+   (same `POSTGRES_PASSWORD`, `DB_OWNER_PASSWORD`, `DB_APP_PASSWORD`, `DJANGO_SECRET_KEY`, cipher
+   passphrases). The first `up -d db` creates the owner and app roles from it.
 2. Copy the backups (USB or cloud) to `/srv/hospital/backups/`.
 3. Load images (`docker load` from the release archive) with the same `APP_IMAGE_TAG`.
 4. Start only the database, restore, then the rest:
@@ -124,6 +133,7 @@ docker run --rm -u 0 --entrypoint sh -v hospital_media:/m -v /srv/hospital/backu
   <registry>/db:16 -c 'tar -xzf /b/<newest>.tar.gz -C /m && chown -R 10001:10001 /m && chmod 0750 /m'
 infra/compose.sh up -d
 infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-test.sh
+infra/db-roles.sh                     # roles and grants verified on the restored database
 ```
 
 5. Log in, open a recent patient and invoice, check the last shift. Record the restore in the log book.
@@ -168,3 +178,5 @@ infra/compose.sh up -d
 ```
 
 Add `--repo=2` to restore from the cloud copy. Check the data, then take a fresh full backup.
+A point-in-time restore brings back the whole cluster, roles and grants included; if the target
+time is before the roles were introduced, run `infra/db-roles.sh` and `infra/compose.sh up -d`.

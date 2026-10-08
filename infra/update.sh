@@ -2,11 +2,14 @@
 # Update hospital-sys to a new image tag with a safety net (FEATURES 13.10, STACK.md).
 #
 #   1. get images      pull <registry>/app:TAG and web:TAG (or `docker load` an offline archive)
-#   2. preflight       Django system checks and `migrate --plan` (dry run) in a one-off container
+#   2. preflight       Django system checks and `migrate --plan` (dry run, as the owner role)
+#                      in one-off containers of the NEW image
 #   3. backup          verified pg_dump labelled pre-update-TAG (infra/backup/backup-nightly.sh);
 #                      with pending migrations the app is stopped first, so no write made after
 #                      the backup can be lost by a restore (the SPA stays up and shows errors)
-#   4. migrate         `migrate` in a one-off container of the NEW image (only when pending)
+#   4. migrate         database roles checked and repaired (infra/db-roles.sh), then `migrate`
+#                      in a one-off `migrate` container of the NEW image, which connects as the
+#                      owner role (only when migrations are pending). The app role never can.
 #   5. swap            recreate app and web on the new tag
 #   6. health          GET /api/ops/health inside the app until status=ok and version=TAG
 #   7. commit          write APP_IMAGE_TAG=TAG to .env, record the run
@@ -44,7 +47,7 @@ HEALTH_RETRIES=30
 HEALTH_INTERVAL=5
 
 usage() {
-  sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
@@ -71,20 +74,25 @@ ENV_FILE="$(cd "$(dirname "$ENV_FILE")" && pwd -P)/$(basename "$ENV_FILE")"
 export ENV_FILE
 
 # ------------------------------------------------------------------------------------ settings
-env_get() {
-  # Last KEY=VALUE in the env file; surrounding quotes stripped. Never `source` the file.
-  local line
-  line="$(grep -E "^[[:space:]]*$1=" "$ENV_FILE" | tail -n 1 || true)"
-  line="${line#*=}"
-  line="${line%\"}"; line="${line#\"}"
-  line="${line%\'}"; line="${line#\'}"
-  printf '%s' "$line"
-}
+# env_get KEY (last value in the env file) and env_set KEY VALUE (atomic replace).
+# shellcheck source=infra/env-lib.sh
+source "$ROOT/infra/env-lib.sh"
 
 # The shell environment wins; otherwise the value from the env file; otherwise the default.
 LOG_DIR="${UPDATE_LOG_DIR:-$(env_get UPDATE_LOG_DIR)}"
 LOG_DIR="${LOG_DIR:-$ROOT/infra/logs}"
 UPDATE_HEALTH_URL="${UPDATE_HEALTH_URL:-$(env_get UPDATE_HEALTH_URL)}"
+
+# Installs made before the owner/app role split have no role passwords yet; every compose
+# command below would refuse to start. Say what to do instead of failing on the first pull.
+for key in DB_OWNER_PASSWORD DB_APP_PASSWORD; do
+  if [[ -z "${!key:-}" && -z "$(env_get "$key")" ]]; then
+    echo "update: $key is not set in $ENV_FILE. This install predates the separate database" >&2
+    echo "update: roles: run infra/db-roles.sh, then infra/compose.sh up -d, then this update" >&2
+    echo "update: (docs/runbooks/update-rollback.md, \"Separate database roles\")." >&2
+    exit 2
+  fi
+done
 
 # ------------------------------------------------------------------------------------ logging
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -103,26 +111,6 @@ step() {
 warn() { log "WARNING: $*"; }
 
 # ------------------------------------------------------------------------------------ helpers
-env_set() {
-  # Replace (or append) KEY=VALUE atomically: the new content goes to a temp file in the same
-  # directory (cp -p first, so it already has the file's owner and mode), is flushed to disk,
-  # then renamed over .env. A power cut leaves either the old or the new file, never a torn
-  # one (which would lose POSTGRES_PASSWORD, DJANGO_SECRET_KEY and the backup passphrases).
-  local key="$1" value="$2" tmp
-  tmp="$(mktemp "$(dirname "$ENV_FILE")/.env.update.XXXXXX")"
-  cp -p "$ENV_FILE" "$tmp"
-  if grep -qE "^[[:space:]]*$key=" "$ENV_FILE"; then
-    awk -v k="$key" -v v="$value" '
-      $0 ~ "^[[:space:]]*" k "=" { if (!done) { print k "=" v; done = 1 }; next }
-      { print }' "$ENV_FILE" >"$tmp"
-  else
-    printf '%s=%s\n' "$key" "$value" >>"$tmp"
-  fi
-  sync "$tmp" 2>/dev/null || sync
-  mv -f "$tmp" "$ENV_FILE"
-  sync "$(dirname "$ENV_FILE")" 2>/dev/null || sync
-}
-
 compose() {
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
@@ -323,9 +311,11 @@ done
 
 # ------------------------------------------------------------------------------------ 2. preflight
 step "2/7 preflight: system checks and migration plan (dry run)"
+# The plan is read through the `migrate` service, as the owner role: its login is proven here,
+# before anything is stopped or changed. (Step 4 re-applies both role passwords from .env.)
 compose_tag "$NEW_TAG" run --rm --no-deps -T app manage check || fail "Django system checks failed on $NEW_TAG"
-compose_tag "$NEW_TAG" run --rm --no-deps -T app manage migrate --plan || fail "migrate --plan failed"
-if compose_tag "$NEW_TAG" run --rm --no-deps -T app manage migrate --check >/dev/null 2>&1; then
+compose_tag "$NEW_TAG" run --rm --no-deps -T migrate manage migrate --plan || fail "migrate --plan failed"
+if compose_tag "$NEW_TAG" run --rm --no-deps -T migrate manage migrate --check >/dev/null 2>&1; then
   log "no pending migrations"
 else
   PENDING=1
@@ -371,11 +361,15 @@ log "pre-update dump: $DUMP"
 save_state
 
 # ------------------------------------------------------------------------------------ 4. migrate
+# Ownership and grants first: a migration run as the owner must own every object it alters,
+# and the tables it creates reach the app role through the owner's default privileges.
+step "4/7 database roles"
+"$ROOT/infra/db-roles.sh" --no-generate || fail "database roles could not be applied or verified"
 if [[ $PENDING -eq 1 ]]; then
   step "4/7 apply migrations with $NEW_TAG"
   MIGRATED=1 # set first: a partly applied run still changed the schema
   save_state
-  compose_tag "$NEW_TAG" run --rm --no-deps -T app migrate || fail "migrations failed"
+  compose_tag "$NEW_TAG" run --rm --no-deps -T migrate migrate || fail "migrations failed"
 else
   step "4/7 no migrations to apply"
 fi

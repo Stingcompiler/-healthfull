@@ -53,11 +53,28 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Trigram lookups and GIN index support for search (pg_trgm, migration core.0005).
+    "django.contrib.postgres",
     "pgtrigger",
     "pghistory",
     "pghistory.admin",
     "ninja",
+    # Every module app of ARCHITECTURE 4.1 (registered from Phase 1).
     "apps.core",
+    "apps.catalog",
+    "apps.patients",
+    "apps.visits",
+    "apps.orders",
+    "apps.clinical",
+    "apps.billing",
+    "apps.payments",
+    "apps.ledger",
+    "apps.pharmacy",
+    "apps.lab",
+    "apps.claims",
+    "apps.reports",
+    "apps.portal",
+    "apps.imports",
     "apps.ops",
 ]
 

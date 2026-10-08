@@ -2,6 +2,9 @@
 # Entrypoint of the app image.
 #   serve            wait for the database, optionally migrate, run gunicorn (default)
 #   migrate [args]   wait for the database, run `manage.py migrate --noinput [args]`
+#   auto-migrate     `migrate` when MIGRATE_ON_START is true, else only wait for the database
+#                    (the compose `migrate` service, which connects as the owner role; the
+#                    app itself connects as a role that cannot change the schema)
 #   manage ARGS      run any management command (e.g. manage createsuperuser)
 #   maintenance-loop run `manage.py maintenance` now and then every MAINTENANCE_INTERVAL_SECONDS
 #                    [86400] (the compose `maintenance` service)
@@ -61,6 +64,14 @@ case "$cmd" in
     shift
     wait_for_db
     exec python manage.py migrate --noinput "$@"
+    ;;
+  auto-migrate)
+    wait_for_db
+    if is_true "${MIGRATE_ON_START:-false}"; then
+      echo "app-entrypoint: MIGRATE_ON_START is set; applying migrations as ${PGUSER:-<default>}"
+      exec python manage.py migrate --noinput
+    fi
+    echo "app-entrypoint: MIGRATE_ON_START is off; schema left as it is (infra/update.sh migrates)"
     ;;
   manage)
     shift

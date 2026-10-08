@@ -1,4 +1,8 @@
-"""``/api/auth``: CSRF cookie, login, logout, current user, preferences, password change."""
+"""Core routers.
+
+* ``/api/auth``: CSRF cookie, login, logout, current user, preferences, password change.
+* ``/api/core``: users, roles, settings, departments, reason codes, audit (Phase 1: ``ping``).
+"""
 
 from __future__ import annotations
 
@@ -9,6 +13,7 @@ from django.middleware.csrf import get_token
 from ninja import Router, Status
 from ninja.errors import AuthenticationError
 
+from api.ping import add_ping
 from api.schemas import ErrorOut
 from api.security import session_auth_pending_ok
 from apps.core import services
@@ -16,6 +21,8 @@ from apps.core.models import User
 from apps.core.schemas import ChangePasswordIn, LoginIn, MeOut, PreferencesPatch
 
 auth_router = Router(tags=["auth"])
+core_router = Router(tags=["core"])
+add_ping(core_router, "core")
 
 
 def _current_user(request: HttpRequest) -> User:

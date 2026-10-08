@@ -4,10 +4,11 @@
  * `register_permission("<app>.<action>", ...)` in backend/apps/<app>/permissions.py
  * (ARCHITECTURE 4.10).
  *
- * Phase 0 registers only core.* and ops.*. Codes owned by modules built in
- * later phases are listed in PENDING below with the phase that registers them.
- * When a backend app registers one, this test fails until the code is removed
- * from PENDING, so a typo on either side cannot hide a menu entry for good.
+ * Since phase 1 every module app registers its permissions, so every code the
+ * UI uses must be registered. A code the UI needs before its backend app
+ * exists goes in PENDING with the phase that registers it; once the backend
+ * registers it, this test fails until the code is removed from PENDING, so a
+ * typo on either side cannot hide a menu entry for good.
  */
 import { describe, expect, it } from "vitest";
 
@@ -21,23 +22,11 @@ const sources = import.meta.glob<string>(["../../../backend/apps/**/permissions.
   eager: true,
 });
 
-/** Codes the UI already uses whose backend app arrives in a later phase (docs/PROMPT.md phases). */
-const PENDING: Readonly<Record<string, string>> = {
-  "patients.view": "Phase 2 (patients)",
-  "visits.view_queue": "Phase 2 (visits)",
-  "visits.manage_appointments": "Phase 2 (visits)",
-  "clinical.view": "Phase 3 (clinical)",
-  "orders.perform_procedure": "Phase 5 (orders/procedures)",
-  "payments.take_payment": "Phase 4 (payments)",
-  "pharmacy.dispense": "Phase 5 (pharmacy)",
-  "lab.view_worklist": "Phase 5 (lab)",
-  "claims.view": "Phase 6 (claims)",
-  "reports.view": "Phase 6 (reports)",
-  "catalog.manage": "Phase 1 (catalog)",
-  "catalog.manage_prices": "Phase 1 (catalog)",
-  "catalog.manage_payers": "Phase 1 (catalog)",
-  "imports.run": "Phase 6 (imports)",
-};
+/**
+ * Codes the UI already uses whose backend app arrives in a later phase (docs/PROMPT.md phases),
+ * e.g. `"reports.export": "Phase 6 (reports)"`. Empty: the backend registers every code in use.
+ */
+const PENDING: Readonly<Record<string, string>> = {};
 
 const CODE_SHAPE = /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
 

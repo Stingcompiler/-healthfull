@@ -5,9 +5,11 @@
  * the server's English `message`, also for Arabic users.
  *
  * The codes are read from the backend sources: DomainError(...) in domain/,
- * services and models (409 unless mapped otherwise), and the HTTP layer in
- * api/ (status map, ApiError, error responses). Adding a code there without
- * translating it fails `pnpm test` (and `make check`).
+ * services and models (409 unless mapped otherwise), codes passed to private
+ * helpers that raise it, and the HTTP layer in api/ (status map, ApiError,
+ * error responses). Adding a code there without translating it fails
+ * `pnpm test` (and `make check`). A text may interpolate `{{key}}` only when
+ * every raise of its code passes that `details` key.
  */
 import { describe, expect, it } from "vitest";
 
@@ -39,17 +41,71 @@ const PATTERNS: readonly RegExp[] = [
   new RegExp(String.raw`_STATUS_CODES\.get\([^,]+,\s*${CODE}\)`, "g"),
 ];
 
-function backendCodes(): Map<string, string> {
+/** Codes handed to a private helper that builds the DomainError (its details are not visible here). */
+const HELPER_PATTERNS: readonly RegExp[] = [
+  // raise _error("LINE_NOT_PAYABLE", message, status) in domain/service_line.py
+  new RegExp(String.raw`\braise\s+_\w+\(\s*${CODE}`, "g"),
+  // _choice(severity, Severity, "INVALID_SEVERITY") in apps/clinical/services.py
+  new RegExp(String.raw`\b_choice\([^()]*,\s*${CODE}\s*\)`, "g"),
+  // _require_open(status, cancelled_code="LINE_ALREADY_CANCELLED")
+  new RegExp(String.raw`\bcancelled_code=${CODE}`, "g"),
+];
+
+const shortPath = (file: string): string => file.replace(/^(\.\.\/)+/, "");
+
+function scan(patterns: readonly RegExp[]): Map<string, string> {
   const found = new Map<string, string>();
   for (const [file, text] of Object.entries(sources)) {
-    for (const pattern of PATTERNS) {
+    for (const pattern of patterns) {
       for (const match of text.matchAll(pattern)) {
         const code = match[1];
-        if (code && !found.has(code)) found.set(code, file.replace(/^(\.\.\/)+/, ""));
+        if (code && !found.has(code)) found.set(code, shortPath(file));
       }
     }
   }
   return found;
+}
+
+function backendCodes(): Map<string, string> {
+  return new Map([...scan(HELPER_PATTERNS), ...scan(PATTERNS)]);
+}
+
+/** Keyword argument names of the Python call whose "(" is at `open` (strings and nested brackets skipped). */
+function keywordArguments(text: string, open: number): Set<string> {
+  let depth = 0;
+  let quote = "";
+  let topLevel = "";
+  for (let i = open; i < text.length; i++) {
+    const ch = text.charAt(i);
+    if (quote) {
+      if (ch === "\\") i++;
+      else if (ch === quote) quote = "";
+    } else if (ch === '"' || ch === "'") quote = ch;
+    else if ("([{".includes(ch)) depth++;
+    else if (")]}".includes(ch)) {
+      depth--;
+      if (depth === 0) break;
+    } else if (depth === 1) topLevel += ch;
+  }
+  return new Set([...topLevel.matchAll(/(?:^|,)\s*(\w+)\s*=(?!=)/g)].map((m) => m[1] ?? ""));
+}
+
+/** For each code, the detail keys of every literal `DomainError("CODE", ...)` / `ApiError(409, "CODE", ...)`. */
+function raiseSites(): Map<string, { file: string; keys: Set<string> }[]> {
+  const raise = new RegExp(String.raw`\b(?:DomainError|ApiError)\(\s*(?:\d{3},\s*)?${CODE}`, "g");
+  const sites = new Map<string, { file: string; keys: Set<string> }[]>();
+  for (const [file, text] of Object.entries(sources)) {
+    for (const match of text.matchAll(raise)) {
+      const code = match[1] ?? "";
+      const keys = keywordArguments(text, match.index + match[0].indexOf("("));
+      sites.set(code, [...(sites.get(code) ?? []), { file: shortPath(file), keys }]);
+    }
+  }
+  return sites;
+}
+
+function placeholders(text: string): string[] {
+  return [...text.matchAll(/\{\{\s*(\w+)\s*(?:,[^}]*)?\}\}/g)].map((m) => m[1] ?? "");
 }
 
 const hasBackend = Object.keys(sources).length > 0;
@@ -74,5 +130,32 @@ describe.skipIf(!hasBackend)("backend error codes", () => {
   ] as const)("all have %s text in the errors namespace", (_lang, messages) => {
     const missing = [...codes].filter(([code]) => !(code in messages)).map(([code, file]) => `${code} (${file})`);
     expect(missing, "add these to src/i18n/locales/{ar,en}/errors.json").toEqual([]);
+  });
+
+  it("finds codes raised through private helpers", () => {
+    for (const code of ["LINE_NOT_PAYABLE", "LINE_ALREADY_CANCELLED", "INVALID_SEVERITY"]) {
+      expect(codes.has(code), code).toBe(true);
+    }
+  });
+
+  // An unfilled placeholder is shown literally ("{{available}}"), so a text may only use a
+  // details key that every raise of its code sends.
+  it.each([
+    ["en", en.errors],
+    ["ar", ar.errors],
+  ] as const)("%s placeholders are details every raise of the code sends", (_lang, messages) => {
+    const sites = raiseSites();
+    const viaHelper = scan(HELPER_PATTERNS);
+    const problems: string[] = [];
+    for (const [code, text] of Object.entries(messages)) {
+      for (const name of placeholders(text)) {
+        const calls = sites.get(code) ?? [];
+        if (calls.length === 0 || viaHelper.has(code)) problems.push(`${code}: {{${name}}} has no checkable raise`);
+        for (const call of calls) {
+          if (!call.keys.has(name)) problems.push(`${code}: {{${name}}} is not sent by ${call.file}`);
+        }
+      }
+    }
+    expect(problems, "drop the placeholder or pass the key at every raise").toEqual([]);
   });
 });

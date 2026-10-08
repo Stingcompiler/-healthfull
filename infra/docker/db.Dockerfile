@@ -24,6 +24,12 @@ COPY --chmod=0755 infra/backup/lib.sh infra/backup/backup-nightly.sh infra/backu
      infra/backup/restore-dump.sh infra/backup/scheduler.sh infra/backup/render-pgbackrest-conf.sh \
      /opt/backup/
 COPY --chmod=0644 infra/backup/pgbackrest.conf.template /opt/backup/
+# Database roles (infra/db): the owner runs migrations, the app connects with DML rights only.
+# initdb-roles runs once, on the first start with an empty data directory; restore-dump.sh
+# re-applies ownership and grants to every restored database.
+COPY --chmod=0755 infra/db/roles.sh /opt/db/
+COPY --chmod=0644 infra/db/roles.sql infra/db/roles-verify.sql /opt/db/
+COPY --chmod=0755 infra/db/initdb-roles.sh /docker-entrypoint-initdb.d/10-roles.sh
 COPY --chmod=0755 infra/docker/db-entrypoint.sh /usr/local/bin/db-entrypoint
 
 ENV TZ=Africa/Khartoum \

@@ -78,15 +78,33 @@ git clone <repo-url> /opt/hospital-sys      # or unpack the release bundle there
 ```bash
 cd /opt/hospital-sys
 cp .env.example .env && chmod 600 .env
-openssl rand -base64 48 | tr -d '\n/+=' ; echo     # run twice: POSTGRES_PASSWORD, DJANGO_SECRET_KEY
+openssl rand -base64 48 | tr -d '\n/+=' ; echo     # run four times: POSTGRES_PASSWORD,
+                                                   # DB_OWNER_PASSWORD, DB_APP_PASSWORD, DJANGO_SECRET_KEY
 nano .env
 ```
 
-Set at least: `POSTGRES_PASSWORD`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`
+Set at least: `POSTGRES_PASSWORD`, `DB_OWNER_PASSWORD`, `DB_APP_PASSWORD` (all three different),
+`DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`
 (names/IPs typed in the browser plus `localhost,127.0.0.1`), `DJANGO_CSRF_TRUSTED_ORIGINS`
 (the same, with `http://` or `https://`), `APP_IMAGE_TAG` (the release you install), and
 `BIND_IP` = the server's LAN address (see "Firewall and Docker" in step 2).
 Print `.env` and keep it in the clinic safe: without it, backups of secrets are lost.
+
+### Database roles — أدوار قاعدة البيانات
+
+The application never connects to PostgreSQL as an all-powerful account. Three roles exist:
+
+| Role (`.env`) | Who uses it | What it can do |
+|---|---|---|
+| `POSTGRES_USER` (`hospital`) | db container, backup sidecar | everything (superuser): dumps, restores, pgBackRest |
+| `DB_OWNER_USER` (`hospital_owner`) | `migrate` service, `infra/update.sh` | owns the database and every table: schema changes and the protection triggers |
+| `DB_APP_USER` (`hospital_app`) | `app`, `maintenance` | read, insert, update and delete rows; nothing else |
+
+Because the app role owns nothing, a bug or an attacker in the app cannot `TRUNCATE` a ledger
+table, `ALTER` a table, or disable the triggers that keep approved invoices, closed shifts and the
+ledger unchangeable (ADR 0006). The first start of the `db` container creates the two roles from
+`.env` (`infra/db/initdb-roles.sh`); `infra/db-roles.sh` checks and repairs them at any time.
+Role passwords: 16-128 characters from `A-Z a-z 0-9 . _ - ~` (the generator above qualifies).
 
 ## 6. Images and first start — الصور والتشغيل الأول
 
@@ -102,17 +120,23 @@ Start and check:
 
 ```bash
 infra/compose.sh up -d
-infra/compose.sh ps                                      # db, app, web healthy; backup, maintenance up
+infra/compose.sh ps -a                                   # db, app, web healthy; backup, maintenance up;
+                                                         # migrate "Exited (0)"
 curl -s http://192.168.1.10/api/ops/health               # BIND_IP: {"status": "ok", "db": "ok", ...}
-infra/compose.sh run --rm app manage createsuperuser     # first system admin
+infra/db-roles.sh                                        # roles and grants verified: "verified."
+infra/compose.sh run --rm --no-deps app manage createsuperuser   # first system admin
 ```
 
-Open `http://hospital.lan` from a workstation and log in. With `MIGRATE_ON_START=true` the first
-start creates the schema; later schema changes only go through `infra/update.sh`.
+Open `http://hospital.lan` from a workstation and log in. `up -d` first runs the one-off `migrate`
+service: with `MIGRATE_ON_START=true` it creates the schema as the owner role, then exits, and only
+then do `app` and `maintenance` start (as the app role). Later schema changes only go through
+`infra/update.sh`. If `migrate` failed, `infra/compose.sh logs migrate` says why and the app stays
+down until it succeeds.
 
 The `maintenance` service (app image) runs `manage.py maintenance` at start and then daily: it
 deletes expired sessions and stale login-throttle rows, which would otherwise pile up in the
-database and in every backup. Run it by hand with `infra/compose.sh run --rm app manage maintenance`.
+database and in every backup. Run it by hand with
+`infra/compose.sh run --rm --no-deps app manage maintenance`.
 
 ## 7. Prove the backups work — تأكيد النسخ الاحتياطي
 
@@ -163,5 +187,6 @@ returns, the BIOS setting powers the server on and `restart: unless-stopped` bri
 - [ ] BIOS power-on after AC loss; UPS shuts the server down (test by pulling the plug)
 - [ ] `.env` filled, printed, stored in the safe
 - [ ] `infra/compose.sh ps` all healthy; login works from a workstation
+- [ ] `infra/db-roles.sh` ends with "verified."
 - [ ] Manual backup and restore test both `ok`
 - [ ] Off-site USB rotation scheduled (backup-restore.md)

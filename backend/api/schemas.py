@@ -15,6 +15,12 @@ class ErrorOut(Schema):
     details: dict[str, Any] = Field(..., description="Extra context; may be empty")
 
 
+class PingOut(Schema):
+    """Body of ``GET /api/<module>/ping``: proves the module router is mounted."""
+
+    module: str = Field(..., description="Name of the module router that answered")
+
+
 class Page[T](Schema):
     """One page of a list endpoint: ``?page=1&page_size=25&q=...``."""
 
