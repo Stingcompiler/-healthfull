@@ -128,6 +128,7 @@ export function ReasonCodesPage() {
           getRowId={(r) => String(r.id)}
           onRowClick={setEditing}
           rowLabel={(r) => t("common.editNamed", { name: label(r) })}
+          pageSize={50}
         />
       </QueryState>
       {editing ? (

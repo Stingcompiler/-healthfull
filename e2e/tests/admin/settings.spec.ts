@@ -52,10 +52,12 @@ test.describe("@admin settings", () => {
     await page.getByRole("button", { name: tr("en", "admin:reasons.add") }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel(tr("en", "admin:common.code")).fill(code);
-    await dialog.getByLabel(tr("en", "admin:reasons.labelEn")).fill("Patient left before service");
+    await dialog.getByLabel(tr("en", "admin:reasons.labelEn")).fill(`Patient left before service ${code}`);
     await dialog.getByLabel(tr("en", "admin:reasons.labelAr")).fill("غادر المريض قبل الخدمة");
+    // Listed last, so reason pickers in other specs keep their usual first choice.
+    await dialog.getByLabel(tr("en", "admin:common.sortOrder")).fill("900");
     await dialog.getByRole("button", { name: tr("en", "actions.save") }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.locator("main").getByText("Patient left before service")).toBeVisible();
+    await expect(page.locator("main").getByText(`Patient left before service ${code}`)).toBeVisible();
   });
 });
