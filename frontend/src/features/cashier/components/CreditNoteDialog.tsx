@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -32,11 +32,16 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
+/** Mounted only while open, so every opening starts with a fresh form. */
+export function CreditNoteDialog(props: Parameters<typeof CreditNoteDialogOpen>[0]) {
+  return props.open ? <CreditNoteDialogOpen {...props} /> : null;
+}
+
 /**
  * Draft a credit note of whole units of an approved invoice's lines (FEATURES 5.11). The
  * invoice itself never changes (invariant 2); a supervisor approves the note.
  */
-export function CreditNoteDialog({
+function CreditNoteDialogOpen({
   invoice,
   open,
   onOpenChange,
@@ -54,15 +59,6 @@ export function CreditNoteDialog({
   const [done, setDone] = useState(false);
   const creditable = invoice.lines.filter((l) => l.quantity - l.credited_quantity > 0);
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { reason: "", note: "", qty: {} } });
-  const { reset } = form;
-
-  useEffect(() => {
-    if (open) {
-      reset({ reason: "", note: "", qty: {} });
-      setError(null);
-      setDone(false);
-    }
-  }, [open, reset]);
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
@@ -138,7 +134,6 @@ export function CreditNoteDialog({
                               dir="ltr"
                               placeholder="0"
                               {...field}
-                              value={field.value ?? ""}
                               data-testid={`credit-qty-${String(l.id)}`}
                             />
                           </FormControl>

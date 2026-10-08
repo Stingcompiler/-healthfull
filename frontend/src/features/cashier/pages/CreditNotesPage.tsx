@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { CheckCircle2, FileMinus, Undo2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -32,7 +32,7 @@ import { Pager } from "../components/Pager";
 import { RefundRequestDialog } from "../components/RefundRequestDialog";
 import { isPositiveAmount } from "../lib/money";
 import { useNames } from "../lib/use-names";
-import type { CreditNote, DocStatus } from "../types";
+import type { CreditNote } from "../types";
 
 type Filter = "draft" | "approved" | "all";
 
@@ -44,7 +44,7 @@ export function CreditNotesPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("draft");
   const [page, setPage] = useState(1);
-  const notes = useCreditNotes(filter === "all" ? undefined : (filter as DocStatus), page);
+  const notes = useCreditNotes(filter === "all" ? undefined : filter, page);
   const canApprove = usePermission("billing.approve_credit_note");
   const canRefund = usePermission("payments.request_refund");
   const [approving, setApproving] = useState<CreditNote | null>(null);
@@ -207,7 +207,11 @@ export function CreditNotesPage() {
   );
 }
 
-function ApproveDialog({
+/** Mounted only while open, so every opening starts with a fresh form. */
+function ApproveDialog(props: Parameters<typeof ApproveDialogOpen>[0]) {
+  return props.creditNote !== null ? <ApproveDialogOpen {...props} /> : null;
+}
+function ApproveDialogOpen({
   creditNote,
   onOpenChange,
 }: {
@@ -222,13 +226,6 @@ function ApproveDialog({
   const form = useForm<{ openRefund: boolean; rebill: boolean }>({
     defaultValues: { openRefund: true, rebill: false },
   });
-  const { reset } = form;
-  useEffect(() => {
-    if (creditNote) {
-      reset({ openRefund: true, rebill: false });
-      setError(null);
-    }
-  }, [creditNote, reset]);
   const submit = form.handleSubmit(async (v) => {
     if (!creditNote) return;
     setError(null);

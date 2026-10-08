@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -29,8 +29,13 @@ const schema = z.object({
   note: z.string().trim().min(1, vmsg("validation.required")).max(500),
 });
 
+/** Mounted only while open, so every opening starts with a fresh form. */
+export function LinePayerDialog(props: Parameters<typeof LinePayerDialogOpen>[0]) {
+  return props.line !== null ? <LinePayerDialogOpen {...props} /> : null;
+}
+
 /** Bill one unbilled line to another payer of the patient, or to cash (FEATURES 5.6). */
-export function LinePayerDialog({
+function LinePayerDialogOpen({
   line,
   payers,
   onOpenChange,
@@ -46,15 +51,8 @@ export function LinePayerDialog({
   const [error, setError] = useState<string | null>(null);
   const form = useForm<{ payer: string; note: string }>({
     resolver: zodResolver(schema),
-    defaultValues: { payer: "", note: "" },
+    defaultValues: { payer: line?.payer ? String(line.payer.id) : CASH, note: "" },
   });
-  const { reset } = form;
-  useEffect(() => {
-    if (line) {
-      reset({ payer: line.payer ? String(line.payer.id) : CASH, note: "" });
-      setError(null);
-    }
-  }, [line, reset]);
 
   const submit = form.handleSubmit(async (v) => {
     if (!line) return;

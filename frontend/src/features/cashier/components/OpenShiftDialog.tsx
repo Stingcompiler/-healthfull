@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -35,8 +35,13 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
+/** Mounted only while open, so every opening starts with a fresh form. */
+export function OpenShiftDialog(props: Parameters<typeof OpenShiftDialogOpen>[0]) {
+  return props.open ? <OpenShiftDialogOpen {...props} /> : null;
+}
+
 /** Open the user's shift with an opening float (FEATURES 7.1). */
-export function OpenShiftDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+function OpenShiftDialogOpen({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useTranslation(["cashier", "common", "errors"]);
   const translateError = useTranslateError();
   const names = useNames();
@@ -44,13 +49,6 @@ export function OpenShiftDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const openShift = useOpenShift();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { openingFloat: "0", till: NO_TILL } });
-  const { reset } = form;
-  useEffect(() => {
-    if (open) {
-      reset({ openingFloat: "0", till: NO_TILL });
-      setError(null);
-    }
-  }, [open, reset]);
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);

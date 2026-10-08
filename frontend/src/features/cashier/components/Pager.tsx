@@ -31,7 +31,7 @@ export function Pager({
         <ChevronPrev aria-hidden="true" />
         {t("common:actions.previous")}
       </Button>
-      <span className="text-muted tabular">{t("pager.pageOf", { page, pages })}</span>
+      <span className="tabular text-muted">{t("pager.pageOf", { page, pages })}</span>
       <Button
         variant="outline"
         size="sm"

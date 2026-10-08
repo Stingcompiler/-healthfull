@@ -29,14 +29,14 @@ export function PatientHeader({
       <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
         <div className="flex items-center gap-1">
           <dt>{t("common:patient.fileNo")}</dt>
-          <dd className="font-semibold text-fg tabular">
+          <dd className="tabular font-semibold text-fg">
             <bdi>{patient.file_no}</bdi>
           </dd>
         </div>
         {visitNumber ? (
           <div className="flex items-center gap-1">
             <dt>{t("billing.visit")}</dt>
-            <dd className="font-semibold text-fg tabular">
+            <dd className="tabular font-semibold text-fg">
               <bdi data-testid="visit-number">{visitNumber}</bdi>
             </dd>
           </div>

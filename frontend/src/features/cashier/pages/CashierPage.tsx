@@ -17,20 +17,7 @@ import { PaymentPanel } from "../components/PaymentPanel";
 import { ShiftBar } from "../components/ShiftBar";
 import { ShortcutsDialog } from "../components/ShortcutsDialog";
 import { isPositiveAmount } from "../lib/money";
-
-export interface CashierSearch {
-  visit?: number;
-  q?: string;
-}
-
-export function parseCashierSearch(search: Record<string, unknown>): CashierSearch {
-  const visit = Number(search.visit);
-  const q = typeof search.q === "string" ? search.q.slice(0, 200) : undefined;
-  return {
-    ...(Number.isInteger(visit) && visit > 0 ? { visit } : {}),
-    ...(q ? { q } : {}),
-  };
-}
+import { parseCashierSearch, type CashierSearch } from "../lib/search";
 
 /**
  * The cashier's workspace (FLOW step 4): shift, lookup, billing and payment on one screen,
@@ -66,12 +53,7 @@ export function CashierPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader
-        title={t("title")}
-        description={t("description")}
-        icon={<Wallet />}
-        actions={<ShortcutsDialog />}
-      />
+      <PageHeader title={t("title")} description={t("description")} icon={<Wallet />} actions={<ShortcutsDialog />} />
       <CashierNav />
       <ShiftBar />
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">

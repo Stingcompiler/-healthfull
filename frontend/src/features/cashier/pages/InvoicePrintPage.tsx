@@ -73,10 +73,13 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
         <ul className="flex flex-col gap-1.5 border-t border-border pt-2">
           {inv.lines.map((l) => (
             <li key={l.id} className="flex flex-col">
-              <span>{t("receipt.lineQty", { name: names.text(l.description_ar, l.description_en), qty: l.quantity })}</span>
+              <span>
+                {t("receipt.lineQty", { name: names.text(l.description_ar, l.description_en), qty: l.quantity })}
+              </span>
               <span className="flex justify-between gap-2 text-muted">
                 <span>
-                  {l.payer ? names.name(l.payer) : t("invoice.cash")} <MoneyText value={l.payer_share} currency={false} />
+                  {l.payer ? names.name(l.payer) : t("invoice.cash")}{" "}
+                  <MoneyText value={l.payer_share} currency={false} />
                 </span>
                 <MoneyText value={l.patient_share} currency={false} className="text-fg" />
               </span>
@@ -85,41 +88,41 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
         </ul>
       ) : (
         <div className="min-w-0 overflow-x-auto">
-        <table className="w-full border-collapse text-start">
-          <thead>
-            <tr className="border-b border-border text-muted">
-              <th className="py-1 text-start font-medium">{t("invoice.service")}</th>
-              <th className="py-1 text-end font-medium">{t("invoice.qty")}</th>
-              <th className="py-1 text-end font-medium">{t("invoice.unitPrice")}</th>
-              <th className="py-1 text-end font-medium">{t("invoice.discount")}</th>
-              <th className="py-1 text-end font-medium">{t("invoice.payerShare")}</th>
-              <th className="py-1 text-end font-medium">{t("invoice.patientShare")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inv.lines.map((l) => (
-              <tr key={l.id} className="border-b border-border">
-                <td className="py-1">
-                  {names.text(l.description_ar, l.description_en)}
-                  {l.payer ? <span className="block text-xs text-muted">{names.name(l.payer)}</span> : null}
-                </td>
-                <td className="py-1 text-end tabular">{l.quantity}</td>
-                <td className="py-1 text-end">
-                  <MoneyText value={l.unit_price} currency={false} />
-                </td>
-                <td className="py-1 text-end">
-                  <MoneyText value={l.discount} currency={false} />
-                </td>
-                <td className="py-1 text-end">
-                  <MoneyText value={l.payer_share} currency={false} />
-                </td>
-                <td className="py-1 text-end">
-                  <MoneyText value={l.patient_share} currency={false} />
-                </td>
+          <table className="w-full border-collapse text-start">
+            <thead>
+              <tr className="border-b border-border text-muted">
+                <th className="py-1 text-start font-medium">{t("invoice.service")}</th>
+                <th className="py-1 text-end font-medium">{t("invoice.qty")}</th>
+                <th className="py-1 text-end font-medium">{t("invoice.unitPrice")}</th>
+                <th className="py-1 text-end font-medium">{t("invoice.discount")}</th>
+                <th className="py-1 text-end font-medium">{t("invoice.payerShare")}</th>
+                <th className="py-1 text-end font-medium">{t("invoice.patientShare")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {inv.lines.map((l) => (
+                <tr key={l.id} className="border-b border-border">
+                  <td className="py-1">
+                    {names.text(l.description_ar, l.description_en)}
+                    {l.payer ? <span className="block text-xs text-muted">{names.name(l.payer)}</span> : null}
+                  </td>
+                  <td className="py-1 text-end tabular">{l.quantity}</td>
+                  <td className="py-1 text-end">
+                    <MoneyText value={l.unit_price} currency={false} />
+                  </td>
+                  <td className="py-1 text-end">
+                    <MoneyText value={l.discount} currency={false} />
+                  </td>
+                  <td className="py-1 text-end">
+                    <MoneyText value={l.payer_share} currency={false} />
+                  </td>
+                  <td className="py-1 text-end">
+                    <MoneyText value={l.patient_share} currency={false} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
       <dl className="ms-auto grid w-full max-w-72 gap-0.5 border-t border-border pt-2">

@@ -19,7 +19,13 @@ const PAGE_RULES: Record<PrintFormat, string> = {
  * A printable document: a format switch (80 mm thermal roll or A4), a print button, and the
  * paper itself. The paper always uses the light theme, as printed on white.
  */
-export function PrintFrame({ children, toolbar }: { children: (format: PrintFormat) => ReactNode; toolbar?: ReactNode }) {
+export function PrintFrame({
+  children,
+  toolbar,
+}: {
+  children: (format: PrintFormat) => ReactNode;
+  toolbar?: ReactNode;
+}) {
   const { t } = useTranslation(["cashier", "common"]);
   const [format, setFormat] = useState<PrintFormat>("thermal");
   return (

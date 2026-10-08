@@ -23,7 +23,9 @@ import type { Center, Receipt } from "../types";
 export function DocHeader({ center, title, format }: { center: Center; title: ReactNode; format: PrintFormat }) {
   const names = useNames();
   return (
-    <header className={cn("flex flex-col gap-0.5 border-b border-border pb-2", format === "thermal" ? "text-center" : "")}>
+    <header
+      className={cn("flex flex-col gap-0.5 border-b border-border pb-2", format === "thermal" ? "text-center" : "")}
+    >
       <p className={cn("font-semibold", format === "thermal" ? "text-[14px]" : "text-lg")}>
         {names.text(center.name_ar, center.name_en)}
       </p>
@@ -102,7 +104,11 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
         ) : null}
       </dl>
       <div className="flex flex-col items-center gap-1 border-t border-border pt-3">
-        <QrCode value={receipt.verify_code} label={t("receipt.qrLabel")} className={format === "thermal" ? "size-32" : "size-36"} />
+        <QrCode
+          value={receipt.verify_code}
+          label={t("receipt.qrLabel")}
+          className={format === "thermal" ? "size-32" : "size-36"}
+        />
         <bdi className="text-[10px] break-all text-muted">{receipt.verify_code}</bdi>
         <p className="text-center text-[11px] text-muted">{t("receipt.verifyHint")}</p>
       </div>

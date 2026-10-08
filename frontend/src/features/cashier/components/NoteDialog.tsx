@@ -84,7 +84,14 @@ function NoteForm({
   return (
     <Form {...form}>
       <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4">
-        <TextareaField control={form.control} name="note" label={label} required={noteRequired} rows={3} maxLength={1000} />
+        <TextareaField
+          control={form.control}
+          name="note"
+          label={label}
+          required={noteRequired}
+          rows={3}
+          maxLength={1000}
+        />
         {error ? (
           <AlertCard variant="danger" title={t("errors:title")} live>
             {error}

@@ -12,7 +12,17 @@ import { negate } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import type { ShiftReport } from "../types";
 
-function Row({ label, value, strong = false, testId }: { label: ReactNode; value: string; strong?: boolean; testId?: string }) {
+function Row({
+  label,
+  value,
+  strong = false,
+  testId,
+}: {
+  label: ReactNode;
+  value: string;
+  strong?: boolean;
+  testId?: string;
+}) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-1" data-testid={testId}>
       <dt className="text-muted">{label}</dt>
@@ -137,7 +147,11 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
             <Row label={t("report.confirmedTotal")} value={c.confirmed_total} strong testId="report-confirmed-total" />
             <Row label={t("report.bankPending")} value={c.bank_pending} />
             <Row label={t("report.bankRejected")} value={c.bank_rejected} />
-            <Row label={t("report.lateReversals")} value={negate(report.late_reversals)} testId="report-late-reversals" />
+            <Row
+              label={t("report.lateReversals")}
+              value={negate(report.late_reversals)}
+              testId="report-late-reversals"
+            />
             <Row label={t("report.lateConfirmations")} value={report.late_confirmations} />
           </dl>
         </Block>
@@ -237,7 +251,15 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
                   <bdi>{h.number}</bdi>
                   <span>{t(`handover.destination.${h.destination}`)}</span>
                   {h.to_shift_number ? <bdi className="text-muted">{h.to_shift_number}</bdi> : null}
-                  <Badge variant={h.cancelled_at ? "neutral" : h.received_at || h.destination !== "next_shift" ? "success" : "warning"}>
+                  <Badge
+                    variant={
+                      h.cancelled_at
+                        ? "neutral"
+                        : h.received_at || h.destination !== "next_shift"
+                          ? "success"
+                          : "warning"
+                    }
+                  >
                     {h.cancelled_at
                       ? t("handover.state.cancelled")
                       : h.received_at || h.destination !== "next_shift"

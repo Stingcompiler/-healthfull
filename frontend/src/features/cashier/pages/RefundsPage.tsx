@@ -24,6 +24,8 @@ import type { Refund, RefundStatus } from "../types";
 
 type Filter = RefundStatus | "all";
 
+const FILTERS: readonly Filter[] = ["requested", "approved", "paid", "rejected", "all"];
+
 const STATUS_VARIANT = {
   requested: "warning",
   approved: "info",
@@ -143,7 +145,7 @@ export function RefundsPage() {
         }}
       >
         <TabsList aria-label={t("refunds.filter")} className="flex h-auto flex-wrap">
-          {(["requested", "approved", "paid", "rejected", "all"] as const).map((f) => (
+          {FILTERS.map((f) => (
             <TabsTrigger key={f} value={f} className="h-9 flex-none">
               {f === "all" ? t("refunds.all") : t(`refunds.status.${f}`)}
             </TabsTrigger>

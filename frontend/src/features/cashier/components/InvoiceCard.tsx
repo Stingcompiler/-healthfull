@@ -49,7 +49,9 @@ function LineCard({ line, actions, approved }: { line: InvoiceLine; actions: Rea
           <span className="font-medium break-words">{names.name(line.service)}</span>
           <span className="flex flex-wrap items-center gap-1.5">
             <StatusBadge status={line.state} size="sm" />
-            <Badge variant={line.payer ? "info" : "neutral"}>{line.payer ? names.name(line.payer) : t("invoice.cash")}</Badge>
+            <Badge variant={line.payer ? "info" : "neutral"}>
+              {line.payer ? names.name(line.payer) : t("invoice.cash")}
+            </Badge>
           </span>
         </div>
         {actions}
@@ -59,7 +61,9 @@ function LineCard({ line, actions, approved }: { line: InvoiceLine; actions: Rea
         {line.discount !== "0.00" ? <Amount label={t("invoice.discount")} value={negate(line.discount)} /> : null}
         <Amount label={t("invoice.payerShare")} value={line.payer_share} />
         <Amount label={t("invoice.patientShare")} value={line.patient_share} strong />
-        {approved && line.outstanding !== null ? <Amount label={t("invoice.outstanding")} value={line.outstanding} /> : null}
+        {approved && line.outstanding !== null ? (
+          <Amount label={t("invoice.outstanding")} value={line.outstanding} />
+        ) : null}
       </dl>
     </div>
   );
@@ -299,7 +303,13 @@ export function InvoiceCard({
                   <span className="text-muted">{t(`payment.method.${p.method as PaymentMethod}`)}</span>
                   <StatusBadge
                     size="sm"
-                    status={p.verification === "pending" ? "pending_verification" : p.verification === "rejected" ? "rejected" : "confirmed"}
+                    status={
+                      p.verification === "pending"
+                        ? "pending_verification"
+                        : p.verification === "rejected"
+                          ? "rejected"
+                          : "confirmed"
+                    }
                   />
                 </span>
                 <MoneyText value={p.amount} />

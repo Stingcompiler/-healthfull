@@ -1,6 +1,7 @@
 import { createRoute, type AnyRoute } from "@tanstack/react-router";
 
-import { CashierPage, parseCashierSearch } from "./pages/CashierPage";
+import { parseCashierSearch } from "./lib/search";
+import { CashierPage } from "./pages/CashierPage";
 import { CreditNotesPage } from "./pages/CreditNotesPage";
 import { InvoicePrintPage } from "./pages/InvoicePrintPage";
 import { PerformFirstPage } from "./pages/PerformFirstPage";

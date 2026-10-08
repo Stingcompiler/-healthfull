@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -36,8 +36,13 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
+/** Mounted only while open, so every opening starts with a fresh form. */
+export function RefundRequestDialog(props: Parameters<typeof RefundRequestDialogOpen>[0]) {
+  return props.creditNote !== null ? <RefundRequestDialogOpen {...props} /> : null;
+}
+
 /** Request a cash refund of the credit an approved credit note created (FEATURES 6.7). */
-export function RefundRequestDialog({
+function RefundRequestDialogOpen({
   creditNote,
   onOpenChange,
 }: {
@@ -51,14 +56,10 @@ export function RefundRequestDialog({
   const reasons = useReasons("refund", open);
   const request = useRequestRefund();
   const [error, setError] = useState<string | null>(null);
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { amount: "", reason: "", note: "" } });
-  const { reset } = form;
-  useEffect(() => {
-    if (creditNote) {
-      reset({ amount: creditNote.refundable, reason: "", note: "" });
-      setError(null);
-    }
-  }, [creditNote, reset]);
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { amount: creditNote?.refundable ?? "", reason: "", note: "" },
+  });
 
   const submit = form.handleSubmit(async (v) => {
     if (!creditNote) return;

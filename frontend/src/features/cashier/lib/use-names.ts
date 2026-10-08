@@ -36,10 +36,7 @@ export function useNames() {
     (row: PatientSummary): string => pickName({ ar: row.full_name_ar, en: row.full_name_en }, language),
     [language],
   );
-  const text = useCallback(
-    (ar: string, en: string): string => pickName({ ar, en }, language),
-    [language],
-  );
+  const text = useCallback((ar: string, en: string): string => pickName({ ar, en }, language), [language]);
   const list = useCallback(
     (items: readonly string[]): string =>
       new Intl.ListFormat(language === "ar" ? "ar" : "en", { type: "unit", style: "short" }).format(items),

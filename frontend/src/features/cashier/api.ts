@@ -65,8 +65,7 @@ export function useLookup(q: string) {
 export function useVisitBilling(visitId: number | undefined) {
   return useQuery({
     queryKey: cashierKeys.visit(visitId ?? 0),
-    queryFn: () =>
-      unwrap(api.GET("/api/billing/visits/{visit_id}", { params: { path: { visit_id: visitId ?? 0 } } })),
+    queryFn: () => unwrap(api.GET("/api/billing/visits/{visit_id}", { params: { path: { visit_id: visitId ?? 0 } } })),
     enabled: visitId !== undefined,
     staleTime: 0,
   });
@@ -204,9 +203,7 @@ export function usePerformFirstVisit(visitId: number | undefined) {
   return useQuery({
     queryKey: cashierKeys.performFirstVisit(visitId ?? 0),
     queryFn: () =>
-      unwrap(
-        api.GET("/api/orders/perform-first/visits/{visit_id}", { params: { path: { visit_id: visitId ?? 0 } } }),
-      ),
+      unwrap(api.GET("/api/orders/perform-first/visits/{visit_id}", { params: { path: { visit_id: visitId ?? 0 } } })),
     enabled: visitId !== undefined,
     staleTime: 0,
   });
@@ -362,7 +359,10 @@ export function useSetLinePayer() {
 export function useCreateCreditNote() {
   return useCashierMutation(({ invoiceId, body }: { invoiceId: number; body: CreditNoteIn }) =>
     unwrap(
-      api.POST("/api/billing/invoices/{invoice_id}/credit-notes", { params: { path: { invoice_id: invoiceId } }, body }),
+      api.POST("/api/billing/invoices/{invoice_id}/credit-notes", {
+        params: { path: { invoice_id: invoiceId } },
+        body,
+      }),
     ),
   );
 }

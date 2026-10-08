@@ -1,14 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  ClipboardCheck,
-  Clock3,
-  FileMinus,
-  Landmark,
-  ShieldCheck,
-  Undo2,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react";
+import { ClipboardCheck, Clock3, FileMinus, Landmark, ShieldCheck, Undo2, Wallet, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { usePermission } from "@/lib/auth/hooks";
@@ -31,13 +22,18 @@ interface CashierLink {
 }
 
 /** The cashier module's screens; each shows only to users who may use it (UI hint only). */
-export const CASHIER_LINKS: readonly CashierLink[] = [
+const CASHIER_LINKS: readonly CashierLink[] = [
   { to: "/cashier", key: "workspace", icon: Wallet, permission: ["billing.view", "payments.view"] },
   { to: "/cashier/shift", key: "shift", icon: Clock3, permission: "payments.open_shift" },
   { to: "/cashier/transfers", key: "transfers", icon: Landmark, permission: "payments.confirm_transfer" },
   { to: "/cashier/credit-notes", key: "creditNotes", icon: FileMinus, permission: "billing.view" },
   { to: "/cashier/refunds", key: "refunds", icon: Undo2, permission: "payments.view" },
-  { to: "/cashier/perform-first", key: "performFirst", icon: ShieldCheck, permission: "orders.authorize_perform_first" },
+  {
+    to: "/cashier/perform-first",
+    key: "performFirst",
+    icon: ShieldCheck,
+    permission: "orders.authorize_perform_first",
+  },
   { to: "/cashier/review", key: "review", icon: ClipboardCheck, permission: "payments.review_shift" },
 ];
 
@@ -72,7 +68,9 @@ export function CashierNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const current = [...CASHIER_LINKS]
     .sort((a, b) => b.to.length - a.to.length)
-    .find((l) => (l.to === "/cashier" ? pathname === "/cashier" || pathname === "/cashier/" : pathname.startsWith(l.to)));
+    .find((l) =>
+      l.to === "/cashier" ? pathname === "/cashier" || pathname === "/cashier/" : pathname.startsWith(l.to),
+    );
   return (
     <nav aria-label={t("nav.label")} data-slot="cashier-nav" className="print:hidden">
       <ul className="flex flex-wrap gap-2">

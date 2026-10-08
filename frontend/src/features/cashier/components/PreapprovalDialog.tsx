@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -23,8 +23,13 @@ import type { InvoiceLine } from "../types";
 
 const schema = z.object({ reference: z.string().trim().min(1, vmsg("validation.required")).max(100) });
 
+/** Mounted only while open, so every opening starts with a fresh form. */
+export function PreapprovalDialog(props: Parameters<typeof PreapprovalDialogOpen>[0]) {
+  return props.line !== null ? <PreapprovalDialogOpen {...props} /> : null;
+}
+
 /** The payer's pre-approval number on a draft line that requires one (FEATURES 5.8). */
-export function PreapprovalDialog({
+function PreapprovalDialogOpen({
   invoiceId,
   line,
   onOpenChange,
@@ -37,15 +42,11 @@ export function PreapprovalDialog({
   const translateError = useTranslateError();
   const save = useSetPreapproval();
   const [error, setError] = useState<string | null>(null);
-  const form = useForm<{ reference: string }>({ resolver: zodResolver(schema), defaultValues: { reference: "" } });
-  const { reset } = form;
+  const form = useForm<{ reference: string }>({
+    resolver: zodResolver(schema),
+    defaultValues: { reference: line?.pre_approval_ref ?? "" },
+  });
   const open = line !== null;
-  useEffect(() => {
-    if (line) {
-      reset({ reference: line.pre_approval_ref });
-      setError(null);
-    }
-  }, [line, reset]);
 
   const submit = form.handleSubmit(async ({ reference }) => {
     if (!line) return;

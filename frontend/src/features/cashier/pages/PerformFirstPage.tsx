@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -18,7 +18,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { vmsg } from "@/lib/validation";
 
-import { PAGE_SIZE, useAuthorizations, useAuthorize, usePerformFirstVisit, useReasons, useRevokeAuthorization } from "../api";
+import {
+  PAGE_SIZE,
+  useAuthorizations,
+  useAuthorize,
+  usePerformFirstVisit,
+  useReasons,
+  useRevokeAuthorization,
+} from "../api";
 import { CashierNav } from "../components/CashierNav";
 import { LookupPanel } from "../components/LookupPanel";
 import { NoteDialog } from "../components/NoteDialog";
@@ -94,10 +101,6 @@ function AuthorizeForm({ data }: { data: PerformFirstVisit }) {
   });
   const kind = useWatch({ control: form.control, name: "kind" });
   const authorizable = data.lines.filter((l) => l.authorizable);
-
-  useEffect(() => {
-    setSelected(new Set());
-  }, [data.visit.id]);
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);

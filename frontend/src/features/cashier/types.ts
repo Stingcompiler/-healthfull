@@ -46,14 +46,7 @@ export type Center = S["CenterOut"];
 
 export type PaymentMethod = PaymentIn["method"];
 export type ReasonCategory =
-  | "discount"
-  | "credit_note"
-  | "line_cancel"
-  | "override"
-  | "variance"
-  | "refund"
-  | "transfer_reject"
-  | "perform_first";
+  "discount" | "credit_note" | "line_cancel" | "override" | "variance" | "refund" | "transfer_reject" | "perform_first";
 export type Verification = Payment["verification"];
 export type RefundStatus = Refund["status"];
 export type DocStatus = Invoice["status"];

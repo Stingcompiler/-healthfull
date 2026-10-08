@@ -17,11 +17,7 @@ import { useNames } from "../lib/use-names";
 import type { ShiftReport } from "../types";
 
 const schema = z.object({
-  counted: z
-    .string()
-    .trim()
-    .min(1, vmsg("validation.required"))
-    .refine(isAmount, vmsg("cashier:validation.amount")),
+  counted: z.string().trim().min(1, vmsg("validation.required")).refine(isAmount, vmsg("cashier:validation.amount")),
   reason: z.string(),
   note: z.string().trim().max(1000),
 });

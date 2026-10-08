@@ -349,7 +349,10 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
             ) : null}
 
             {isReference && override ? (
-              <fieldset className="grid gap-3 rounded-control border border-warning-border bg-warning-bg/40 p-3" data-testid="override">
+              <fieldset
+                className="grid gap-3 rounded-control border border-warning-border bg-warning-bg/40 p-3"
+                data-testid="override"
+              >
                 <legend className="px-1 text-sm font-semibold">{t("payment.override.title")}</legend>
                 <p className="text-sm text-muted">{t("payment.override.description")}</p>
                 <SelectField

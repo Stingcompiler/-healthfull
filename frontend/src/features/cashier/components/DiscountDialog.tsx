@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -53,8 +53,13 @@ const EMPTY: Values = {
   password: "",
 };
 
+/** Mounted only while open, so every opening starts with a fresh form. */
+export function DiscountDialog(props: Parameters<typeof DiscountDialogOpen>[0]) {
+  return props.open && props.line !== null ? <DiscountDialogOpen {...props} /> : null;
+}
+
 /** Discount one draft line's patient share (FEATURES 5.9): reason, limit, desk approval. */
-export function DiscountDialog({
+function DiscountDialogOpen({
   invoiceId,
   line,
   open,
@@ -72,16 +77,9 @@ export function DiscountDialog({
   const discount = useDiscountLine();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: EMPTY });
-  const { reset, control } = form;
+  const { control } = form;
   const withApprover = useWatch({ control, name: "withApprover" });
   const mode = useWatch({ control, name: "mode" });
-
-  useEffect(() => {
-    if (open) {
-      reset(EMPTY);
-      setError(null);
-    }
-  }, [open, reset]);
 
   const submit = form.handleSubmit(async (v) => {
     if (!line) return;

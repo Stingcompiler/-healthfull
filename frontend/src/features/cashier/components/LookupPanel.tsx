@@ -81,7 +81,7 @@ export function LookupPanel({
             <li key={item.patient.id} className="flex min-w-0 flex-col gap-2 rounded-control border border-border p-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="min-w-0 font-medium break-words">{names.patient(item.patient)}</span>
-                <bdi className="text-sm text-muted tabular">{item.patient.file_no}</bdi>
+                <bdi className="tabular text-sm text-muted">{item.patient.file_no}</bdi>
               </div>
               {item.balance.outstanding !== "0.00" || item.balance.credit !== "0.00" ? (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
