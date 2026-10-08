@@ -167,6 +167,24 @@ class OrderIn(Schema):
     )
 
 
+class EstimateIn(Schema):
+    items: list[OrderItemIn] = Field(..., min_length=1, max_length=50)
+
+
+class EstimatedLineOut(Schema):
+    service_id: int
+    quantity: int
+    patient_share: str
+
+
+class EstimateOut(Schema):
+    """The patient's estimated share of a draft order (FEATURES 3.8): shown to a doctor only
+    when the center turns it on and the doctor holds clinical.view_estimated_cost."""
+
+    lines: list[EstimatedLineOut]
+    total: str
+
+
 class AllergyOverrideOut(Schema):
     allergy_id: int
     match: str

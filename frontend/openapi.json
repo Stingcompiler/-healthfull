@@ -986,6 +986,69 @@
         "title": "ErrorOut",
         "type": "object"
       },
+      "EstimateIn": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderItemIn"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "EstimateIn",
+        "type": "object"
+      },
+      "EstimateOut": {
+        "description": "The patient's estimated share of a draft order (FEATURES 3.8): shown to a doctor only\nwhen the center turns it on and the doctor holds clinical.view_estimated_cost.",
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/EstimatedLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lines",
+          "total"
+        ],
+        "title": "EstimateOut",
+        "type": "object"
+      },
+      "EstimatedLineOut": {
+        "properties": {
+          "patient_share": {
+            "title": "Patient Share",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "service_id",
+          "quantity",
+          "patient_share"
+        ],
+        "title": "EstimatedLineOut",
+        "type": "object"
+      },
       "FrequencyOut": {
         "properties": {
           "code": {
@@ -4721,7 +4784,7 @@
         ]
       },
       "post": {
-        "description": "409 DRUG_CLASS_REQUIRED, ALLERGEN_REQUIRED.",
+        "description": "409 DRUG_CLASS_REQUIRED, DRUG_CLASS_INACTIVE, ALLERGEN_REQUIRED.",
         "operationId": "clinical_create_allergy",
         "parameters": [
           {
@@ -6777,8 +6840,107 @@
         ]
       }
     },
+    "/api/orders/visits/{visit_id}/estimate": {
+      "post": {
+        "description": "FEATURES 3.8: the only doctor-facing money. 409 ESTIMATED_COST_DISABLED unless the center turns it on; 403 without clinical.view_estimated_cost. Also 409 PRICE_NOT_FOUND, NO_EFFECTIVE_PRICE_LIST and the prescription errors of ordering.",
+        "operationId": "orders_estimate_cost",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstimateOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Estimated patient share of a draft order at today's prices (center option)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
     "/api/orders/visits/{visit_id}/lines": {
       "get": {
+        "description": "Clinical content (prescriptions, approved results, allergy override reasons): restricted to clinical.view holders like the rest of the clinical record.",
         "operationId": "orders_list_visit_lines",
         "parameters": [
           {

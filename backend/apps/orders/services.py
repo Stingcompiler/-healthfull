@@ -712,8 +712,13 @@ def cancel_line(
     note: str = "",
     open_refund: bool = True,
     approver: User | None = None,
+    require_unbilled: bool = False,
 ) -> ServiceLine:
     """Cancel an open line with a reason (FEATURES 4.2, invariant 4).
+
+    With ``require_unbilled`` (the ordering side's withdrawal) a line found billed under the
+    row lock is refused with ``CREDIT_NOTE_REQUIRED`` instead of being credited, so an
+    invoice approved concurrently never routes through the credit-note path here.
 
     * Unbilled: the line is cancelled and removed from any draft invoice (FLOW step 4: the
       patient refuses a test and it does not enter the invoice).
@@ -742,6 +747,10 @@ def cancel_line(
         now = timezone.now()
         approval = _approval(actor, now, reason_obj, note)
         status = line_status(locked)
+        if require_unbilled and status.billing != dsl.BillingStatus.UNBILLED:
+            raise DomainError(
+                "CREDIT_NOTE_REQUIRED", "A billed order is withdrawn by a credit note at billing"
+            )
         given = given_units(locked) if status.fulfilment in dsl.ACTIVE_FULFILMENT else 0
         if given > 0:
             _perform(locked, actor, performed_quantity=given, note=note, at=now)
@@ -1084,7 +1093,8 @@ def doctor_line(line: ServiceLine) -> DoctorLine:
 def withdraw_order(line: ServiceLine, *, reason: str, note: str, actor: User) -> DoctorLine:
     """Withdraw an order that has not reached the cashier, with a reason (FEATURES 4.2).
 
-    A billed order is credited by billing instead; the ordering side never moves money.
+    A billed order is credited by billing instead; the ordering side never moves money. The
+    early check gives a fast answer; ``cancel_line`` repeats it under the row lock.
 
     Raises:
         DomainError: ``CREDIT_NOTE_REQUIRED``, ``LINE_NOT_CLINICAL``,
@@ -1096,7 +1106,7 @@ def withdraw_order(line: ServiceLine, *, reason: str, note: str, actor: User) ->
         raise DomainError(
             "CREDIT_NOTE_REQUIRED", "A billed order is withdrawn by a credit note at billing"
         )
-    cancel_line(line, reason, actor, note=note, open_refund=False)
+    cancel_line(line, reason, actor, note=note, open_refund=False, require_unbilled=True)
     return doctor_line(line)
 
 

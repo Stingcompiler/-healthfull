@@ -10,8 +10,11 @@
   as-needed prescription has no computed quantity; the prescriber states it.
 * A course is at most :data:`MAX_DURATION_DAYS` days and :data:`MAX_DOSES_PER_DAY` doses a
   day; doses and frequencies are positive and finite.
+* A quantity the prescriber states may round the course up (a whole pack) but never below
+  the computed quantity: the prescription and what is invoiced and dispensed agree.
 
-Error codes: ``UNKNOWN_FREQUENCY``, ``FREQUENCY_MISMATCH``, ``INVALID_PRESCRIPTION``.
+Error codes: ``UNKNOWN_FREQUENCY``, ``FREQUENCY_MISMATCH``, ``INVALID_PRESCRIPTION``,
+``QUANTITY_BELOW_PRESCRIPTION``.
 """
 
 from __future__ import annotations
@@ -32,6 +35,7 @@ __all__ = [
     "Prescription",
     "dispense_quantity",
     "frequency_per_day",
+    "order_quantity",
     "resolve",
 ]
 
@@ -164,3 +168,24 @@ def resolve(
     elif per_day is not None and duration_days is not None:
         quantity = dispense_quantity(dose_quantity, per_day, duration_days)
     return Prescription(frequency_code=code, frequency_per_day=per_day, quantity=quantity)
+
+
+def order_quantity(computed: int | None, stated: int | None) -> int | None:
+    """The quantity to order: the stated one, else the computed one.
+
+    A stated quantity may exceed the computed course (rounding up to a pack) but never fall
+    short of it, or the prescription would contradict what is dispensed (FEATURES 3.5).
+
+    Raises:
+        DomainError: ``QUANTITY_BELOW_PRESCRIPTION`` (details ``quantity``, ``computed``).
+    """
+    if stated is None:
+        return computed
+    if computed is not None and stated < computed:
+        raise DomainError(
+            "QUANTITY_BELOW_PRESCRIPTION",
+            "The quantity is less than the prescription needs",
+            quantity=stated,
+            computed=computed,
+        )
+    return stated

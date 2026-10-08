@@ -31,7 +31,6 @@ from apps.clinical.models import (
 )
 from apps.core.models import Department, DoctorProfile, User
 from apps.patients.models import Patient
-from apps.pharmacy.models import DrugClass
 from apps.visits.models import QueueEntry, Visit
 
 clinical_router = Router(tags=["clinical"])
@@ -87,13 +86,8 @@ def call_next(request: HttpRequest) -> Any:
 
 
 def _entry_out(entry: QueueEntry) -> dict[str, Any]:
-    entry = QueueEntry.objects.select_related(
-        "visit__patient", "visit__department", "visit__payer", "visit__doctor__user"
-    ).get(pk=entry.pk)
-    patient = entry.visit.patient
-    allergies = {patient.pk: services.active_allergies(patient)}
-    recorded = {patient.pk} if services.allergies_recorded(patient) else set()
-    return s.queue_entry_out(entry, allergies, recorded)
+    view = services.queue_entry_view(entry)
+    return s.queue_entry_out(view.entries[0], view.allergies, view.recorded)
 
 
 @clinical_router.post(
@@ -143,8 +137,7 @@ def get_workspace(request: HttpRequest, visit_id: int) -> Any:
 @require_perm("clinical.view")
 def get_patient_summary(request: HttpRequest, patient_id: int) -> Any:
     patient = get_object_or_404(Patient, pk=patient_id)
-    summary = services.patient_summary(patient)
-    return s.summary_out(summary, allergies_recorded=services.allergies_recorded(patient))
+    return s.summary_out(services.patient_summary(patient))
 
 
 @clinical_router.get(
@@ -207,19 +200,16 @@ def list_allergies(request: HttpRequest, patient_id: int) -> Any:
     response={201: s.AllergyOut, **_WRITE},
     operation_id="clinical_create_allergy",
     summary="Record an allergy (drug, drug class, food, environmental or other)",
-    description="409 DRUG_CLASS_REQUIRED, ALLERGEN_REQUIRED.",
+    description="409 DRUG_CLASS_REQUIRED, DRUG_CLASS_INACTIVE, ALLERGEN_REQUIRED.",
 )
 @require_perm("clinical.manage_allergies")
 def create_allergy(request: HttpRequest, patient_id: int, payload: s.AllergyIn) -> Any:
     patient = get_object_or_404(Patient, pk=patient_id)
-    drug_class = None
-    if payload.drug_class_id is not None:
-        drug_class = get_object_or_404(DrugClass, pk=payload.drug_class_id, active=True)
     allergy = services.record_allergy(
         patient,
         actor=_actor(request),
         allergen_type=payload.allergen_type,
-        drug_class=drug_class,
+        drug_class_id=payload.drug_class_id,
         substance=payload.substance,
         reaction=payload.reaction,
         severity=payload.severity,
@@ -274,7 +264,7 @@ def create_condition(request: HttpRequest, patient_id: int, payload: s.Condition
     condition = services.record_condition(
         patient,
         actor=_actor(request),
-        icd10=services.icd10_by_code(payload.icd10_code),
+        icd10_code=payload.icd10_code,
         name=payload.name,
         since=payload.since,
         note=payload.note,

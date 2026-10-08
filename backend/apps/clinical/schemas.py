@@ -450,11 +450,11 @@ class PatientSummaryOut(Schema):
     latest_results: list[ResultOut]
 
 
-def summary_out(summary: PatientSummary, *, allergies_recorded: bool) -> dict[str, Any]:
+def summary_out(summary: PatientSummary) -> dict[str, Any]:
     return {
         "patient": patient_brief(summary.patient),
         "allergies": [allergy_out(a) for a in summary.allergies],
-        "allergies_recorded": allergies_recorded,
+        "allergies_recorded": summary.allergies_recorded,
         "conditions": [condition_out(c) for c in summary.conditions],
         "active_medications": [medication_out(m) for m in summary.active_medications],
         "recent_visits": [visit_brief(v) for v in summary.recent_visits],

@@ -543,8 +543,8 @@ def test_reception_cannot_order(make_user, entry) -> None:
         403,
         "PERMISSION_DENIED",
     )
-    # Reception still sees the status of orders (no prices).
-    ok(reception.get(f"/api/orders/visits/{entry.visit_id}/lines"))
+    # A visit's orders carry prescriptions, results and override reasons: clinical records.
+    err(reception.get(f"/api/orders/visits/{entry.visit_id}/lines"), 403, "PERMISSION_DENIED")
 
 
 # --- results and history --------------------------------------------------------------------

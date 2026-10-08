@@ -16,6 +16,7 @@ from domain.prescription import (
     Prescription,
     dispense_quantity,
     frequency_per_day,
+    order_quantity,
     resolve,
 )
 
@@ -177,3 +178,27 @@ def test_resolve_without_enough_to_count() -> None:
         dose_quantity=None, frequency_code="OD", frequency_per_day=None, duration_days=3
     )
     assert missing_dose.quantity is None
+
+
+@given(
+    computed=st.none() | st.integers(min_value=1, max_value=10_000),
+    stated=st.none() | st.integers(min_value=1, max_value=10_000),
+)
+def test_order_quantity_never_falls_short_of_the_course(
+    computed: int | None, stated: int | None
+) -> None:
+    """A stated quantity may round the course up, never down (FEATURES 3.5)."""
+    if computed is not None and stated is not None and stated < computed:
+        assert _code(lambda: order_quantity(computed, stated)) == "QUANTITY_BELOW_PRESCRIPTION"
+        return
+    result = order_quantity(computed, stated)
+    assert result == (computed if stated is None else stated)
+    if result is not None and computed is not None:
+        assert result >= computed
+
+
+def test_order_quantity_reports_both_numbers() -> None:
+    with pytest.raises(DomainError) as exc:
+        order_quantity(80, 1)
+    assert exc.value.code == "QUANTITY_BELOW_PRESCRIPTION"
+    assert (exc.value.details["quantity"], exc.value.details["computed"]) == (1, 80)

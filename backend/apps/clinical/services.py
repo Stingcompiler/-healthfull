@@ -73,9 +73,12 @@ from domain.errors import DomainError
 from domain.money import q
 
 __all__ = [
+    "ALLERGY_OVERRIDE_REASON_MIN",
     "QUEUE_ACTIONS",
     "VITAL_RANGES",
     "AllergyAlert",
+    "EstimatedCost",
+    "EstimatedOrder",
     "Frequency",
     "HistoryEntry",
     "PatientSummary",
@@ -101,6 +104,7 @@ __all__ = [
     "doctor_profile",
     "doctor_queue",
     "drug_classes",
+    "estimate_order",
     "estimated_cost",
     "frequencies",
     "icd10_by_code",
@@ -114,6 +118,7 @@ __all__ = [
     "prescription_quantity",
     "preview_prescription",
     "queue_action",
+    "queue_entry_view",
     "reassign_patient",
     "record_allergy",
     "record_condition",
@@ -145,6 +150,8 @@ VITAL_RANGES: dict[str, tuple[Decimal, Decimal]] = {
     "blood_glucose_mg_dl": (Decimal(0), Decimal(32767)),
     "pain_score": (Decimal(0), Decimal(10)),
 }
+#: Fewest characters of an allergy override reason (invariant 4: a reason that says something).
+ALLERGY_OVERRIDE_REASON_MIN = 3
 _CODE_RE = re.compile(r"^[A-Za-z]\d{1,2}(\.?\d{0,2})?$")
 
 
@@ -195,13 +202,32 @@ def record_allergy(
     actor: User,
     allergen_type: str,
     drug_class: DrugClass | None = None,
+    drug_class_id: int | None = None,
     item: Item | None = None,
     substance: str = "",
     reaction: str = "",
     severity: str = Severity.MODERATE,
     note: str = "",
 ) -> Allergy:
-    """Add an allergy to the registry (FEATURES 3.2)."""
+    """Add an allergy to the registry (FEATURES 3.2).
+
+    The drug class is given as a row or by id (``drug_class_id``); a new allergy names an
+    active class only.
+
+    Raises:
+        DomainError: ``INVALID_ALLERGEN_TYPE``, ``INVALID_SEVERITY``, ``DRUG_CLASS_INACTIVE``
+            (unknown or retired class), ``DRUG_CLASS_REQUIRED``, ``ALLERGEN_REQUIRED``.
+    """
+    if drug_class is None and drug_class_id is not None:
+        drug_class = DrugClass.objects.filter(pk=drug_class_id).first()
+        if drug_class is None:
+            raise DomainError(
+                "DRUG_CLASS_INACTIVE", "The drug class is unknown or retired", id=drug_class_id
+            )
+    if drug_class is not None and not drug_class.active:
+        raise DomainError(
+            "DRUG_CLASS_INACTIVE", "The drug class is unknown or retired", id=drug_class.pk
+        )
     _choice(allergen_type, AllergenType, "INVALID_ALLERGEN_TYPE")
     _choice(severity, Severity, "INVALID_SEVERITY")
     if allergen_type == AllergenType.DRUG_CLASS and drug_class is None:
@@ -400,10 +426,12 @@ def prepare_order_items(items: Sequence[Mapping[str, Any]]) -> list[dict[str, An
     A prescription's frequency code fills its doses per day (``domain.prescription``). A drug
     line without a quantity gets ``ceil(dose x doses per day x days)``; one that cannot be
     counted (as needed, no duration) needs an explicit quantity (``QUANTITY_REQUIRED``). A
-    stated quantity is kept: the prescriber may round up to a whole pack.
+    stated quantity is kept when it covers the course (the prescriber may round up to a whole
+    pack) and refused below it (``QUANTITY_BELOW_PRESCRIPTION``).
 
     Raises:
         DomainError: ``ORDER_EMPTY``, ``SERVICE_INACTIVE``, ``QUANTITY_REQUIRED``,
+            ``QUANTITY_BELOW_PRESCRIPTION``,
             ``PRESCRIPTION_NOT_DRUG``, ``UNKNOWN_FREQUENCY``, ``FREQUENCY_MISMATCH``,
             ``INVALID_PRESCRIPTION``.
     """
@@ -436,14 +464,14 @@ def prepare_order_items(items: Sequence[Mapping[str, Any]]) -> list[dict[str, An
             detail["frequency_code"] = resolved.frequency_code
             detail["frequency_per_day"] = resolved.frequency_per_day
             item["prescription"] = detail
-            if item.get("quantity") is None:
-                if resolved.quantity is None:
-                    raise DomainError(
-                        "QUANTITY_REQUIRED",
-                        "State the quantity of an as-needed or open-ended prescription",
-                        service_id=sid,
-                    )
-                item["quantity"] = resolved.quantity
+            quantity = dp.order_quantity(resolved.quantity, item.get("quantity"))
+            if quantity is None:
+                raise DomainError(
+                    "QUANTITY_REQUIRED",
+                    "State the quantity of an as-needed or open-ended prescription",
+                    service_id=sid,
+                )
+            item["quantity"] = quantity
         elif item.get("quantity") is None:
             item.pop("quantity", None)
         out.append(item)
@@ -462,11 +490,13 @@ def order_lines(
     ``items`` (each with a ``service``: a ``Service`` or its id) go through
     :func:`prepare_order_items`, then ``orders.services.create_service_lines``. With matching
     allergies the order is refused with ``ALLERGY_CONFLICT`` (``details.alerts``) unless
-    ``allergy_override_reason`` says why the drug is given anyway; the override is then
-    stored per ordered line and matching allergy, with who and when (invariant 4).
+    ``allergy_override_reason`` says why the drug is given anyway, in at least
+    :data:`ALLERGY_OVERRIDE_REASON_MIN` characters; the override is then stored per ordered
+    line and matching allergy, with who and when (invariant 4).
 
     Raises:
-        DomainError: ``VISIT_NOT_OPEN``, ``ALLERGY_CONFLICT``, the errors of
+        DomainError: ``VISIT_NOT_OPEN``, ``ALLERGY_CONFLICT``,
+            ``ALLERGY_OVERRIDE_REASON_TOO_SHORT``, the errors of
             :func:`prepare_order_items` and of ``orders.services.create_service_lines``.
     """
     _open_visit(visit)
@@ -478,6 +508,12 @@ def order_lines(
             "ALLERGY_CONFLICT",
             "The patient is allergic to a prescribed drug; give a reason to override",
             alerts=[a.as_dict() for a in alerts],
+        )
+    if alerts and len(reason) < ALLERGY_OVERRIDE_REASON_MIN:
+        raise DomainError(
+            "ALLERGY_OVERRIDE_REASON_TOO_SHORT",
+            "Say why the drug is given despite the allergy",
+            min_length=ALLERGY_OVERRIDE_REASON_MIN,
         )
     context = f"order (allergy override: {reason})"[:250] if alerts else "order"
     with transaction.atomic(), pghistory.context(user=actor.pk, reason=context):
@@ -528,10 +564,18 @@ def record_condition(
     *,
     actor: User,
     icd10: Icd10Code | None = None,
+    icd10_code: str | None = None,
     name: str = "",
     since: Any = None,
     note: str = "",
 ) -> ChronicCondition:
+    """Add a chronic condition by ICD-10 row or code, by name, or both (FEATURES 3.2).
+
+    Raises:
+        DomainError: ``ICD10_UNKNOWN``, ``CONDITION_NAME_REQUIRED``.
+    """
+    if icd10 is None:
+        icd10 = icd10_by_code(icd10_code)
     if icd10 is None and not name.strip():
         raise DomainError("CONDITION_NAME_REQUIRED", "Name the condition or pick an ICD-10 code")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="record condition"):
@@ -1006,6 +1050,18 @@ def worklist(user: User, *, include_done: bool = True) -> Worklist:
     return Worklist(entries=entries, allergies=allergies, recorded=recorded)
 
 
+def queue_entry_view(entry: QueueEntry) -> Worklist:
+    """One queue entry as the worklist shows it, with the patient's allergies (after a
+    queue action)."""
+    loaded = QueueEntry.objects.select_related(
+        "visit__patient", "visit__department", "visit__payer", "visit__doctor__user", "doctor__user"
+    ).get(pk=entry.pk)
+    patient = loaded.visit.patient
+    allergies = active_allergies(patient)
+    recorded = {patient.pk} if allergies or allergies_recorded(patient) else set()
+    return Worklist(entries=[loaded], allergies={patient.pk: allergies}, recorded=recorded)
+
+
 #: Doctor actions on a queue entry and the ``visits.services`` move each one makes.
 QUEUE_ACTIONS = frozenset({"call", "start", "complete", "no_show", "requeue"})
 
@@ -1024,8 +1080,11 @@ def _own_entry(entry: QueueEntry, actor: User) -> DoctorProfile:
 def queue_action(entry: QueueEntry, action: str, *, actor: User) -> QueueEntry:
     """Call, start, complete, mark no-show or requeue one of the doctor's queue entries.
 
-    Completing performs the consultation line (``visits.services.finish_consultation``);
-    the visit stays open for the orders' billing and results.
+    Calling or starting an unassigned entry of the doctor's department claims it (and its
+    visit, when it has no doctor): it leaves the other doctors' work lists and they get
+    ``QUEUE_OTHER_DOCTOR`` from then on. Completing performs the consultation line
+    (``visits.services.finish_consultation``); the visit stays open for the orders' billing
+    and results.
 
     Raises:
         DomainError: ``INVALID_QUEUE_ACTION``, ``DOCTOR_PROFILE_REQUIRED``,
@@ -1033,10 +1092,12 @@ def queue_action(entry: QueueEntry, action: str, *, actor: User) -> QueueEntry:
     """
     if action not in QUEUE_ACTIONS:
         raise DomainError("INVALID_QUEUE_ACTION", "Unknown queue action", action=action)
-    _own_entry(entry, actor)
+    profile = _own_entry(entry, actor)
+    if action == "call":
+        return visit_services.call_patient(entry, actor=actor, doctor=profile)
+    if action == "start":
+        return visit_services.start_consultation(entry, actor=actor, doctor=profile)
     moves = {
-        "call": visit_services.call_patient,
-        "start": visit_services.start_consultation,
         "complete": visit_services.finish_consultation,
         "no_show": visit_services.mark_no_show,
         "requeue": visit_services.requeue,
@@ -1170,24 +1231,28 @@ class PatientSummary:
     recent_visits: list[Visit] = field(default_factory=list)
     active_medications: list[ServiceLine] = field(default_factory=list)
     latest_results: list[Any] = field(default_factory=list)
+    allergies_recorded: bool = False
 
 
 def patient_summary(patient: Patient, *, medication_days: int = 30) -> PatientSummary:
-    """Allergies (active), chronic conditions, last 5 visits, recent drug orders that were
-    not cancelled, and the latest approved lab results (unapproved results never show).
+    """Allergies (active), whether any allergy entry was ever recorded, chronic conditions,
+    last 5 visits, recent drug orders that were not cancelled, and the latest approved lab
+    results (unapproved results never show).
     """
     from apps.lab.models import ResultStatus, ResultVersion
 
     who = patient_services.resolve(patient)
     ids = patient_services.file_ids(who)
     since = timezone.now() - timedelta(days=medication_days)
+    allergies = list(
+        Allergy.objects.filter(patient_id__in=ids, status=RecordStatus.ACTIVE)
+        .select_related("drug_class", "item")
+        .order_by("-recorded_at", "-id")
+    )
     return PatientSummary(
         patient=who,
-        allergies=list(
-            Allergy.objects.filter(patient_id__in=ids, status=RecordStatus.ACTIVE)
-            .select_related("drug_class", "item")
-            .order_by("-recorded_at", "-id")
-        ),
+        allergies=allergies,
+        allergies_recorded=bool(allergies) or Allergy.objects.filter(patient_id__in=ids).exists(),
         conditions=list(
             ChronicCondition.objects.filter(patient_id__in=ids, status=RecordStatus.ACTIVE)
             .select_related("icd10")
@@ -1396,3 +1461,34 @@ def estimated_cost(
         split = dc.split_line(gross, Decimal(0), rule, excluded=excluded)
         out.append(EstimatedCost(svc.pk, int(quantity), split.patient_share))
     return out
+
+
+@dataclass(frozen=True, slots=True)
+class EstimatedOrder:
+    """The patient's estimated share of a draft order, per line and in total (FEATURES 3.8)."""
+
+    lines: list[EstimatedCost]
+    total: Decimal
+
+
+def estimate_order(
+    visit: Visit, items: Sequence[Mapping[str, Any]], *, actor: User
+) -> EstimatedOrder:
+    """:func:`estimated_cost` of a draft order as the doctor builds it.
+
+    ``items`` are shaped like :func:`order_lines` items (service id, optional quantity and
+    prescription): drug quantities are computed the same way as when the order is placed.
+
+    Raises:
+        PermissionRequired: without ``clinical.view_estimated_cost``.
+        DomainError: ``ESTIMATED_COST_DISABLED``, the errors of :func:`prepare_order_items`
+            and of :func:`estimated_cost`.
+    """
+    if not Policy.load().show_estimated_cost:
+        raise DomainError("ESTIMATED_COST_DISABLED", "The center does not show estimated costs")
+    require_permission(actor, "clinical.view_estimated_cost")
+    prepared = prepare_order_items(items)
+    lines = estimated_cost(
+        visit, [(i["service"], int(i.get("quantity") or 1)) for i in prepared], actor=actor
+    )
+    return EstimatedOrder(lines=lines, total=q(sum((ln.patient_share for ln in lines), Decimal(0))))

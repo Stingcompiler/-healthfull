@@ -42,6 +42,16 @@ def _actor(request: HttpRequest) -> User:
     return user
 
 
+def _item(it: s.OrderItemIn) -> dict[str, Any]:
+    return {
+        "service": it.service_id,
+        "quantity": it.quantity,
+        "note": it.note,
+        "pre_approval_ref": it.pre_approval_ref,
+        **({"prescription": it.prescription.dict()} if it.prescription else {}),
+    }
+
+
 @orders_router.get(
     "/catalog",
     response={200: list[s.OrderableServiceOut], **_READ},
@@ -101,8 +111,12 @@ def preview_prescription(request: HttpRequest, payload: s.PrescriptionPreviewIn)
     response={200: list[s.DoctorLineOut], **_READ},
     operation_id="orders_list_visit_lines",
     summary="A visit's orders in the doctor's view: status per line, approved results inline",
+    description=(
+        "Clinical content (prescriptions, approved results, allergy override reasons): "
+        "restricted to clinical.view holders like the rest of the clinical record."
+    ),
 )
-@require_perm("orders.view")
+@require_perm("clinical.view")
 def list_visit_lines(request: HttpRequest, visit_id: int) -> Any:
     visit = get_object_or_404(Visit, pk=visit_id)
     return [s.line_out(d) for d in services.doctor_lines(visit)]
@@ -126,23 +140,43 @@ def list_visit_lines(request: HttpRequest, visit_id: int) -> Any:
 @require_perm("orders.create")
 def create_lines(request: HttpRequest, visit_id: int, payload: s.OrderIn) -> Any:
     visit = get_object_or_404(Visit, pk=visit_id)
-    items = [
-        {
-            "service": it.service_id,
-            "quantity": it.quantity,
-            "note": it.note,
-            "pre_approval_ref": it.pre_approval_ref,
-            **({"prescription": it.prescription.dict()} if it.prescription else {}),
-        }
-        for it in payload.items
-    ]
     views = clinical.place_orders(
         visit,
-        items,
+        [_item(it) for it in payload.items],
         actor=_actor(request),
         allergy_override_reason=payload.allergy_override_reason,
     )
     return Status(201, [s.line_out(d) for d in views])
+
+
+@orders_router.post(
+    "/visits/{visit_id}/estimate",
+    response={200: s.EstimateOut, **_WRITE},
+    operation_id="orders_estimate_cost",
+    summary="Estimated patient share of a draft order at today's prices (center option)",
+    description=(
+        "FEATURES 3.8: the only doctor-facing money. 409 ESTIMATED_COST_DISABLED unless the "
+        "center turns it on; 403 without clinical.view_estimated_cost. Also 409 "
+        "PRICE_NOT_FOUND, NO_EFFECTIVE_PRICE_LIST and the prescription errors of ordering."
+    ),
+)
+@require_perm("orders.create")
+def estimate_cost(request: HttpRequest, visit_id: int, payload: s.EstimateIn) -> Any:
+    visit = get_object_or_404(Visit, pk=visit_id)
+    estimate = clinical.estimate_order(
+        visit, [_item(it) for it in payload.items], actor=_actor(request)
+    )
+    return {
+        "lines": [
+            {
+                "service_id": ln.service_id,
+                "quantity": ln.quantity,
+                "patient_share": str(ln.patient_share),
+            }
+            for ln in estimate.lines
+        ],
+        "total": str(estimate.total),
+    }
 
 
 @orders_router.get(

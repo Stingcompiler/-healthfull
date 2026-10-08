@@ -347,7 +347,7 @@ export interface paths {
         put?: never;
         /**
          * Record an allergy (drug, drug class, food, environmental or other)
-         * @description 409 DRUG_CLASS_REQUIRED, ALLERGEN_REQUIRED.
+         * @description 409 DRUG_CLASS_REQUIRED, DRUG_CLASS_INACTIVE, ALLERGEN_REQUIRED.
          */
         post: operations["clinical_create_allergy"];
         delete?: never;
@@ -807,6 +807,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/visits/{visit_id}/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Estimated patient share of a draft order at today's prices (center option)
+         * @description FEATURES 3.8: the only doctor-facing money. 409 ESTIMATED_COST_DISABLED unless the center turns it on; 403 without clinical.view_estimated_cost. Also 409 PRICE_NOT_FOUND, NO_EFFECTIVE_PRICE_LIST and the prescription errors of ordering.
+         */
+        post: operations["orders_estimate_cost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/visits/{visit_id}/lines": {
         parameters: {
             query?: never;
@@ -814,7 +834,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A visit's orders in the doctor's view: status per line, approved results inline */
+        /**
+         * A visit's orders in the doctor's view: status per line, approved results inline
+         * @description Clinical content (prescriptions, approved results, allergy override reasons): restricted to clinical.view holders like the rest of the clinical record.
+         */
         get: operations["orders_list_visit_lines"];
         put?: never;
         /**
@@ -1321,6 +1344,31 @@ export interface components {
              * @description Developer-facing message (UI translates `code`)
              */
             message: string;
+        };
+        /** EstimateIn */
+        EstimateIn: {
+            /** Items */
+            items: components["schemas"]["OrderItemIn"][];
+        };
+        /**
+         * EstimateOut
+         * @description The patient's estimated share of a draft order (FEATURES 3.8): shown to a doctor only
+         *     when the center turns it on and the doctor holds clinical.view_estimated_cost.
+         */
+        EstimateOut: {
+            /** Lines */
+            lines: components["schemas"]["EstimatedLineOut"][];
+            /** Total */
+            total: string;
+        };
+        /** EstimatedLineOut */
+        EstimatedLineOut: {
+            /** Patient Share */
+            patient_share: string;
+            /** Quantity */
+            quantity: number;
+            /** Service Id */
+            service_id: number;
         };
         /** FrequencyOut */
         FrequencyOut: {
@@ -4686,6 +4734,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PrescriptionPreviewOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_estimate_cost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EstimateIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstimateOut"];
                 };
             };
             /** @description Unauthorized */
