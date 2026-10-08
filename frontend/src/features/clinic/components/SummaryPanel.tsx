@@ -35,8 +35,8 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
       <PatientCard
         patient={toPatientCard(
           workspace.patient,
-          data?.allergies ?? [],
-          data?.allergies_recorded ?? true,
+          workspace.allergies,
+          workspace.allergies_recorded,
           workspace.visit.payer,
           language,
         )}

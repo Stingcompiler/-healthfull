@@ -689,6 +689,8 @@ class WorkspaceOut(Schema):
     patient: PatientBriefOut
     queue_entry_id: int | None
     queue_status: QueueStatusCode | None
+    allergies: list[AllergyChipOut]
+    allergies_recorded: bool
     notes: list[NoteOut]
     diagnoses: list[DiagnosisOut]
     vitals: list[VitalsOut]
@@ -702,6 +704,8 @@ def workspace_out(ws: VisitWorkspace) -> dict[str, Any]:
         "patient": patient_brief(ws.visit.patient),
         "queue_entry_id": entry.pk if entry else None,
         "queue_status": entry.status if entry else None,
+        "allergies": [allergy_chip(a) for a in ws.allergies],
+        "allergies_recorded": ws.allergies_recorded,
         "notes": [note_out(n) for n in ws.notes],
         "diagnoses": [diagnosis_out(d) for d in ws.diagnoses],
         "vitals": [vitals_out(v) for v in ws.vitals],

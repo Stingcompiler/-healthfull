@@ -117,6 +117,9 @@ def test_worklist_call_next_start_complete(doctor_client, entry, penicillins, do
     assert [a["label_en"] for a in row["allergies"]] == ["Penicillins"]
     assert [a["label_ar"] for a in row["allergies"]] == ["البنسلينات"]
     assert_no_prices(rows)
+    ws = ok(doctor_client.get(f"/api/clinical/visits/{entry.visit_id}/workspace"))
+    assert [a["label_en"] for a in ws["allergies"]] == ["Penicillins"]
+    assert ws["allergies_recorded"] is True
 
     called = ok(doctor_client.post("/api/clinical/worklist/call-next"))
     assert called["id"] == entry.pk
@@ -266,6 +269,8 @@ def test_note_diagnosis_vitals_referral(doctor_client, entry, doctor) -> None:
     assert [d["id"] for d in ws["diagnoses"]] == [dx["id"]]
     assert len(ws["vitals"]) == 1
     assert len(ws["referrals"]) == 1
+    assert ws["allergies"] == []
+    assert ws["allergies_recorded"] is False
     assert_no_prices(ws)
 
     ok(doctor_client.request("DELETE", f"/api/clinical/diagnoses/{dx['id']}"), 204)

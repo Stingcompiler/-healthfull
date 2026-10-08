@@ -136,6 +136,7 @@ function useInvalidatePatient() {
       qc.invalidateQueries({ queryKey: clinicKeys.allergies(patientId) }),
       qc.invalidateQueries({ queryKey: clinicKeys.conditions(patientId) }),
       qc.invalidateQueries({ queryKey: clinicKeys.worklist }),
+      qc.invalidateQueries({ queryKey: ["clinic", "workspace"] }),
     ]);
 }
 

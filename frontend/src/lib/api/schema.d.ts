@@ -2115,6 +2115,10 @@ export interface components {
          * @description One visit as its doctor works on it: the header, queue state and clinical record.
          */
         WorkspaceOut: {
+            /** Allergies */
+            allergies: components["schemas"]["AllergyChipOut"][];
+            /** Allergies Recorded */
+            allergies_recorded: boolean;
             /** Diagnoses */
             diagnoses: components["schemas"]["DiagnosisOut"][];
             /** Notes */

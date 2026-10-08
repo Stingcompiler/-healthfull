@@ -3218,6 +3218,17 @@
       "WorkspaceOut": {
         "description": "One visit as its doctor works on it: the header, queue state and clinical record.",
         "properties": {
+          "allergies": {
+            "items": {
+              "$ref": "#/components/schemas/AllergyChipOut"
+            },
+            "title": "Allergies",
+            "type": "array"
+          },
+          "allergies_recorded": {
+            "title": "Allergies Recorded",
+            "type": "boolean"
+          },
           "diagnoses": {
             "items": {
               "$ref": "#/components/schemas/DiagnosisOut"
@@ -3288,6 +3299,8 @@
           "patient",
           "queue_entry_id",
           "queue_status",
+          "allergies",
+          "allergies_recorded",
           "notes",
           "diagnoses",
           "vitals",

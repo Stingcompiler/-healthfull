@@ -1075,6 +1075,8 @@ class VisitWorkspace:
     diagnoses: list[Diagnosis] = field(default_factory=list)
     vitals: list[Vitals] = field(default_factory=list)
     referrals: list[Referral] = field(default_factory=list)
+    allergies: list[Allergy] = field(default_factory=list)
+    allergies_recorded: bool = False
 
 
 def visit_workspace(visit: Visit) -> VisitWorkspace:
@@ -1083,9 +1085,12 @@ def visit_workspace(visit: Visit) -> VisitWorkspace:
     loaded = Visit.objects.select_related("patient", "department", "doctor__user", "payer").get(
         pk=visit.pk
     )
+    allergies = active_allergies(loaded.patient)
     return VisitWorkspace(
         visit=loaded,
         queue_entry=visit_queue_entry(loaded),
+        allergies=allergies,
+        allergies_recorded=bool(allergies) or allergies_recorded(loaded.patient),
         notes=list(
             ClinicalNote.objects.filter(visit=loaded)
             .select_related("author")
