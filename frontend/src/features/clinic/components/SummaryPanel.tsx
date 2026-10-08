@@ -17,6 +17,7 @@ import { toPatientCard } from "../lib";
 import type { Workspace } from "../types";
 import { AllergyManager } from "./AllergyManager";
 import { ConditionManager } from "./ConditionManager";
+import { MetaParts } from "./MetaParts";
 import { QueryError } from "./QueryError";
 import { ResultValues } from "./ResultValues";
 
@@ -135,9 +136,13 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
                       {pickName({ ar: m.name_ar, en: m.name_en }, language)}
                     </span>
                     <span className="text-xs text-muted">
-                      {[m.dose, m.frequency_code, m.duration_days ? t("rx.days", { count: m.duration_days }) : ""]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      <MetaParts
+                        parts={[
+                          m.dose,
+                          m.frequency_code,
+                          m.duration_days ? t("rx.days", { count: m.duration_days }) : "",
+                        ]}
+                      />
                     </span>
                   </li>
                 ))}

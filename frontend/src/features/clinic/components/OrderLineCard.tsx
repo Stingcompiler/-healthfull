@@ -9,6 +9,7 @@ import { pickName } from "@/lib/names";
 
 import { lineBadgeState } from "../lib";
 import type { DoctorLine } from "../types";
+import { MetaParts } from "./MetaParts";
 import { ResultValues } from "./ResultValues";
 
 /** One order as its doctor sees it: progress, prescription, overrides, result. Never a price. */
@@ -42,15 +43,15 @@ export function OrderLineCard({ line, onWithdraw }: { line: DoctorLine; onWithdr
             </div>
             {rx ? (
               <div className="text-fg-muted">
-                {[
-                  rx.dose,
-                  rx.frequency_code,
-                  rx.duration_days ? t("rx.days", { count: rx.duration_days }) : "",
-                  rx.as_needed ? t("rx.asNeeded") : "",
-                  t(`route.${rx.route}`),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+                <MetaParts
+                  parts={[
+                    rx.dose,
+                    rx.frequency_code,
+                    rx.duration_days ? t("rx.days", { count: rx.duration_days }) : "",
+                    rx.as_needed ? t("rx.asNeeded") : "",
+                    t(`route.${rx.route}`),
+                  ]}
+                />
                 {rx.instructions ? <div>{rx.instructions}</div> : null}
               </div>
             ) : line.note ? (
