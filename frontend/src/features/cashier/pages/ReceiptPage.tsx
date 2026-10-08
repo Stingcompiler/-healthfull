@@ -109,7 +109,9 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
           label={t("receipt.qrLabel")}
           className={format === "thermal" ? "size-32" : "size-36"}
         />
-        <bdi dir="ltr" className="text-[10px] break-all text-muted">{receipt.verify_code}</bdi>
+        <bdi dir="ltr" className="text-[10px] break-all text-muted">
+          {receipt.verify_code}
+        </bdi>
         <p className="text-center text-[11px] text-muted">{t("receipt.verifyHint")}</p>
       </div>
     </div>
