@@ -68,6 +68,18 @@ Source of truth for build status. Update at the end of every task. Phases from `
   (enforced today only for refunds and shift reviews).
 - Admin: show `Policy.default_pay_first` read-only.
 
+## Follow-ups (clinic, wave a review)
+
+- Print: referral letters and prescriptions have no print view yet; add them on the shared
+  A4/80mm templates of FEATURES 0.10 when those land (hide the app shell under `@media print`).
+- Nurses: vitals (FEATURES 3.4) are entered from the doctor's workspace; a nurse has no list
+  of visits to reach it until the nursing screens of FEATURES 10.3.
+- Work lists and exception reports (FEATURES 4.3, 4.5) exist as tested services
+  (`orders.services.worklist_lines`, `report_*`); their endpoints and screens come with the
+  lab, pharmacy, procedures and reports modules.
+- Billing access sweep for doctors (`e2e/tests/clinic/access.spec.ts`) is `fixme` until the
+  billing and payments routers have operations (cashier module).
+
 ## Next: wave a (Phases 2-4)
 
 Run `workflow-drafts/wave.js` with `{wave: 'a', base: 'main', prep: true}` after Phase 1 is merged:
