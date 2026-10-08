@@ -193,7 +193,7 @@ function LogoCard({ profile }: { profile: CenterProfileOut }) {
       <h2 id="logo-title" className="font-semibold text-fg">
         {t("settings.logo")}
       </h2>
-      <div className="flex aspect-[3/2] items-center justify-center overflow-hidden rounded-control border border-dashed border-border-strong bg-subtle">
+      <div className="flex aspect-[3/2] w-full max-w-72 items-center justify-center overflow-hidden rounded-control border border-dashed border-border-strong bg-subtle">
         {profile.logo_url ? (
           <img src={profile.logo_url} alt={t("settings.logoAlt")} className="max-h-full max-w-full object-contain" />
         ) : (
