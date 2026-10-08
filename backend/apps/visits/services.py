@@ -28,7 +28,7 @@
 from __future__ import annotations
 
 import importlib
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -1477,7 +1477,7 @@ def board_row(entry_id: int) -> QueueEntry:
     )
 
 
-_QUEUE_ACTIONS = {
+_QUEUE_ACTIONS: dict[str, Callable[..., QueueEntry]] = {
     "call": call_patient,
     "start": start_consultation,
     "finish": finish_consultation,
