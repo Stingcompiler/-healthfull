@@ -30,7 +30,8 @@ def test_supervisor_authorizes_unpaid_lines_and_revokes(d: Desk) -> None:
     assert [ln["id"] for ln in body["lines"]] == [iv.insured.pk, iv.cash_line.pk]
     assert all(ln["authorizable"] for ln in body["lines"])
     # No prices on this screen.
-    assert "gross" not in str(body) and "price" not in str(body)
+    assert "gross" not in str(body)
+    assert "price" not in str(body)
 
     error(
         d.sup.api.post(
