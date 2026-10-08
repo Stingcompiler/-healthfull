@@ -127,6 +127,22 @@ def test_confirm_registers_valid_rows_and_duplicates_only_when_asked(admin, cler
     assert Patient.objects.filter(full_name_ar="عثمان موسى").count() == 2
 
 
+def test_an_age_only_row_is_checked_against_the_estimated_birth_date(admin, clerk) -> None:
+    """Review (e2e): the preview skipped name+birth-date matches for age-only rows, so a row
+    shown as valid was then refused as a duplicate at confirm."""
+    today = date(2026, 10, 8)
+    ps.register_patient(
+        ps.PatientData(sex="female", full_name_ar="رقية الحاج", age_years=30),
+        actor=clerk,
+        today=today,
+    )
+    content = _xlsx([["رقية الحاج", "", "F", None, 30, ""]])
+    job = imp.preview_patients(filename="p.xlsx", content=content, actor=admin, today=today)
+    row = _rows(job)[2]
+    assert row.status == "duplicate"
+    assert row.warnings[0]["code"] == "name_dob"
+
+
 def test_a_file_registered_after_the_preview_is_not_created_twice(admin, clerk) -> None:
     content = _xlsx([["نور الهدى", "", "F", None, 20, "0912777300"]])
     job = imp.preview_patients(filename="p.xlsx", content=content, actor=admin)

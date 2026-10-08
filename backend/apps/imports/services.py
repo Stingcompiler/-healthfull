@@ -196,12 +196,16 @@ def preview_patients(
         warnings: list[dict[str, Any]] = []
         duplicate_of: int | None = None
         if not errors:
+            # The birth date registration will record, so the preview and the confirm agree.
+            dob = row.data["date_of_birth"]
+            if dob is None and row.data["age_years"] is not None:
+                dob = patient_services.estimated_birth_date(row.data["age_years"], on)
             candidates = patient_services.find_duplicates(
                 full_name_ar=row.data["full_name_ar"],
                 full_name_en=row.data["full_name_en"],
                 phone=row.data["phone"],
                 phone_alt=row.data["phone_alt"],
-                date_of_birth=row.data["date_of_birth"],
+                date_of_birth=dob,
                 national_id=row.data["national_id"],
                 limit=3,
             )

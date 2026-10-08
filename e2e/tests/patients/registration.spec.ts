@@ -67,7 +67,7 @@ test("@patients duplicate warning offers the existing file", async ({ page }) =>
   await openNewPatient(page, "en");
 
   await page.getByLabel(tr("en", "patients:form.nameEn")).fill("Hassan Altahir");
-  await page.getByRole("radio", { name: tr("en", "common:sex.male") }).check();
+  await page.getByRole("radio", { name: tr("en", "common:sex.male"), exact: true }).check();
   await page.getByLabel(tr("en", "patients:form.phone"), { exact: true }).fill(phone);
   const inline = page.getByText(tr("en", "patients:duplicates.inlineTitle_one", { count: "1" }));
   await expect(inline).toBeVisible();
@@ -102,7 +102,7 @@ test("@patients registration asks for the sex instead of assuming one", async ({
   await signIn(page, "en", "light");
   await openNewPatient(page, "en");
   for (const sex of ["male", "female"] as const) {
-    await expect(page.getByRole("radio", { name: tr("en", `common:sex.${sex}`) })).not.toBeChecked();
+    await expect(page.getByRole("radio", { name: tr("en", `common:sex.${sex}`), exact: true })).not.toBeChecked();
   }
   await page.getByLabel(tr("en", "patients:form.nameEn")).fill("Sex Not Chosen");
   await page.getByRole("button", { name: tr("en", "patients:new.submit") }).click();

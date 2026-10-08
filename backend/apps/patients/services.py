@@ -53,6 +53,7 @@ __all__ = [
     "coverages",
     "coverages_valid_on",
     "end_coverage",
+    "estimated_birth_date",
     "file_ids",
     "find_duplicates",
     "merge_into",
@@ -175,6 +176,12 @@ def _birth_date(data: PatientData, today: date) -> tuple[date | None, bool]:
             estimated = today.replace(year=today.year - data.age_years, day=28)
         return estimated, True
     return None, False
+
+
+def estimated_birth_date(age_years: int, today: date) -> date:
+    """The birth date registration records for an age in years (``dob_is_estimated``)."""
+    dob, _ = _birth_date(PatientData(sex=Sex.MALE, age_years=age_years), today)
+    return dob if dob is not None else today  # an age always gives a date
 
 
 def _is_complete(patient: Patient) -> bool:

@@ -31,6 +31,7 @@ test.afterAll(disposeApiClients);
 type Who = Parameters<typeof login>[1];
 
 async function signIn(page: Page, who: Who, lang: Lang, theme: "light" | "dark" | "warm" = "light"): Promise<void> {
+  await page.context().clearCookies(); // a fresh sign-in, also when switching users mid-test
   await login(page, who);
   await setPrefs(page, { theme, lang });
 }
@@ -163,7 +164,7 @@ test("@patients the quick search finds a patient by name and opens the file", as
   const { patient } = await createPatient({ full_name_en: `Quicksearch Person ${suffix}`, full_name_ar: `بحث سريع ${suffix}` });
   await signIn(page, "reception", "en");
   await page.goto("/");
-  await page.keyboard.press("Control+k");
+  await page.getByRole("button", { name: tr("en", "search.open") }).filter({ visible: true }).click();
   const menu = page.getByRole("dialog");
   await menu.getByRole("combobox").fill(`Quicksearch Person ${suffix}`);
   const hit = menu.getByTestId("quick-search-patient").filter({ hasText: patient.file_no });
@@ -173,7 +174,7 @@ test("@patients the quick search finds a patient by name and opens the file", as
 
   // By file number in Arabic too.
   await setPrefs(page, { theme: "light", lang: "ar" });
-  await page.keyboard.press("Control+k");
+  await page.getByRole("button", { name: tr("ar", "search.open") }).filter({ visible: true }).click();
   await page.getByRole("dialog").getByRole("combobox").fill(patient.file_no);
   await expect(page.getByRole("dialog").getByTestId("quick-search-patient")).toContainText(`بحث سريع ${suffix}`);
 });
@@ -193,15 +194,17 @@ test("@patients emergencies are marked on the board and a no-show needs confirma
     await signIn(page, "reception", "en");
     await page.goto("/queue");
     await chooseOption(page, tr("en", "visits:board.department"), er?.name_en ?? "");
-    const row = (width > 400 ? page.getByRole("row") : page.getByTestId("queue-card")).filter({
-      hasText: patient.file_no,
-    });
+    // Table rows show the file number; phone cards show the name.
+    const row =
+      width > 400
+        ? page.getByRole("row").filter({ hasText: patient.file_no })
+        : page.getByTestId("queue-card").filter({ hasText: patient.full_name_ar });
     await expect(row.getByTestId("emergency-badge")).toBeVisible();
     await expect(row.getByTestId("emergency-badge")).toContainText(tr("en", "visits:board.emergency"));
     await expectNoHorizontalScroll(page);
   }
 
-  const card = page.getByTestId("queue-card").filter({ hasText: patient.file_no });
+  const card = page.getByTestId("queue-card").filter({ hasText: patient.full_name_ar });
   await card.getByRole("button", { name: tr("en", "common:table.rowActions") }).click();
   await page.getByRole("menuitem", { name: tr("en", "visits:board.action.no_show") }).click();
   const confirm = page.getByRole("alertdialog");
@@ -281,11 +284,14 @@ test("@patients import patients from a sheet with preview and duplicates", async
   const suffix = unique();
   const phone = `09${suffix.padStart(8, "1")}`;
   const { patient: existing } = await createPatient({ full_name_ar: `موجود سابقاً ${suffix}`, phone });
+  // A birth date of its own per run, so earlier runs' rows never look like the same person.
+  const n = Number(suffix);
+  const dob = `${String(1950 + (n % 50))}-${String(1 + (n % 12)).padStart(2, "0")}-${String(1 + (n % 28)).padStart(2, "0")}`;
   const csv = [
-    "الاسم بالعربية,Name (English),Sex,Age (years),Phone",
-    `مستورد أول ${suffix},Imported One ${suffix},ذكر,34,`,
-    `,,female,20,`,
-    `موجود سابقاً ${suffix},,M,40,${phone}`,
+    "الاسم بالعربية,Name (English),Sex,Date of birth,Age (years),Phone",
+    `مستورد أول ${suffix},Imported One ${suffix},ذكر,${dob},,`,
+    `,,female,,20,`,
+    `موجود سابقاً ${suffix},,M,,40,${phone}`,
   ].join("\n");
 
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -313,7 +319,7 @@ test("@patients import patients from a sheet with preview and duplicates", async
 
   await page.getByRole("button", { name: tr("en", "patients:import.confirm") }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: tr("en", "patients:import.confirm") }).click();
-  await expect(page.getByText(tr("en", "patients:import.doneTitle_one"))).toBeVisible();
+  await expect(page.locator("#main").getByText(tr("en", "patients:import.doneTitle_one"))).toBeVisible();
   const imported = page.getByRole("link", { name: `Imported One ${suffix}` });
   await expect(imported).toBeVisible();
   await imported.click();

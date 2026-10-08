@@ -141,10 +141,12 @@ export function useCreateVisit() {
 
 export function useCancelVisit() {
   const invalidate = useInvalidateVisits();
+  const client = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: VisitCancelInput }) =>
       unwrap(api.POST("/api/visits/{visit_id}/cancel", { params: { path: { visit_id: id } }, body })),
-    onSuccess: invalidate,
+    // A paid visit's money becomes patient credit: the file's balance changes too.
+    onSuccess: () => Promise.all([invalidate(), client.invalidateQueries({ queryKey: ["patients"] })]),
   });
 }
 

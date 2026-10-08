@@ -138,6 +138,7 @@ test("@patients board calls the paid token and the waiting room shows it", async
   await expect(page.getByRole("menuitem", { name: tr("ar", "visits:board.action.finish") })).toHaveCount(0);
   await page.keyboard.press("Escape");
 
+  await page.context().clearCookies();
   await login(page, "doctor");
   await setPrefs(page, { theme: "dark", lang: "ar" });
   await page.goto("/queue");
