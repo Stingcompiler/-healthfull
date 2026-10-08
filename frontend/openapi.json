@@ -21,6 +21,18 @@
             "default": false,
             "title": "Auto",
             "type": "boolean"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "With auto: only this visit's open invoices",
+            "title": "Visit Id"
           }
         },
         "title": "AllocateIn",
@@ -2689,6 +2701,18 @@
               }
             ],
             "title": "Transfer Date"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "With auto: only this visit's open invoices (the visit at the desk)",
+            "title": "Visit Id"
           }
         },
         "required": [

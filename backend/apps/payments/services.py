@@ -546,13 +546,16 @@ def record_payment(
     override_approver: User | None = None,
     allocations: Sequence[tuple[Invoice | int, Decimal]] | None = None,
     auto: bool = False,
+    auto_visit_id: int | None = None,
     note: str = "",
 ) -> Payment:
     """Take money from a patient into the actor's open shift (FEATURES 6.1-6.5).
 
-    Then allocate it: to the given ``allocations``, oldest invoices first with ``auto``, or
-    leave it as patient credit. Spending patient credit (``patient_credit``) must be fully
-    allocated (oldest first when no allocations are given) and needs spendable credit.
+    Then allocate it: to the given ``allocations``, oldest invoices first with ``auto`` (only
+    the invoices of visit ``auto_visit_id`` when given: the visit at the desk is paid, never
+    an older visit behind the cashier's back), or leave it as patient credit. Spending
+    patient credit (``patient_credit``) must be fully allocated (oldest first when no
+    allocations are given) and needs spendable credit.
 
     A reference already used for the bank is accepted only with a reason and a supervisor
     holding ``payments.override_duplicate``: the actor, or ``override_approver`` (the money
@@ -648,7 +651,7 @@ def record_payment(
         if allocations:
             _allocate(payment, allocations, actor=actor, shift_id=locked_shift.pk)
         elif auto or m is dp.PaymentMethod.PATIENT_CREDIT:
-            _auto_allocate(payment, actor=actor, shift_id=locked_shift.pk)
+            _auto_allocate(payment, actor=actor, shift_id=locked_shift.pk, visit_id=auto_visit_id)
     return payment
 
 
@@ -734,13 +737,16 @@ def _allocate(
     return rows
 
 
-def _auto_allocate(payment: Payment, *, actor: User, shift_id: int | None) -> list[Allocation]:
+def _auto_allocate(
+    payment: Payment, *, actor: User, shift_id: int | None, visit_id: int | None = None
+) -> list[Allocation]:
     _require_allocatable(payment)
     patient = Patient.objects.get(pk=payment.patient_id)
     limit = _allocation_limit(payment, _records(payment.patient_id))
     opened = [
         da.OpenInvoice(inv.pk, inv.approved_at or inv.created_at, pos.outstanding)
         for inv, pos in billing.open_invoices(patient)
+        if visit_id is None or inv.visit_id == visit_id
     ]
     full = payment.method == PaymentMethod.PATIENT_CREDIT
     if limit <= 0:
@@ -775,13 +781,18 @@ def allocate(
         return _allocate(locked, allocations, actor=actor, shift_id=shift_id)
 
 
-def auto_allocate(payment: Payment, *, actor: User) -> list[Allocation]:
-    """Allocate a payment's remainder to the patient's open invoices, oldest first."""
+def auto_allocate(
+    payment: Payment, *, actor: User, visit_id: int | None = None
+) -> list[Allocation]:
+    """Allocate a payment's remainder to the patient's open invoices, oldest first.
+
+    With ``visit_id``, only that visit's open invoices.
+    """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="auto allocate"):
         shift_id = acting_shift_id(actor)  # FOR SHARE: never a shift that closed meanwhile
         orders.lock_patient(payment.patient_id)
         locked = Payment.objects.select_for_update().get(pk=payment.pk)
-        return _auto_allocate(locked, actor=actor, shift_id=shift_id)
+        return _auto_allocate(locked, actor=actor, shift_id=shift_id, visit_id=visit_id)
 
 
 def deallocate_for_credit_note(

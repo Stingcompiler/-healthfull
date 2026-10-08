@@ -196,6 +196,9 @@ class PaymentIn(Schema):
     sender_name: str = Field("", max_length=200)
     allocations: list[AllocationIn] | None = None
     auto: bool = Field(False, description="Allocate to the oldest open invoices")
+    visit_id: int | None = Field(
+        None, description="With auto: only this visit's open invoices (the visit at the desk)"
+    )
     note: str = Field("", max_length=500)
     override: OverrideIn | None = None
 
@@ -203,6 +206,7 @@ class PaymentIn(Schema):
 class AllocateIn(Schema):
     allocations: list[AllocationIn] | None = None
     auto: bool = False
+    visit_id: int | None = Field(None, description="With auto: only this visit's open invoices")
 
 
 class AllocationOut(Schema):

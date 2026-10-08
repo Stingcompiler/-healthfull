@@ -15,6 +15,7 @@ import pytest
 from apps.orders.models import ServiceLine
 from apps.payments.models import Payment
 from apps.payments.tests import api_kit as kit
+from apps.payments.tests import fin
 from apps.payments.tests.api_kit import Desk, error, ok
 
 pytestmark = pytest.mark.django_db
@@ -85,6 +86,41 @@ def test_cash_payment_settles_the_lines_and_change_stays_out(d: Desk) -> None:
     assert receipt["invoices"][0]["number"] == inv["number"]
     assert len(receipt["invoices"][0]["lines"]) == 2
     error(d.doctor.api.get(f"/api/payments/payments/{payment['id']}"), 403, "PERMISSION_DENIED")
+
+
+def test_the_visit_at_the_desk_is_paid_not_an_older_visit(d: Desk) -> None:
+    """auto + visit_id pays the visit on screen; the remainder stays credit until spent."""
+    older = kit.insured_visit(d.doctor.user)
+    inv_old = _approved(d, older)
+    newer = fin.visit(older.patient, payer_obj=older.payer)
+    fin.order(newer, d.doctor.user, fin.priced("lab", "10000.00"))
+    inv_new = ok(d.cashier.api.post("/api/billing/invoices", {"visit_id": newer.pk}), 201)
+    inv_new = ok(d.cashier.api.post(f"/api/billing/invoices/{inv_new['id']}/approve"))
+    _open(d.cashier)
+    payment = ok(
+        d.cashier.api.post(
+            "/api/payments/payments",
+            {
+                "patient_id": older.patient.pk,
+                "method": "cash",
+                "amount": "6600",
+                "auto": True,
+                "visit_id": newer.pk,
+            },
+        ),
+        201,
+    )
+    assert [a["invoice_id"] for a in payment["allocations"]] == [inv_new["id"]]
+    assert payment["unallocated"] == "3600.00"
+    assert ok(d.cashier.api.get(f"/api/billing/invoices/{inv_old['id']}"))["paid"] == "0.00"
+    spent = ok(
+        d.cashier.api.post(
+            f"/api/payments/payments/{payment['id']}/allocate",
+            {"auto": True, "visit_id": older.visit.pk},
+        )
+    )
+    assert spent["unallocated"] == "0.00"
+    assert ok(d.cashier.api.get(f"/api/billing/invoices/{inv_old['id']}"))["paid"] == "3600.00"
 
 
 def test_overpayment_without_allocation_becomes_credit_then_allocates(d: Desk) -> None:

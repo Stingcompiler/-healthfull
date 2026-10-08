@@ -97,6 +97,7 @@ def take_payment(
     sender_name: str,
     allocations: Sequence[tuple[int, Decimal]] | None,
     auto: bool,
+    visit_id: int | None,
     note: str,
     override_reason: str | None,
     override_note: str,
@@ -124,6 +125,7 @@ def take_payment(
         override_approver=approving,
         allocations=list(allocations) if allocations else None,
         auto=auto,
+        auto_visit_id=visit_id,
         note=note,
     )
     return queries.payment_detail(payment.pk)
@@ -135,13 +137,14 @@ def allocate(
     actor: User,
     allocations: Sequence[tuple[int, Decimal]] | None,
     auto: bool,
+    visit_id: int | None = None,
 ) -> dict[str, Any]:
     """Allocate a payment's remainder to open invoices (FEATURES 6.5)."""
     payment = Payment.objects.get(pk=payment_id)
     if allocations:
         pay.allocate(payment, list(allocations), actor=actor)
     elif auto:
-        pay.auto_allocate(payment, actor=actor)
+        pay.auto_allocate(payment, actor=actor, visit_id=visit_id)
     else:
         raise DomainError(
             "ALLOCATION_REQUIRED", "Choose the invoices to pay, or allocate automatically"

@@ -1180,6 +1180,11 @@ export interface components {
              * @default false
              */
             auto: boolean;
+            /**
+             * Visit Id
+             * @description With auto: only this visit's open invoices
+             */
+            visit_id?: number | null;
         };
         /** AllocationIn */
         AllocationIn: {
@@ -2226,6 +2231,11 @@ export interface components {
             sender_name: string;
             /** Transfer Date */
             transfer_date?: string | null;
+            /**
+             * Visit Id
+             * @description With auto: only this visit's open invoices (the visit at the desk)
+             */
+            visit_id?: number | null;
         };
         /** PaymentOut */
         PaymentOut: {

@@ -292,6 +292,7 @@ def record_payment(request: HttpRequest, payload: PaymentIn) -> Any:
             sender_name=payload.sender_name,
             allocations=_allocations(payload.allocations),
             auto=payload.auto,
+            visit_id=payload.visit_id,
             note=payload.note,
             override_reason=override.reason if override is not None else None,
             override_note=override.note if override is not None else "",
@@ -352,6 +353,7 @@ def allocate(request: HttpRequest, payment_id: int, payload: AllocateIn) -> Any:
         actor=_user(request),
         allocations=_allocations(payload.allocations),
         auto=payload.auto,
+        visit_id=payload.visit_id,
     )
 
 
