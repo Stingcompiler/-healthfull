@@ -154,7 +154,7 @@ test.describe("@nursing vitals", () => {
     const row = page.locator(`[data-testid="nursing-visit"][data-file-no="${fileNo}"]`);
     await expect(row).toBeVisible();
     await expect(row).toContainText(tr("en", "nursing:visits.noVitals"));
-    await row.getByRole("link", { name: new RegExp(tr("en", "nursing:visits.open")) }).click();
+    await row.getByRole("link", { name: tr("en", "nursing:visits.openNamed", { name: "Sumaya Abdelgadir Nour Eldin" }) }).click();
     await expect(page).toHaveURL(new RegExp(`/nursing/visits/${String(ready.visit.id)}$`));
 
     const form = page.getByTestId("vitals-form");

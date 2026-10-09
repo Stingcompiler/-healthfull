@@ -32,13 +32,13 @@ export function patientName(patient: PatientLike, language: Language): string {
 }
 
 /**
- * PatientCard props. `allergies` undefined hides the allergy badge; an array shows the
- * active allergies (empty: none known on this file).
+ * PatientCard props. `allergies` undefined hides the allergy badge; null shows "not
+ * recorded"; an array shows the active allergies (empty: none known on this file).
  */
 export function toPatientCard(
   patient: PatientLike,
   language: Language,
-  allergies?: readonly Labelled[],
+  allergies?: readonly Labelled[] | null,
   payer?: Named | null,
 ): PatientCardPatient {
   return {
@@ -50,7 +50,10 @@ export function toPatientCard(
     phone: patient.phone === "" ? null : patient.phone,
     ...(allergies === undefined
       ? {}
-      : { allergies: allergies.map((a) => pickName({ ar: a.label_ar, en: a.label_en }, language)) }),
+      : {
+          allergies:
+            allergies === null ? null : allergies.map((a) => pickName({ ar: a.label_ar, en: a.label_en }, language)),
+        }),
     coverage: payer ? { nameAr: payer.name_ar, nameEn: payer.name_en } : null,
     incomplete: patient.is_incomplete,
   };

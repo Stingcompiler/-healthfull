@@ -71,7 +71,14 @@ function ChartBody({ data }: { data: NursingChart }) {
   const cancelled = data.visit.status === "cancelled";
   return (
     <>
-      <PatientCard patient={toPatientCard(data.patient, language, data.allergies, data.visit.payer)} />
+      <PatientCard
+        patient={toPatientCard(
+          data.patient,
+          language,
+          data.allergies_recorded ? data.allergies : null,
+          data.visit.payer,
+        )}
+      />
       {cancelled ? (
         <AlertCard variant="warning" title={t("chart.visitCancelled")} />
       ) : !open ? (

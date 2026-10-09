@@ -101,7 +101,7 @@ function VisitRow({ row }: { row: NursingVisit }) {
     <div data-testid="nursing-visit" data-file-no={row.patient.file_no} data-visit-id={row.visit.id}>
       <PatientCard
         compact
-        patient={toPatientCard(row.patient, language, row.allergies, row.visit.payer)}
+        patient={toPatientCard(row.patient, language, row.allergies_recorded ? row.allergies : null, row.visit.payer)}
         actions={
           <Button size="lg" className="h-12" asChild>
             <Link

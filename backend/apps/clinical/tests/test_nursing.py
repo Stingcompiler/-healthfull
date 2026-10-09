@@ -102,7 +102,8 @@ def test_rows_carry_active_allergies_and_waiting_procedures(nurse) -> None:
     shift = pay.open_shift(cashier, fin.D("0.00"))
     pay.record_payment(shift, inv.patient, "cash", inv.patient_total, actor=cashier, auto=True)
     (row,) = nursing.nursing_visits(q="salwa")
-    assert [a.substance for a in row.allergies] == ["Latex"]
+    assert [a.substance for a in row.allergies.active] == ["Latex"]
+    assert row.allergies.recorded is True
     assert row.procedures_waiting == 1
 
 

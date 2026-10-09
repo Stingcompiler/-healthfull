@@ -73,6 +73,7 @@ class NursingVisitOut(Schema):
     visit: VisitBriefOut
     patient: ClinicPatientOut
     allergies: list[AllergyChipOut]
+    allergies_recorded: bool = Field(..., description="false: the registry was never filled in")
     vitals_count: int
     last_vitals_at: datetime | None
     procedures_waiting: int = Field(..., description="Paid or authorized procedures not done")
@@ -105,6 +106,7 @@ class NursingChartOut(Schema):
     visit: VisitBriefOut
     patient: ClinicPatientOut
     allergies: list[AllergyChipOut]
+    allergies_recorded: bool
     vitals: list[VitalsOut]
     notes: list[NursingNoteOut]
     procedures: list[NursingProcedureOut]
@@ -157,7 +159,8 @@ def _row(r: nursing.NursingVisitRow) -> dict[str, Any]:
     return {
         "visit": visit_brief(r.visit),
         "patient": patient_brief(r.visit.patient),
-        "allergies": [allergy_chip(a) for a in r.allergies],
+        "allergies": [allergy_chip(a) for a in r.allergies.active],
+        "allergies_recorded": r.allergies.recorded,
         "vitals_count": r.vitals_count,
         "last_vitals_at": r.last_vitals_at,
         "procedures_waiting": r.procedures_waiting,
@@ -195,7 +198,8 @@ def _chart(chart: nursing.NursingChart) -> dict[str, Any]:
     return {
         "visit": visit_brief(chart.visit),
         "patient": patient_brief(chart.visit.patient),
-        "allergies": [allergy_chip(a) for a in chart.allergies],
+        "allergies": [allergy_chip(a) for a in chart.allergies.active],
+        "allergies_recorded": chart.allergies.recorded,
         "vitals": [vitals_out(v) for v in chart.vitals],
         "notes": [_note(n) for n in chart.notes],
         "procedures": [_procedure(ln) for ln in chart.procedures],

@@ -67,6 +67,7 @@ def test_nurse_sees_paid_procedure_marks_it_done_and_sees_it_in_done(make_user: 
     assert row["note"] == "IM ceftriaxone"
     assert row["patient"]["full_name_en"] == "Mona Saeed"
     assert [a["label_en"] for a in row["allergies"]] == ["Latex"]
+    assert row["allergies_recorded"] is True
     assert row["authorized"] is False
     assert row["performed"] is False
     assert "price" not in str(rows)

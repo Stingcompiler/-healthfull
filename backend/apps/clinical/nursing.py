@@ -22,7 +22,7 @@ from django.utils import timezone
 
 from apps.catalog.models import ServiceKind
 from apps.clinical.models import Allergy, NursingNote, Vitals
-from apps.clinical.services import active_allergies
+from apps.clinical.services import active_allergies, allergies_recorded
 from apps.orders import services as orders
 from apps.orders.models import ServiceLine
 from apps.patients import services as patient_services
@@ -38,9 +38,11 @@ from apps.visits.models import (
 )
 
 __all__ = [
+    "AllergyState",
     "NursingChart",
     "NursingVisitRow",
     "allergies_by_patient",
+    "allergy_state",
     "nursing_chart",
     "nursing_visits",
 ]
@@ -49,7 +51,7 @@ __all__ = [
 @dataclass(frozen=True, slots=True)
 class NursingVisitRow:
     visit: Visit
-    allergies: list[Allergy] = field(default_factory=list)
+    allergies: AllergyState = field(default_factory=lambda: AllergyState([], False))
     vitals_count: int = 0
     last_vitals_at: datetime | None = None
     procedures_waiting: int = 0
@@ -61,7 +63,7 @@ class NursingVisitRow:
 @dataclass(frozen=True, slots=True)
 class NursingChart:
     visit: Visit
-    allergies: list[Allergy] = field(default_factory=list)
+    allergies: AllergyState = field(default_factory=lambda: AllergyState([], False))
     vitals: list[Vitals] = field(default_factory=list)
     notes: list[NursingNote] = field(default_factory=list)
     procedures: list[ServiceLine] = field(default_factory=list)
@@ -69,9 +71,23 @@ class NursingChart:
     bed: BedStay | None = None
 
 
-def allergies_by_patient(patients: list[Patient]) -> dict[int, list[Allergy]]:
-    """Active allergies per patient id (each person's merged files included)."""
-    return {p.pk: active_allergies(p) for p in {p.pk: p for p in patients}.values()}
+@dataclass(frozen=True, slots=True)
+class AllergyState:
+    """A person's active allergies, and whether the registry was ever filled in for them
+    (no entry at all means "not recorded", which is not "no known allergies")."""
+
+    active: list[Allergy]
+    recorded: bool
+
+
+def allergy_state(patient: Patient) -> AllergyState:
+    active = active_allergies(patient)
+    return AllergyState(active=active, recorded=bool(active) or allergies_recorded(patient))
+
+
+def allergies_by_patient(patients: list[Patient]) -> dict[int, AllergyState]:
+    """Allergy state per patient id (each person's merged files included)."""
+    return {p.pk: allergy_state(p) for p in {p.pk: p for p in patients}.values()}
 
 
 def _day_bounds(day: date) -> tuple[datetime, datetime]:
@@ -131,7 +147,7 @@ def nursing_visits(
     out = [
         NursingVisitRow(
             visit=v,
-            allergies=allergies.get(v.patient_id, []),
+            allergies=allergies.get(v.patient_id, AllergyState([], False)),
             vitals_count=getattr(v, "vitals_count", 0),
             last_vitals_at=getattr(v, "last_vitals_at", None),
             procedures_waiting=waiting.get(v.pk, 0),
@@ -161,7 +177,7 @@ def nursing_chart(visit: Visit) -> NursingChart:
     )
     return NursingChart(
         visit=loaded,
-        allergies=active_allergies(loaded.patient),
+        allergies=allergy_state(loaded.patient),
         vitals=list(
             Vitals.objects.filter(visit=loaded)
             .select_related("recorded_by")

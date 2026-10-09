@@ -94,7 +94,7 @@ export function ProcedureCard({
           ) : null}
           <span>{tc(`sex.${line.patient.sex}`)}</span>
         </p>
-        <AllergyChips allergies={line.allergies} />
+        <AllergyChips allergies={line.allergies} recorded={line.allergies_recorded} />
       </div>
 
       {line.note ? (

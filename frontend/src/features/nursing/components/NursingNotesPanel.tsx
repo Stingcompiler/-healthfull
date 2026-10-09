@@ -137,7 +137,9 @@ export function NursingNotesPanel({
                   <DateText value={n.created_at} format="datetime" />
                 </span>
               </div>
-              <p className="text-sm text-pretty break-words whitespace-pre-line text-fg">{n.text}</p>
+              <p dir="auto" className="text-start text-sm text-pretty break-words whitespace-pre-line text-fg">
+                {n.text}
+              </p>
             </li>
           ))}
         </ul>

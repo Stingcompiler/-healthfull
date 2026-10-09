@@ -46,6 +46,9 @@ def test_nurse_finds_todays_visit_records_vitals_and_doctor_sees_them(make_user:
     assert [r["visit"]["id"] for r in rows] == [visit.pk]
     assert rows[0]["vitals_count"] == 0
     assert rows[0]["admission"] is None
+    # Never filled in is not "no known allergies".
+    assert rows[0]["allergies"] == []
+    assert rows[0]["allergies_recorded"] is False
 
     r = nurse.post(
         f"/api/clinical/visits/{visit.pk}/vitals",

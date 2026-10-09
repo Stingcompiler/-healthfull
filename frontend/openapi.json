@@ -7524,6 +7524,10 @@
             "title": "Allergies",
             "type": "array"
           },
+          "allergies_recorded": {
+            "title": "Allergies Recorded",
+            "type": "boolean"
+          },
           "notes": {
             "items": {
               "$ref": "#/components/schemas/NursingNoteOut"
@@ -7556,6 +7560,7 @@
           "visit",
           "patient",
           "allergies",
+          "allergies_recorded",
           "vitals",
           "notes",
           "procedures",
@@ -7793,6 +7798,11 @@
             "title": "Allergies",
             "type": "array"
           },
+          "allergies_recorded": {
+            "description": "false: the registry was never filled in",
+            "title": "Allergies Recorded",
+            "type": "boolean"
+          },
           "last_vitals_at": {
             "anyOf": [
               {
@@ -7835,6 +7845,7 @@
           "visit",
           "patient",
           "allergies",
+          "allergies_recorded",
           "vitals_count",
           "last_vitals_at",
           "procedures_waiting",
@@ -11869,6 +11880,11 @@
             "title": "Allergies",
             "type": "array"
           },
+          "allergies_recorded": {
+            "description": "false: the registry was never filled in",
+            "title": "Allergies Recorded",
+            "type": "boolean"
+          },
           "authorized": {
             "description": "Performed under a perform-first authorization (not yet paid)",
             "title": "Authorized",
@@ -11965,6 +11981,7 @@
           "department",
           "patient",
           "allergies",
+          "allergies_recorded",
           "visit_id",
           "visit_number",
           "ordered_at",

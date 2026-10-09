@@ -10,8 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.clinical.models import Allergy
-from apps.clinical.nursing import allergies_by_patient
+from apps.clinical.nursing import AllergyState, allergies_by_patient
 from apps.clinical.schemas import allergy_chip
 from apps.core.models import User
 from apps.orders import services as orders
@@ -32,7 +31,7 @@ def _person(user: User | None) -> dict[str, Any] | None:
     return {"id": user.pk, "name_ar": user.display_name_ar, "name_en": user.display_name_en}
 
 
-def line_json(line: ServiceLine, allergies: list[Allergy]) -> dict[str, Any]:
+def line_json(line: ServiceLine, allergies: AllergyState) -> dict[str, Any]:
     return {
         "id": line.pk,
         "service": _ref(line.service),
@@ -40,7 +39,8 @@ def line_json(line: ServiceLine, allergies: list[Allergy]) -> dict[str, Any]:
         "note": line.order_note,
         "department": _ref(line.department),
         "patient": line.visit.patient,
-        "allergies": [allergy_chip(a) for a in allergies],
+        "allergies": [allergy_chip(a) for a in allergies.active],
+        "allergies_recorded": allergies.recorded,
         "visit_id": line.visit_id,
         "visit_number": line.visit.number,
         "ordered_at": line.ordered_at,
@@ -55,7 +55,8 @@ def line_json(line: ServiceLine, allergies: list[Allergy]) -> dict[str, Any]:
 
 def _rows(lines: list[ServiceLine]) -> list[dict[str, Any]]:
     allergies = allergies_by_patient([ln.visit.patient for ln in lines])
-    return [line_json(ln, allergies.get(ln.visit.patient_id, [])) for ln in lines]
+    none = AllergyState([], False)
+    return [line_json(ln, allergies.get(ln.visit.patient_id, none)) for ln in lines]
 
 
 def worklist(*, department: int | None = None, q: str | None = None) -> list[dict[str, Any]]:

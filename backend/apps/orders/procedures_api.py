@@ -59,6 +59,7 @@ class ProcedureLineOut(Schema):
     department: ProcedureRefOut | None
     patient: PatientBriefOut
     allergies: list[ProcedureAllergyOut]
+    allergies_recorded: bool = Field(..., description="false: the registry was never filled in")
     visit_id: int
     visit_number: str
     ordered_at: datetime

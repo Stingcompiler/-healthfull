@@ -186,7 +186,11 @@ export function VitalsPanel({ visitId, vitals, open }: { visitId: number; vitals
                   </div>
                 ))}
               </dl>
-              {v.note ? <p className="mt-1 text-xs text-pretty break-words text-muted">{v.note}</p> : null}
+              {v.note ? (
+                <p dir="auto" className="mt-1 text-start text-xs text-pretty break-words text-muted">
+                  {v.note}
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>

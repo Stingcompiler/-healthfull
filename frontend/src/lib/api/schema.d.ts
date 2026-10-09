@@ -6416,6 +6416,8 @@ export interface components {
             admission: components["schemas"]["NursingAdmissionOut"] | null;
             /** Allergies */
             allergies: components["schemas"]["AllergyChipOut"][];
+            /** Allergies Recorded */
+            allergies_recorded: boolean;
             /** Notes */
             notes: components["schemas"]["NursingNoteOut"][];
             patient: components["schemas"]["ClinicPatientOut"];
@@ -6507,6 +6509,11 @@ export interface components {
             admission: components["schemas"]["NursingAdmissionOut"] | null;
             /** Allergies */
             allergies: components["schemas"]["AllergyChipOut"][];
+            /**
+             * Allergies Recorded
+             * @description false: the registry was never filled in
+             */
+            allergies_recorded: boolean;
             /** Last Vitals At */
             last_vitals_at: string | null;
             patient: components["schemas"]["ClinicPatientOut"];
@@ -7997,6 +8004,11 @@ export interface components {
         ProcedureLineOut: {
             /** Allergies */
             allergies: components["schemas"]["ProcedureAllergyOut"][];
+            /**
+             * Allergies Recorded
+             * @description false: the registry was never filled in
+             */
+            allergies_recorded: boolean;
             /**
              * Authorized
              * @description Performed under a perform-first authorization (not yet paid)
