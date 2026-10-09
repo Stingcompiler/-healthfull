@@ -27,69 +27,6 @@ from domain.errors import DomainError
 pytestmark = pytest.mark.django_db
 
 
-@pytest.fixture
-def tech(make_user):
-    return make_user(roles=["lab_tech"])
-
-
-@pytest.fixture
-def supervisor(make_user):
-    return make_user(roles=["lab_supervisor"])
-
-
-@pytest.fixture
-def cbc() -> LabTest:
-    test = LabTest.objects.create(
-        service=b.service("lab"), code="CBC", sample_type="whole_blood", turnaround_minutes=60
-    )
-    hb = LabParameter.objects.create(
-        test=test, code="HB", name_ar="الهيموغلوبين", name_en="Haemoglobin", unit="g/dL"
-    )
-    ReferenceRange.objects.create(
-        parameter=hb,
-        sex="male",
-        age_min_days=18 * 365,
-        low=Decimal(13),
-        high=Decimal(17),
-        critical_low=Decimal(7),
-        critical_high=Decimal(20),
-    )
-    ReferenceRange.objects.create(
-        parameter=hb, sex="female", age_min_days=18 * 365, low=Decimal(12), high=Decimal("15.5")
-    )
-    ReferenceRange.objects.create(
-        parameter=hb,
-        age_min_days=365,
-        age_max_days=12 * 365,
-        low=Decimal(11),
-        high=Decimal("14.5"),
-        critical_low=Decimal(7),
-    )
-    LabParameter.objects.create(
-        test=test,
-        code="BG",
-        name_ar="فصيلة الدم",
-        name_en="Blood group",
-        value_type="choice",
-        choices=["A", "B", "AB", "O"],
-        sort_order=2,
-    )
-    return test
-
-
-@pytest.fixture
-def malaria() -> LabTest:
-    test = LabTest.objects.create(service=b.service("lab"), code="BFFM", sample_type="whole_blood")
-    LabParameter.objects.create(
-        test=test,
-        code="MP",
-        name_ar="طفيل الملاريا",
-        name_en="Malaria parasite",
-        value_type="pos_neg",
-    )
-    return test
-
-
 def lab_line(visit, test: LabTest, **extra) -> ServiceLine:
     """A lab line: settled (default) or invoiced through an approved invoice, or unbilled."""
     status = extra.pop("billing_status", "settled")
@@ -382,13 +319,13 @@ def test_cannot_perform_refuses_approved_results(tech, supervisor, cbc) -> None:
 
 
 def test_cannot_perform_credits_and_cancels_the_line(make_user, tech, cbc) -> None:
-    from api.errors import PermissionRequired
     from apps.billing.models import CreditNoteLine
 
     line = engine.settled_line(cbc.service, 1, tech)
     # The credit note is approved by a billing supervisor, never by the lab (FEATURES 5.11).
-    with pytest.raises(PermissionRequired):
+    with pytest.raises(DomainError) as exc:
         ls.cannot_perform(line, actor=tech, reason_code="EQUIPMENT_DOWN")
+    assert exc.value.code == "CANCEL_NEEDS_BILLING_APPROVER"
     approver = make_user(roles=["cashier_supervisor"])
     ls.cannot_perform(line, actor=tech, reason_code="EQUIPMENT_DOWN", approver=approver)
     line.refresh_from_db()
