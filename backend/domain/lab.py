@@ -31,8 +31,8 @@ Error codes: ``INVALID_REFERENCE_RANGE``, ``INVALID_DATE_RANGE``, ``RESULT_NOT_D
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
 import math
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
