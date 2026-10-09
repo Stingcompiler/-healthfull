@@ -240,3 +240,30 @@ def test_turnaround_report_summarises_completed_tests(tech, supervisor, cbc, mal
             date_from=timezone.localdate(), date_to=timezone.localdate() - timedelta(days=1)
         )
     assert _code(exc) == "INVALID_DATE_RANGE"
+
+
+def test_rejecting_a_sample_discards_its_draft_values(tech, supervisor, cbc) -> None:
+    visit = b.visit(adult())
+    line = lab_line(visit, cbc)
+    sample = received(visit, [line], tech)
+    ls.enter_results(line, values={"HB": "14", "BG": "A"}, actor=tech)
+    ls.reject_sample(sample, actor=tech, reason_code="HEMOLYZED")
+    # Values measured on an unusable sample never reach approval.
+    assert not ResultVersion.objects.filter(result_set__service_line=line).exists()
+    with pytest.raises(DomainError) as exc:
+        ls.approve_results(line, actor=supervisor)
+    assert _code(exc) == "RESULT_NOT_DRAFT"
+    received(visit, [line], tech)
+    draft = ls.enter_results(line, values={"HB": "13.5"}, actor=tech)
+    assert set(draft.values.values_list("parameter__code", flat=True)) == {"HB"}
+
+
+def test_approval_needs_the_sample_still_received(tech, supervisor, cbc) -> None:
+    visit = b.visit(adult())
+    line = lab_line(visit, cbc)
+    sample = received(visit, [line], tech)
+    ls.enter_results(line, values={"HB": "14", "BG": "A"}, actor=tech)
+    type(sample).objects.filter(pk=sample.pk).update(status="collected", received_at=None)
+    with pytest.raises(DomainError) as exc:
+        ls.approve_results(line, actor=supervisor)
+    assert _code(exc) == "SAMPLE_NOT_RECEIVED"

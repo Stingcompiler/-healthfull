@@ -497,9 +497,17 @@ def receive_sample(sample: Sample, *, actor: User) -> Sample:
 
 
 def reject_sample(sample: Sample, *, actor: User, reason_code: str, note: str = "") -> Sample:
-    """Reject an unusable sample with a reason; its tests wait for a new sample."""
+    """Reject an unusable sample with a reason; its tests wait for a new sample.
+
+    Draft values measured on it are discarded (the deletion is in the audit history), so they
+    can never be approved for a test whose new sample was not measured yet.
+    """
     reason = resolve_reason(reason_code, "sample_reject", note)
     with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"reject sample: {note}"):
+        # The lock order of every work path: the lines, then the sample.
+        _orders().lock_lines(
+            ResultSet.objects.filter(sample_id=sample.pk).values_list("service_line_id", flat=True)
+        )
         locked = Sample.objects.select_for_update().get(pk=sample.pk)
         if locked.status == SampleStatus.REJECTED:
             raise DomainError("SAMPLE_REJECTED", "The sample is already rejected")
@@ -507,6 +515,7 @@ def reject_sample(sample: Sample, *, actor: User, reason_code: str, note: str = 
             result_set__sample=locked, status__in=[ResultStatus.APPROVED, ResultStatus.AMENDED]
         ).exists():
             raise DomainError("RESULT_APPROVED_IMMUTABLE", "Results from this sample are approved")
+        ResultVersion.objects.filter(result_set__sample=locked, status=ResultStatus.DRAFT).delete()
         locked.status = SampleStatus.REJECTED
         locked.rejection_reason = reason
         locked.rejection_note = note.strip()[:300]
@@ -748,6 +757,10 @@ def approve_results(
         draft = next((v for v in versions if v.status == ResultStatus.DRAFT), None)
         if draft is None:
             raise DomainError("RESULT_NOT_DRAFT", "There is no draft result to approve")
+        if draft.amends_id is None and (
+            rs.sample is None or rs.sample.status != SampleStatus.RECEIVED
+        ):
+            raise DomainError("SAMPLE_NOT_RECEIVED", "The sample is not received")
         if revision is not None and revision != result_revision(draft):
             raise DomainError(
                 "RESULT_CHANGED", "The result changed after you opened it; review it again"

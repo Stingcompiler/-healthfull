@@ -19,12 +19,9 @@ import { useLabNames } from "../lib/use-lab-names";
 import { parseLabelSearch } from "../lib/search";
 import type { LabLabel } from "../types";
 
-function sexMark(sex: string): string {
-  return sex === "male" ? "M" : sex === "female" ? "F" : "";
-}
-
 /** The tube label: accession number as text and QR, patient, file, tests and collection time. */
 function LabelBody({ label }: { label: LabLabel }) {
+  const { t } = useTranslation("lab");
   const names = useLabNames();
   const language = useLanguage();
   const s = label.sample;
@@ -44,10 +41,10 @@ function LabelBody({ label }: { label: LabLabel }) {
               <bdi dir="ltr">{label.patient.date_of_birth}</bdi>
             </>
           ) : null}
-          {sexMark(label.patient.sex) ? ` · ${sexMark(label.patient.sex)}` : ""}
+          {label.patient.sex === "male" || label.patient.sex === "female" ? ` · ${t(`sex.${label.patient.sex}`)}` : ""}
         </span>
         <bdi dir="ltr" className="truncate">
-          {label.tests.map((t) => t.code).join(" ")}
+          {label.tests.map((x) => x.code).join(" ")}
         </bdi>
         <span>{formatDate(s.collected_at, language, "datetime")}</span>
       </div>
