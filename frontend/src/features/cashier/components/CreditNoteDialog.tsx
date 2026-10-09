@@ -102,9 +102,11 @@ function CreditNoteDialogOpen({
     defaultValues: { reason: "", note: "", qty: Object.fromEntries(creditable.map((l) => [String(l.id), ""])) },
   });
   const { t: tCommon } = useTranslation();
-  // The "at least one unit" issue sits on `qty` itself; its type is the record's entries.
-  const qtyRoot = form.formState.errors.qty as { message?: unknown } | undefined;
-  const linesError = translateMessage(tCommon, typeof qtyRoot?.message === "string" ? qtyRoot.message : undefined);
+  // The "at least one unit" issue sits on `qty` itself. The resolver files an issue on a record
+  // whose keys are numeric ids under `qty.root` (as for a field array); its type is the entries.
+  const qtyErrors = form.formState.errors.qty as { message?: unknown; root?: { message?: unknown } } | undefined;
+  const qtyMessage = qtyErrors?.root?.message ?? qtyErrors?.message;
+  const linesError = translateMessage(tCommon, typeof qtyMessage === "string" ? qtyMessage : undefined);
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
