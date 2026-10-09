@@ -1,0 +1,58 @@
+/** Named aliases of the pharmacy API schemas (generated from openapi.json, never hand-written). */
+import type { components } from "@/lib/api/schema";
+
+type S = components["schemas"];
+
+export type PharmacyOptions = S["PharmacyOptionsOut"];
+export type Store = S["StoreOut"];
+export type Supplier = S["SupplierOut"];
+export type SupplierIn = S["SupplierIn"];
+export type Reason = S["PharmacyReasonOut"];
+export type UserRef = S["PharmacyUserRefOut"];
+export type NameRef = S["PharmacyNameOut"];
+export type PackUnit = S["PackUnitOut"];
+export type StockItemListItem = S["StockItemListOut"];
+export type StockItem = S["StockItemOut"];
+export type StockItemIn = S["StockItemIn"];
+export type StockItemPatch = S["StockItemPatch"];
+export type PackUnitIn = S["PackUnitIn"];
+export type PackUnitPatch = S["PackUnitPatch"];
+export type StockServiceOption = S["StockServiceOptionOut"];
+export type BatchStock = S["BatchStockOut"];
+export type StoreBatch = S["StoreBatchOut"];
+export type ScanResult = S["ScanResultOut"];
+export type StockCard = S["StockCardOut"];
+export type StockCardRow = S["StockCardRowOut"];
+export type QueueVisit = S["DispenseQueueVisitOut"];
+export type QueueLine = S["DispenseQueueLineOut"];
+export type DispenseVisit = S["DispenseVisitOut"];
+export type DispenseLineOptions = S["DispenseLineOptionsOut"];
+export type DispensePatient = S["DispensePatientOut"];
+export type DispenseIn = S["DispenseIn"];
+export type DispenseLineIn = S["DispenseLineIn"];
+export type Dispense = S["DispenseOut"];
+export type GoodsReceipt = S["GoodsReceiptOut"];
+export type GoodsReceiptIn = S["GoodsReceiptIn"];
+export type GoodsReceiptLineIn = S["GoodsReceiptLineIn"];
+export type StockAdjustment = S["StockAdjustmentOut"];
+export type StockAdjustmentIn = S["StockAdjustmentIn"];
+export type StockCount = S["StockCountOut"];
+export type StockCountLine = S["StockCountLineOut"];
+export type StockTransfer = S["StockTransferOut"];
+export type StockTransferIn = S["StockTransferIn"];
+export type TransferReceiveIn = S["TransferReceiveIn"];
+export type ExpiringBatch = S["ExpiringBatchOut"];
+export type LowStockItem = S["LowStockItemOut"];
+export type SaleCustomer = S["SaleCustomerOut"];
+export type SaleService = S["SaleServiceOut"];
+export type PharmacySaleIn = S["PharmacySaleIn"];
+export type SaleInvoice = S["InvoiceOut"];
+export type ApproverIn = S["ApproverIn"];
+
+export type ReceiptStatus = GoodsReceipt["status"];
+export type AdjustmentStatus = StockAdjustment["status"];
+export type CountStatus = StockCount["status"];
+export type TransferStatus = StockTransfer["status"];
+export type MoveKind = StockCardRow["kind"];
+export type DosageForm = StockItem["form"];
+export type StorageCode = StockItem["storage"];

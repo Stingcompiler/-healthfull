@@ -10,6 +10,7 @@ export const nav: NavItem[] = [
     icon: Pill,
     group: "services",
     order: 70,
-    permission: "pharmacy.dispense",
+    // Pharmacists dispense; managers and accountants read stock and approve adjustments.
+    permission: ["pharmacy.dispense", "pharmacy.view"],
   },
 ];

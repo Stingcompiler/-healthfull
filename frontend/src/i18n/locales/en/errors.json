@@ -362,5 +362,12 @@
   "ALLOCATION_REQUIRED": "Choose the invoices to pay, or allocate automatically.",
   "APPROVER_INVALID": "The approver's username or password is wrong.",
   "HANDOVER_SELF_RECEIPT": "You handed over this cash, so someone else must confirm they received it.",
-  "HANDOVER_RECEIVER_INVALID": "This person cannot receive cash for the center. Choose a supervisor or an accountant."
+  "HANDOVER_RECEIVER_INVALID": "This person cannot receive cash for the center. Choose a supervisor or an accountant.",
+  "BARCODE_TAKEN": "Another item or pack unit already has the barcode {{barcode, bidi}}.",
+  "BARCODE_UNKNOWN": "No item or pack unit has the barcode {{barcode, bidi}}.",
+  "INVALID_FORM": "Choose a dosage form from the list.",
+  "INVALID_STORAGE": "Choose a storage condition from the list.",
+  "SUPPLIER_EXISTS": "A supplier already has the code {{supplier, bidi}}.",
+  "CODE_REQUIRED": "Enter a code.",
+  "CUSTOMER_REQUIRED": "Choose a patient file or enter a new customer, not both."
 }
