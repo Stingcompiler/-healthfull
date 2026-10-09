@@ -172,6 +172,7 @@
   "INVALID_DATE_OF_BIRTH": "The date of birth cannot be in the future.",
   "INVALID_AGE": "The age must be between 0 and 130 years.",
   "INVALID_DATE_RANGE": "The dates do not make sense, for example an end date before the start date or a date in the future. Check the dates entered.",
+  "REPORT_RANGE_TOO_LONG": "A report covers at most {{max_days}} days. Choose a shorter period.",
   "NATIONAL_ID_TAKEN": "Another patient file already has this national ID. Search for that file instead of creating a new one.",
   "DUPLICATE_PATIENT": "A similar patient file already exists. Review the matching files before creating a new one.",
   "PATIENT_MERGED": "This file was merged into another file. Use the file it was merged into.",
