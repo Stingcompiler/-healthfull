@@ -423,7 +423,7 @@ def test_partial_credit_note_mirrors_and_rounds_exactly(doctor, cashier, supervi
     il = _line(inv, line)
     notes = []
     for _ in range(3):
-        cn = billing.create_credit_note(inv, [(il, 1)], actor=supervisor, reason="PRICE_ERROR")
+        cn = billing.create_credit_note(inv, [(il, 1)], actor=cashier, reason="PRICE_ERROR")
         assert cn.status == "draft"
         notes.append(billing.approve_credit_note(cn, actor=supervisor).credit_note)
     assert sum(n.gross_total for n in notes) == il.gross
@@ -465,8 +465,8 @@ def test_credit_note_refusals(doctor, cashier, supervisor) -> None:
         with pytest.raises(DomainError) as exc:
             billing.create_credit_note(inv, lines, actor=supervisor, reason=reason)  # type: ignore[arg-type]
         assert _code(exc) == code, code
-    first = billing.create_credit_note(inv, [(il, 1)], actor=supervisor, reason="PRICE_ERROR")
-    second = billing.create_credit_note(inv, [(il, 1)], actor=supervisor, reason="PRICE_ERROR")
+    first = billing.create_credit_note(inv, [(il, 1)], actor=cashier, reason="PRICE_ERROR")
+    second = billing.create_credit_note(inv, [(il, 1)], actor=cashier, reason="PRICE_ERROR")
     billing.approve_credit_note(first, actor=supervisor)
     with pytest.raises(DomainError) as exc:
         billing.approve_credit_note(second, actor=supervisor)
@@ -550,7 +550,7 @@ def test_full_credit_of_performed_line_and_rebill_correction(doctor, cashier, su
     # The right price, from tomorrow (a version never starts on a day already priced).
     fin.set_price(line.service, "400.00", on=timezone.localdate() + timedelta(days=1))
     cn = billing.create_credit_note(
-        inv, [(_line(inv, line), 1)], actor=supervisor, reason="PRICE_ERROR"
+        inv, [(_line(inv, line), 1)], actor=cashier, reason="PRICE_ERROR"
     )
     outcome = billing.approve_credit_note(cn, actor=supervisor, rebill=True)
     line.refresh_from_db()
@@ -578,7 +578,7 @@ def test_rebill_of_a_cancelled_line_is_a_fresh_request(doctor, cashier, supervis
     (line,) = fin.order(visit, doctor, fin.priced("lab", "80.00"))
     inv = fin.invoice(visit, cashier)
     cn = billing.create_credit_note(
-        inv, [(_line(inv, line), 1)], actor=supervisor, reason="DUPLICATE_BILLING"
+        inv, [(_line(inv, line), 1)], actor=cashier, reason="DUPLICATE_BILLING"
     )
     outcome = billing.approve_credit_note(cn, actor=supervisor, rebill=True)
     (replacement,) = outcome.replacements
@@ -630,9 +630,7 @@ def test_invoice_position_of_documents(doctor, cashier, supervisor) -> None:
         (D("40.00"), D("10.00"), False),
     ]
     assert billing.open_invoices(visit.patient) == [(inv, pos)]
-    cn = billing.create_credit_note(
-        inv, [(_line(inv, c), 1)], actor=supervisor, reason="PRICE_ERROR"
-    )
+    cn = billing.create_credit_note(inv, [(_line(inv, c), 1)], actor=cashier, reason="PRICE_ERROR")
     billing.approve_credit_note(cn, actor=supervisor)
     pos = billing.invoice_position(inv)
     assert (pos.outstanding, pos.over_allocation) == (D("0.00"), D("0.00"))

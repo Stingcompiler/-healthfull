@@ -38,3 +38,6 @@ artifacts/screens/*.png
 .env
 .env.*
 !.env.example
+
+# Agent worktrees
+.claude/worktrees/

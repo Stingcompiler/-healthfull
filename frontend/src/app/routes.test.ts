@@ -33,6 +33,7 @@ describe("route tree", () => {
       "/administration/system",
       "/design",
       "/portal",
+      "/display/queue",
     ]) {
       expect(paths, path).toContain(path);
     }

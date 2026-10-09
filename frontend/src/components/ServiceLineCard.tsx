@@ -25,6 +25,8 @@ export interface ServiceLineCardProps {
   orderedBy?: string;
   orderedAt?: string;
   actions?: ReactNode;
+  /** Screen-specific details under the price row (e.g. the cashier's payer/patient split). */
+  children?: ReactNode;
   className?: string;
 }
 
@@ -39,6 +41,7 @@ export function ServiceLineCard({
   orderedBy,
   orderedAt,
   actions,
+  children,
   className,
 }: ServiceLineCardProps) {
   const { t } = useTranslation();
@@ -81,6 +84,7 @@ export function ServiceLineCard({
           </div>
         ) : null}
       </div>
+      {children}
       {authorized || actions ? (
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
           {authorized ? (

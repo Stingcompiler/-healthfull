@@ -16,5 +16,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["*.ts", "fixtures/**/*.ts", "helpers/**/*.ts", "tests/**/*.ts"]
+  "include": ["*.ts", "fixtures/**/*.ts", "helpers/**/*.ts", "module-routes/**/*.ts", "tests/**/*.ts"]
 }

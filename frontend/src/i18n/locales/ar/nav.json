@@ -23,13 +23,16 @@
     "admin": "الإدارة",
     "adminUsers": "المستخدمون",
     "adminRoles": "الأدوار والصلاحيات",
-    "adminCatalog": "كتالوج الخدمات",
+    "adminCatalog": "دليل الخدمات",
     "adminPriceLists": "قوائم الأسعار",
     "adminPayers": "جهات التغطية",
     "adminSettings": "إعدادات المركز",
     "adminImports": "الاستيراد",
     "adminSystem": "حالة النظام",
-    "design": "دليل التصميم"
+    "design": "دليل التصميم",
+    "adminPolicies": "السياسات",
+    "adminDepartments": "الأقسام والأطباء",
+    "adminReasonCodes": "قوائم الأسباب"
   },
   "short": {
     "dashboard": "الرئيسية",
@@ -46,13 +49,16 @@
     "admin": "الإدارة",
     "adminUsers": "المستخدمون",
     "adminRoles": "الأدوار",
-    "adminCatalog": "الكتالوج",
+    "adminCatalog": "الدليل",
     "adminPriceLists": "الأسعار",
     "adminPayers": "التغطية",
     "adminSettings": "الإعدادات",
     "adminImports": "الاستيراد",
     "adminSystem": "النظام",
-    "design": "التصميم"
+    "design": "التصميم",
+    "adminPolicies": "السياسات",
+    "adminDepartments": "الأطباء",
+    "adminReasonCodes": "الأسباب"
   },
   "shell": {
     "menu": "القائمة",

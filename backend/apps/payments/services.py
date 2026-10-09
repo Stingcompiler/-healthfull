@@ -40,12 +40,13 @@ from typing import Any
 
 import pghistory
 from django.db import IntegrityError, connection, transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
 from apps.billing import services as billing
 from apps.billing.models import CreditNote, DocumentStatus, Invoice, InvoiceLine
 from apps.core.models import Policy, ReasonCode, User
+from apps.core.permissions import roles_holding
 from apps.core.services import (
     holds_permission,
     next_number,
@@ -55,7 +56,7 @@ from apps.core.services import (
 )
 from apps.ledger import services as ledger
 from apps.orders import services as orders
-from apps.orders.models import ServiceLine
+from apps.orders.models import BillingStatus, ServiceLine
 from apps.patients import services as patients
 from apps.patients.models import Patient
 from apps.payments.models import (
@@ -86,6 +87,7 @@ from domain.errors import DomainError
 from domain.money import ZERO, require_non_negative, require_positive
 
 __all__ = [
+    "HANDOVER_RECEIVER_PERMISSIONS",
     "MANAGER_ROLES",
     "PatientBalance",
     "ShiftSummary",
@@ -93,9 +95,11 @@ __all__ = [
     "allocate",
     "approve_refund",
     "auto_allocate",
+    "can_receive_for_the_center",
     "cancel_handover",
     "cash_handover",
     "cash_movements",
+    "center_receivers",
     "close_shift",
     "confirm_transfer",
     "credit_balance",
@@ -110,6 +114,7 @@ __all__ = [
     "pay_refund",
     "receive_handover",
     "record_payment",
+    "refund_source_available",
     "reject_refund",
     "reject_transfer",
     "request_refund",
@@ -544,13 +549,16 @@ def record_payment(
     override_approver: User | None = None,
     allocations: Sequence[tuple[Invoice | int, Decimal]] | None = None,
     auto: bool = False,
+    auto_visit_id: int | None = None,
     note: str = "",
 ) -> Payment:
     """Take money from a patient into the actor's open shift (FEATURES 6.1-6.5).
 
-    Then allocate it: to the given ``allocations``, oldest invoices first with ``auto``, or
-    leave it as patient credit. Spending patient credit (``patient_credit``) must be fully
-    allocated (oldest first when no allocations are given) and needs spendable credit.
+    Then allocate it: to the given ``allocations``, oldest invoices first with ``auto`` (only
+    the invoices of visit ``auto_visit_id`` when given: the visit at the desk is paid, never
+    an older visit behind the cashier's back), or leave it as patient credit. Spending
+    patient credit (``patient_credit``) must be fully allocated (oldest first when no
+    allocations are given) and needs spendable credit.
 
     A reference already used for the bank is accepted only with a reason and a supervisor
     holding ``payments.override_duplicate``: the actor, or ``override_approver`` (the money
@@ -646,7 +654,7 @@ def record_payment(
         if allocations:
             _allocate(payment, allocations, actor=actor, shift_id=locked_shift.pk)
         elif auto or m is dp.PaymentMethod.PATIENT_CREDIT:
-            _auto_allocate(payment, actor=actor, shift_id=locked_shift.pk)
+            _auto_allocate(payment, actor=actor, shift_id=locked_shift.pk, visit_id=auto_visit_id)
     return payment
 
 
@@ -732,13 +740,16 @@ def _allocate(
     return rows
 
 
-def _auto_allocate(payment: Payment, *, actor: User, shift_id: int | None) -> list[Allocation]:
+def _auto_allocate(
+    payment: Payment, *, actor: User, shift_id: int | None, visit_id: int | None = None
+) -> list[Allocation]:
     _require_allocatable(payment)
     patient = Patient.objects.get(pk=payment.patient_id)
     limit = _allocation_limit(payment, _records(payment.patient_id))
     opened = [
         da.OpenInvoice(inv.pk, inv.approved_at or inv.created_at, pos.outstanding)
         for inv, pos in billing.open_invoices(patient)
+        if visit_id is None or inv.visit_id == visit_id
     ]
     full = payment.method == PaymentMethod.PATIENT_CREDIT
     if limit <= 0:
@@ -773,13 +784,18 @@ def allocate(
         return _allocate(locked, allocations, actor=actor, shift_id=shift_id)
 
 
-def auto_allocate(payment: Payment, *, actor: User) -> list[Allocation]:
-    """Allocate a payment's remainder to the patient's open invoices, oldest first."""
+def auto_allocate(
+    payment: Payment, *, actor: User, visit_id: int | None = None
+) -> list[Allocation]:
+    """Allocate a payment's remainder to the patient's open invoices, oldest first.
+
+    With ``visit_id``, only that visit's open invoices.
+    """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="auto allocate"):
         shift_id = acting_shift_id(actor)  # FOR SHARE: never a shift that closed meanwhile
         orders.lock_patient(payment.patient_id)
         locked = Payment.objects.select_for_update().get(pk=payment.pk)
-        return _auto_allocate(locked, actor=actor, shift_id=shift_id)
+        return _auto_allocate(locked, actor=actor, shift_id=shift_id, visit_id=visit_id)
 
 
 def deallocate_for_credit_note(
@@ -841,11 +857,14 @@ def _effect_shift_id(entry_shift: Shift, actor: User) -> int | None:
 def confirm_transfer(payment: Payment, *, actor: User, note: str) -> Payment:
     """Confirm a pending transfer after checking the bank statement (FEATURES 6.3).
 
-    ``note`` says what was checked (invariant 4: reason, approver, time).
+    ``note`` says what was checked (invariant 4: reason, approver, time). The person who took
+    the payment, or the cashier of its shift, never confirms it (ADR 0008): the check against
+    the bank is a second person's.
 
     Raises:
         PermissionRequired: the actor lacks ``payments.confirm_transfer``.
-        DomainError: ``PAYMENT_NOT_PENDING``, ``REASON_REQUIRED``.
+        DomainError: ``SELF_CONFIRMATION_NOT_ALLOWED``, ``PAYMENT_NOT_PENDING``,
+            ``REASON_REQUIRED``.
     """
     require_permission(actor, "payments.confirm_transfer")
     text = note.strip()
@@ -858,6 +877,12 @@ def confirm_transfer(payment: Payment, *, actor: User, note: str) -> Payment:
         )
         if locked.reversal_of_id is not None:
             raise DomainError("PAYMENT_NOT_PENDING", "A reversal row is not a transfer")
+        if actor.pk in (locked.created_by_id, locked.shift.cashier_id):
+            raise DomainError(
+                "SELF_CONFIRMATION_NOT_ALLOWED",
+                "Another checker must confirm a transfer you took",
+                payment_id=locked.pk,
+            )
         now = timezone.now()
         new = dp.confirm(
             dp.PaymentMethod(locked.method),
@@ -1084,6 +1109,12 @@ def _source_available(credit_note: CreditNote, *, exclude: int | None = None) ->
     return da.refund_source_available(deallocated, used.values_list("amount", flat=True))
 
 
+def refund_source_available(credit_note: CreditNote) -> Decimal:
+    """What may still be refunded from ``credit_note``: the credit it created less its live
+    refunds, never below zero (the rule :func:`request_refund` enforces)."""
+    return max(_source_available(credit_note), ZERO)
+
+
 def request_refund(
     patient: Patient,
     amount: Decimal,
@@ -1302,6 +1333,30 @@ def pay_refund(refund: Refund, *, actor: User, shift: Shift | None = None) -> Re
 # --- handovers ---------------------------------------------------------------------------
 
 
+#: Who may take cash that is not handed to a named person or shift (the safe, a bank deposit)
+#: and who may be named as the receiving supervisor: a person outside the sending drawer.
+HANDOVER_RECEIVER_PERMISSIONS = ("payments.receive_handover", "payments.view_all_shifts")
+
+
+def can_receive_for_the_center(user: User) -> bool:
+    """Whether ``user`` confirms cash handed to the safe, the bank or a supervisor (7.6)."""
+    return user.is_active and all(holds_permission(user, c) for c in HANDOVER_RECEIVER_PERMISSIONS)
+
+
+def center_receivers(*, exclude: User | None = None) -> list[User]:
+    """Active users who confirm cash for the center (7.6), by username.
+
+    Narrowed in one query to holders of a role granting each code (or superusers), then
+    checked one by one with :func:`can_receive_for_the_center`.
+    """
+    people = User.objects.filter(is_active=True)
+    for code in HANDOVER_RECEIVER_PERMISSIONS:
+        people = people.filter(Q(is_superuser=True) | Q(roles__code__in=roles_holding(code)))
+    if exclude is not None:
+        people = people.exclude(pk=exclude.pk)
+    return [u for u in people.distinct().order_by("username") if can_receive_for_the_center(u)]
+
+
 def cash_handover(
     shift: Shift,
     amount: Decimal,
@@ -1315,21 +1370,44 @@ def cash_handover(
 ) -> CashHandover:
     """Cash leaving the drawer: to the next shift, the safe, the bank or a supervisor (7.6).
 
+    A next-shift handover names the receiving shift (its cashier receives it); a supervisor
+    handover names the supervisor. Cash to the safe or the bank may name its receiver, and
+    otherwise waits for any holder of :data:`HANDOVER_RECEIVER_PERMISSIONS` other than the
+    sender. Until someone confirms it, the cash is in transit.
+
     Posted (ADR 0006): a bank deposit Dr BANK / Cr CASH; anything else Dr CASH_SAFE / Cr CASH
     (cash in the safe, or in transit until the receiving shift takes it).
 
     Raises:
         DomainError: ``SHIFT_NOT_OPEN``, ``SHIFT_CLOSED``, ``SHIFT_NOT_YOURS``,
             ``INVALID_HANDOVER_DESTINATION``, ``HANDOVER_TARGET_REQUIRED``,
-            ``HANDOVER_TO_ITSELF``, ``INVALID_AMOUNT``, ``CASH_INSUFFICIENT``.
+            ``HANDOVER_TO_ITSELF``, ``HANDOVER_RECEIVER_INVALID``, ``INVALID_AMOUNT``,
+            ``CASH_INSUFFICIENT``.
     """
     value = require_positive(amount, "amount")
     if destination not in HandoverDestination.values:
         raise DomainError(
             "INVALID_HANDOVER_DESTINATION", "Unknown destination", destination=destination
         )
-    if destination == HandoverDestination.NEXT_SHIFT and to_shift is None:
-        raise DomainError("HANDOVER_TARGET_REQUIRED", "Name the shift that receives the cash")
+    if destination == HandoverDestination.NEXT_SHIFT:
+        if to_shift is None:
+            raise DomainError("HANDOVER_TARGET_REQUIRED", "Name the shift that receives the cash")
+        to_user = None
+    else:
+        to_shift = None
+        if destination == HandoverDestination.SUPERVISOR and to_user is None:
+            raise DomainError(
+                "HANDOVER_TARGET_REQUIRED", "Name the supervisor who receives the cash"
+            )
+    if to_user is not None:
+        if to_user.pk == actor.pk:
+            raise DomainError("HANDOVER_TO_ITSELF", "You cannot hand cash to yourself")
+        if not can_receive_for_the_center(to_user):
+            raise DomainError(
+                "HANDOVER_RECEIVER_INVALID",
+                "This person cannot receive cash for the center",
+                user=to_user.username,
+            )
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="cash handover"):
         shifts = _lock_shifts(shift.pk, to_shift.pk if to_shift else None)
         source = _own_open(shifts[shift.pk], actor)
@@ -1366,11 +1444,14 @@ def cash_handover(
 def receive_handover(handover: CashHandover, *, actor: User) -> CashHandover:
     """The receiving cashier (or named user) confirms the cash arrived.
 
-    Cash handed to a shift enters its drawer (Dr CASH / Cr CASH_SAFE, ADR 0006).
+    Never the sender (invariant 4: the cash leaving a drawer is confirmed by someone else).
+    Cash handed to nobody in particular (the safe, a bank deposit) is confirmed by a holder of
+    :data:`HANDOVER_RECEIVER_PERMISSIONS`. Cash handed to a shift enters its drawer
+    (Dr CASH / Cr CASH_SAFE, ADR 0006).
 
     Raises:
         DomainError: ``HANDOVER_ALREADY_RECEIVED``, ``HANDOVER_CANCELLED``,
-            ``HANDOVER_NOT_YOURS``, ``SHIFT_CLOSED``.
+            ``HANDOVER_SELF_RECEIPT``, ``HANDOVER_NOT_YOURS``, ``SHIFT_CLOSED``.
     """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="receive handover"):
         row = CashHandover.objects.get(pk=handover.pk)
@@ -1384,9 +1465,18 @@ def receive_handover(handover: CashHandover, *, actor: User) -> CashHandover:
             raise DomainError("HANDOVER_ALREADY_RECEIVED", "The cash was already received")
         if locked.cancelled_at is not None:
             raise DomainError("HANDOVER_CANCELLED", "The handover was cancelled")
+        sender = Shift.objects.values_list("cashier_id", flat=True).get(pk=locked.shift_id)
+        if actor.pk in (sender, locked.handed_by_id):
+            raise DomainError(
+                "HANDOVER_SELF_RECEIPT", "Someone else must confirm the cash you handed over"
+            )
         target = locked.to_user_id or (locked.to_shift.cashier_id if locked.to_shift else None)
         if target is not None and target != actor.pk:
             raise DomainError("HANDOVER_NOT_YOURS", "This cash is handed to someone else")
+        if target is None and not can_receive_for_the_center(actor):
+            raise DomainError(
+                "HANDOVER_NOT_YOURS", "A supervisor or an accountant receives this cash"
+            )
         if locked.to_shift is not None:
             ds.require_open(ds.ShiftStatus(locked.to_shift.status))
         locked.received_by = actor
@@ -1478,6 +1568,19 @@ class ReasonTotal:
     amount: Decimal
 
 
+@dataclass(frozen=True, slots=True)
+class ReasonCount:
+    reason: str
+    count: int
+
+
+@dataclass(frozen=True, slots=True)
+class VoidedDraft:
+    invoice_id: int
+    amount: Decimal
+    note: str
+
+
 def _money(value: object) -> Decimal:
     return Decimal(str(value))
 
@@ -1489,6 +1592,8 @@ class ShiftSummary:
     ``late_reversals`` and ``late_confirmations`` are transfers of earlier, closed shifts
     rejected or confirmed while this shift was the acting one. ``credit_notes`` and
     ``cancellations`` are the credit notes booked in this shift (by reason);
+    ``line_cancellations`` the unbilled lines the shift's cashier cancelled during the shift
+    (by line-cancel reason, FLOW 4) and ``voided_drafts`` the draft invoices they voided;
     ``credit_from_cancellations`` the patient money they turned into credit and
     ``credit_unallocated`` the money taken here and left as patient credit. A closed shift
     is served from the snapshot taken at close (``frozen``), never recomputed (invariant 3).
@@ -1511,6 +1616,8 @@ class ShiftSummary:
     refunds: tuple[ReasonTotal, ...] = ()
     credit_from_cancellations: Decimal = ZERO
     credit_unallocated: Decimal = ZERO
+    line_cancellations: tuple[ReasonCount, ...] = ()
+    voided_drafts: tuple[VoidedDraft, ...] = ()
     frozen: bool = False
 
     def to_json(self) -> dict[str, Any]:
@@ -1548,6 +1655,8 @@ class ShiftSummary:
             "cancellations": [[r.reason, r.count, str(r.amount)] for r in self.cancellations],
             "credit_from_cancellations": str(self.credit_from_cancellations),
             "credit_unallocated": str(self.credit_unallocated),
+            "line_cancellations": [[r.reason, r.count] for r in self.line_cancellations],
+            "voided_drafts": [[v.invoice_id, str(v.amount), v.note] for v in self.voided_drafts],
         }
 
     @classmethod
@@ -1588,6 +1697,12 @@ class ShiftSummary:
             ),
             credit_from_cancellations=_money(data.get("credit_from_cancellations", "0.00")),
             credit_unallocated=_money(data.get("credit_unallocated", "0.00")),
+            line_cancellations=tuple(
+                ReasonCount(str(r[0]), int(str(r[1]))) for r in rows("line_cancellations")
+            ),
+            voided_drafts=tuple(
+                VoidedDraft(int(str(r[0])), _money(r[1]), str(r[2])) for r in rows("voided_drafts")
+            ),
             frozen=True,
         )
 
@@ -1657,6 +1772,29 @@ def _summary(
         .values_list("reason_code__code", "n", "total")
         .order_by("reason_code__code")
     )
+    window = {"gte": shift.opened_at, **({"lte": shift.closed_at} if shift.closed_at else {})}
+    line_cancellations = tuple(
+        ReasonCount(code, count)
+        for code, count in ServiceLine.objects.filter(
+            cancelled_by_id=shift.cashier_id,
+            billing_status=BillingStatus.UNBILLED,
+            **{f"cancelled_at__{k}": v for k, v in window.items()},
+        )
+        .values_list("cancel_reason__code")
+        .annotate(n=Count("id"))
+        .values_list("cancel_reason__code", "n")
+        .order_by("cancel_reason__code")
+    )
+    voided_drafts = tuple(
+        VoidedDraft(pk, total, note)
+        for pk, total, note in Invoice.objects.filter(
+            status=DocumentStatus.VOID,
+            voided_by_id=shift.cashier_id,
+            **{f"voided_at__{k}": v for k, v in window.items()},
+        )
+        .order_by("voided_at", "id")
+        .values_list("id", "gross_total", "void_note")
+    )
     refunds = tuple(
         ReasonTotal(code, count, total)
         for code, count, total in Refund.objects.filter(shift=shift, status=RefundStatus.PAID)
@@ -1697,6 +1835,8 @@ def _summary(
         refunds=refunds,
         credit_from_cancellations=deallocated,
         credit_unallocated=max(unallocated, ZERO),
+        line_cancellations=line_cancellations,
+        voided_drafts=voided_drafts,
     )
 
 

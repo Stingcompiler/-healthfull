@@ -38,6 +38,65 @@ OPERATION_ID = re.compile(
 )
 
 
+MODULE_PATH = re.compile(
+    r"^/api/(auth|core|ops|patients|visits|catalog|clinical|orders|billing|"
+    r"payments|pharmacy|lab|claims|reports|imports|portal)(/|$)"
+)
+
+#: The cashier module's operations (billing, payments, perform-first), used by the frontend.
+CASHIER_OPERATIONS = (
+    "billing_lookup_patients",
+    "billing_get_visit_billing",
+    "billing_list_unbilled_lines",
+    "billing_set_line_payer",
+    "billing_list_reasons",
+    "billing_create_invoice",
+    "billing_get_invoice",
+    "billing_get_invoice_print",
+    "billing_remove_draft_line",
+    "billing_cancel_draft_line",
+    "billing_set_preapproval_ref",
+    "billing_discount_line",
+    "billing_discount_invoice",
+    "billing_approve_invoice",
+    "billing_void_invoice",
+    "billing_create_credit_note",
+    "billing_list_credit_notes",
+    "billing_get_credit_note",
+    "billing_approve_credit_note",
+    "payments_list_banks",
+    "payments_list_tills",
+    "payments_get_current_shift",
+    "payments_open_shift",
+    "payments_list_shifts",
+    "payments_list_handover_targets",
+    "payments_list_handover_receivers",
+    "payments_get_shift",
+    "payments_close_shift",
+    "payments_review_shift",
+    "payments_create_handover",
+    "payments_receive_handover",
+    "payments_cancel_handover",
+    "payments_record_payment",
+    "payments_get_payment",
+    "payments_get_receipt",
+    "payments_check_receipt",
+    "payments_allocate_payment",
+    "payments_list_transfers",
+    "payments_confirm_transfer",
+    "payments_reject_transfer",
+    "payments_list_refunds",
+    "payments_request_refund",
+    "payments_approve_refund",
+    "payments_reject_refund",
+    "payments_pay_refund",
+    "orders_get_perform_first_visit",
+    "orders_authorize_perform_first",
+    "orders_list_perform_first",
+    "orders_revoke_perform_first",
+)
+
+
 @pytest.fixture(scope="module")
 def schema() -> dict[str, Any]:
     # Exactly what export_openapi writes (JSON round-trip turns status codes into strings).
@@ -51,7 +110,9 @@ def _operations(schema: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]
 
 
 def test_expected_routes_exist(schema: dict[str, Any]) -> None:
-    assert set(schema["paths"]) == {
+    # The platform routes and every module's ping exist; module features add more paths, each
+    # under its own module router (ARCHITECTURE 4.11).
+    assert set(schema["paths"]) >= {
         "/api/auth/csrf",
         "/api/auth/login",
         "/api/auth/logout",
@@ -61,6 +122,8 @@ def test_expected_routes_exist(schema: dict[str, Any]) -> None:
         "/api/ops/health",
         *(f"/api/{module}/ping" for module in PING_MODULES),
     }
+    for path in schema["paths"]:
+        assert MODULE_PATH.match(path), path
     assert schema["info"]["title"] == "Hospital System API"
     assert schema["info"]["version"] == API_VERSION
 
@@ -70,18 +133,87 @@ def test_operation_ids_are_stable_and_unique(schema: dict[str, Any]) -> None:
     assert len(ids) == len(set(ids))
     for op_id in ids:
         assert OPERATION_ID.match(op_id), op_id
-    assert sorted(ids) == sorted(
-        [
-            "auth_get_csrf",
-            "auth_login",
-            "auth_logout",
-            "auth_get_me",
-            "auth_update_preferences",
-            "auth_change_password",
-            "ops_get_health",
-            *(f"{module}_get_ping" for module in PING_MODULES),
-        ]
-    )
+    # Operation ids become frontend function names: the pinned ones never change.
+    pinned = {
+        "auth_get_csrf",
+        "auth_login",
+        "auth_logout",
+        "auth_get_me",
+        "auth_update_preferences",
+        "auth_change_password",
+        "ops_get_health",
+        *(f"{module}_get_ping" for module in PING_MODULES),
+        *CASHIER_OPERATIONS,
+    }
+    assert pinned <= set(ids), sorted(pinned - set(ids))
+
+
+def test_schema_class_names_are_unique() -> None:
+    """Two ninja ``Schema`` classes with one name become one OpenAPI component: the second
+    silently replaces the first in ``schema.d.ts`` and the frontend types the wrong shape
+    (the ``DepartmentOut`` of visits once replaced the admin one). Prefix the module."""
+    from collections import defaultdict
+
+    from ninja import Schema
+
+    import api.main  # noqa: F401  (imports every router and its schemas)
+
+    def walk(cls: type) -> list[type]:
+        out = []
+        for sub in cls.__subclasses__():
+            out.append(sub)
+            out.extend(walk(sub))
+        return out
+
+    by_name: dict[str, set[str]] = defaultdict(set)
+    for cls in walk(Schema):
+        module = cls.__module__
+        if module.startswith(("apps.", "api.")) and ".tests" not in module:
+            by_name[cls.__name__].add(f"{module}.{cls.__qualname__}")
+    clashes = {name: sorted(where) for name, where in by_name.items() if len(where) > 1}
+    assert not clashes, clashes
+
+
+#: Operations a signed-in user may call without a permission code. Anything else must carry
+#: ``@require_perm`` (a new endpoint that forgets it fails here instead of going unnoticed).
+OPEN_OPERATIONS = frozenset(
+    {
+        # Session plumbing: every user, before and after sign-in.
+        "auth_get_csrf",
+        "auth_login",
+        "auth_logout",
+        "auth_get_me",
+        "auth_update_preferences",
+        "auth_change_password",
+        "ops_get_health",
+        # Reference data every screen reads: the reason dialog lists and the center logo on
+        # printouts and the app shell.
+        "core_list_reason_codes",
+        "core_get_center_logo",
+        *(f"{module}_get_ping" for module in PING_MODULES),
+    }
+)
+
+
+def _ninja_operations() -> list[tuple[str, Any]]:
+    from api.main import api
+
+    return [
+        (str(op.operation_id), op)
+        for _, router in api._routers
+        for path_view in router.path_operations.values()
+        for op in path_view.operations
+    ]
+
+
+def test_every_operation_requires_a_permission_unless_allowlisted() -> None:
+    ops = _ninja_operations()
+    open_ops = {
+        op_id for op_id, op in ops if not getattr(op.view_func, "required_permission", None)
+    }
+    assert open_ops == OPEN_OPERATIONS
+    # The allowlist names only operations that exist (a renamed one is not silently kept).
+    assert {op_id for op_id, _ in ops} >= OPEN_OPERATIONS
 
 
 def test_every_operation_is_tagged_with_its_module(schema: dict[str, Any]) -> None:
@@ -176,3 +308,30 @@ def test_api_docs_use_bundled_assets_only(settings: Any) -> None:
     schema = Client().get("/api/openapi.json")
     assert schema.status_code == 200
     assert schema.json()["info"]["title"] == "Hospital System API"
+
+
+def test_schema_class_names_are_unique_across_apps() -> None:
+    # The OpenAPI generator keys components by class name, so two apps declaring the same name
+    # (patients.PayerOut and catalog.PayerOut once did) silently document one endpoint with the
+    # other's shape and the generated frontend types follow the wrong one.
+    import importlib
+    import inspect
+    import pkgutil
+    from collections import defaultdict
+
+    from ninja import Schema
+
+    import apps
+
+    owners: dict[str, set[str]] = defaultdict(set)
+    for info in pkgutil.iter_modules(apps.__path__):
+        for part in ("schemas", "api"):
+            try:
+                module = importlib.import_module(f"apps.{info.name}.{part}")
+            except ModuleNotFoundError:
+                continue
+            for name, cls in inspect.getmembers(module, inspect.isclass):
+                if issubclass(cls, Schema) and cls.__module__ == module.__name__:
+                    owners[name].add(module.__name__)
+    clashes = {name: sorted(mods) for name, mods in owners.items() if len(mods) > 1}
+    assert clashes == {}

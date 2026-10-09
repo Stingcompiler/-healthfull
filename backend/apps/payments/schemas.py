@@ -1,0 +1,400 @@
+"""Schemas of ``/api/payments``: shifts, payments, transfers, refunds and handovers.
+
+Money is a decimal string with two places (ARCHITECTURE 4.3). Shared shapes (names, users,
+reasons, patients) come from ``apps.billing.schemas``.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime
+from typing import Literal
+
+from ninja import Field, Schema
+
+from apps.billing.schemas import (
+    ApproverIn,
+    BillingCenterOut,
+    BillingPatientSummaryOut,
+    BillingReasonOut,
+    BillingUserRefOut,
+    MoneyIn,
+    MoneyStr,
+    NameOut,
+)
+
+PaymentMethodCode = Literal["cash", "bank_transfer", "qr", "card", "patient_credit"]
+VerificationCode = Literal["pending", "confirmed", "rejected"]
+RefundStatusCode = Literal["requested", "approved", "rejected", "paid"]
+HandoverDestinationCode = Literal["next_shift", "safe", "bank_deposit", "supervisor"]
+ReviewOutcomeCode = Literal["approved", "flagged"]
+
+
+# --- shifts ----------------------------------------------------------------------------------
+
+
+class ShiftReviewOut(Schema):
+    outcome: ReviewOutcomeCode
+    note: str
+    reviewed_by: BillingUserRefOut | None
+    reviewed_at: datetime
+
+
+class ShiftOut(Schema):
+    id: int
+    number: str
+    status: Literal["open", "closed"]
+    cashier: BillingUserRefOut
+    till: NameOut | None
+    opened_at: datetime
+    opening_float: MoneyStr
+    closed_at: datetime | None
+    closed_by: BillingUserRefOut | None
+    expected_cash: MoneyStr = Field(..., description="Live while open, frozen at close")
+    counted_cash: MoneyStr | None
+    variance: MoneyStr | None
+    variance_reason: BillingReasonOut | None
+    variance_note: str
+    review: ShiftReviewOut | None
+
+
+class MovementsOut(Schema):
+    opening_float: MoneyStr
+    cash_in: MoneyStr
+    cash_refunds: MoneyStr
+    handovers_out: MoneyStr
+    handovers_in: MoneyStr
+
+
+class CollectionOut(Schema):
+    cash_confirmed: MoneyStr
+    bank_confirmed: MoneyStr
+    bank_pending: MoneyStr = Field(..., description="Never counted as collected (FLOW 9)")
+    bank_rejected: MoneyStr
+    credit_used: MoneyStr
+    confirmed_total: MoneyStr
+
+
+class ReportTransferOut(Schema):
+    payment_id: int
+    number: str
+    amount: MoneyStr
+    bank: str
+    reference: str
+    age_days: int | None
+
+
+class ApproverTotalOut(Schema):
+    user: BillingUserRefOut | None
+    amount: MoneyStr
+
+
+class ReasonTotalOut(Schema):
+    reason: BillingReasonOut | None
+    code: str
+    count: int
+    amount: MoneyStr
+
+
+class ReasonCountOut(Schema):
+    reason: BillingReasonOut | None
+    code: str
+    count: int
+
+
+class VoidedDraftOut(Schema):
+    invoice_id: int
+    amount: MoneyStr = Field(..., description="Gross total of the draft when it was voided")
+    note: str
+
+
+class HandoverOut(Schema):
+    id: int
+    number: str
+    shift_id: int
+    shift_number: str
+    destination: HandoverDestinationCode
+    to_shift_id: int | None
+    to_shift_number: str | None
+    to_user: BillingUserRefOut | None
+    amount: MoneyStr
+    bank_reference: str
+    handed_by: BillingUserRefOut | None
+    handed_at: datetime
+    received_by: BillingUserRefOut | None
+    received_at: datetime | None
+    cancelled_by: BillingUserRefOut | None
+    cancelled_at: datetime | None
+    cancel_note: str
+    note: str
+
+
+class ShiftReportOut(Schema):
+    """The shift report (FLOW 9, FEATURES 7.3): confirmed money apart from pending."""
+
+    shift: ShiftOut
+    frozen: bool = Field(..., description="Served from the snapshot taken at close")
+    movements: MovementsOut
+    expected_cash: MoneyStr
+    counted_cash: MoneyStr | None
+    variance: MoneyStr | None
+    collection: CollectionOut
+    pending: list[ReportTransferOut]
+    confirmed_transfers: list[ReportTransferOut]
+    late_reversals: MoneyStr = Field(..., description="Earlier shifts' transfers rejected here")
+    late_confirmations: MoneyStr
+    refunds_paid: MoneyStr
+    refunds: list[ReasonTotalOut]
+    discounts: list[ApproverTotalOut]
+    credit_notes: MoneyStr
+    cancellations: list[ReasonTotalOut]
+    credit_from_cancellations: MoneyStr
+    credit_unallocated: MoneyStr
+    line_cancellations: list[ReasonCountOut] = Field(
+        ..., description="Unbilled lines the shift's cashier cancelled during the shift (FLOW 4)"
+    )
+    voided_drafts: list[VoidedDraftOut] = Field(
+        ..., description="Draft invoices the shift's cashier voided during the shift"
+    )
+    handovers: list[HandoverOut]
+
+
+class CurrentShiftOut(Schema):
+    report: ShiftReportOut | None
+    incoming_handovers: list[HandoverOut]
+
+
+class ShiftOpenIn(Schema):
+    opening_float: MoneyIn
+    till: str | None = Field(None, max_length=20, description="Till code")
+    note: str = Field("", max_length=500)
+
+
+class ShiftCloseIn(Schema):
+    counted: MoneyIn
+    reason: str | None = Field(None, max_length=40, description="Variance reason code")
+    note: str = Field("", max_length=1000)
+
+
+class ShiftReviewIn(Schema):
+    outcome: ReviewOutcomeCode = "approved"
+    note: str = Field("", max_length=1000)
+
+
+class ShiftListItemOut(Schema):
+    shift: ShiftOut
+    pending_count: int
+    pending_amount: MoneyStr
+
+
+# --- payments --------------------------------------------------------------------------------
+
+
+class AllocationIn(Schema):
+    invoice_id: int
+    amount: MoneyIn
+
+
+class OverrideIn(Schema):
+    """Accept a reference already used for the bank (FEATURES 6.2): reason and a supervisor."""
+
+    reason: str = Field(..., min_length=1, max_length=40)
+    note: str = Field("", max_length=1000)
+    approver: ApproverIn | None = Field(
+        None, description="A supervisor's credentials; omit when the cashier may override"
+    )
+
+
+class PaymentIn(Schema):
+    patient_id: int
+    method: PaymentMethodCode
+    amount: MoneyIn
+    bank: str | None = Field(None, max_length=20, description="Bank code (transfer, QR, card)")
+    reference: str = Field("", max_length=100)
+    transfer_date: date | None = None
+    sender_name: str = Field("", max_length=200)
+    allocations: list[AllocationIn] | None = None
+    auto: bool = Field(False, description="Allocate to the oldest open invoices")
+    visit_id: int | None = Field(
+        None, description="With auto: only this visit's open invoices (the visit at the desk)"
+    )
+    note: str = Field("", max_length=500)
+    override: OverrideIn | None = None
+
+
+class AllocateIn(Schema):
+    allocations: list[AllocationIn] | None = None
+    auto: bool = False
+    visit_id: int | None = Field(None, description="With auto: only this visit's open invoices")
+
+
+class AllocationOut(Schema):
+    id: int
+    invoice_id: int
+    invoice_number: str | None
+    kind: str
+    amount: MoneyStr
+    created_at: datetime
+
+
+class PaymentOut(Schema):
+    id: int
+    number: str
+    shift_id: int
+    shift_number: str
+    shift_status: str
+    patient: BillingPatientSummaryOut
+    method: PaymentMethodCode
+    amount: MoneyStr
+    bank: NameOut | None
+    reference: str
+    transfer_date: date | None
+    sender_name: str
+    verification: VerificationCode
+    verified_by: BillingUserRefOut | None
+    verified_at: datetime | None
+    rejection_reason: BillingReasonOut | None
+    rejection_note: str
+    duplicate_override: bool
+    duplicate_of_number: str | None
+    override_by: BillingUserRefOut | None
+    override_reason: BillingReasonOut | None
+    override_note: str
+    reversal_of_number: str | None
+    reversal_number: str | None
+    note: str
+    created_by: BillingUserRefOut | None
+    created_at: datetime
+    age_days: int
+    allocations: list[AllocationOut]
+    unallocated: MoneyStr
+
+
+class RejectionOut(Schema):
+    payment: PaymentOut
+    reversal: PaymentOut | None
+    uncovered: MoneyStr
+
+
+class TransferConfirmIn(Schema):
+    note: str = Field(..., min_length=1, max_length=1000, description="What was checked")
+
+
+class RejectIn(Schema):
+    reason: str = Field(..., min_length=1, max_length=40)
+    note: str = Field("", max_length=1000)
+
+
+class ReceiptLineOut(Schema):
+    description_ar: str
+    description_en: str
+    quantity: int
+    patient_share: MoneyStr
+
+
+class ReceiptInvoiceOut(Schema):
+    id: int
+    number: str | None
+    amount: MoneyStr
+    outstanding: MoneyStr
+    lines: list[ReceiptLineOut]
+
+
+ReceiptStandingCode = Literal["valid", "pending", "rejected", "reversed", "mismatch"]
+
+
+class ReceiptCheckOut(Schema):
+    """A printed receipt checked against the system (FEATURES 6.9, 15.1)."""
+
+    standing: ReceiptStandingCode = Field(
+        ...,
+        description=(
+            "valid; pending (transfer not yet confirmed by the bank); rejected (the transfer "
+            "bounced); reversed; mismatch (the code's amount or day differs from the payment)"
+        ),
+    )
+    code_amount: MoneyStr | None = Field(None, description="The amount the scanned code carries")
+    code_day: date | None = None
+    day: date
+    payment: PaymentOut
+
+
+class ReceiptOut(Schema):
+    center: BillingCenterOut
+    payment: PaymentOut
+    invoices: list[ReceiptInvoiceOut]
+    cashier: BillingUserRefOut | None
+    verify_code: str = Field(..., description="Encoded in the receipt's QR (FEATURES 6.9)")
+
+
+# --- transfers queue -------------------------------------------------------------------------
+
+
+class TransferOut(Schema):
+    payment: PaymentOut
+    cashier: BillingUserRefOut | None
+    self_recorded: bool = Field(
+        ..., description="The viewer took it or it is their shift's: another checker confirms it"
+    )
+    reject_needs_open_shift: bool = Field(
+        ...,
+        description="Its shift is closed and the viewer has no open shift to book the reversal",
+    )
+
+
+# --- refunds ---------------------------------------------------------------------------------
+
+
+class RefundIn(Schema):
+    credit_note_id: int
+    patient_id: int | None = Field(None, description="Default: the credit note's patient")
+    amount: MoneyIn
+    reason: str = Field(..., min_length=1, max_length=40)
+    note: str = Field("", max_length=1000)
+
+
+class DecisionIn(Schema):
+    note: str = Field("", max_length=1000)
+
+
+class RefundOut(Schema):
+    id: int
+    number: str
+    patient: BillingPatientSummaryOut
+    amount: MoneyStr
+    method: str
+    credit_note_id: int | None
+    credit_note_number: str | None
+    reason: BillingReasonOut | None
+    reason_note: str
+    status: RefundStatusCode
+    requested_by: BillingUserRefOut | None
+    requested_at: datetime
+    decided_by: BillingUserRefOut | None
+    decided_at: datetime | None
+    decision_note: str
+    shift_number: str | None
+    paid_by: BillingUserRefOut | None
+    paid_at: datetime | None
+
+
+# --- handovers -------------------------------------------------------------------------------
+
+
+class HandoverIn(Schema):
+    amount: MoneyIn
+    destination: HandoverDestinationCode
+    to_shift_id: int | None = None
+    to_user_id: int | None = None
+    bank_reference: str = Field("", max_length=100)
+    note: str = Field("", max_length=500)
+
+
+class HandoverCancelIn(Schema):
+    note: str = Field(..., min_length=1, max_length=500)
+
+
+class OpenShiftRefOut(Schema):
+    id: int
+    number: str
+    cashier: BillingUserRefOut
+    opened_at: datetime

@@ -471,7 +471,9 @@ def test_reschedule_cancel_no_show_and_convert(clerk, doctor, patient) -> None:
     assert visit2.patient == newcomer
 
     c = vs.book_appointment(doctor=doctor, starts_at=_at(3, 9), actor=clerk, contact_name="D")
-    c = vs.cancel_appointment(c, actor=clerk, note="called to cancel")
+    c = vs.cancel_appointment(
+        c, actor=clerk, reason_code="PATIENT_REQUEST", note="called to cancel"
+    )
     assert c.status == "cancelled"
     assert c.cancelled_by == clerk
     n = vs.book_appointment(doctor=doctor, starts_at=_at(3, 9), actor=clerk, contact_name="E")

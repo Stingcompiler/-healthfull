@@ -1,29 +1,22 @@
 /**
  * Every SPA route, for the responsive matrix (responsive.spec.ts) and any spec
- * that walks the app. When a feature adds a route, add it here: the
- * "route registry" test in responsive.spec.ts fails until you do.
+ * that walks the app. The module roots are listed here; each module lists the
+ * screens it adds in its own module-routes/<module>.ts (`export const routes`),
+ * which is loaded automatically, so parallel module work never edits this file.
+ * The "route registry" test in responsive.spec.ts fails until every route a
+ * frontend routes.tsx declares is listed.
  *
  * `name` is the screenshot prefix: artifacts/screens/<name>-<viewport>-<theme>-<lang>.png
  */
-import type { Locator, Page } from "@playwright/test";
+import { readdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-export interface AppRoute {
-  name: string;
-  path: string;
-  /** Needs a logged-in session (the e2e admin, who holds every permission). */
-  auth: boolean;
-  /** Element whose visibility proves the page finished rendering. */
-  ready: (page: Page) => Locator;
-}
+import { appRoute, loginSubmit, pageHeading, type AppRoute } from "./route-kit";
 
-const pageHeading = (page: Page) => page.locator("#main h1").first();
-const loginSubmit = (page: Page) => page.locator('main form button[type="submit"]');
+export { appRoute, visitPath, type AppRoute } from "./route-kit";
 
-function appRoute(name: string, path: string): AppRoute {
-  return { name, path, auth: true, ready: pageHeading };
-}
-
-export const ROUTES: readonly AppRoute[] = [
+const CORE_ROUTES: readonly AppRoute[] = [
   // Public and auth screens (features/auth, portal, root not-found)
   { name: "login", path: "/login", auth: false, ready: loginSubmit },
   appRoute("change-password", "/change-password"),
@@ -57,6 +50,28 @@ export const ROUTES: readonly AppRoute[] = [
   // Living style guide
   appRoute("design", "/design"),
 ];
+
+const MODULE_ROUTES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "module-routes");
+
+async function moduleRoutes(): Promise<AppRoute[]> {
+  const files = readdirSync(MODULE_ROUTES_DIR)
+    .filter((f) => f.endsWith(".ts") && !f.endsWith(".d.ts") && !f.startsWith("_"))
+    .sort();
+  const found: AppRoute[] = [];
+  for (const file of files) {
+    const loaded = (await import(pathToFileURL(path.join(MODULE_ROUTES_DIR, file)).href)) as {
+      routes?: readonly AppRoute[];
+    };
+    if (!loaded.routes) throw new Error(`e2e/module-routes/${file} must export "routes"`);
+    found.push(...loaded.routes);
+  }
+  return found;
+}
+
+export const ROUTES: readonly AppRoute[] = [...CORE_ROUTES, ...(await moduleRoutes())];
+
+const duplicates = ROUTES.map((r) => r.name).filter((name, i, all) => all.indexOf(name) !== i);
+if (duplicates.length > 0) throw new Error(`Duplicate e2e route names: ${duplicates.join(", ")}`);
 
 export function routeByName(name: string): AppRoute {
   const route = ROUTES.find((r) => r.name === name);

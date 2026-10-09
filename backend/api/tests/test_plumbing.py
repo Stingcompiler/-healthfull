@@ -223,6 +223,17 @@ def test_require_perm_keeps_the_view_signature(api_client: ApiClient, make_user:
     assert "requestBody" in schema["paths"]["/test-api/perm-echo"]["post"]
 
 
+def test_require_perm_is_checked_before_the_body_is_validated(
+    api_client: ApiClient, make_user: Any
+) -> None:
+    """A caller without the code gets 403, never a 422 that lists the operation's fields."""
+    make_user("nurse3", roles=["nurse"])
+    api_client.login("nurse3")
+    body = _body(api_client.post("/test-api/perm-echo", {}), 403)
+    assert body["code"] == "PERMISSION_DENIED"
+    assert body["details"] == {"permission": "core.manage_users"}
+
+
 def test_require_perm_honours_overrides(api_client: ApiClient, make_user: Any) -> None:
     make_user("cashier2", roles=["cashier"])
     RolePermission.objects.create(

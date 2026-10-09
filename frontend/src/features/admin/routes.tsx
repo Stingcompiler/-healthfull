@@ -1,38 +1,69 @@
-import { createRoute, Outlet, type AnyRoute } from "@tanstack/react-router";
+import { createRoute, type AnyRoute } from "@tanstack/react-router";
 
+import { AdminLayout } from "./components/AdminLayout";
 import { AdminIndexPage } from "./pages/AdminIndexPage";
 import { AdminSectionPage } from "./pages/AdminSectionPage";
-import type { AdminSectionId } from "./sections";
+import { CatalogPage } from "./pages/CatalogPage";
+import { DepartmentsPage } from "./pages/DepartmentsPage";
+import { PayerPage } from "./pages/PayerPage";
+import { PayersPage } from "./pages/PayersPage";
+import { PoliciesPage } from "./pages/PoliciesPage";
+import { PriceListPage } from "./pages/PriceListPage";
+import { PriceListsPage } from "./pages/PriceListsPage";
+import { ReasonCodesPage } from "./pages/ReasonCodesPage";
+import { RolesPage } from "./pages/RolesPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { UsersPage } from "./pages/UsersPage";
 
-function section(id: AdminSectionId) {
-  return function AdminSectionRoute() {
-    return <AdminSectionPage id={id} />;
-  };
+function ImportsPage() {
+  return <AdminSectionPage id="imports" />;
+}
+
+function SystemPage() {
+  return <AdminSectionPage id="system" />;
 }
 
 /**
  * Mounted at /administration, not /admin: /admin/* belongs to the Django
  * admin (the dev proxy and the production reverse proxy send it to the
- * backend), so SPA deep links there would never reach the frontend.
+ * backend), so SPA deep links there would never reach the frontend (ADR 0002).
  */
 export function routes<TParent extends AnyRoute>(parent: TParent) {
-  const admin = createRoute({
-    getParentRoute: () => parent,
-    path: "/administration",
-    component: Outlet,
-  });
+  const admin = createRoute({ getParentRoute: () => parent, path: "/administration", component: AdminLayout });
   const index = createRoute({ getParentRoute: () => admin, path: "/", component: AdminIndexPage });
-  const users = createRoute({ getParentRoute: () => admin, path: "/users", component: section("users") });
-  const roles = createRoute({ getParentRoute: () => admin, path: "/roles", component: section("roles") });
-  const catalog = createRoute({ getParentRoute: () => admin, path: "/catalog", component: section("catalog") });
-  const priceLists = createRoute({
+  const users = createRoute({ getParentRoute: () => admin, path: "/users", component: UsersPage });
+  const roles = createRoute({ getParentRoute: () => admin, path: "/roles", component: RolesPage });
+  const settings = createRoute({ getParentRoute: () => admin, path: "/settings", component: SettingsPage });
+  const policies = createRoute({ getParentRoute: () => admin, path: "/policies", component: PoliciesPage });
+  const departments = createRoute({ getParentRoute: () => admin, path: "/departments", component: DepartmentsPage });
+  const reasonCodes = createRoute({ getParentRoute: () => admin, path: "/reason-codes", component: ReasonCodesPage });
+  const catalog = createRoute({ getParentRoute: () => admin, path: "/catalog", component: CatalogPage });
+  const priceLists = createRoute({ getParentRoute: () => admin, path: "/price-lists", component: PriceListsPage });
+  const priceList = createRoute({
     getParentRoute: () => admin,
-    path: "/price-lists",
-    component: section("priceLists"),
+    path: "/price-lists/$priceListId",
+    component: PriceListPage,
   });
-  const payers = createRoute({ getParentRoute: () => admin, path: "/payers", component: section("payers") });
-  const settings = createRoute({ getParentRoute: () => admin, path: "/settings", component: section("settings") });
-  const imports = createRoute({ getParentRoute: () => admin, path: "/imports", component: section("imports") });
-  const system = createRoute({ getParentRoute: () => admin, path: "/system", component: section("system") });
-  return [admin.addChildren([index, users, roles, catalog, priceLists, payers, settings, imports, system])] as const;
+  const payers = createRoute({ getParentRoute: () => admin, path: "/payers", component: PayersPage });
+  const payer = createRoute({ getParentRoute: () => admin, path: "/payers/$payerId", component: PayerPage });
+  const imports = createRoute({ getParentRoute: () => admin, path: "/imports", component: ImportsPage });
+  const system = createRoute({ getParentRoute: () => admin, path: "/system", component: SystemPage });
+  return [
+    admin.addChildren([
+      index,
+      users,
+      roles,
+      settings,
+      policies,
+      departments,
+      reasonCodes,
+      catalog,
+      priceLists,
+      priceList,
+      payers,
+      payer,
+      imports,
+      system,
+    ]),
+  ] as const;
 }

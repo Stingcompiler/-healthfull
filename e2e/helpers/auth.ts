@@ -1,7 +1,7 @@
 import { expect, type APIRequestContext, type BrowserContext, type Page } from "@playwright/test";
 
 import { BASE_URL } from "../env";
-import { E2E_PASSWORD, resolveUser, type RoleCode, type UserKey } from "../fixtures/users";
+import { E2E_PASSWORD, resolveUser, type SeedUser } from "../fixtures/users";
 
 /** Headers for an unsafe API call made outside the SPA (Django CSRF). */
 export async function csrfHeaders(context: BrowserContext): Promise<Record<string, string>> {
@@ -46,7 +46,7 @@ export async function submitLogin(page: Page, username: string, password: string
  */
 export async function login(
   page: Page,
-  who: UserKey | RoleCode,
+  who: SeedUser,
   options: { redirect?: string } = {},
 ): Promise<void> {
   const target = options.redirect ? `/login?redirect=${encodeURIComponent(options.redirect)}` : "/login";
@@ -58,7 +58,7 @@ export async function login(
 }
 
 /** Logs in with the API only (no UI), e.g. to build a storage state. */
-export async function apiLogin(request: APIRequestContext, who: UserKey | RoleCode): Promise<void> {
+export async function apiLogin(request: APIRequestContext, who: SeedUser): Promise<void> {
   const csrf = await request.get("/api/auth/csrf");
   expect(csrf.status(), "GET /api/auth/csrf").toBe(204);
   const state = await request.storageState();

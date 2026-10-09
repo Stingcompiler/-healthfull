@@ -18,6 +18,7 @@ FEATURES 5.1-5.8, invariant 6. Every rule comes from ``domain.pricing`` and
 
 from __future__ import annotations
 
+import re
 from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
@@ -25,24 +26,29 @@ from decimal import Decimal
 
 import pghistory
 from django.db import connection, transaction
-from django.db.models import Q
+from django.db.models import Count, Prefetch, ProtectedError, Q, QuerySet
 from django.utils import timezone
 
 from apps.catalog.models import (
+    ClaimPeriod,
     CoverageRule,
     CoverageRuleKind,
     Exclusion,
     Payer,
+    PayerKind,
     PriceItem,
     PriceList,
+    PriceListKind,
     PriceListVersion,
     Service,
+    ServiceCategory,
+    ServiceKind,
 )
-from apps.core.models import User
+from apps.core.models import Department, User
 from domain import coverage as dc
 from domain import pricing
 from domain.errors import DomainError
-from domain.money import CENT, HUNDRED
+from domain.money import CENT, HUNDRED, ZERO
 
 __all__ = [
     "EffectivePrice",
@@ -183,6 +189,21 @@ def _check_services(service_ids: Collection[int]) -> None:
         raise DomainError("SERVICE_UNKNOWN", "Unknown services in the price list", services=unknown)
 
 
+def _check_new_version(
+    plist: PriceList, effective_from: date, today: date, *, priced: bool = True
+) -> None:
+    """Whether ``plist`` may take a new version from ``effective_from``: the one rule set
+    shared by :func:`create_version` and :func:`preview_bulk_update`.
+
+    Raises:
+        DomainError: ``PRICE_LIST_INACTIVE``, ``PRICE_VERSION_BACKDATED``,
+            ``PRICE_VERSION_DATE_TAKEN``, ``PRICE_VERSION_EMPTY``.
+    """
+    if not plist.active:
+        raise DomainError("PRICE_LIST_INACTIVE", "The price list is inactive")
+    pricing.validate_new_version(_versions(plist), effective_from, today, priced=priced)
+
+
 def create_version(
     price_list: PriceList,
     *,
@@ -206,10 +227,8 @@ def create_version(
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="price list version"):
         # One writer per list at a time, so two versions can never take the same date.
         plist = PriceList.objects.select_for_update(no_key=True).get(pk=price_list.pk)
-        if not plist.active:
-            raise DomainError("PRICE_LIST_INACTIVE", "The price list is inactive")
-        pricing.validate_new_version(
-            _versions(plist), effective_from, today or timezone.localdate()
+        _check_new_version(
+            plist, effective_from, today or timezone.localdate(), priced=bool(snapshot.prices)
         )
         _check_services([int(sid) for sid in snapshot.prices])
         version = PriceListVersion.objects.create(
@@ -413,3 +432,958 @@ def resolve_coverage(
     rule = min(rules, key=rank) if rules else None
     domain_rule = _domain_rule(rule, patient_percent_override) if rule is not None else None
     return ResolvedCoverage(payer=payer, rule=rule, domain_rule=domain_rule, excluded=excluded)
+
+
+# =========================================================================================
+# Administration of the catalog (FEATURES 5.1, 5.2, 11.1). Writes are audited (pghistory
+# context with the acting user). Prices and splits come from ``domain.pricing`` and
+# ``domain.coverage``; the screens never compute money themselves.
+# =========================================================================================
+
+_SERVICE_CODE_RE = re.compile(r"^[A-Z0-9][A-Z0-9_.-]{0,39}\Z")
+_LIST_CODE_RE = re.compile(r"^[A-Z][A-Z0-9_-]{0,29}\Z")
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+\Z")
+
+
+def _code(value: str, pattern: re.Pattern[str]) -> str:
+    text = (value or "").strip()
+    if not pattern.match(text):
+        raise DomainError(
+            "INVALID_CODE",
+            "Codes use upper-case letters, digits, '-' and '_' and start with a letter",
+            value=text,
+        )
+    return text
+
+
+def _clean(value: object) -> object:
+    return value.strip() if isinstance(value, str) else value
+
+
+def _only(fields: Mapping[str, object], allowed: set[str], what: str) -> None:
+    unknown = set(fields) - allowed
+    if unknown:
+        raise ValueError(f"Not editable {what} fields: {sorted(unknown)}")
+
+
+def _department(department_id: int | None) -> Department | None:
+    if department_id is None:
+        return None
+    dept = Department.objects.get(pk=department_id)
+    if not dept.active:
+        raise DomainError("DEPARTMENT_INACTIVE", "The department is inactive", department=dept.code)
+    return dept
+
+
+def _category(category_id: int | None) -> ServiceCategory | None:
+    if category_id is None:
+        return None
+    category = ServiceCategory.objects.get(pk=category_id)
+    if not category.active:
+        raise DomainError("CATEGORY_INACTIVE", "The category is inactive", category=category.code)
+    return category
+
+
+# --- Services and categories (FEATURES 5.1) -----------------------------------------------
+
+
+def list_services(
+    *,
+    q: str | None = None,
+    kind: str | None = None,
+    department_id: int | None = None,
+    category_id: int | None = None,
+    active: bool | None = None,
+) -> QuerySet[Service]:
+    qs = Service.objects.select_related("department", "category")
+    text = (q or "").strip()
+    if text:
+        qs = qs.filter(
+            Q(code__icontains=text) | Q(name_ar__icontains=text) | Q(name_en__icontains=text)
+        )
+    if kind:
+        qs = qs.filter(kind=kind)
+    if department_id is not None:
+        qs = qs.filter(department_id=department_id)
+    if category_id is not None:
+        qs = qs.filter(category_id=category_id)
+    if active is not None:
+        qs = qs.filter(active=active)
+    return qs.order_by("kind", "sort_order", "code")
+
+
+def get_service(service_id: int) -> Service:
+    return list_services().get(pk=service_id)
+
+
+def _check_names(name_ar: str, name_en: str) -> None:
+    if not name_ar.strip() and not name_en.strip():
+        raise DomainError("SERVICE_NAME_REQUIRED", "A service needs an Arabic or English name")
+
+
+def create_service(
+    actor: User,
+    *,
+    code: str,
+    name_ar: str,
+    name_en: str,
+    kind: str,
+    department_id: int | None = None,
+    category_id: int | None = None,
+    description: str = "",
+    active: bool = True,
+    sort_order: int = 0,
+) -> Service:
+    """Add a catalog service (FEATURES 5.1). Its kind never changes afterwards.
+
+    Raises:
+        DomainError: ``INVALID_CODE``, ``SERVICE_CODE_TAKEN``, ``SERVICE_NAME_REQUIRED``,
+            ``SERVICE_KIND_UNKNOWN``, ``DEPARTMENT_INACTIVE``, ``CATEGORY_INACTIVE``.
+    """
+    value = _code(code, _SERVICE_CODE_RE)
+    _check_names(name_ar, name_en)
+    if kind not in ServiceKind.values:
+        raise DomainError("SERVICE_KIND_UNKNOWN", "Unknown service kind", kind=kind)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="create service"):
+        if Service.objects.filter(code__iexact=value).exists():
+            raise DomainError("SERVICE_CODE_TAKEN", "This service code exists", value=value)
+        service = Service.objects.create(
+            code=value,
+            name_ar=name_ar.strip(),
+            name_en=name_en.strip(),
+            kind=kind,
+            department=_department(department_id),
+            category=_category(category_id),
+            description=description.strip(),
+            active=active,
+            sort_order=sort_order,
+        )
+    return get_service(service.pk)
+
+
+def update_service(actor: User, service_id: int, **fields: object) -> Service:
+    """Edit names, department, category, description, order or the active flag."""
+    _only(
+        fields,
+        {
+            "name_ar",
+            "name_en",
+            "department_id",
+            "category_id",
+            "description",
+            "active",
+            "sort_order",
+        },
+        "service",
+    )
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit service"):
+        service = Service.objects.select_for_update().get(pk=service_id)
+        for attr, value in fields.items():
+            if attr == "department_id":
+                service.department = _department(value)  # type: ignore[arg-type]
+            elif attr == "category_id":
+                service.category = _category(value)  # type: ignore[arg-type]
+            else:
+                setattr(service, attr, _clean(value))
+        _check_names(service.name_ar, service.name_en)
+        service.save()
+    return get_service(service_id)
+
+
+def list_categories(*, active: bool | None = None) -> QuerySet[ServiceCategory]:
+    qs = ServiceCategory.objects.all()
+    if active is not None:
+        qs = qs.filter(active=active)
+    return qs.order_by("sort_order", "code")
+
+
+def create_category(
+    actor: User, *, code: str, name_ar: str, name_en: str, sort_order: int = 0
+) -> ServiceCategory:
+    value = _code(code, _LIST_CODE_RE)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="create category"):
+        if ServiceCategory.objects.filter(code__iexact=value).exists():
+            raise DomainError("CATEGORY_CODE_TAKEN", "This category code exists", value=value)
+        return ServiceCategory.objects.create(
+            code=value, name_ar=name_ar.strip(), name_en=name_en.strip(), sort_order=sort_order
+        )
+
+
+def update_category(actor: User, category_id: int, **fields: object) -> ServiceCategory:
+    _only(fields, {"name_ar", "name_en", "sort_order", "active"}, "category")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit category"):
+        category = ServiceCategory.objects.select_for_update().get(pk=category_id)
+        for attr, value in fields.items():
+            setattr(category, attr, _clean(value))
+        category.save()
+    return category
+
+
+# --- Price lists and versions (FEATURES 5.2) ----------------------------------------------
+
+
+class VersionStatus:
+    PAST = "past"
+    CURRENT = "current"
+    SCHEDULED = "scheduled"
+
+
+@dataclass(frozen=True, slots=True)
+class VersionRow:
+    """One version on the price list timeline."""
+
+    version: PriceListVersion
+    status: str
+    item_count: int
+
+    @property
+    def editable(self) -> bool:
+        """Prices change only before the version starts (ADR 0006 (o))."""
+        return self.status == VersionStatus.SCHEDULED
+
+
+@dataclass(frozen=True, slots=True)
+class PriceListRow:
+    price_list: PriceList
+    versions: tuple[VersionRow, ...]
+    payer_codes: tuple[str, ...]
+    today: date
+
+    @property
+    def current(self) -> VersionRow | None:
+        return next((v for v in self.versions if v.status == VersionStatus.CURRENT), None)
+
+    @property
+    def can_start_today(self) -> bool:
+        """A new version may start today (nothing is effective yet; ADR 0006)."""
+        return pricing.can_start_today(
+            (pricing.PriceVersion(v.version.pk, v.version.effective_from) for v in self.versions),
+            self.today,
+        )
+
+    @property
+    def next_scheduled(self) -> VersionRow | None:
+        scheduled = [v for v in self.versions if v.status == VersionStatus.SCHEDULED]
+        return min(scheduled, key=lambda v: v.version.effective_from) if scheduled else None
+
+
+def _timeline(versions: Iterable[PriceListVersion], today: date) -> tuple[VersionRow, ...]:
+    ordered = sorted(versions, key=lambda v: (v.effective_from, v.pk), reverse=True)
+    started = [v for v in ordered if v.effective_from <= today]
+    current_pk = started[0].pk if started else None
+    rows = []
+    for v in ordered:
+        if v.effective_from > today:
+            status = VersionStatus.SCHEDULED
+        elif v.pk == current_pk:
+            status = VersionStatus.CURRENT
+        else:
+            status = VersionStatus.PAST
+        rows.append(VersionRow(v, status, getattr(v, "item_count", 0)))
+    return tuple(rows)
+
+
+def _versions_qs() -> QuerySet[PriceListVersion]:
+    return PriceListVersion.objects.select_related("based_on", "created_by").annotate(
+        item_count=Count("items")
+    )
+
+
+def list_price_lists(
+    *, active: bool | None = None, today: date | None = None
+) -> list[PriceListRow]:
+    """Every price list with its version timeline (current and next scheduled version)."""
+    on = today or timezone.localdate()
+    qs = PriceList.objects.prefetch_related(
+        Prefetch("versions", queryset=_versions_qs()),
+        Prefetch("payers", queryset=Payer.objects.order_by("code")),
+    ).order_by("-is_default", "code")
+    if active is not None:
+        qs = qs.filter(active=active)
+    return [
+        PriceListRow(
+            price_list=plist,
+            versions=_timeline(plist.versions.all(), on),
+            payer_codes=tuple(p.code for p in plist.payers.all()),
+            today=on,
+        )
+        for plist in qs
+    ]
+
+
+def get_price_list(price_list_id: int, *, today: date | None = None) -> PriceListRow:
+    on = today or timezone.localdate()
+    plist = PriceList.objects.get(pk=price_list_id)
+    return PriceListRow(
+        price_list=plist,
+        versions=_timeline(_versions_qs().filter(price_list=plist), on),
+        payer_codes=tuple(plist.payers.order_by("code").values_list("code", flat=True)),
+        today=on,
+    )
+
+
+def create_price_list(
+    actor: User, *, code: str, name_ar: str, name_en: str, kind: str = PriceListKind.PAYER
+) -> PriceListRow:
+    """Raises ``INVALID_CODE``, ``PRICE_LIST_CODE_TAKEN``, ``PRICE_LIST_KIND_UNKNOWN``."""
+    value = _code(code, _LIST_CODE_RE)
+    if kind not in PriceListKind.values:
+        raise DomainError("PRICE_LIST_KIND_UNKNOWN", "Unknown price list kind", kind=kind)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="create price list"):
+        if PriceList.objects.filter(code__iexact=value).exists():
+            raise DomainError("PRICE_LIST_CODE_TAKEN", "This price list code exists", value=value)
+        plist = PriceList.objects.create(
+            code=value, name_ar=name_ar.strip(), name_en=name_en.strip(), kind=kind
+        )
+    return get_price_list(plist.pk)
+
+
+def update_price_list(actor: User, price_list_id: int, **fields: object) -> PriceListRow:
+    """Rename or (de)activate a list.
+
+    Raises:
+        DomainError: ``PRICE_LIST_DEFAULT_REQUIRED`` (the default cash list stays active),
+            ``PRICE_LIST_IN_USE`` (an active payer prices from it).
+    """
+    _only(fields, {"name_ar", "name_en", "active"}, "price list")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit price list"):
+        plist = PriceList.objects.select_for_update().get(pk=price_list_id)
+        for attr, value in fields.items():
+            setattr(plist, attr, _clean(value))
+        if not plist.active:
+            if plist.is_default:
+                raise DomainError(
+                    "PRICE_LIST_DEFAULT_REQUIRED", "The default cash price list stays active"
+                )
+            users = list(
+                plist.payers.filter(active=True).order_by("code").values_list("code", flat=True)
+            )
+            if users:
+                raise DomainError(
+                    "PRICE_LIST_IN_USE", "Active payers price from this list", payers=users
+                )
+        plist.save()
+    return get_price_list(price_list_id)
+
+
+def add_version(
+    actor: User,
+    price_list_id: int,
+    *,
+    effective_from: date,
+    copy_from_id: int | None = None,
+    note: str = "",
+    today: date | None = None,
+) -> PriceListVersion:
+    """A new dated version of the list (FEATURES 5.2), editable until it starts.
+
+    It starts as a copy of ``copy_from_id`` (a version of this or another list, e.g. to put
+    a new payer list live today with the cash prices) or, by default, of the version
+    effective on ``effective_from`` (empty when the list has none yet).
+
+    Raises:
+        DomainError: ``PRICE_VERSION_BACKDATED``, ``PRICE_VERSION_DATE_TAKEN``,
+            ``PRICE_VERSION_EMPTY`` (a first version starting today without prices),
+            ``PRICE_LIST_INACTIVE``.
+    """
+    plist = PriceList.objects.get(pk=price_list_id)
+    if copy_from_id is None:
+        return derive_version(
+            plist, effective_from=effective_from, actor=actor, changes={}, note=note, today=today
+        )
+    source = PriceListVersion.objects.get(pk=copy_from_id)
+    return create_version(
+        plist,
+        effective_from=effective_from,
+        prices=version_prices(source),
+        actor=actor,
+        note=note,
+        based_on=source,
+        today=today,
+    )
+
+
+def version_items(
+    version_id: int, *, q: str | None = None, kind: str | None = None
+) -> QuerySet[PriceItem]:
+    """Prices of one version by text and kind.
+
+    Raises:
+        PriceListVersion.DoesNotExist: an unknown version (HTTP 404).
+    """
+    version = PriceListVersion.objects.get(pk=version_id)
+    qs = PriceItem.objects.filter(version=version).select_related("service")
+    text = (q or "").strip()
+    if text:
+        qs = qs.filter(
+            Q(service__code__icontains=text)
+            | Q(service__name_ar__icontains=text)
+            | Q(service__name_en__icontains=text)
+        )
+    if kind:
+        qs = qs.filter(service__kind=kind)
+    return qs.order_by("service__kind", "service__sort_order", "service__code")
+
+
+def get_version(version_id: int, *, today: date | None = None) -> VersionRow:
+    version = PriceListVersion.objects.get(pk=version_id)
+    timeline = _timeline(
+        _versions_qs().filter(price_list_id=version.price_list_id), today or timezone.localdate()
+    )
+    return next(r for r in timeline if r.version.pk == version_id)
+
+
+def edit_version_prices(
+    actor: User,
+    version_id: int,
+    prices: Mapping[int, Decimal | None],
+    *,
+    today: date | None = None,
+) -> VersionRow:
+    """Set (or with None remove) prices of a version that has not started yet.
+
+    Raises:
+        DomainError: ``PRICE_VERSION_LOCKED``, ``INVALID_PRICE``, ``SERVICE_UNKNOWN``.
+    """
+    version = PriceListVersion.objects.get(pk=version_id)
+    set_prices(version, prices, actor=actor, today=today)
+    return get_version(version_id, today=today)
+
+
+def withdraw_version(
+    actor: User, version_id: int, *, reason: str, today: date | None = None
+) -> PriceListRow:
+    """Remove a version that has not started yet (a mistaken date or bulk update).
+
+    The delete is audited with ``reason`` (pghistory keeps the version and its prices).
+
+    Raises:
+        DomainError: ``REASON_REQUIRED``, ``PRICE_VERSION_LOCKED`` (effective today or
+            earlier: its prices may be frozen on invoices), ``PRICE_VERSION_IN_USE`` (a later
+            version or an invoice line refers to it).
+    """
+    text = (reason or "").strip()
+    if not text:
+        raise DomainError("REASON_REQUIRED", "A reason is required to withdraw a price version")
+    on = today or timezone.localdate()
+    with (
+        transaction.atomic(),
+        pghistory.context(user=actor.pk, reason=f"withdraw price version: {text[:400]}"),
+    ):
+        list_id = PriceListVersion.objects.values_list("price_list_id", flat=True).get(
+            pk=version_id
+        )
+        PriceList.objects.select_for_update(no_key=True).get(pk=list_id)
+        locked = PriceListVersion.objects.select_for_update().get(pk=version_id)
+        if locked.effective_from <= on:
+            raise DomainError(
+                "PRICE_VERSION_LOCKED",
+                "A version that is already effective cannot change; create a new version",
+                effective_from=locked.effective_from.isoformat(),
+            )
+        if PriceListVersion.objects.filter(based_on=locked).exists():
+            raise DomainError(
+                "PRICE_VERSION_IN_USE", "A later version is based on this one; withdraw it first"
+            )
+        try:
+            with transaction.atomic():
+                locked.delete()
+        except ProtectedError:
+            raise DomainError(
+                "PRICE_VERSION_IN_USE", "Other records refer to this price list version"
+            ) from None
+    return get_price_list(list_id, today=on)
+
+
+@dataclass(frozen=True, slots=True)
+class BulkPreviewRow:
+    service: Service
+    old_price: Decimal
+    new_price: Decimal
+
+    @property
+    def changed(self) -> bool:
+        return self.old_price != self.new_price
+
+
+@dataclass(frozen=True, slots=True)
+class BulkPreview:
+    base: VersionRow
+    effective_from: date
+    percent: Decimal
+    rows: tuple[BulkPreviewRow, ...]
+
+    @property
+    def changed_count(self) -> int:
+        return sum(1 for r in self.rows if r.changed)
+
+
+def preview_bulk_update(
+    price_list_id: int,
+    *,
+    percent: Decimal,
+    effective_from: date,
+    step: Decimal = CENT,
+    mode: pricing.RoundMode = pricing.RoundMode.HALF_UP,
+    service_ids: Collection[int] | None = None,
+    kinds: Collection[str] | None = None,
+    today: date | None = None,
+) -> BulkPreview:
+    """Before and after prices of a bulk percentage update, without saving anything.
+
+    Uses the same base version, rounding and date rules as :func:`bulk_percentage_update`,
+    so the preview shows exactly the version that applying it would create.
+
+    Raises:
+        DomainError: ``PRICE_LIST_INACTIVE``, ``PRICE_VERSION_BACKDATED``,
+            ``PRICE_VERSION_DATE_TAKEN``, ``NO_EFFECTIVE_PRICE_LIST``, ``INVALID_PERCENT``,
+            ``INVALID_ROUNDING_STEP``, ``PRICE_NOT_FOUND``.
+    """
+    on = today or timezone.localdate()
+    plist = PriceList.objects.get(pk=price_list_id)
+    _check_new_version(plist, effective_from, on)
+    base = effective_version(plist, effective_from)
+    base_prices = version_prices(base)
+    only = _bulk_scope(base_prices, service_ids, kinds)
+    new_prices = pricing.bulk_percentage_update(
+        base_prices, percent, pricing.RoundingRule(step, mode), only=only
+    )
+    services = Service.objects.in_bulk(list(base_prices))
+    rows = sorted(
+        (
+            BulkPreviewRow(services[sid], base_prices[sid], new_prices[sid])
+            for sid in base_prices
+            if only is None or sid in only
+        ),
+        key=lambda r: (r.service.kind, r.service.sort_order, r.service.code),
+    )
+    return BulkPreview(
+        base=get_version(base.pk, today=on),
+        effective_from=effective_from,
+        percent=Decimal(percent).quantize(CENT),
+        rows=tuple(rows),
+    )
+
+
+def _bulk_scope(
+    base_prices: Mapping[int, Decimal],
+    service_ids: Collection[int] | None,
+    kinds: Collection[str] | None,
+) -> set[int] | None:
+    only: set[int] | None = set(service_ids) if service_ids is not None else None
+    if kinds is not None:
+        by_kind = set(
+            Service.objects.filter(pk__in=list(base_prices), kind__in=list(kinds)).values_list(
+                "pk", flat=True
+            )
+        )
+        only = by_kind if only is None else only & by_kind
+    return only
+
+
+def apply_bulk_update(
+    actor: User,
+    price_list_id: int,
+    *,
+    percent: Decimal,
+    effective_from: date,
+    step: Decimal = CENT,
+    mode: pricing.RoundMode = pricing.RoundMode.HALF_UP,
+    service_ids: Collection[int] | None = None,
+    kinds: Collection[str] | None = None,
+    note: str = "",
+    today: date | None = None,
+) -> VersionRow:
+    """Create the new dated version a preview showed (:func:`bulk_percentage_update`)."""
+    version = bulk_percentage_update(
+        PriceList.objects.get(pk=price_list_id),
+        percent=percent,
+        effective_from=effective_from,
+        actor=actor,
+        step=step,
+        mode=mode,
+        service_ids=service_ids,
+        kinds=kinds,
+        note=note,
+        today=today,
+    )
+    return get_version(version.pk, today=today)
+
+
+# --- Payers, coverage rules and exclusions (FEATURES 5.5-5.8, 11.1) ------------------------
+
+
+def list_payers(*, q: str | None = None, active: bool | None = None) -> QuerySet[Payer]:
+    qs = Payer.objects.select_related("price_list")
+    text = (q or "").strip()
+    if text:
+        qs = qs.filter(
+            Q(code__icontains=text) | Q(name_ar__icontains=text) | Q(name_en__icontains=text)
+        )
+    if active is not None:
+        qs = qs.filter(active=active)
+    return qs.order_by("code")
+
+
+def get_payer(payer_id: int) -> Payer:
+    return (
+        Payer.objects.select_related("price_list")
+        .prefetch_related(
+            Prefetch(
+                "coverage_rules",
+                queryset=CoverageRule.objects.select_related("service").order_by(
+                    "-active", "service_id", "service_kind", "pk"
+                ),
+            ),
+            Prefetch(
+                "exclusions",
+                queryset=Exclusion.objects.select_related("service").order_by(
+                    "-active", "service_id", "service_kind", "pk"
+                ),
+            ),
+        )
+        .get(pk=payer_id)
+    )
+
+
+_PAYER_FIELDS = {
+    "name_ar",
+    "name_en",
+    "kind",
+    "price_list_id",
+    "contract_no",
+    "contract_start",
+    "contract_end",
+    "claim_period",
+    "requires_card_number",
+    "contact_name",
+    "phone",
+    "email",
+    "address",
+    "notes",
+    "active",
+}
+
+
+def _check_list_effective(plist: PriceList, today: date) -> None:
+    """An active payer prices from a list with a version in effect today, or every invoice
+    for its patients would fail with ``NO_EFFECTIVE_PRICE_LIST`` (ADR 0006).
+
+    Raises:
+        DomainError: ``PRICE_LIST_NOT_EFFECTIVE`` (``details.price_list``, and
+            ``details.starts`` when a version is scheduled).
+    """
+    versions = _versions(plist)
+    if any(v.effective_from <= today for v in versions):
+        return
+    upcoming = min((v.effective_from for v in versions), default=None)
+    details: dict[str, object] = {"price_list": plist.code}
+    if upcoming is not None:
+        details["starts"] = upcoming.isoformat()
+    raise DomainError(
+        "PRICE_LIST_NOT_EFFECTIVE",
+        "The price list has no version in effect today; add one before assigning it",
+        **details,
+    )
+
+
+def _apply_payer_fields(payer: Payer, fields: Mapping[str, object]) -> None:
+    for attr, value in fields.items():
+        if attr == "price_list_id":
+            plist = PriceList.objects.get(pk=int(str(value))) if value is not None else None
+            if plist is not None and not plist.active:
+                raise DomainError(
+                    "PRICE_LIST_INACTIVE", "The price list is inactive", price_list=plist.code
+                )
+            payer.price_list = plist
+        else:
+            setattr(payer, attr, _clean(value))
+    if (
+        ("price_list_id" in fields or "active" in fields)
+        and payer.active
+        and payer.price_list is not None
+    ):
+        _check_list_effective(payer.price_list, timezone.localdate())
+    if payer.kind not in PayerKind.values:
+        raise DomainError("PAYER_KIND_UNKNOWN", "Unknown payer kind", kind=payer.kind)
+    if payer.claim_period not in ClaimPeriod.values:
+        raise DomainError(
+            "CLAIM_PERIOD_UNKNOWN", "Unknown claim period", claim_period=payer.claim_period
+        )
+    if payer.email and not _EMAIL_RE.match(payer.email):
+        raise DomainError("INVALID_EMAIL", "The email address is not valid")
+    if (
+        payer.contract_start is not None
+        and payer.contract_end is not None
+        and payer.contract_end < payer.contract_start
+    ):
+        raise DomainError("PAYER_CONTRACT_DATES", "The contract cannot end before it starts")
+
+
+def create_payer(actor: User, *, code: str, **fields: object) -> Payer:
+    """Add a payer with its contract information (FEATURES 11.1).
+
+    Raises:
+        DomainError: ``INVALID_CODE``, ``PAYER_CODE_TAKEN``, ``PAYER_CONTRACT_DATES``,
+            ``PRICE_LIST_INACTIVE``, ``PRICE_LIST_NOT_EFFECTIVE``, ``INVALID_EMAIL``.
+    """
+    value = _code(code, _LIST_CODE_RE)
+    _only(fields, _PAYER_FIELDS, "payer")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="create payer"):
+        if Payer.objects.filter(code__iexact=value).exists():
+            raise DomainError("PAYER_CODE_TAKEN", "This payer code exists", value=value)
+        payer = Payer(code=value)
+        _apply_payer_fields(payer, fields)
+        payer.save()
+    return get_payer(payer.pk)
+
+
+def update_payer(actor: User, payer_id: int, **fields: object) -> Payer:
+    _only(fields, _PAYER_FIELDS, "payer")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit payer"):
+        payer = Payer.objects.select_for_update().get(pk=payer_id)
+        _apply_payer_fields(payer, fields)
+        payer.save()
+    return get_payer(payer_id)
+
+
+def coverage_rule_from_fields(
+    rule_kind: str,
+    *,
+    payer_percent: Decimal | None,
+    copay_amount: Decimal | None,
+    ceiling_amount: Decimal | None,
+    requires_pre_approval: bool = False,
+) -> tuple[dc.CoverageRule, dict[str, Decimal | None]]:
+    """Check a rule's amounts and return the domain rule and the columns to store.
+
+    Only the columns the kind uses are kept (a percentage rule stores no copay).
+
+    Raises:
+        DomainError: ``COVERAGE_RULE_INCOMPLETE`` (``details.field``),
+            ``INVALID_COVERAGE_RULE`` (out of range), ``COVERAGE_RULE_KIND_UNKNOWN``.
+    """
+
+    def need(name: str, value: Decimal | None) -> Decimal:
+        if value is None:
+            raise DomainError(
+                "COVERAGE_RULE_INCOMPLETE", "The rule is missing an amount", field=name
+            )
+        return value
+
+    if rule_kind == CoverageRuleKind.PERCENTAGE:
+        percent = need("payer_percent", payer_percent)
+        rule = dc.CoverageRule.percentage(percent, requires_preapproval=requires_pre_approval)
+        stored = {"payer_percent": percent, "copay_amount": None, "ceiling_amount": None}
+    elif rule_kind == CoverageRuleKind.COPAY:
+        copay = need("copay_amount", copay_amount)
+        rule = dc.CoverageRule.fixed_copay(copay, requires_preapproval=requires_pre_approval)
+        stored = {"payer_percent": None, "copay_amount": copay, "ceiling_amount": None}
+    elif rule_kind == CoverageRuleKind.CEILING:
+        ceiling = need("ceiling_amount", ceiling_amount)
+        rule = dc.CoverageRule.capped(
+            ceiling,
+            payer_percent=payer_percent if payer_percent is not None else HUNDRED,
+            requires_preapproval=requires_pre_approval,
+        )
+        stored = {"payer_percent": payer_percent, "copay_amount": None, "ceiling_amount": ceiling}
+    else:
+        raise DomainError(
+            "COVERAGE_RULE_KIND_UNKNOWN", "Unknown coverage rule kind", rule_kind=rule_kind
+        )
+    return rule, stored
+
+
+def _rule_scope_filter(rule: CoverageRule) -> Q:
+    if rule.service_id is not None:
+        return Q(service_id=rule.service_id)
+    return Q(service__isnull=True, service_kind=rule.service_kind)
+
+
+def _check_rule_unique(rule: CoverageRule) -> None:
+    if not rule.active:
+        return
+    clash = (
+        CoverageRule.objects.select_for_update()
+        .filter(_rule_scope_filter(rule), payer_id=rule.payer_id, active=True)
+        .exclude(pk=rule.pk)
+        .exists()
+    )
+    if clash:
+        raise DomainError(
+            "COVERAGE_RULE_DUPLICATE",
+            "The payer already has an active rule for this service, kind or default",
+        )
+
+
+def _scope(service_id: int | None, service_kind: str | None) -> tuple[Service | None, str]:
+    kind = service_kind or ""
+    if service_id is not None and kind:
+        raise DomainError(
+            "COVERAGE_SCOPE_INVALID", "Choose a service or a kind of service, not both"
+        )
+    if kind and kind not in ServiceKind.values:
+        raise DomainError("SERVICE_KIND_UNKNOWN", "Unknown service kind", kind=kind)
+    service = Service.objects.get(pk=service_id) if service_id is not None else None
+    return service, kind
+
+
+def add_coverage_rule(
+    actor: User,
+    payer_id: int,
+    *,
+    rule_kind: str,
+    service_id: int | None = None,
+    service_kind: str | None = None,
+    payer_percent: Decimal | None = None,
+    copay_amount: Decimal | None = None,
+    ceiling_amount: Decimal | None = None,
+    requires_pre_approval: bool = False,
+    note: str = "",
+    active: bool = True,
+) -> CoverageRule:
+    """A payer's share rule for one service, a kind of service, or the payer default.
+
+    Raises:
+        DomainError: ``COVERAGE_SCOPE_INVALID``, ``COVERAGE_RULE_DUPLICATE`` and the errors of
+            :func:`coverage_rule_from_fields`.
+    """
+    _, stored = coverage_rule_from_fields(
+        rule_kind,
+        payer_percent=payer_percent,
+        copay_amount=copay_amount,
+        ceiling_amount=ceiling_amount,
+        requires_pre_approval=requires_pre_approval,
+    )
+    service, kind = _scope(service_id, service_kind)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="coverage rule"):
+        payer = Payer.objects.select_for_update().get(pk=payer_id)
+        rule = CoverageRule(
+            payer=payer,
+            service=service,
+            service_kind=kind,
+            rule_kind=rule_kind,
+            requires_pre_approval=requires_pre_approval,
+            note=note.strip(),
+            active=active,
+            **stored,
+        )
+        _check_rule_unique(rule)
+        rule.save()
+    return CoverageRule.objects.select_related("service").get(pk=rule.pk)
+
+
+def update_coverage_rule(actor: User, rule_id: int, **fields: object) -> CoverageRule:
+    """Change a rule's kind, amounts, pre-approval flag, note or active flag (not its scope).
+
+    New amounts apply to invoices approved from now on; approved invoices keep their frozen
+    shares (invariant 2).
+    """
+    _only(
+        fields,
+        {
+            "rule_kind",
+            "payer_percent",
+            "copay_amount",
+            "ceiling_amount",
+            "requires_pre_approval",
+            "note",
+            "active",
+        },
+        "coverage rule",
+    )
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="coverage rule"):
+        rule = CoverageRule.objects.select_for_update().get(pk=rule_id)
+        Payer.objects.select_for_update().get(pk=rule.payer_id)
+        merged: dict[str, object] = {
+            "rule_kind": rule.rule_kind,
+            "payer_percent": rule.payer_percent,
+            "copay_amount": rule.copay_amount,
+            "ceiling_amount": rule.ceiling_amount,
+            "requires_pre_approval": rule.requires_pre_approval,
+        }
+        merged.update({k: v for k, v in fields.items() if k in merged})
+        _, stored = coverage_rule_from_fields(
+            str(merged["rule_kind"]),
+            payer_percent=merged["payer_percent"],  # type: ignore[arg-type]
+            copay_amount=merged["copay_amount"],  # type: ignore[arg-type]
+            ceiling_amount=merged["ceiling_amount"],  # type: ignore[arg-type]
+            requires_pre_approval=bool(merged["requires_pre_approval"]),
+        )
+        rule.rule_kind = str(merged["rule_kind"])
+        rule.requires_pre_approval = bool(merged["requires_pre_approval"])
+        for attr, value in stored.items():
+            setattr(rule, attr, value)
+        if "note" in fields:
+            rule.note = str(fields["note"]).strip()
+        if "active" in fields:
+            rule.active = bool(fields["active"])
+        _check_rule_unique(rule)
+        rule.save()
+    return CoverageRule.objects.select_related("service").get(pk=rule_id)
+
+
+def add_exclusion(
+    actor: User,
+    payer_id: int,
+    *,
+    service_id: int | None = None,
+    service_kind: str | None = None,
+    note: str = "",
+) -> Exclusion:
+    """A service or kind the payer never covers: 100% to the patient (FEATURES 5.7).
+
+    Raises:
+        DomainError: ``EXCLUSION_SCOPE_REQUIRED``, ``COVERAGE_SCOPE_INVALID``,
+            ``EXCLUSION_DUPLICATE`` (switch the existing one on instead).
+    """
+    if service_id is None and not service_kind:
+        raise DomainError(
+            "EXCLUSION_SCOPE_REQUIRED", "Choose the service or kind of service to exclude"
+        )
+    service, kind = _scope(service_id, service_kind)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="coverage exclusion"):
+        payer = Payer.objects.select_for_update().get(pk=payer_id)
+        scope = (
+            Q(service=service)
+            if service is not None
+            else Q(service__isnull=True, service_kind=kind)
+        )
+        if Exclusion.objects.filter(scope, payer=payer).exists():
+            raise DomainError("EXCLUSION_DUPLICATE", "This exclusion exists; switch it on instead")
+        exclusion = Exclusion.objects.create(
+            payer=payer, service=service, service_kind=kind, note=note.strip()
+        )
+    return Exclusion.objects.select_related("service").get(pk=exclusion.pk)
+
+
+def update_exclusion(actor: User, exclusion_id: int, **fields: object) -> Exclusion:
+    _only(fields, {"note", "active"}, "exclusion")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="coverage exclusion"):
+        exclusion = Exclusion.objects.select_for_update().get(pk=exclusion_id)
+        for attr, value in fields.items():
+            setattr(exclusion, attr, _clean(value))
+        exclusion.save()
+    return Exclusion.objects.select_related("service").get(pk=exclusion_id)
+
+
+def preview_coverage(
+    *,
+    rule_kind: str,
+    gross: Decimal,
+    payer_percent: Decimal | None = None,
+    copay_amount: Decimal | None = None,
+    ceiling_amount: Decimal | None = None,
+) -> dc.LineSplit:
+    """The split of an example line under a rule being edited (no discount, not excluded).
+
+    E.g. 10,000 under a 70% rule gives payer 7,000 / patient 3,000. The screen shows this
+    live, so the same ``domain.coverage`` rule that splits invoice lines computes it.
+    """
+    rule, _ = coverage_rule_from_fields(
+        rule_kind,
+        payer_percent=payer_percent,
+        copay_amount=copay_amount,
+        ceiling_amount=ceiling_amount,
+    )
+    return dc.split_line(gross, ZERO, rule)

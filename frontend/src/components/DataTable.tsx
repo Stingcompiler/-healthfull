@@ -99,7 +99,20 @@ export interface DataTableProps<TData> {
   mode?: "auto" | "table" | "cards";
   /** Narrowest container width (px) that shows the table in auto mode. Default from columns. */
   minTableWidth?: number;
+  /**
+   * The parent pages on the server (`{items, count, page, page_size}`): `data` is page `page`
+   * (1-based) of `count` rows. The pager shows the true total and asks for other pages through
+   * `onPageChange`; there is no rows-per-page choice.
+   */
+  serverPagination?: ServerPagination;
   className?: string;
+}
+
+export interface ServerPagination {
+  page: number;
+  pageSize: number;
+  count: number;
+  onPageChange: (page: number) => void;
 }
 
 const alignClass = { start: "text-start", end: "text-end", center: "text-center" } as const;
@@ -157,6 +170,7 @@ export function DataTable<TData>({
   mode = "auto",
   minTableWidth,
   rowLabel,
+  serverPagination,
   className,
 }: DataTableProps<TData>) {
   const { t } = useTranslation();
@@ -168,7 +182,12 @@ export function DataTable<TData>({
   const showCards = mode === "cards" || (mode === "auto" && !tableFits);
 
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
+  const [localPagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize });
+  const server = serverPagination;
+  const pagination: PaginationState = server
+    ? { pageIndex: Math.max(server.page - 1, 0), pageSize: server.pageSize }
+    : localPagination;
+  const serverPageCount = server ? Math.max(1, Math.ceil(server.count / server.pageSize)) : undefined;
 
   // TanStack Table manages its own memoization; the React Compiler must not
   // memoize around it (react-hooks/incompatible-library).
@@ -182,7 +201,9 @@ export function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    autoResetPageIndex: true,
+    manualPagination: Boolean(server),
+    autoResetPageIndex: !server,
+    ...(serverPageCount !== undefined ? { pageCount: serverPageCount } : {}),
     ...(getRowId ? { getRowId } : {}),
   });
 
@@ -376,11 +397,12 @@ export function DataTable<TData>({
         <Pagination
           pageIndex={pagination.pageIndex}
           pageSize={pagination.pageSize}
-          total={table.getPrePaginationRowModel().rows.length}
-          pageCount={table.getPageCount()}
-          pageSizeOptions={pageSizeOptions}
+          total={server ? server.count : table.getPrePaginationRowModel().rows.length}
+          pageCount={serverPageCount ?? table.getPageCount()}
+          pageSizeOptions={server ? [server.pageSize] : pageSizeOptions}
           onPageChange={(index) => {
-            table.setPageIndex(index);
+            if (server) server.onPageChange(index + 1);
+            else table.setPageIndex(index);
           }}
           onPageSizeChange={(size) => {
             table.setPageSize(size);
@@ -497,26 +519,29 @@ function Pagination({
         {t("table.range", { from: n(from), to: n(to), total: n(total) })}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="hidden items-center gap-2 sm:flex">
-          <span id={pageSizeLabelId}>{t("table.rowsPerPage")}</span>
-          <Select
-            value={String(pageSize)}
-            onValueChange={(v) => {
-              onPageSizeChange(Number(v));
-            }}
-          >
-            <SelectTrigger size="sm" className="w-20" aria-labelledby={pageSizeLabelId}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {pageSizeOptions.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {n(size)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* One option is no choice: the select is left out (e.g. server-side pages). */}
+        {pageSizeOptions.length > 1 ? (
+          <div className="hidden items-center gap-2 sm:flex">
+            <span id={pageSizeLabelId}>{t("table.rowsPerPage")}</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                onPageSizeChange(Number(v));
+              }}
+            >
+              <SelectTrigger size="sm" className="w-20" aria-labelledby={pageSizeLabelId}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {n(size)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
         <span className="px-1 tabular">
           {t("table.pageOf", { page: n(pageIndex + 1), pages: n(Math.max(pageCount, 1)) })}
         </span>

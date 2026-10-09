@@ -36,6 +36,10 @@ export interface ReasonDialogProps {
   onOpenChange: (open: boolean) => void;
   title: ReactNode;
   description?: ReactNode;
+  /**
+   * Reason codes to choose from. Empty: a free-text reason only (the note is then always
+   * required and ``code`` is submitted empty), for records whose reason is not a coded list.
+   */
   reasons: readonly ReasonOption[];
   confirmLabel?: ReactNode;
   destructive?: boolean;
@@ -50,9 +54,9 @@ export interface ReasonDialogProps {
 const NOTE_MIN = 3;
 const NOTE_MAX = 500;
 
-function schemaFor(noteRequired: boolean) {
+function schemaFor(noteRequired: boolean, coded: boolean) {
   return z.object({
-    code: z.string().min(1, vmsg("validation.selectOption")),
+    code: coded ? z.string().min(1, vmsg("validation.selectOption")) : z.string(),
     note: noteRequired
       ? z
           .string()
@@ -84,8 +88,10 @@ export function ReasonDialog({
   const { t } = useTranslation(["common", "errors"]);
   const translateError = useTranslateError();
   const [error, setError] = useState<string | null>(null);
+  const coded = reasons.length > 0;
+  const needsNote = noteRequired || !coded;
   const form = useForm<ReasonValue>({
-    resolver: zodResolver(schemaFor(noteRequired)),
+    resolver: zodResolver(schemaFor(needsNote, coded)),
     defaultValues: { code: "", note: "" },
   });
   const { reset } = form;
@@ -123,20 +129,22 @@ export function ReasonDialog({
         {children}
         <Form {...form}>
           <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4">
-            <SelectField
-              control={form.control}
-              name="code"
-              label={t("reason.code")}
-              placeholder={t("reason.codePlaceholder")}
-              options={reasons.map((r) => ({ value: r.code, label: r.label }))}
-              required
-            />
+            {coded ? (
+              <SelectField
+                control={form.control}
+                name="code"
+                label={t("reason.code")}
+                placeholder={t("reason.codePlaceholder")}
+                options={reasons.map((r) => ({ value: r.code, label: r.label }))}
+                required
+              />
+            ) : null}
             <TextareaField
               control={form.control}
               name="note"
-              label={t("reason.note")}
+              label={coded ? t("reason.note") : t("reason.code")}
               placeholder={t("reason.notePlaceholder")}
-              required={noteRequired}
+              required={needsNote}
               rows={3}
               maxLength={NOTE_MAX}
             />

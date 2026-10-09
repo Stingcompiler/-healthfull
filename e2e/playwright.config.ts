@@ -49,7 +49,9 @@ export default defineConfig({
   outputDir: "./test-results",
   globalSetup: "./global-setup.ts",
   // Specs share server-side state (the admin's saved preferences, seed users), so one worker.
-  fullyParallel: false,
+  // Sharded CI runs split by test, not by file (serial-mode files stay together).
+  // Workers stay at 1, so tests still run one at a time against the single dev server.
+  fullyParallel: Boolean(process.env.E2E_SHARD),
   workers: 1,
   retries: 0,
   forbidOnly: CI,

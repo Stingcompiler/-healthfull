@@ -49,6 +49,46 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   (DML only), created on the db image's first start; `infra/db-roles.sh` creates or repairs them on
   an existing install and `--verify` reports any stray grant. A one-off compose `migrate` service
   runs migrations as the owner before `app` and `maintenance` start.
+- E2E base catalog in `seed_e2e` (idempotent): departments, clinic rooms, wards and beds, three
+  more doctor accounts and weekly schedules, services of every kind in Arabic and English, a cash
+  price list and one list per payer with a version effective from the seed day (plus a scheduled
+  +10% cash version), payers `AMAN` (70%, one pre-approval rule, one exclusion), `NAKHEEL` (fixed
+  copay) and `RAHMA` (ceiling), drugs and consumables with unit hierarchies and two batches each in
+  the main store and the pharmacy, lab tests with reference ranges, tills and reason codes.
+- `manage.py e2e_fixture <name> --json`: named data builders over the services (patient, coverage,
+  visit, order, invoice, approve_invoice, open_shift, pay, close_shift, paid_visit, catalog) that
+  act as a seed user with that user's permission; test databases only. Apps can add their own in
+  `apps/<app>/e2e_fixtures.py`.
+- `e2e/helpers/api.ts`: logged-in, CSRF-aware API clients per seed user (`apiAs`), calls by
+  OpenAPI operation id, and typed factories (`createPatient`, `createVisit`, `orderLines`,
+  `approveInvoice`, `pay`, `openShift`, `closeShift`, `paidVisit`, ...) that use real endpoints
+  through per-module adapters when they exist and the fixture command otherwise; documented in
+  `e2e/README.md`, covered by `e2e/tests/helpers.spec.ts` (`@helpers`).
+- E2E route registry split per module: `e2e/module-routes/<module>.ts` lists a module's screens
+  for the responsive matrix (loaded automatically), and a route with path parameters builds its
+  data with `resolve`.
+- Wave a, patients and visits (FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7): patient list, registration with
+  duplicate detection, profile, coverage, merge with a reason code, Excel/CSV patient import with
+  preview and validation (`/patients/import`), patient results in the global quick search, visits,
+  queue board, token slips, the kiosk waiting-room display `/display/queue`, and appointments with
+  free slots and a doctor's day agenda.
+- Wave a, administration (FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3): users with role guards,
+  the role permission matrix, center profile and policies, departments, rooms, doctors and weekly
+  schedules, reason codes, the service catalog, dated price-list versions with bulk updates and
+  withdrawal of scheduled versions, payers with contracts, coverage rules and exclusions.
+- Wave a, doctor and orders (FEATURES 3.1-3.9, 4.1, 4.2): doctor queue and visit workspace with
+  vitals, allergies (with recorded overrides), conditions, diagnoses, referrals, favorites,
+  prescriptions and the order builder; withdrawing an unstarted line and removing a diagnosis
+  record a reason; doctors see no prices and hold no billing permission.
+- Wave a, billing, payments and shifts (FEATURES 0.10, 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9,
+  7.1-7.6): the cashier desk (patient lookup, visit billing, draft invoices with per-line payer,
+  pre-approval references, line cancellation and discounts approved by a supervisor at the desk,
+  approval with frozen prices), payments by cash, transfer, QR, card and patient credit with
+  allocation, unique transfer references with a supervised override, the transfers queue with
+  confirmation and late rejection, credit notes, refunds, perform-first authorizations, shifts
+  with opening float, close with variance, frozen report and manager review, cash handovers to a
+  named receiver or the safe, receipts with a QR check screen and A4/80 mm printing of receipts,
+  invoices and the shift report (ADRs 0008, 0009).
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
@@ -89,6 +129,25 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   before the swap. Role passwords: 16-128 characters of `A-Z a-z 0-9 . _ - ~`.
 
 ### Fixed
+- OpenAPI components no longer collide between apps: visits publishes `VisitDepartmentOut`,
+  `VisitDoctorOut` and `VisitRoomOut`, patients `PatientPayerOut`, so the admin screens type
+  against the core and catalog shapes; a test fails on any repeated schema class name.
+- The reason-code API and admin screen accept the `patient_merge` and `appointment_cancel`
+  categories, with Arabic and English labels.
+- The doctor billing access sweep (e2e) checks every billing and payments operation for a 403
+  instead of reporting `fixme`.
+- An empty credit note shows "Enter at least one unit to credit" under its lines (the message
+  was filed under `qty.root` and never displayed).
+- The helpers e2e spec no longer fails when a cashier spec has already added its `CSH70` payer.
+- Billing `PatientSummaryOut` is published as `BillingPatientSummaryOut` so it no longer
+  overwrites the clinic's patient summary in the OpenAPI contract.
+- Cashier review (ADR 0008): a credit note is approved by someone other than its drafter
+  (`CREDIT_NOTE_SELF_APPROVAL`) and a transfer confirmed by someone other than its taker
+  (`SELF_CONFIRMATION_NOT_ALLOWED`); the transfers queue says when a closed shift's transfer needs
+  the viewer's own open shift; the shift report lists desk line cancellations and voided drafts;
+  money inputs refuse a third decimal; perform-first records who asked; one pager with the true
+  total on the cashier queues; the payment method shows as selected; 80 mm print page rule fixed;
+  credit-note quantities accept Arabic-Indic digits; 44px tabs on phones; Arabic wording fixes.
 - Patient names are never truncated (four-part Sudanese names wrap instead of losing the family name).
 - Error messages with placeholders (amounts, dates, bed codes, units) show their values:
   `translateError` passes the error's `details` to i18next for interpolation only.

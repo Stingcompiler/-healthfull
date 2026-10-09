@@ -109,7 +109,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = ["pghistory", "pghistory.*", "pgtrigger", "pgtrigger.*", "factory", "factory.*"]
+module = ["pghistory", "pghistory.*", "pgtrigger", "pgtrigger.*", "factory", "factory.*", "openpyxl", "openpyxl.*"]
 ignore_missing_imports = true
 
 # --- pytest -------------------------------------------------------------------------------

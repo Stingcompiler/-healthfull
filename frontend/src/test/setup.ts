@@ -9,6 +9,11 @@ import { installMatchMedia } from "./match-media";
 
 installMatchMedia();
 
+// jsdom does no layout and has no scrollIntoView; components call it to reveal errors.
+if (!("scrollIntoView" in Element.prototype)) {
+  Object.defineProperty(Element.prototype, "scrollIntoView", { value: () => undefined, writable: true });
+}
+
 afterEach(() => {
   cleanup();
 });

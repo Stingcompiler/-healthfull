@@ -7,12 +7,13 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+import pgtrigger
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models import Q
 
-from apps.core.db import choice_check, quantity_field, track_history
+from apps.core.db import append_only, choice_check, quantity_field, track_history
 
 
 @track_history()
@@ -113,6 +114,48 @@ class Allergy(models.Model):
 
     def __str__(self) -> str:
         return f"{self.patient_id}: {self.substance or self.drug_class_id or self.item_id}"
+
+
+class AllergyMatch(models.TextChoices):
+    ITEM = "item", "Same drug"
+    DRUG_CLASS = "drug_class", "Same drug class"
+    SUBSTANCE = "substance", "Named substance"
+
+
+class AllergyOverride(models.Model):
+    """A prescriber's documented decision to order a drug despite a matching allergy.
+
+    Invariant 4: an override records its reason, who made it and when. One row per ordered
+    line and matching allergy; append-only (the row is the audit record).
+    """
+
+    service_line = models.ForeignKey(
+        "orders.ServiceLine", on_delete=models.PROTECT, related_name="allergy_overrides"
+    )
+    allergy = models.ForeignKey(Allergy, on_delete=models.PROTECT, related_name="overrides")
+    match = models.CharField(max_length=20, choices=AllergyMatch.choices)
+    reason = models.TextField()
+    overridden_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    overridden_at = models.DateTimeField()
+
+    class Meta:
+        verbose_name = "allergy override"
+        ordering: ClassVar[list[str]] = ["service_line", "id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            choice_check("match", AllergyMatch, "clinical_allergyoverride_match_valid"),
+            models.CheckConstraint(
+                condition=~Q(reason=""), name="clinical_allergyoverride_has_reason"
+            ),
+            models.UniqueConstraint(
+                fields=["service_line", "allergy"], name="clinical_allergyoverride_unique"
+            ),
+        ]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [append_only()]
+
+    def __str__(self) -> str:
+        return f"override line {self.service_line_id} allergy {self.allergy_id}"
 
 
 @track_history()
@@ -349,6 +392,11 @@ class Referral(models.Model):
     referred_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
+    cancel_reason = models.TextField(blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -368,6 +416,16 @@ class Referral(models.Model):
                 name="clinical_referral_external_has_facility",
             ),
             models.CheckConstraint(condition=~Q(reason=""), name="clinical_referral_has_reason"),
+            # Invariant 4: a cancellation records its reason, who cancelled and when.
+            models.CheckConstraint(
+                condition=~Q(status=ReferralStatus.CANCELLED)
+                | (
+                    ~Q(cancel_reason="")
+                    & Q(cancelled_by__isnull=False)
+                    & Q(cancelled_at__isnull=False)
+                ),
+                name="clinical_referral_cancel_documented",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -410,8 +468,13 @@ class OrderSetItem(models.Model):
     service = models.ForeignKey("catalog.Service", on_delete=models.PROTECT, related_name="+")
     quantity = quantity_field(default=1)
     dose = models.CharField(max_length=60, blank=True)
+    dose_quantity = quantity_field(
+        null=True, blank=True, help_text="Base units per dose, when computable."
+    )
+    route = models.CharField(max_length=20, blank=True, help_text="Drugs: e.g. oral, iv.")
     frequency_code = models.CharField(max_length=20, blank=True)
     duration_days = models.PositiveSmallIntegerField(null=True, blank=True)
+    as_needed = models.BooleanField(default=False)
     instructions = models.CharField(max_length=300, blank=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
 
@@ -421,6 +484,10 @@ class OrderSetItem(models.Model):
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.CheckConstraint(
                 condition=Q(quantity__gt=0), name="clinical_orderset_qty_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(dose_quantity__isnull=True) | Q(dose_quantity__gt=0),
+                name="clinical_orderset_dose_positive",
             ),
         ]
 

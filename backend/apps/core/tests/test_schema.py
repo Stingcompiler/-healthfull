@@ -43,6 +43,7 @@ APPEND_ONLY = {
     ("pharmacy", "DispenseLine"),
     ("pharmacy", "DispenseReturn"),
     ("claims", "PayerPaymentAllocation"),
+    ("clinical", "AllergyOverride"),
 }
 
 #: Mutable but deliberately untracked (documented reason in each model's docstring/comment).
