@@ -1,19 +1,13 @@
 /**
  * Lab screens for the responsive matrix, besides /lab (listed in e2e/routes.ts). Owned by the
- * lab module. Data comes from the backend fixtures `lab_order` (a paid CBC and malaria test)
- * and `lab_progress` (moves a test along the bench), built once per worker. Each `ready` waits
- * for loaded content, never for the page heading alone.
+ * lab module. Data comes from the backend fixture `lab_screens` (a paid CBC awaiting approval
+ * and a malaria test approved then amended), built once per worker. Each `ready` waits for
+ * loaded content, never for the page heading alone.
  */
 import type { Locator, Page } from "@playwright/test";
 
 import { fixture, seededCatalog } from "../helpers";
 import { appRoute, type AppRoute } from "../route-kit";
-
-interface LabOrder {
-  patient: { id: number; file_no: string };
-  visit: { id: number; number: string };
-  lab_lines: { id: number; service: string }[];
-}
 
 interface LabProgress {
   line: number;
@@ -29,28 +23,12 @@ interface Bench {
 
 let bench: Promise<Bench> | undefined;
 
-/** One paid order: CBC entered with a critical haemoglobin, malaria approved then amended. */
+/**
+ * One paid order: CBC entered with a critical haemoglobin, malaria approved then amended. One
+ * backend call, so the first screen's resolve stays well inside the test timeout.
+ */
 function benchOnce(): Promise<Bench> {
-  bench ??= (async () => {
-    const order = await fixture<LabOrder>("lab_order", {
-      tests: ["LAB-CBC", "LAB-BFMP"],
-      patient_fields: { full_name_en: "Amna Hassan Ali Mohamed" },
-    });
-    const [cbc, bfmp] = order.lab_lines;
-    if (!cbc || !bfmp) throw new Error("lab_order returned no lines");
-    const entered = await fixture<LabProgress>("lab_progress", {
-      line: cbc.id,
-      stage: "entered",
-      values: { WBC: "7.2", HGB: "5.1", PLT: "260" },
-    });
-    const amended = await fixture<LabProgress>("lab_progress", {
-      line: bfmp.id,
-      stage: "amended",
-      values: { MP: "positive" },
-      amended_values: { MP: "negative" },
-    });
-    return { entered, amended };
-  })();
+  bench ??= fixture<Bench>("lab_screens", {});
   return bench;
 }
 

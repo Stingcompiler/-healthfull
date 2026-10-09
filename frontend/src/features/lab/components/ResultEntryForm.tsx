@@ -121,9 +121,9 @@ export function ResultEntryForm({
                 <Label htmlFor={id} className="font-medium">
                   {names.text(p.name_ar, p.name_en)}
                   {p.unit ? (
-                    <bdi dir="ltr" className="ms-1 text-xs font-normal text-muted">
-                      ({p.unit})
-                    </bdi>
+                    <span className="ms-1 text-xs font-normal text-muted">
+                      <bdi dir="ltr">({p.unit})</bdi>
+                    </span>
                   ) : null}
                 </Label>
                 {reference ? (

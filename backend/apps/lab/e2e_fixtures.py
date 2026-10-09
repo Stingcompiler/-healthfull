@@ -129,3 +129,40 @@ def lab_progress(p: Params) -> Json:
         "current_version": current["id"] if current else None,
         "on": date.isoformat(timezone.localdate()),
     }
+
+
+@fixture(
+    "lab_screens",
+    summary=(
+        "The lab screens with data, in one run: a paid CBC entered with a critical "
+        "haemoglobin (awaiting approval) and a malaria test approved then amended."
+    ),
+    params=(),
+)
+def lab_screens(p: Params) -> Json:
+    order = run_nested(
+        "lab_order",
+        {
+            "tests": ["LAB-CBC", "LAB-BFMP"],
+            "patient_fields": {"full_name_en": "Amna Hassan Ali Mohamed"},
+        },
+    )
+    cbc, bfmp = order["lab_lines"]
+    entered = run_nested(
+        "lab_progress",
+        {
+            "line": cbc["id"],
+            "stage": "entered",
+            "values": {"WBC": "7.2", "HGB": "5.1", "PLT": "260"},
+        },
+    )
+    amended = run_nested(
+        "lab_progress",
+        {
+            "line": bfmp["id"],
+            "stage": "amended",
+            "values": {"MP": "positive"},
+            "amended_values": {"MP": "negative"},
+        },
+    )
+    return {"entered": entered, "amended": amended}

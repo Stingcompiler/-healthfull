@@ -241,9 +241,9 @@ function ParametersCard({ test }: { test: LabTest }) {
                 <span className="font-medium">
                   {names.text(p.name_ar, p.name_en)}
                   {p.unit ? (
-                    <bdi dir="ltr" className="ms-1 text-xs text-muted">
-                      ({p.unit})
-                    </bdi>
+                    <span className="ms-1 text-xs text-muted">
+                      <bdi dir="ltr">({p.unit})</bdi>
+                    </span>
                   ) : null}
                 </span>
                 <span className="text-xs text-muted">

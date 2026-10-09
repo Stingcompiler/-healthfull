@@ -53,3 +53,7 @@ def test_lab_order_and_progress(settings: Any) -> None:
     assert line["billing_status"] == "invoiced"
     error = run_error("lab_progress", {"line": line["id"], "stage": "received"})
     assert error["code"] == "LINE_NOT_ELIGIBLE"
+
+    screens = run("lab_screens", {})
+    assert screens["entered"]["stage"] == "to_approve"
+    assert screens["amended"]["stage"] == "done"
