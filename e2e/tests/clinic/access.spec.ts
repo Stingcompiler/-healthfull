@@ -73,13 +73,12 @@ test.describe("@clinic doctor has no billing access", () => {
 
   test("every billing and payments operation answers 403 to a doctor", async () => {
     const operations = moneyOperations();
-    // The billing and payments routers hold only their pings until the cashier module lands
-    // (wave a, feat/a-cashier). Until then this sweep is reported as fixme, never as a pass,
-    // and it runs by itself as soon as the contract lists a money operation.
-    test.fixme(
-      operations.length === 0,
-      "no billing or payments operation in the API contract yet",
-    );
+    // The cashier module publishes the billing and payments operations; an empty sweep would
+    // pass without checking anything, so it fails instead.
+    expect(
+      operations.length,
+      "billing and payments operations",
+    ).toBeGreaterThan(0);
     const doctor = await apiAs("doctor");
     for (const op of operations) {
       const response = await doctor.send(
