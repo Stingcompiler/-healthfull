@@ -9,7 +9,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merge to main pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
-| 5. Pharmacy, lab, procedures | not started | |
+| 5. Pharmacy, lab, procedures | nursing part done on `feat/b-nursing` (wave b); pharmacy and lab in progress | FEATURES 3.4 (nurses), 10.1-10.3, 10.5 (ADR 0010); follow-ups below |
 | 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3; claims, reports and ops not started |
 | 7. Patient portal | not started | |
 | 8. Hardening and handover | not started | |
@@ -81,8 +81,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Results tab screenshots show the empty state only: approved results need the lab module's
   endpoints (FEATURES 4.x lab); add a populated capture to `e2e/tests/clinic/states.spec.ts`
   then.
-- Nurses: vitals (FEATURES 3.4) are entered from the doctor's workspace; a nurse has no list
-  of visits to reach it until the nursing screens of FEATURES 10.3.
+- [x] Nurses: vitals (FEATURES 3.4) are entered from the doctor's workspace; a nurse has no list
+  of visits to reach it until the nursing screens of FEATURES 10.3. Done on `feat/b-nursing`:
+  `/nursing/visits` leads to the nursing chart.
 - Work lists and exception reports (FEATURES 4.3, 4.5) exist as tested services
   (`orders.services.worklist_lines`, `report_*`); their endpoints and screens come with the
   lab, pharmacy, procedures and reports modules.
@@ -125,6 +126,18 @@ Source of truth for build status. Update at the end of every task. Phases from `
   follow-up); the cashier screens format their own amounts with `MoneyText`.
 - The Phase 1 schema follow-up on `RefundMethod.bank_transfer` is unchanged: refunds are paid in
   cash from a credit note only.
+
+## Follow-ups (nursing, wave b)
+
+- Bed nights reach the cashier when a nurse posts them on the bed board, at discharge, or when
+  `manage.py charge_bed_nights --as <user>` runs; the compose `maintenance` loop does not run it
+  yet (it needs a configured acting user with `visits.manage_beds`).
+- No "admission in error" action: `AdmissionStatus.CANCELLED` exists but has no reason, approver
+  and time columns (invariant 4). Today the nurse discharges and the cashier credits the night.
+- The doctor's workspace shows the vitals a nurse records, but not the nursing notes (they are on
+  the nursing chart, which doctors can open).
+- Consumables used per procedure (FEATURES 10.4, P2) and the medication administration record
+  (10.6, Later) are not built.
 
 ## Next: wave a (Phases 2-4)
 
@@ -249,3 +262,18 @@ including the full money cycle with a shift variance and a transfer rejected aft
   977 passed, 0 failed, 0 skipped (43.8 min). The first full run had 975 passed, 2 failed
   (the credit note message and the helpers payer set, both fixed above, then 7 of 7 passed in a
   rerun of `@cashier refund|@helpers factories`).
+- 2026-10-09: Nursing (wave b) on `feat/b-nursing` from `wave/b`: FEATURES 3.4 for nurses,
+  10.1-10.3 and 10.5 (ADR 0010). Backend: `/api/orders/procedures` (work list of paid or
+  authorized procedures, done today, one-tap done with who, when and note), `/api/clinical/
+  nursing` (inpatients and today's visits, nursing chart, notes), `/api/visits/inpatient` (bed
+  board, admit on an open or new inpatient visit, transfer, discharge, bed status, nightly charge
+  run) and `manage.py charge_bed_nights`; nurses hold `visits.admit`; race tests for two taps,
+  two admissions and two transfers into one bed; 403 sweeps per router. Frontend: `/nursing`
+  (tablet cards, five-second undo window), `/nursing/visits`, `/nursing/visits/$visitId`,
+  `/nursing/beds` with admit, transfer and discharge dialogs. Results: `make check` green
+  (backend 1735 passed, frontend 445 passed, ruff, mypy, eslint, prettier and tsc clean, no
+  missing migrations, API contract in sync; shellcheck not installed here). `make e2e
+  E2E_GREP="@nursing|@responsive.*nursing|route registry|@helpers"`: 104 passed (4 nursing
+  flows, the 5 nursing screens x 3 viewports x 3 themes x 2 languages, route registry, helpers).
+  Shared files touched: `errors.json` (5 codes), generated OpenAPI files, the three app routers
+  (one `add_router` line each), `visits/permissions.py`, `visits/tests/test_contract.py`.
