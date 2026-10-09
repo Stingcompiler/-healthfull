@@ -100,7 +100,8 @@ test.describe("@helpers factories", () => {
     const catalog = await seededCatalog();
     expect(catalog.services["CONS-GEN"]?.cash_price).toBe("15000.00");
     expect(Object.keys(catalog.doctors).sort()).toEqual(["dentist", "doctor", "gynecologist", "pediatrician"]);
-    expect(Object.keys(catalog.payers).sort()).toEqual(["AMAN", "NAKHEEL", "RAHMA"]);
+    // Module fixtures add their own payers (the cashier's CSH70) once a spec has used them.
+    expect(Object.keys(catalog.payers)).toEqual(expect.arrayContaining(["AMAN", "NAKHEEL", "RAHMA"]));
     expect(catalog.items["DRG-AMOX500"]?.batches).toHaveLength(2);
     expect(Object.keys(catalog.stores).sort()).toEqual(["MAIN", "PHA"]);
   });
