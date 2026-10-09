@@ -89,6 +89,15 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   with opening float, close with variance, frozen report and manager review, cash handovers to a
   named receiver or the safe, receipts with a QR check screen and A4/80 mm printing of receipts,
   invoices and the shift report (ADRs 0008, 0009).
+- Wave b, pharmacy (FEATURES 8.1-8.10, 5.12): `/api/pharmacy` (46 operations) and the pharmacy
+  screens: dispense queue of paid or authorized lines with a scanner-friendly search, dispense
+  dialog with FEFO batches, other batches with a reason, pack units, item barcode scan and partial
+  dispense (rest kept open, or cancelled and refunded with a supervisor at the counter); item
+  master with pack units, barcodes and stock card; goods receipts with batches and suppliers;
+  stock adjustments with approval; count sessions with variances posted by a manager; transfers
+  with send, receive, shortage approval and cancel; expiry (30/60/90 days) and low-stock reports;
+  walk-in sale draft invoice for the cashier. Adjustment requests and transfer drafts refuse more
+  than the batch holds when made. Stock batches are "التشغيلة" in Arabic.
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
