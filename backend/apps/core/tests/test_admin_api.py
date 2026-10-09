@@ -16,6 +16,7 @@ from apps.core.models import (
     AuthEvent,
     AuthEventKind,
     CenterProfile,
+    Department,
     DoctorProfile,
     Policy,
     ReasonCode,
@@ -196,6 +197,42 @@ def test_manage_users_alone_cannot_grant_admin_or_elevate_self(admin: User, make
     response = api.patch(f"/api/core/users/{nurse.pk}", {"roles": ["nurse", "doctor"]})
     assert response.status_code == 200, response.content
     assert response.json()["roles"] == ["doctor", "nurse"]
+
+
+def test_manage_users_alone_cannot_take_over_an_administrator(admin: User, make_user: Any) -> None:
+    """Reset, unlock and (de)activate of an account holding admin rights need manage_roles."""
+    manager, api = _manager_with_manage_users(make_user)
+    make_user("boss2", roles=["admin"])  # a second admin, so LAST_ADMIN never applies
+    peer = make_user("chief2", roles=["manager"])  # holds core.manage_users via the matrix
+    admin.failed_login_count = 5
+    admin.locked_until = timezone.now() + timedelta(minutes=10)
+    admin.save(update_fields=["failed_login_count", "locked_until"])
+
+    for target in (admin, peer):
+        for response in (
+            api.post(f"/api/core/users/{target.pk}/reset-password", {"new_password": NEW_PASSWORD}),
+            api.post(f"/api/core/users/{target.pk}/unlock", {"reason": "Called the desk"}),
+            api.patch(f"/api/core/users/{target.pk}", {"is_active": False}),
+        ):
+            body = _error(response, 403, "PERMISSION_DENIED")
+            assert body["details"]["permission"] == "core.manage_roles"
+    # An inactive administrator cannot be reactivated either.
+    admin.is_active = False
+    admin.save(update_fields=["is_active"])
+    _error(api.patch(f"/api/core/users/{admin.pk}", {"is_active": True}), 403, "PERMISSION_DENIED")
+    admin.refresh_from_db()
+    assert admin.check_password(TEST_PASSWORD)
+    assert admin.failed_login_count == 5
+    assert ApiClient().login("boss", NEW_PASSWORD).status_code != 200
+
+    # Ordinary accounts, and the actor's own password, stay manageable.
+    nurse = make_user("n8", roles=["nurse"])
+    for response in (
+        api.post(f"/api/core/users/{nurse.pk}/reset-password", {"new_password": NEW_PASSWORD}),
+        api.patch(f"/api/core/users/{nurse.pk}", {"is_active": False}),
+        api.post(f"/api/core/users/{manager.pk}/reset-password", {"new_password": NEW_PASSWORD}),
+    ):
+        assert response.status_code == 200, response.content
 
 
 def test_superuser_is_protected(client: ApiClient) -> None:
@@ -487,6 +524,34 @@ def test_departments_rooms_doctors_schedule(client: ApiClient, make_user: Any) -
     assert depts["ENT"]["doctor_count"] == 1
 
 
+def test_doctor_candidates_need_only_manage_departments(make_user: Any) -> None:
+    """The doctor picker works for a role holding manage_departments without manage_users."""
+    make_user("dr_free", roles=["doctor"], full_name_en="Free Doctor")
+    taken = make_user("dr_taken", roles=["doctor"])
+    make_user("dr_off", roles=["doctor"], is_active=False)
+    make_user("nurse_x", roles=["nurse"])
+    dept = Department.objects.create(code="CANDX", name_ar="ق", name_en="Cand")
+    DoctorProfile.objects.create(user=taken, department=dept)
+    head = make_user("head", roles=["manager"])
+    role = Role.objects.get(code="manager")
+    RolePermission.objects.update_or_create(
+        role=role, code="core.manage_departments", defaults={"allowed": True}
+    )
+    RolePermission.objects.update_or_create(
+        role=role, code="core.manage_users", defaults={"allowed": False}
+    )
+    assert "core.manage_users" not in effective_permissions(head)
+    api = ApiClient()
+    assert api.login("head").status_code == 200
+    _error(api.get("/api/core/users?role=doctor"), 403, "PERMISSION_DENIED")
+    response = api.get("/api/core/doctors/candidates")
+    assert response.status_code == 200, response.content
+    rows = response.json()
+    assert [r["username"] for r in rows] == ["dr_free"]
+    assert set(rows[0]) == {"id", "username", "full_name_ar", "full_name_en"}
+    assert rows[0]["full_name_en"] == "Free Doctor"
+
+
 def test_department_writes_need_permission(cashier_client: ApiClient) -> None:
     assert cashier_client.get("/api/core/departments").status_code == 200
     _error(
@@ -495,6 +560,7 @@ def test_department_writes_need_permission(cashier_client: ApiClient) -> None:
         "PERMISSION_DENIED",
     )
     _error(cashier_client.get("/api/core/doctors"), 403, "PERMISSION_DENIED")
+    _error(cashier_client.get("/api/core/doctors/candidates"), 403, "PERMISSION_DENIED")
 
 
 # --- Reason codes ---------------------------------------------------------------------------
@@ -625,6 +691,12 @@ def test_core_api_surface_is_pinned() -> None:
         ("POST", "/rooms", "core_create_room", "core.manage_departments"),
         ("PATCH", "/rooms/{room_id}", "core_update_room", "core.manage_departments"),
         ("GET", "/doctors", "core_list_doctors", "core.manage_departments"),
+        (
+            "GET",
+            "/doctors/candidates",
+            "core_list_doctor_candidates",
+            "core.manage_departments",
+        ),
         ("POST", "/doctors", "core_create_doctor", "core.manage_departments"),
         ("PATCH", "/doctors/{doctor_id}", "core_update_doctor", "core.manage_departments"),
         (

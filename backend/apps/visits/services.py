@@ -72,6 +72,7 @@ from apps.visits.models import (
     VisitStatus,
     VisitType,
 )
+from apps.visits.schedules import SessionInput, replace_weekly_schedule, schedule_prefetch
 from domain import coverage as dc
 from domain import queue as dq
 from domain.errors import DomainError
@@ -83,6 +84,7 @@ __all__ = [
     "DayAgenda",
     "DisplayEntry",
     "LineView",
+    "SessionInput",
     "TimelineEvent",
     "TimelineItem",
     "TokenSlip",
@@ -121,8 +123,10 @@ __all__ = [
     "open_visit",
     "queue",
     "reassign_future_appointments",
+    "replace_weekly_schedule",
     "requeue",
     "reschedule_appointment",
+    "schedule_prefetch",
     "start_consultation",
     "timeline",
     "timeline_view",

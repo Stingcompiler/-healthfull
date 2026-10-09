@@ -143,6 +143,7 @@ export function RolesPage() {
               variant="outline"
               onClick={() => {
                 setPending(new Map());
+                save.reset();
               }}
             >
               <RotateCcw />
@@ -150,6 +151,7 @@ export function RolesPage() {
             </Button>
             <Button
               onClick={() => {
+                save.reset();
                 setConfirming(true);
               }}
             >
@@ -162,7 +164,11 @@ export function RolesPage() {
 
       <FormDialog
         open={confirming}
-        onOpenChange={setConfirming}
+        onOpenChange={(open) => {
+          setConfirming(open);
+          // The mutation lives on the page: a closed dialog must not reopen with an old error.
+          if (!open) save.reset();
+        }}
         title={t("roles.confirmTitle")}
         description={t("roles.confirmHint", { count: pending.size })}
         form={form}
@@ -202,6 +208,74 @@ function useAppName() {
   return (app: string) => translateKey(t, `admin:roles.apps.${app}`, { defaultValue: app });
 }
 
+/** The cell that holds the matrix's single tab stop (roving tabindex). */
+interface Cell {
+  row: number;
+  col: number;
+}
+
+/** Arrow keys move between cells, Home and End to a row's ends; protected cells are skipped. */
+function useMatrixKeys(
+  scroller: React.RefObject<HTMLElement | null>,
+  rowCount: number,
+  colCount: number,
+  enabled: (cell: Cell) => boolean,
+  rtl: boolean,
+) {
+  const [active, setActive] = useState<Cell>({ row: 0, col: 0 });
+  const firstEnabled = (): Cell | null => {
+    for (let row = 0; row < rowCount; row++)
+      for (let col = 0; col < colCount; col++) if (enabled({ row, col })) return { row, col };
+    return null;
+  };
+  const inRange = active.row < rowCount && active.col < colCount && enabled(active);
+  const tabStop = inRange ? active : firstEnabled();
+
+  const focusCell = (cell: Cell) => {
+    const el = scroller.current?.querySelector<HTMLElement>(
+      `[data-row="${String(cell.row)}"][data-col="${String(cell.col)}"]`,
+    );
+    if (!el) return;
+    setActive(cell);
+    el.focus();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement;
+    const row = Number(target.dataset.row);
+    const col = Number(target.dataset.col);
+    if (Number.isNaN(row) || Number.isNaN(col)) return;
+    const forward = rtl ? -1 : 1;
+    const steps: Record<string, Cell | "home" | "end"> = {
+      ArrowDown: { row: 1, col: 0 },
+      ArrowUp: { row: -1, col: 0 },
+      ArrowRight: { row: 0, col: forward },
+      ArrowLeft: { row: 0, col: -forward },
+      Home: "home",
+      End: "end",
+    };
+    const step = steps[e.key];
+    if (step === undefined) return;
+    e.preventDefault();
+    if (step === "home" || step === "end") {
+      const cols = [...Array(colCount).keys()].filter((c) => enabled({ row, col: c }));
+      const to = step === "home" ? cols[0] : cols.at(-1);
+      if (to !== undefined) focusCell({ row, col: to });
+      return;
+    }
+    let next = { row: row + step.row, col: col + step.col };
+    while (next.row >= 0 && next.row < rowCount && next.col >= 0 && next.col < colCount) {
+      if (enabled(next)) {
+        focusCell(next);
+        return;
+      }
+      next = { row: next.row + step.row, col: next.col + step.col };
+    }
+  };
+
+  return { tabStop, onKeyDown, setActive };
+}
+
 /** Whether the element hides more content past its end edge (either text direction). */
 function useScrollEdges(ref: React.RefObject<HTMLElement | null>) {
   const [moreAtEnd, setMoreAtEnd] = useState(false);
@@ -232,6 +306,21 @@ function MatrixGrid({ roles, groups, granted, toggle, pending, label }: CellProp
   const appName = useAppName();
   const scroller = useRef<HTMLDivElement>(null);
   const { moreAtEnd, update } = useScrollEdges(scroller);
+  const language = useLanguage();
+  // One tab stop for the whole matrix (about 1,200 cells); arrow keys move inside it.
+  const rows = groups.flatMap((g) => g.rows);
+  const keys = useMatrixKeys(
+    scroller,
+    rows.length,
+    roles.length,
+    ({ row, col }) => {
+      const permission = rows[row];
+      const role = roles[col];
+      return permission !== undefined && role !== undefined && !permission.protected_roles.includes(role.code);
+    },
+    language === "ar",
+  );
+  const rowIndex = new Map(rows.map((r, i) => [r.code, i]));
   return (
     <div className="relative min-w-0">
       {/* Bounded in both directions so the role headers (top) and permission names (start)
@@ -243,9 +332,13 @@ function MatrixGrid({ roles, groups, granted, toggle, pending, label }: CellProp
         tabIndex={0}
         role="region"
         aria-label={t("roles.matrix")}
+        aria-describedby="matrix-keys-hint"
         data-testid="permission-matrix"
       >
-        <table className="w-full border-separate border-spacing-0 text-sm">
+        <p id="matrix-keys-hint" className="sr-only">
+          {t("roles.keysHint")}
+        </p>
+        <table className="w-full border-separate border-spacing-0 text-sm" onKeyDown={keys.onKeyDown}>
           <caption className="sr-only">{t("roles.matrix")}</caption>
           <thead>
             <tr>
@@ -271,12 +364,14 @@ function MatrixGrid({ roles, groups, granted, toggle, pending, label }: CellProp
           {groups.map((group) => (
             <tbody key={group.app}>
               <tr>
-                <th
-                  scope="colgroup"
-                  colSpan={roles.length + 1}
-                  className="sticky start-0 bg-subtle px-3 py-1.5 text-start text-xs font-semibold tracking-wide text-muted uppercase"
-                >
-                  {appName(group.app)}
+                {/* A cell as wide as the table cannot stick; its label can, inside it. */}
+                <th scope="colgroup" colSpan={roles.length + 1} className="bg-subtle p-0 text-start">
+                  <span
+                    className="sticky start-0 inline-block px-3 py-1.5 text-xs font-semibold tracking-wide text-muted uppercase"
+                    data-testid={`matrix-group-${group.app}`}
+                  >
+                    {appName(group.app)}
+                  </span>
                 </th>
               </tr>
               {group.rows.map((row) => (
@@ -290,9 +385,11 @@ function MatrixGrid({ roles, groups, granted, toggle, pending, label }: CellProp
                       {row.code}
                     </bdi>
                   </th>
-                  {roles.map((role) => {
+                  {roles.map((role, col) => {
                     const isProtected = row.protected_roles.includes(role.code);
                     const changed = pending.has(cellKey(role.code, row.code));
+                    const r = rowIndex.get(row.code) ?? 0;
+                    const isTabStop = keys.tabStop?.row === r && keys.tabStop.col === col;
                     return (
                       <td
                         key={role.code}
@@ -308,6 +405,12 @@ function MatrixGrid({ roles, groups, granted, toggle, pending, label }: CellProp
                             aria-label={t("roles.cellLabel", { role: roleName(role), permission: label(row) })}
                             aria-describedby={isProtected ? PROTECTED_HINT_ID : undefined}
                             data-testid={`perm-${role.code}-${row.code}`}
+                            data-row={r}
+                            data-col={col}
+                            tabIndex={isTabStop ? 0 : -1}
+                            onFocus={() => {
+                              keys.setActive({ row: r, col });
+                            }}
                             onCheckedChange={(v) => {
                               toggle(row, role.code, v === true);
                             }}

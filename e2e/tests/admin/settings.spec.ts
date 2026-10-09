@@ -22,7 +22,15 @@ test.describe("@admin settings", () => {
     const before = await admin.get<Record<string, string>>("/api/core/center");
     await setPrefs(page, { theme: "light", lang: "en" });
     await page.goto("/administration/settings");
-    await page.getByLabel(tr("en", "admin:settings.address")).fill("Khartoum, Street 61");
+    const address = page.getByLabel(tr("en", "admin:settings.address"));
+    await address.fill("Khartoum, Street 61");
+    // Switching tabs would unmount the form: unsaved edits are asked about first.
+    await page.getByRole("tab", { name: tr("en", "admin:settings.numberingTab") }).click();
+    const discard = page.getByRole("alertdialog");
+    await expect(discard.getByText(tr("en", "unsaved.discardTitle"))).toBeVisible();
+    await discard.getByRole("button", { name: tr("en", "unsaved.stay") }).click();
+    await expect(discard).toBeHidden();
+    await expect(address).toHaveValue("Khartoum, Street 61");
     await page.getByRole("button", { name: tr("en", "admin:common.save") }).click();
     await expect(page.getByText(tr("en", "admin:settings.saved")).first()).toBeVisible();
 
@@ -31,6 +39,14 @@ test.describe("@admin settings", () => {
     const logo = page.getByRole("img", { name: tr("en", "admin:settings.logoAlt") });
     await expect(logo).toBeVisible();
     expect(await logo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1);
+
+    // Removing the logo printed on every document asks first.
+    await page.getByRole("button", { name: tr("en", "admin:settings.removeLogo") }).click();
+    const confirm = page.getByRole("alertdialog");
+    await expect(confirm.getByText(tr("en", "admin:settings.removeLogoTitle"))).toBeVisible();
+    await confirm.getByRole("button", { name: tr("en", "admin:settings.removeLogo") }).click();
+    await expect(page.getByText(tr("en", "admin:settings.logoRemoved"))).toBeVisible();
+    await expect(page.getByText(tr("en", "admin:settings.noLogo"))).toBeVisible();
 
     // Put the seed values back.
     await admin.delete("/api/core/center/logo");

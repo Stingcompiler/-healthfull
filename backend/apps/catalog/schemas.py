@@ -202,6 +202,9 @@ class PriceListOut(Schema):
     payer_codes: list[str]
     current_version_id: int | None
     next_version_id: int | None
+    can_start_today: bool = Field(
+        ..., description="A new version may start today (nothing is effective yet)"
+    )
     versions: list[VersionOut]
 
     @staticmethod
@@ -270,6 +273,10 @@ class VersionIn(Schema):
         description="Version (of any list) to copy; default: this list's version effective then",
     )
     note: str = Field("", max_length=300)
+
+
+class VersionWithdrawIn(Schema):
+    reason: str = Field(..., min_length=1, max_length=400)
 
 
 class PriceItemOut(Schema):

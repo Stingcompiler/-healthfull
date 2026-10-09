@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Building2, CalendarClock, DoorOpen, Pencil, Plus, Stethoscope, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -27,6 +27,7 @@ import { vmsg } from "@/lib/validation";
 
 import {
   useDepartments,
+  useDoctorCandidates,
   useDoctors,
   useRooms,
   useSaveDepartment,
@@ -34,13 +35,13 @@ import {
   useSaveRoom,
   useServices,
   useSetSchedule,
-  useUsers,
 } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
 import { ListEmpty } from "../components/ListEmpty";
 import { ActiveBadge, Code, FormDialog } from "../components/FormDialog";
 import { DepartmentLabel } from "../components/DepartmentLabel";
 import { useDepartmentById, useLocalName, usePersonName } from "../hooks";
+import { CLOCK_TIME, normalizeClockTime } from "../dates";
 import { sortWeekdays, WEEK_ORDER } from "../weekdays";
 import type { DepartmentOut, DoctorOut, RoomOut } from "../types";
 
@@ -540,11 +541,20 @@ function DoctorDialog({ doctor, onClose }: { doctor: DoctorOut | null; onClose: 
   const personName = usePersonName();
   const save = useSaveDoctor();
   const departmentOptions = useDepartmentOptions(false);
-  const doctorUsers = useUsers({ role: "doctor", active: true });
+  const candidates = useDoctorCandidates();
   const services = useServices({ kind: "consultation", active: true });
-  const userOptions = (doctorUsers.data?.items ?? [])
-    .filter((u) => u.doctor_profile_id === null || u.id === doctor?.user_id)
-    .map((u) => ({ value: String(u.id), label: `${personName(u)} (${u.username})` }));
+  // Editing shows the doctor's own account (it has a profile, so it is no candidate).
+  const people = doctor
+    ? [
+        {
+          id: doctor.user_id,
+          username: doctor.username,
+          full_name_ar: doctor.full_name_ar,
+          full_name_en: doctor.full_name_en,
+        },
+      ]
+    : (candidates.data ?? []);
+  const userOptions = people.map((u) => ({ value: String(u.id), label: `${personName(u)} (${u.username})` }));
   const serviceOptions = [
     { value: NONE, label: t("common.none") },
     ...(services.data?.items ?? []).map((s) => ({ value: String(s.id), label: `${localName(s)} (${s.code})` })),
@@ -617,8 +627,8 @@ function DoctorDialog({ doctor, onClose }: { doctor: DoctorOut | null; onClose: 
 const sessionSchema = z
   .object({
     weekday: z.string(),
-    start_time: z.string().regex(/^\d{2}:\d{2}$/, vmsg("validation.invalid")),
-    end_time: z.string().regex(/^\d{2}:\d{2}$/, vmsg("validation.invalid")),
+    start_time: z.string().regex(CLOCK_TIME, vmsg("admin:departments.timeRule")),
+    end_time: z.string().regex(CLOCK_TIME, vmsg("admin:departments.timeRule")),
     slot_minutes: z.string().regex(/^\d{1,3}$/, vmsg("validation.number")),
     room: z.string(),
   })
@@ -649,6 +659,34 @@ function ScheduleDialog({ doctor, onClose }: { doctor: DoctorOut; onClose: () =>
     },
   });
   const sessions = useFieldArray({ control: form.control, name: "sessions" });
+  const watched = useWatch({ control: form.control, name: "sessions" });
+  // Each session is named for screen readers ("Session 2: Tuesday 08:00 to 14:00").
+  const sessionName = (index: number) => {
+    const s = watched[index];
+    return {
+      n: index + 1,
+      day: s ? weekday(Number(s.weekday)) : "",
+      from: s?.start_time ?? "",
+      to: s?.end_time ?? "",
+    };
+  };
+  // After an add or a remove, focus goes somewhere sensible instead of the dialog body.
+  const list = useRef<HTMLUListElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
+  const focusNext = useRef<{ index: number; target: "day" | "remove" } | null>(null);
+  const setFocusNext = (next: { index: number; target: "day" | "remove" }) => {
+    focusNext.current = next;
+  };
+  useEffect(() => {
+    const next = focusNext.current;
+    if (!next) return;
+    focusNext.current = null;
+    const attribute = next.target === "day" ? "data-session-day" : "data-session-remove";
+    const node =
+      list.current?.querySelector<HTMLElement>(`[data-session="${String(next.index)}"] [${attribute}]`) ??
+      addButton.current;
+    node?.focus();
+  }, [sessions.fields.length]);
   return (
     <FormDialog
       open
@@ -676,12 +714,15 @@ function ScheduleDialog({ doctor, onClose }: { doctor: DoctorOut; onClose: () =>
       }}
     >
       {sessions.fields.length === 0 ? <p className="text-sm text-muted">{t("departments.noSchedule")}</p> : null}
-      <ul className="flex flex-col gap-3">
+      <ul ref={list} className="flex flex-col gap-3">
         {sessions.fields.map((field, index) => (
           <li
             key={field.id}
+            role="group"
+            aria-label={t("departments.sessionLabel", sessionName(index))}
             className="flex min-w-0 flex-col gap-3 rounded-control border border-border p-3"
             data-testid={`session-${String(index)}`}
+            data-session={index}
           >
             {/* Two rows with flexible tracks: day and room, then times and slot. Fixed rem
                 tracks squeezed the selects and cut the AM/PM marker off the time inputs. */}
@@ -695,7 +736,7 @@ function ScheduleDialog({ doctor, onClose }: { doctor: DoctorOut; onClose: () =>
                       <FormLabel>{t("departments.weekday")}</FormLabel>
                       <Select value={f.value} onValueChange={f.onChange}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger data-session-day="">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -722,9 +763,13 @@ function ScheduleDialog({ doctor, onClose }: { doctor: DoctorOut; onClose: () =>
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label={t("departments.removeSession")}
+                aria-label={t("departments.removeSessionNamed", sessionName(index))}
+                data-session-remove=""
                 onClick={() => {
                   sessions.remove(index);
+                  // The session that took its place, else the one before it, else "Add session".
+                  const left = sessions.fields.length - 1;
+                  setFocusNext({ index: index < left ? index : index - 1, target: "remove" });
                 }}
                 className="shrink-0 self-start"
               >
@@ -753,10 +798,15 @@ function ScheduleDialog({ doctor, onClose }: { doctor: DoctorOut; onClose: () =>
       </ul>
       <div>
         <Button
+          ref={addButton}
           type="button"
           variant="outline"
           onClick={() => {
-            sessions.append({ weekday: "5", start_time: "08:00", end_time: "14:00", slot_minutes: "15", room: NONE });
+            sessions.append(
+              { weekday: "5", start_time: "08:00", end_time: "14:00", slot_minutes: "15", room: NONE },
+              { shouldFocus: false },
+            );
+            setFocusNext({ index: sessions.fields.length, target: "day" });
           }}
         >
           <Plus />
@@ -784,7 +834,20 @@ function TimeInput({
         <FormItem className="min-w-0">
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input {...field} type="time" dir="ltr" step={300} className="min-w-0" />
+            {/* 24-hour HH:MM text, not type="time": that follows the browser locale (AM/PM)
+                instead of the app language. */}
+            <Input
+              {...field}
+              onChange={(e) => {
+                field.onChange(normalizeClockTime(e.target.value));
+              }}
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={5}
+              placeholder="08:00"
+              dir="ltr"
+              className="min-w-0 tabular"
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

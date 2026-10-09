@@ -52,7 +52,7 @@ from apps.core.models import (
     User,
     UserRole,
 )
-from apps.core.permissions import PERMISSIONS, effective_permissions
+from apps.core.permissions import PERMISSIONS, effective_permissions, role_permissions
 from domain.errors import DomainError
 from domain.lockout import (
     LockState,
@@ -759,6 +759,28 @@ def _guard_role_change(actor: User, user: User | None, before: set[str], after: 
         require_permission(actor, "core.manage_roles")
 
 
+#: Holding any of these makes an account an administrator for account-takeover purposes.
+_ACCOUNT_ADMIN_PERMISSIONS = frozenset({"core.manage_roles", "core.manage_users"})
+
+
+def _guard_privileged_target(actor: User, user: User, role_codes: Iterable[str]) -> None:
+    """Taking over an administrator's account needs ``core.manage_roles``.
+
+    Resetting the password of, unlocking, deactivating or reactivating another account that
+    holds the admin role, or any role granting ``core.manage_users`` or ``core.manage_roles``,
+    would let a holder of ``core.manage_users`` alone sign in as (or lock out) someone with
+    more rights. One's own account is exempt: the actor already controls it.
+
+    Raises:
+        PermissionRequired: HTTP 403 ``PERMISSION_DENIED`` (``details.permission``).
+    """
+    if user.pk == actor.pk:
+        return
+    codes = set(role_codes)
+    if roles.ADMIN in codes or role_permissions(codes) & _ACCOUNT_ADMIN_PERMISSIONS:
+        require_permission(actor, "core.manage_roles")
+
+
 def _protect_superuser(actor: User, user: User) -> None:
     if user.is_superuser and not actor.is_superuser:
         raise DomainError(
@@ -834,8 +856,8 @@ def update_user(
     Raises:
         DomainError: ``SUPERUSER_PROTECTED``, ``CANNOT_DEACTIVATE_SELF``, ``ROLE_REQUIRED``,
             ``ROLE_UNKNOWN``, ``LAST_ADMIN`` (the last active administrator would go).
-        PermissionRequired: the admin role or one's own roles change without
-            ``core.manage_roles``.
+        PermissionRequired: the admin role or one's own roles change, or an
+            administrator's account is (de)activated, without ``core.manage_roles``.
     """
     codes = _check_role_codes(role_codes) if role_codes is not None else None
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit user"):
@@ -848,6 +870,8 @@ def update_user(
         roles_before = user.role_codes()
         roles_after = roles_before if codes is None else codes
         _guard_role_change(actor, user, set(roles_before), set(roles_after))
+        if is_active is not None and is_active != user.is_active:
+            _guard_privileged_target(actor, user, roles_before)
         if (
             user.pk in admins
             and len(admins) == 1
@@ -882,10 +906,12 @@ def reset_password(request: HttpRequest, actor: User, user_id: int, new_password
 
     Raises:
         DomainError: ``SUPERUSER_PROTECTED``, ``PASSWORD_INVALID``.
+        PermissionRequired: an administrator's account without ``core.manage_roles``.
     """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="password reset"):
         user = User.objects.select_for_update().get(pk=user_id)
         _protect_superuser(actor, user)
+        _guard_privileged_target(actor, user, user.role_codes())
         error = _password_error(new_password, user)
         if error is not None:
             raise error
@@ -909,10 +935,12 @@ def unlock_user(request: HttpRequest, actor: User, user_id: int, reason: str) ->
 
     Raises:
         DomainError: ``REASON_REQUIRED``, ``SUPERUSER_PROTECTED``, ``USER_NOT_LOCKED``.
+        PermissionRequired: an administrator's account without ``core.manage_roles``.
     """
     text = _require_reason(reason, "unlock an account")
     user = User.objects.get(pk=user_id)
     _protect_superuser(actor, user)
+    _guard_privileged_target(actor, user, user.role_codes())
     with pghistory.context(user=actor.pk, reason=f"unlock: {text}"):
         if unlock_accounts(request, [user], reason=text) == 0:
             raise DomainError("USER_NOT_LOCKED", "This account has no failed logins to clear")
@@ -1259,7 +1287,7 @@ def update_room(actor: User, room_id: int, **fields: Any) -> Room:
 def list_doctors(
     *, department_id: int | None = None, active: bool | None = None
 ) -> QuerySet[DoctorProfile]:
-    from apps.visits.schedules import schedule_prefetch
+    from apps.visits.services import schedule_prefetch
 
     qs = DoctorProfile.objects.select_related(
         "user", "department", "consultation_service"
@@ -1288,6 +1316,16 @@ def _consultation_service(service_id: int | None) -> Any:
             service=service.code,
         )
     return service
+
+
+def list_doctor_candidates() -> QuerySet[User]:
+    """Active users with the doctor role and no clinical profile yet (the doctor picker of
+    the departments screen, which must not need ``core.manage_users``)."""
+    return (
+        User.objects.filter(is_active=True, roles__code=roles.DOCTOR, doctor_profile__isnull=True)
+        .distinct()
+        .order_by("username")
+    )
 
 
 def create_doctor(
@@ -1361,7 +1399,7 @@ def set_doctor_schedule(
     Raises:
         DomainError: ``SCHEDULE_*`` (see ``domain.schedule``), ``ROOM_INACTIVE``.
     """
-    from apps.visits import schedules
+    from apps.visits import services as visit_services
 
     items = list(sessions)
     room_ids = {s["room_id"] for s in items if s.get("room_id") is not None}
@@ -1372,10 +1410,10 @@ def set_doctor_schedule(
             raise Room.DoesNotExist(f"Room {room_id}")
         if not room.active:
             raise DomainError("ROOM_INACTIVE", "The room is inactive", room=room.code)
-    schedules.replace_weekly_schedule(
+    visit_services.replace_weekly_schedule(
         DoctorProfile.objects.get(pk=doctor_id),
         [
-            schedules.SessionInput(
+            visit_services.SessionInput(
                 weekday=s["weekday"],
                 start=s["start_time"],
                 end=s["end_time"],

@@ -54,9 +54,12 @@ export function PayersPage() {
         accessorFn: (p) => localName(p),
         header: t("common.name"),
         meta: { label: t("common.name") },
+        // A long payer name is cut (full name in the tooltip) so the row fits beside the rail.
         cell: ({ row }) => (
-          <div className="min-w-0">
-            <div className="truncate font-medium text-fg">{localName(row.original)}</div>
+          <div className="max-w-48 min-w-0 xl:max-w-64">
+            <div className="truncate font-medium text-fg" title={localName(row.original)}>
+              {localName(row.original)}
+            </div>
             <Code>{row.original.code}</Code>
           </div>
         ),
@@ -71,7 +74,8 @@ export function PayersPage() {
         id: "price_list",
         accessorFn: (p) => p.price_list_code ?? "",
         header: t("payers.priceList"),
-        meta: { label: t("payers.priceList") },
+        // Secondary columns appear once the table has room (cards always show them).
+        meta: { label: t("payers.priceList"), className: "hidden xl:table-cell" },
         cell: ({ row }) =>
           row.original.price_list_code ? (
             <Code>{row.original.price_list_code}</Code>
@@ -83,7 +87,7 @@ export function PayersPage() {
         id: "contract_end",
         accessorFn: (p) => p.contract_end ?? "",
         header: t("payers.contractEnd"),
-        meta: { label: t("payers.contractEnd") },
+        meta: { label: t("payers.contractEnd"), className: "hidden xl:table-cell" },
         cell: ({ row }) => (row.original.contract_end ? <DateText value={row.original.contract_end} /> : "—"),
       },
       {

@@ -18,7 +18,6 @@ import {
   TextField,
 } from "@/components/form";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -29,6 +28,7 @@ import { vmsg } from "@/lib/validation";
 
 import { usePolicy, useUpdatePolicy } from "../api";
 import { AdminPage, QueryState } from "../components/AdminPage";
+import { CheckOption } from "../components/RolesField";
 import type { PolicyIn, PolicyOut, RoleCode } from "../types";
 
 const intIn = (min: number, max: number) =>
@@ -221,27 +221,21 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
             name="perform_first_roles"
             render={({ field }) => (
               <FormItem>
-                <div role="group" aria-labelledby="pol-perform" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                  {ROLES.map((role) => {
-                    const id = `pf-${role}`;
-                    return (
-                      <div key={role} className="flex items-center gap-2.5">
-                        <Checkbox
-                          id={id}
-                          checked={field.value.includes(role)}
-                          onCheckedChange={(checked) => {
-                            const next = new Set(field.value);
-                            if (checked === true) next.add(role);
-                            else next.delete(role);
-                            field.onChange(ROLES.filter((r) => next.has(r)));
-                          }}
-                        />
-                        <Label htmlFor={id} className="font-normal">
-                          {t(`common:roles.${role}`)}
-                        </Label>
-                      </div>
-                    );
-                  })}
+                <div role="group" aria-labelledby="pol-perform" className="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {ROLES.map((role) => (
+                    <CheckOption
+                      key={role}
+                      id={`pf-${role}`}
+                      checked={field.value.includes(role)}
+                      onCheckedChange={(checked) => {
+                        const next = new Set(field.value);
+                        if (checked) next.add(role);
+                        else next.delete(role);
+                        field.onChange(ROLES.filter((r) => next.has(r)));
+                      }}
+                      label={t(`common:roles.${role}`)}
+                    />
+                  ))}
                 </div>
                 <FormMessage />
               </FormItem>

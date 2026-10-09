@@ -51,6 +51,7 @@ export const adminKeys = {
   departments: ["admin", "departments"] as const,
   rooms: ["admin", "rooms"] as const,
   doctors: ["admin", "doctors"] as const,
+  doctorCandidates: ["admin", "doctors", "candidates"] as const,
   reasons: ["admin", "reasons"] as const,
   sequences: (year?: number) => ["admin", "sequences", year ?? 0] as const,
   printTemplates: ["admin", "print-templates"] as const,
@@ -244,6 +245,14 @@ export function useDoctors() {
   return useQuery({ queryKey: adminKeys.doctors, queryFn: () => unwrap(api.GET("/api/core/doctors")) });
 }
 
+/** Doctor-role users without a profile yet (needs only core.manage_departments). */
+export function useDoctorCandidates() {
+  return useQuery({
+    queryKey: adminKeys.doctorCandidates,
+    queryFn: () => unwrap(api.GET("/api/core/doctors/candidates")),
+  });
+}
+
 export function useSaveDoctor() {
   return useAdminMutation(
     ({ id, body }: { id?: number; body: DoctorIn | DoctorPatch }) =>
@@ -355,6 +364,19 @@ export function useCreateVersion() {
         api.POST("/api/catalog/price-lists/{price_list_id}/versions", {
           params: { path: { price_list_id: priceListId } },
           body,
+        }),
+      ),
+    PRICE_KEYS,
+  );
+}
+
+export function useWithdrawVersion() {
+  return useAdminMutation(
+    ({ versionId, reason }: { versionId: number; reason: string }) =>
+      unwrap(
+        api.POST("/api/catalog/versions/{version_id}/withdraw", {
+          params: { path: { version_id: versionId } },
+          body: { reason },
         }),
       ),
     PRICE_KEYS,

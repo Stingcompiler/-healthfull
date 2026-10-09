@@ -1,6 +1,7 @@
 """Doctors' weekly clinic hours (FEATURES 13.2): the only writer of ``DoctorSchedule``.
 
-Called by the administration screens (``apps.core.services.set_doctor_schedule``). The rule
+Re-exported by ``apps.visits.services``, through which the administration screens
+(``apps.core.services.set_doctor_schedule``) call it (ARCHITECTURE 4.2). The rule
 (sessions of one weekday never overlap, slot length fits the session) lives in
 ``domain.schedule``; appointment booking reads the rows (``apps.visits.services``).
 """

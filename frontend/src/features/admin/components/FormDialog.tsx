@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -49,6 +49,15 @@ export function FormDialog<T extends FieldValues>({
   const { t } = useTranslation(["common", "errors"]);
   const translateError = useTranslateError();
   const submit = form.handleSubmit(onSubmit);
+  // A long dialog scrolls; the Save button is at the bottom and the error at the top. Bring
+  // a new server error into view and focus it, so a rejected submit never looks ignored.
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = errorRef.current;
+    if (!error || !node) return;
+    node.scrollIntoView({ block: "nearest" });
+    node.focus({ preventScroll: true });
+  }, [error]);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(wide && "md:max-w-2xl")}>
@@ -59,9 +68,11 @@ export function FormDialog<T extends FieldValues>({
         <Form {...form}>
           <form onSubmit={(e) => void submit(e)} noValidate className="grid min-w-0 gap-4">
             {error ? (
-              <AlertCard variant="danger" title={t("errors:title")} live>
-                {translateError(error)}
-              </AlertCard>
+              <div ref={errorRef} tabIndex={-1} className="scroll-m-4 rounded-card focus-ring" data-testid="form-error">
+                <AlertCard variant="danger" title={t("errors:title")} live>
+                  {translateError(error)}
+                </AlertCard>
+              </div>
             ) : null}
             {children}
             <DialogFooter>

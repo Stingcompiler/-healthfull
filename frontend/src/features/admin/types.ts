@@ -25,6 +25,7 @@ export type RoomIn = S["RoomIn"];
 export type RoomPatch = S["RoomPatch"];
 export type DoctorOut = S["DoctorOut"];
 export type DoctorIn = S["DoctorIn"];
+export type DoctorCandidateOut = S["DoctorCandidateOut"];
 export type DoctorPatch = S["DoctorPatch"];
 export type ScheduleSessionIn = S["ScheduleSessionIn"];
 export type ReasonCodeOut = S["ReasonCodeOut"];

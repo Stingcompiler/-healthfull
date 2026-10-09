@@ -385,6 +385,15 @@ class DoctorOut(Schema):
         return list(obj.schedules.all())
 
 
+class DoctorCandidateOut(Schema):
+    """A user who can be given a doctor profile: names only, no account details."""
+
+    id: int
+    username: str
+    full_name_ar: str
+    full_name_en: str
+
+
 class DoctorIn(Schema):
     user_id: int
     department_id: int
