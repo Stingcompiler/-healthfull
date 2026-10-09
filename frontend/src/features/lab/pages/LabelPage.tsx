@@ -27,12 +27,14 @@ function LabelBody({ label }: { label: LabLabel }) {
   const s = label.sample;
   return (
     <div className="flex items-start gap-1.5" data-testid="sample-label">
-      <QrCode value={s.accession_no} label={s.accession_no} className="size-[18mm] shrink-0" />
+      <QrCode value={s.accession_no} label={s.accession_no} className="size-[15mm] shrink-0" />
       <div className="flex min-w-0 flex-col">
-        <bdi dir="ltr" className="text-[12px] font-bold" data-testid="label-accession">
+        <bdi dir="ltr" className="block text-[11px] font-bold whitespace-nowrap" data-testid="label-accession">
           {s.accession_no}
         </bdi>
-        <span className="truncate font-semibold">{names.patient(label.patient)}</span>
+        <bdi dir="auto" className="block truncate font-semibold">
+          {names.patient(label.patient)}
+        </bdi>
         <span>
           <bdi dir="ltr">{label.patient.file_no}</bdi>
           {label.patient.date_of_birth ? (
@@ -43,7 +45,7 @@ function LabelBody({ label }: { label: LabLabel }) {
           ) : null}
           {label.patient.sex === "male" || label.patient.sex === "female" ? ` · ${t(`sex.${label.patient.sex}`)}` : ""}
         </span>
-        <bdi dir="ltr" className="truncate">
+        <bdi dir="ltr" className="block truncate">
           {label.tests.map((x) => x.code).join(" ")}
         </bdi>
         <span>{formatDate(s.collected_at, language, "datetime")}</span>
