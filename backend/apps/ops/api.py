@@ -88,7 +88,7 @@ def request_backup(request: HttpRequest, payload: BackupRequestIn) -> Status[Bac
 @require_perm("ops.view_status")
 def list_updates(request: HttpRequest, params: Query[UpdateParams]) -> dict[str, Any]:
     page = paginate(services.update_runs(), params.page, params.page_size)
-    return {"current_version": settings.APP_VERSION, **page}
+    return {"current_version": settings.APP_VERSION, "log": services.update_log(), **page}
 
 
 @ops_router.post(

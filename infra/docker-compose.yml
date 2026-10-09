@@ -11,8 +11,10 @@
 #                then exits; app and maintenance start only after it succeeded
 #   app          Django + gunicorn; not published, reachable only through `web`
 #   web          Caddy (non-root): the SPA, reverse proxy to app, compression, headers, TLS
-#   backup       nightly verified dump + monthly restore test (infra/backup), same image as db
-#   maintenance  daily housekeeping in the app image (expired sessions, login throttles)
+#   backup       nightly verified dump + monthly restore test (infra/backup), same image as db;
+#                also runs the manual backups asked for on the status page (backup-requests.sh)
+#   maintenance  hourly housekeeping in the app image (sessions, throttles, time-based alerts,
+#                nightly bed charge)
 #
 # Published ports bind to BIND_IP. Docker writes its own iptables rules, so a host firewall
 # such as ufw does NOT filter them: set BIND_IP to the server's LAN address
@@ -281,7 +283,10 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    # Once at start, then daily: `manage.py maintenance` (expired sessions, stale throttles).
+    # Once at start, then every MAINTENANCE_INTERVAL_SECONDS (all idempotent):
+    #   manage.py maintenance        expired sessions, stale login throttles
+    #   manage.py notify_scan        time-based in-app alerts, each at most once a day
+    #   manage.py charge_bed_nights  passed bed nights, as the BED_CHARGE_USER account
     command: ["maintenance-loop"]
     init: true
     env_file:
@@ -295,7 +300,10 @@ services:
       PGPASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD in .env}
       DB_NAME: ${DB_NAME:-hospital}
       APP_VERSION: ${APP_IMAGE_TAG:-dev}
-      MAINTENANCE_INTERVAL_SECONDS: ${MAINTENANCE_INTERVAL_SECONDS:-86400}
+      MAINTENANCE_INTERVAL_SECONDS: ${MAINTENANCE_INTERVAL_SECONDS:-3600}
+      # Username of the active account the nightly bed charge is recorded as (it needs
+      # visits.manage_beds); empty skips the run (nurses still post nights on the bed board).
+      BED_CHARGE_USER: ${BED_CHARGE_USER:-}
       MIGRATE_ON_START: "false"
       POSTGRES_PASSWORD: ""
       DB_OWNER_PASSWORD: ""

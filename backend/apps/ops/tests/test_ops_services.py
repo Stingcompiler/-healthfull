@@ -251,6 +251,50 @@ def test_update_history_newest_first(admin, api_client: ApiClient) -> None:
     assert body["items"][0]["release_notes"] == "Lab fixes"
 
 
+def test_update_history_includes_the_update_script_log(
+    admin, status_dir: Path, api_client: ApiClient
+) -> None:
+    write_lines(
+        status_dir,
+        "update-runs.jsonl",
+        [
+            {
+                "version": 1,
+                "type": "update",
+                "status": "ok",
+                "from_tag": "1.0.0",
+                "to_tag": "1.1.0",
+                "started_at": iso(timedelta(days=3)),
+                "finished_at": iso(timedelta(days=3)),
+                "migrations_applied": True,
+                "db_restored": False,
+                "backup": "/backups/dumps/x.dump",
+                "detail": "",
+                "log": "l",
+            },
+            {
+                "version": 1,
+                "type": "update",
+                "status": "rolled_back",
+                "from_tag": "1.1.0",
+                "to_tag": "1.2.0",
+                "started_at": iso(timedelta(hours=2)),
+                "finished_at": iso(timedelta(hours=1)),
+                "migrations_applied": False,
+                "db_restored": True,
+                "backup": "",
+                "detail": "health check failed",
+                "log": "l",
+            },
+        ],
+    )
+    assert api_client.login("opsadmin").status_code == 200
+    log = api_client.get("/api/ops/updates").json()["log"]
+    assert [(r["status"], r["to_tag"]) for r in log] == [("rolled_back", "1.2.0"), ("ok", "1.1.0")]
+    assert log[0]["detail"] == "health check failed"
+    assert log[0]["db_restored"] is True
+
+
 # --- the daily alert scan -------------------------------------------------------------------
 
 

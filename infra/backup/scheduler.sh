@@ -20,6 +20,8 @@
 #   BACKUP_CATCHUP_HOURS [24]      catch-up threshold for a missed backup, 0 disables catch-up
 #   BACKUP_ON_START [false]        always run one backup right after the container starts
 #   BACKUP_SCHEDULER [sidecar]     "off" idles the loop when host cron/systemd runs the jobs
+#   BACKUP_REQUEST_POLL_SECONDS [60]  how often manual backups asked for on the status page are
+#                                  picked up (backup-requests.sh); 0 disables the pickup
 # plus everything backup-nightly.sh and restore-test.sh read (BACKUP_DIR for the status files).
 #
 # Host-level alternatives (cron, systemd timers) are in infra/backup/examples/.
@@ -34,6 +36,7 @@ BACKUP_TIME="${BACKUP_TIME:-02:30}"
 RESTORE_TEST_DAY="${RESTORE_TEST_DAY:-1}"
 RESTORE_TEST_TIME="${RESTORE_TEST_TIME:-04:00}"
 BACKUP_CATCHUP_HOURS="${BACKUP_CATCHUP_HOURS:-24}"
+BACKUP_REQUEST_POLL_SECONDS="${BACKUP_REQUEST_POLL_SECONDS:-60}"
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
 BACKUP_STATUS="$BACKUP_DIR/status/backup-runs.jsonl"
 RESTORE_STATUS="${RESTORE_TEST_LOG:-$BACKUP_DIR/status/restore-tests.jsonl}"
@@ -111,6 +114,36 @@ restore_test_due() {
   [[ "${last:0:7}" != "$month" ]]
 }
 
+check_requests() {
+  # Manual backups asked for on the status page; quiet unless one is picked up.
+  [[ "$BACKUP_REQUEST_POLL_SECONDS" -gt 0 ]] || return 0
+  local rc=0
+  "$SCRIPT_DIR/backup-requests.sh" >/dev/null &
+  job_pid=$!
+  wait "$job_pid" || rc=$?
+  job_pid=""
+  [[ $rc -eq 0 ]] || log "manual backup request check failed (exit $rc)"
+}
+
+sleep_until() {
+  # sleep_until EPOCH: sleep in steps of BACKUP_REQUEST_POLL_SECONDS, checking for manual
+  # backup requests after each step (a long step when polling is off).
+  local target="$1" now step
+  while true; do
+    now="$(date +%s)"
+    [[ $now -lt $target ]] || return 0
+    step=$((target - now))
+    if [[ "$BACKUP_REQUEST_POLL_SECONDS" -gt 0 && $step -gt $BACKUP_REQUEST_POLL_SECONDS ]]; then
+      step=$BACKUP_REQUEST_POLL_SECONDS
+    fi
+    sleep "$step" &
+    sleeper=$!
+    wait "$sleeper" || true
+    sleeper=""
+    check_requests
+  done
+}
+
 catch_up() {
   if backup_due "$(date +%s)"; then
     log "catch-up: no successful backup in the last ${BACKUP_CATCHUP_HOURS}h"
@@ -145,6 +178,7 @@ backup_at="$(parse_hhmm BACKUP_TIME "$BACKUP_TIME")"
 restore_at="$(parse_hhmm RESTORE_TEST_TIME "$RESTORE_TEST_TIME")"
 require_uint RESTORE_TEST_DAY "$RESTORE_TEST_DAY"
 require_uint BACKUP_CATCHUP_HOURS "$BACKUP_CATCHUP_HOURS"
+require_uint BACKUP_REQUEST_POLL_SECONDS "$BACKUP_REQUEST_POLL_SECONDS"
 [[ "$RESTORE_TEST_DAY" -le 28 ]] || die "RESTORE_TEST_DAY must be 0..28 (28 exists in every month)"
 [[ "$backup_at" -ne "$restore_at" ]] || die "BACKUP_TIME and RESTORE_TEST_TIME must differ"
 
@@ -165,6 +199,7 @@ if is_true "${BACKUP_ON_START:-false}"; then
   run_job "backup" "$SCRIPT_DIR/backup-nightly.sh" >/dev/null
 fi
 catch_up
+check_requests
 
 while true; do
   now="$(now_of_day)"
@@ -177,11 +212,9 @@ while true; do
     job="restore"
     wait_s=$r
   fi
-  # Sleep in the background so a stop signal is handled immediately.
-  sleep "$wait_s" &
-  sleeper=$!
-  wait "$sleeper" || true
-  sleeper=""
+  # Sleep in the background so a stop signal is handled immediately; manual backup requests
+  # are picked up between the steps.
+  sleep_until "$(($(date +%s) + wait_s))"
   if [[ "$job" == "backup" ]]; then
     run_job "nightly backup" "$SCRIPT_DIR/backup-nightly.sh" >/dev/null
   elif [[ "$RESTORE_TEST_DAY" -ne 0 && "$((10#$(date +%d)))" -eq "$RESTORE_TEST_DAY" ]]; then

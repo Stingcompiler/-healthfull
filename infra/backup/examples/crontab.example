@@ -13,5 +13,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # Restore test, 04:00 on the 1st of every month.
 0 4 1 * *   cd /opt/hospital-sys/infra && docker compose --env-file ../.env run --rm -T backup /opt/backup/restore-test.sh >>/var/log/hospital-backup.log 2>&1
 
+# Manual backups asked for on the status page ("Back up now"), checked every minute. flock keeps
+# one check at a time; the script itself claims each request only once.
+* * * * *   cd /opt/hospital-sys/infra && flock -n /run/hospital-backup-requests.lock docker compose --env-file ../.env run --rm -T backup /opt/backup/backup-requests.sh >>/var/log/hospital-backup.log 2>&1
+
 # Optional: copy the newest dump to a USB disk mounted at /mnt/usb-backup, 03:30 daily.
 # 30 3 * * *  rsync -a --delete /srv/hospital/backups/dumps/ /mnt/usb-backup/hospital-dumps/ >>/var/log/hospital-backup.log 2>&1

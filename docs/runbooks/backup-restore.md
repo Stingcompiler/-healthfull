@@ -72,6 +72,31 @@ infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-test.sh --dump
 The restore test restores into a scratch database, checks `RESTORE_TEST_REQUIRED` tables are
 non-empty, counts rows in `RESTORE_TEST_TABLES`, logs the result and drops the scratch database.
 
+### From the status page — من صفحة حالة النظام
+
+Administration > System status > "Back up now" (permission `ops.trigger_backup`, admins) does
+not run anything on the app server: it records a request (`ops_backuprequest`, status
+`pending`; one open request at a time). The backup service picks it up (ADR 0014):
+
+- With the sidecar (`BACKUP_SCHEDULER=sidecar`, the default) the scheduler runs
+  `/opt/backup/backup-requests.sh` every `BACKUP_REQUEST_POLL_SECONDS` (60) between its
+  nightly jobs, and once at start. Jobs never overlap: a nightly backup or restore test that
+  is running finishes first.
+- With host timers (`BACKUP_SCHEDULER=off`) install `hospital-backup-requests.{service,timer}`
+  or the per-minute crontab line from `infra/backup/examples/`.
+
+`backup-requests.sh` claims the oldest pending request (`FOR UPDATE SKIP LOCKED`), marks it
+`running`, runs `backup-nightly.sh --label manual-<id>` and writes `succeeded`, `partial` or
+`failed` back with the dump file and, on a problem, the last lines of the backup log. A request
+still `running` after `BACKUP_REQUEST_STALE_HOURS` (6; the service was stopped) is marked
+failed. The status page shows the request and, as for any backup, the run from
+`status/backup-runs.jsonl` with label `manual-<id>`. To check by hand:
+
+```bash
+infra/compose.sh run --rm --no-deps -T backup /opt/backup/backup-requests.sh   # one pending request
+infra/compose.sh logs --since 1h backup | grep requests
+```
+
 ## Off-site copy — نسخة خارج المركز
 
 Weekly, with two USB disks in rotation (one always outside the clinic):

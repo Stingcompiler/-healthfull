@@ -6,8 +6,13 @@
 #                    (the compose `migrate` service, which connects as the owner role; the
 #                    app itself connects as a role that cannot change the schema)
 #   manage ARGS      run any management command (e.g. manage createsuperuser)
-#   maintenance-loop run `manage.py maintenance` now and then every MAINTENANCE_INTERVAL_SECONDS
-#                    [86400] (the compose `maintenance` service)
+#   maintenance-loop run the maintenance cycle now and then every MAINTENANCE_INTERVAL_SECONDS
+#                    [3600] (the compose `maintenance` service). Each cycle, all idempotent:
+#                      manage.py maintenance        expired sessions, stale login throttles
+#                      manage.py notify_scan        time-based alerts (FEATURES 0.13), once a day
+#                      manage.py charge_bed_nights  passed bed nights of open admissions (10.5),
+#                                                   as BED_CHARGE_USER; skipped when it is unset
+#   maintenance-once one maintenance cycle, then exit
 #   anything else    exec as-is (e.g. bash)
 set -euo pipefail
 
@@ -38,6 +43,18 @@ is_true() {
     1 | true | yes | on) return 0 ;;
     *) return 1 ;;
   esac
+}
+
+maintenance_cycle() {
+  # Each job is idempotent and independent: one failing never skips the others.
+  python manage.py maintenance || echo "app-entrypoint: maintenance failed; retrying next cycle" >&2
+  python manage.py notify_scan || echo "app-entrypoint: notify_scan failed; retrying next cycle" >&2
+  if [[ -n "${BED_CHARGE_USER:-}" ]]; then
+    python manage.py charge_bed_nights --as "$BED_CHARGE_USER" ||
+      echo "app-entrypoint: charge_bed_nights failed; retrying next cycle" >&2
+  else
+    echo "app-entrypoint: BED_CHARGE_USER is not set; bed nights are charged from the bed board and at discharge only"
+  fi
 }
 
 cmd="${1:-serve}"
@@ -77,12 +94,16 @@ case "$cmd" in
     shift
     exec python manage.py "$@"
     ;;
+  maintenance-once)
+    wait_for_db
+    maintenance_cycle
+    ;;
   maintenance-loop)
     wait_for_db
-    interval="${MAINTENANCE_INTERVAL_SECONDS:-86400}"
-    case "$interval" in '' | *[!0-9]*) echo "app-entrypoint: bad MAINTENANCE_INTERVAL_SECONDS" >&2; exit 2 ;; esac
+    interval="${MAINTENANCE_INTERVAL_SECONDS:-3600}"
+    case "$interval" in '' | *[!0-9]* | 0) echo "app-entrypoint: bad MAINTENANCE_INTERVAL_SECONDS" >&2; exit 2 ;; esac
     while true; do
-      python manage.py maintenance || echo "app-entrypoint: maintenance failed; retrying next cycle" >&2
+      maintenance_cycle
       # Background sleep + wait: a stop signal ends the loop at once.
       sleep "$interval" &
       wait $!

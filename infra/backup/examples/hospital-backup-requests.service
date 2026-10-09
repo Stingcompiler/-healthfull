@@ -1,0 +1,16 @@
+# Picks up manual backups asked for on the status page ("Back up now", FEATURES 13.8) when the
+# host schedules the backups (BACKUP_SCHEDULER=off); the sidecar loop does this itself otherwise.
+# Install: cp hospital-backup-requests.{service,timer} /etc/systemd/system/
+#          systemctl daemon-reload && systemctl enable --now hospital-backup-requests.timer
+# Check:   journalctl -u hospital-backup-requests
+[Unit]
+Description=hospital-sys manual backup requests
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/hospital-sys/infra
+ExecStart=/usr/bin/docker compose --env-file ../.env run --rm -T backup /opt/backup/backup-requests.sh
+TimeoutStartSec=4h
+Nice=10

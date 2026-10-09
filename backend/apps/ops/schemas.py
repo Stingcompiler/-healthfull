@@ -114,8 +114,22 @@ class BackupRequestIn(Schema):
     note: str = Field("", max_length=200)
 
 
+class UpdateLogOut(Schema):
+    """One run of ``infra/update.sh`` from its status log (update-runs.jsonl)."""
+
+    status: str = Field(..., description="ok, failed or rolled_back")
+    from_tag: str
+    to_tag: str
+    started_at: datetime | None
+    finished_at: datetime | None
+    migrations_applied: bool
+    db_restored: bool
+    detail: str
+
+
 class UpdateHistoryOut(Schema):
     current_version: str
+    log: list[UpdateLogOut] = Field(..., description="The update script's log, newest first")
     items: list[UpdateRunOut]
     count: int
     page: int

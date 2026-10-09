@@ -54,6 +54,7 @@ __all__ = [
     "last_backup",
     "request_backup",
     "system_status",
+    "update_log",
     "update_runs",
 ]
 
@@ -393,5 +394,30 @@ def request_backup(*, actor: User, note: str = "") -> BackupRequest:
 
 
 def update_runs() -> QuerySet[UpdateRun]:
-    """Recorded updates, newest first (FEATURES 13.10; read-only)."""
+    """Recorded updates with their release notes, newest first (FEATURES 13.10; read-only)."""
     return UpdateRun.objects.select_related("started_by").order_by("-started_at", "-id")
+
+
+def update_log(limit: int = 20) -> list[dict[str, Any]]:
+    """The update script's own log (``update-runs.jsonl`` in ``BACKUP_STATUS_DIR``), newest
+    first: every update ``infra/update.sh`` ran, with its outcome (ok, failed, rolled_back)."""
+    folder = status_dir()
+    if folder is None:
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in _tail_lines(folder / "update-runs.jsonl"):
+        if line.get("type") != "update":
+            continue
+        rows.append(
+            {
+                "status": str(line.get("status") or "failed")[:20],
+                "from_tag": str(line.get("from_tag") or "")[:64],
+                "to_tag": str(line.get("to_tag") or "")[:64],
+                "started_at": _when(line.get("started_at")),
+                "finished_at": _when(line.get("finished_at")),
+                "migrations_applied": bool(line.get("migrations_applied")),
+                "db_restored": bool(line.get("db_restored")),
+                "detail": str(line.get("detail") or "")[:500],
+            }
+        )
+    return list(reversed(rows))[:limit]
