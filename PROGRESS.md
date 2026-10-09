@@ -9,7 +9,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merge to main pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
-| 5. Pharmacy, lab, procedures | not started | |
+| 5. Pharmacy, lab, procedures | pharmacy done on `feat/b-pharmacy` (wave b); lab and procedures not started | FEATURES 5.12, 8.1-8.10; follow-ups below |
 | 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3; claims, reports and ops not started |
 | 7. Patient portal | not started | |
 | 8. Hardening and handover | not started | |
@@ -125,6 +125,22 @@ Source of truth for build status. Update at the end of every task. Phases from `
   follow-up); the cashier screens format their own amounts with `MoneyText`.
 - The Phase 1 schema follow-up on `RefundMethod.bank_transfer` is unchanged: refunds are paid in
   cash from a credit note only.
+
+## Follow-ups (pharmacy, wave b)
+
+- FEATURES 8.13 (Excel import of items, batches and opening stock) is not built; the
+  `/administration/imports` section can link to it when it lands.
+- Dispense returns (`pharmacy.services.return_dispense`) have no endpoint or screen yet.
+- Stock lists show the item's generic name and strength (Latin, as printed on packs); the item
+  has no Arabic generic name. The queue, dispense dialog and sale use the bilingual service name.
+- A new walk-in customer gets a patient file without the duplicate check (the sale screen offers
+  "existing file" search first); reception merges duplicates later (FEATURES 1.4).
+- The walk-in sale screen sits under the pharmacy nav entry (pharmacy codes); a cashier, who
+  also holds `billing.pharmacy_sale`, reaches it by URL only.
+- An adjustment's batch picker lists batches with stock in the store; raising a batch that has
+  none there (found stock of an empty batch) needs a goods receipt or a transfer.
+- No dispense label or prescription print (FEATURES 0.10/0.11 with the device agent).
+- The Phase 1 `min_days_left` policy follow-up is unchanged (FEFO uses expiry >= today).
 
 ## Next: wave a (Phases 2-4)
 
@@ -249,3 +265,16 @@ including the full money cycle with a shift variance and a transfer rejected aft
   977 passed, 0 failed, 0 skipped (43.8 min). The first full run had 975 passed, 2 failed
   (the credit note message and the helpers payer set, both fixed above, then 7 of 7 passed in a
   rerun of `@cashier refund|@helpers factories`).
+- 2026-10-09: Pharmacy (wave b) on `feat/b-pharmacy` from `wave/b`: FEATURES 5.12, 8.1-8.10.
+  `/api/pharmacy` (46 operations: queries.py reads, desk.py commands, one `require_perm` each),
+  services extended (item edits and barcodes, suppliers, stock card, adjustment and transfer
+  requests refuse more than on hand); pharmacy screens under `src/features/pharmacy` (dispense
+  queue and dialog, items and item page, receipts, adjustments, counts and count sheet,
+  transfers, expiry, low stock, walk-in sale); batches are "التشغيلة" (also the batch-override
+  reason, core 0007 copy plus pharmacy migration 0004). Self-review fixed the item search
+  multiplying on-hand by pack units. Results: backend 1708 passed, ruff, mypy, eslint, prettier
+  and tsc clean, no missing migrations, API contract in sync; frontend 447 passed (run with
+  `--testTimeout=30000`: under a machine load of 30-45 the default 5 s timeout failed 1-6 tests
+  of the untouched shared DataTable/AppShell/KpiCard/radio-group suites, a different set each
+  run). `make e2e E2E_GREP=@pharmacy`: 7 passed; responsive matrix of the 12 pharmacy routes
+  plus the route registry: 217 passed.
