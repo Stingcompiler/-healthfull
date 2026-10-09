@@ -114,14 +114,35 @@ export function ClaimListPage() {
       />
       <ClaimsNav />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <Tabs
+        {/* Six statuses do not fit a phone's tab row: a select there, tabs from md up. */}
+        <Select
           value={status}
           onValueChange={(v) => {
             setStatus(v as ClaimStatus | typeof ALL);
             setPage(1);
           }}
         >
-          <TabsList aria-label={t("list.filter")} className="flex-wrap">
+          <SelectTrigger className="h-11 w-full md:hidden" aria-label={t("list.filter")}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>{t("list.all")}</SelectItem>
+            {CLAIM_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {t(`status.${s}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Tabs
+          value={status}
+          onValueChange={(v) => {
+            setStatus(v as ClaimStatus | typeof ALL);
+            setPage(1);
+          }}
+          className="hidden md:block"
+        >
+          <TabsList aria-label={t("list.filter")}>
             <TabsTrigger value={ALL}>{t("list.all")}</TabsTrigger>
             {CLAIM_STATUSES.map((s) => (
               <TabsTrigger key={s} value={s}>
