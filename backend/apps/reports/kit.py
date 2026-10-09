@@ -30,7 +30,7 @@ ColumnKind = Literal[
     "text", "code", "name", "money", "int", "days", "minutes", "percent", "date", "datetime"
 ]
 MetricTone = Literal["neutral", "primary", "success", "warning", "danger", "info"]
-FilterName = Literal["dates", "department", "user", "days"]
+FilterName = Literal["dates", "as_of", "department", "user", "days"]
 
 #: Longest period one report covers (a year and a day, for leap years).
 MAX_RANGE_DAYS = 366
@@ -168,6 +168,19 @@ def label(ar: str, en: str) -> Name:
 def m(value: Decimal | int | None) -> Decimal:
     """Money from a possibly empty aggregate."""
     return money(value if value is not None else ZERO)
+
+
+def as_int(value: Cell) -> int:
+    """An int cell (or a Decimal count) as ``int``; anything else counts as zero."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int | Decimal):
+        return int(value)
+    return 0
+
+
+def as_money(value: Cell) -> Decimal:
+    return money(value) if isinstance(value, Decimal) else ZERO
 
 
 def sum_column(rows: list[dict[str, Cell]], key: str) -> Decimal:

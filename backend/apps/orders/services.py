@@ -1255,47 +1255,64 @@ def _report_rows(qs: QuerySet[ServiceLine], since_field: str, limit: int) -> lis
             "ordered_by",
             "authorization__authorized_by",
             "authorization__reason_code",
-        )[: max(1, min(limit, 1000))]
+        )[: max(1, min(limit, 5000))]
     )
     return [AgedLine(ln, _age_days(getattr(ln, since_field), today)) for ln in rows]
 
 
-def report_requested_not_invoiced(*, min_age_days: int = 0, limit: int = 500) -> list[AgedLine]:
+def report_requested_not_invoiced(
+    *, min_age_days: int = 0, limit: int = 500, department: int | None = None
+) -> list[AgedLine]:
     """Ordered lines that never reached an approved invoice, oldest first (FEATURES 4.5).
 
     Open (pending), unbilled and not under a perform-first authorization (those are in
-    :func:`report_performed_by_authorization`), at least ``min_age_days`` old.
+    :func:`report_performed_by_authorization`), at least ``min_age_days`` old; optionally
+    of one performing ``department``.
     """
     qs = ServiceLine.objects.filter(
         billing_status=BillingStatus.UNBILLED,
         fulfilment_status=FulfilmentStatus.PENDING,
         authorization__isnull=True,
     )
+    if department is not None:
+        qs = qs.filter(department_id=department)
     if min_age_days > 0:
         qs = qs.filter(ordered_at__lte=timezone.now() - timedelta(days=min_age_days))
     return _report_rows(qs.order_by("ordered_at", "id"), "ordered_at", limit)
 
 
-def report_paid_not_performed(*, min_age_days: int = 0, limit: int = 500) -> list[AgedLine]:
+def report_paid_not_performed(
+    *, min_age_days: int = 0, limit: int = 500, department: int | None = None
+) -> list[AgedLine]:
     """Settled lines still waiting to be performed (the first leak of pay-first), oldest
-    settlement first; the age counts from settlement (FEATURES 4.5)."""
+    settlement first; the age counts from settlement (FEATURES 4.5). Optionally of one
+    performing ``department``."""
     qs = ServiceLine.objects.filter(
         billing_status=BillingStatus.SETTLED,
         fulfilment_status__in=[FulfilmentStatus.PENDING, FulfilmentStatus.IN_PROGRESS],
     )
+    if department is not None:
+        qs = qs.filter(department_id=department)
     if min_age_days > 0:
         qs = qs.filter(settled_at__lte=timezone.now() - timedelta(days=min_age_days))
     return _report_rows(qs.order_by("settled_at", "id"), "settled_at", limit)
 
 
 def report_performed_by_authorization(
-    *, date_from: date | None = None, date_to: date | None = None, limit: int = 500
+    *,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    limit: int = 500,
+    department: int | None = None,
 ) -> list[AgedLine]:
     """Lines performed under a perform-first authorization, newest first, with who allowed
-    them and why; the age counts from performance (FEATURES 4.5)."""
+    them and why; the age counts from performance (FEATURES 4.5). Optionally of one
+    performing ``department``."""
     qs = ServiceLine.objects.filter(
         fulfilment_status=FulfilmentStatus.PERFORMED, authorization__isnull=False
     )
+    if department is not None:
+        qs = qs.filter(department_id=department)
     if date_from is not None:
         qs = qs.filter(performed_at__date__gte=date_from)
     if date_to is not None:
