@@ -4,6 +4,7 @@ from django.contrib import admin
 
 from apps.clinical.models import (
     Allergy,
+    AllergyOverride,
     ChronicCondition,
     ClinicalNote,
     Diagnosis,
@@ -29,6 +30,13 @@ class AllergyAdmin(ReadOnlyAdmin[Allergy]):
     list_display = ("patient", "allergen_type", "substance", "drug_class", "severity", "status")
     list_filter = ("allergen_type", "severity", "status")
     search_fields = ("patient__file_no", "substance")
+
+
+@admin.register(AllergyOverride)
+class AllergyOverrideAdmin(ReadOnlyAdmin[AllergyOverride]):
+    list_display = ("service_line", "allergy", "match", "overridden_by", "overridden_at")
+    list_filter = ("match",)
+    search_fields = ("service_line__visit__number", "reason")
 
 
 @admin.register(ChronicCondition)

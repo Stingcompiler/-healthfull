@@ -28,7 +28,7 @@
 from __future__ import annotations
 
 import importlib
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -503,9 +503,24 @@ def enqueue(
         )
 
 
-def _move(entry: QueueEntry, to: str, actor: User, *, need_ready: bool = False) -> QueueEntry:
+def _move(
+    entry: QueueEntry,
+    to: str,
+    actor: User,
+    *,
+    need_ready: bool = False,
+    doctor: DoctorProfile | None = None,
+) -> QueueEntry:
+    """Move a queue entry; with ``doctor`` the entry is also claimed by that doctor.
+
+    The claim happens under the entry's row lock: an unassigned entry (and its visit, when
+    it has no doctor yet) is assigned to ``doctor``, so it leaves the other doctors' work
+    lists; an entry already assigned to someone else is refused (``QUEUE_OTHER_DOCTOR``).
+    """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"queue {to}"):
         locked = QueueEntry.objects.select_for_update().get(pk=entry.pk)
+        if doctor is not None and locked.doctor_id not in (None, doctor.pk):
+            raise DomainError("QUEUE_OTHER_DOCTOR", "This patient waits for another doctor")
         if to not in QUEUE_TRANSITIONS[locked.status]:
             raise DomainError(
                 "QUEUE_TRANSITION_INVALID",
@@ -520,6 +535,10 @@ def _move(entry: QueueEntry, to: str, actor: User, *, need_ready: bool = False) 
         now = timezone.now()
         locked.status = to
         fields = ["status"]
+        if doctor is not None and locked.doctor_id is None:
+            locked.doctor = doctor
+            fields.append("doctor")
+            Visit.objects.filter(pk=locked.visit_id, doctor__isnull=True).update(doctor=doctor)
         if to == QueueStatus.CALLED:
             locked.called_at, locked.called_by = now, actor
             fields += ["called_at", "called_by"]
@@ -533,12 +552,18 @@ def _move(entry: QueueEntry, to: str, actor: User, *, need_ready: bool = False) 
     return locked
 
 
-def call_patient(entry: QueueEntry, *, actor: User) -> QueueEntry:
-    return _move(entry, QueueStatus.CALLED, actor, need_ready=True)
+def call_patient(
+    entry: QueueEntry, *, actor: User, doctor: DoctorProfile | None = None
+) -> QueueEntry:
+    """Call the patient in; ``doctor`` claims an unassigned entry (see :func:`_move`)."""
+    return _move(entry, QueueStatus.CALLED, actor, need_ready=True, doctor=doctor)
 
 
-def start_consultation(entry: QueueEntry, *, actor: User) -> QueueEntry:
-    return _move(entry, QueueStatus.IN_PROGRESS, actor, need_ready=True)
+def start_consultation(
+    entry: QueueEntry, *, actor: User, doctor: DoctorProfile | None = None
+) -> QueueEntry:
+    """Start the consultation; ``doctor`` claims an unassigned entry (see :func:`_move`)."""
+    return _move(entry, QueueStatus.IN_PROGRESS, actor, need_ready=True, doctor=doctor)
 
 
 def finish_consultation(entry: QueueEntry, *, actor: User) -> QueueEntry:
@@ -1456,7 +1481,7 @@ def board_row(entry_id: int) -> QueueEntry:
     )
 
 
-_QUEUE_ACTIONS = {
+_QUEUE_ACTIONS: dict[str, Callable[..., QueueEntry]] = {
     "call": call_patient,
     "start": start_consultation,
     "finish": finish_consultation,

@@ -12,6 +12,11 @@ export interface ShortcutOptions {
   enabled?: boolean;
   /** Fire even when focus is in an input/textarea/select/contenteditable. */
   allowInInputs?: boolean;
+  /**
+   * Fire while a dialog is open. Page shortcuts stay quiet behind an open dialog (so Ctrl+Enter
+   * in a dialog's textarea never submits the page underneath); a dialog's own shortcuts set it.
+   */
+  allowInDialogs?: boolean;
   preventDefault?: boolean;
 }
 
@@ -88,6 +93,13 @@ export function comboLabels(combo: string, mac = isMac()): string[] {
   return keys;
 }
 
+const OPEN_DIALOG = '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]';
+
+/** Whether a dialog (modal, alert dialog, popover) is open on the page. */
+export function dialogOpen(doc: Document = document): boolean {
+  return doc.querySelector(OPEN_DIALOG) !== null;
+}
+
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -97,7 +109,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 export function useShortcut(
   combo: string | readonly string[],
   handler: (event: KeyboardEvent) => void,
-  { enabled = true, allowInInputs = false, preventDefault = true }: ShortcutOptions = {},
+  { enabled = true, allowInInputs = false, allowInDialogs = false, preventDefault = true }: ShortcutOptions = {},
 ): void {
   const handlerRef = useRef(handler);
   useEffect(() => {
@@ -115,6 +127,7 @@ export function useShortcut(
       if (!list.some((c) => matchesCombo(event, c))) return;
       const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
       if (!allowInInputs && !hasModifier && isEditableTarget(event.target)) return;
+      if (!allowInDialogs && dialogOpen()) return;
       if (preventDefault) event.preventDefault();
       handlerRef.current(event);
     };
@@ -122,5 +135,5 @@ export function useShortcut(
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [comboKey, enabled, allowInInputs, preventDefault]);
+  }, [comboKey, enabled, allowInInputs, allowInDialogs, preventDefault]);
 }

@@ -882,16 +882,18 @@ def _order_item(raw: object, index: int) -> dict[str, Any]:
         "[{service, quantity?, note?, pre_approval_ref?, prescription?}]. A prescription with "
         "dose_quantity, frequency_per_day and duration_days sets the quantity. As `doctor`."
     ),
-    params=("visit", "items", "acknowledge_allergies"),
+    params=("visit", "items", "acknowledge_allergies", "allergy_override_reason"),
 )
 def order(p: Params) -> Json:
     actor = p.actor("doctor")
     require_permission(actor, "orders.create")
     target = p.visit()
     items = [_order_item(raw, i) for i, raw in enumerate(p.items("items"))]
-    created = clinical.order_lines(
-        target, items, actor=actor, acknowledge_allergies=p.flag("acknowledge_allergies")
-    )
+    # An allergy conflict is overridden only with a reason (invariant 4).
+    reason = p.text("allergy_override_reason")
+    if not reason and p.flag("acknowledge_allergies"):
+        reason = "acknowledged (e2e fixture)"
+    created = clinical.order_lines(target, items, actor=actor, allergy_override_reason=reason)
     ids = [line.pk for line in created]
     qs = ServiceLine.objects.filter(pk__in=ids).select_related("service", "payer").order_by("id")
     return {"lines": [line_json(sl) for sl in qs]}

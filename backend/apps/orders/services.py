@@ -37,7 +37,7 @@ from __future__ import annotations
 import importlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from types import ModuleType
 from typing import Any
@@ -66,6 +66,9 @@ from domain.audit import Approval
 from domain.errors import DomainError
 
 __all__ = [
+    "ORDERABLE_KINDS",
+    "AgedLine",
+    "DoctorLine",
     "LineInput",
     "apply_credit",
     "apply_invoiced",
@@ -75,6 +78,8 @@ __all__ = [
     "cancel_line_remainder",
     "create_replacement",
     "create_service_lines",
+    "doctor_line",
+    "doctor_lines",
     "doctor_status",
     "given_units",
     "line_state",
@@ -83,13 +88,20 @@ __all__ = [
     "lock_patient",
     "open_units",
     "order_performed",
+    "orderable_services",
     "perform_line",
+    "report_paid_not_performed",
+    "report_performed_by_authorization",
+    "report_requested_not_invoiced",
     "revoke_authorization",
     "set_line_payer",
     "start_line",
     "sync_settlement",
     "whole_quantity",
+    "withdraw_order",
+    "withdraw_reasons",
     "worklist",
+    "worklist_lines",
 ]
 
 #: Kinds whose performing department falls back to the visit's department.
@@ -700,8 +712,16 @@ def cancel_line(
     note: str = "",
     open_refund: bool = True,
     approver: User | None = None,
+    require_unbilled: bool = False,
+    require_pending: bool = False,
 ) -> ServiceLine:
     """Cancel an open line with a reason (FEATURES 4.2, invariant 4).
+
+    With ``require_unbilled`` (the ordering side's withdrawal) a line found billed under the
+    row lock is refused with ``CREDIT_NOTE_REQUIRED`` instead of being credited, so an
+    invoice approved concurrently never routes through the credit-note path here. With
+    ``require_pending`` (the same withdrawal) a line already started, or with units given,
+    is refused with ``LINE_IN_PROGRESS``: the work list owns it from then on.
 
     * Unbilled: the line is cancelled and removed from any draft invoice (FLOW step 4: the
       patient refuses a test and it does not enter the invoice).
@@ -718,7 +738,7 @@ def cancel_line(
         DomainError: ``REASON_REQUIRED``, ``REASON_UNKNOWN``, ``REASON_NOTE_REQUIRED``,
             ``LINE_ALREADY_CANCELLED``, ``LINE_ALREADY_PERFORMED`` (credit a performed line
             instead), ``LINE_NOT_ELIGIBLE`` (dispensed units of an unpaid line: collect the
-            payment first), ``CLAIM_LINE_LOCKED``.
+            payment first), ``CLAIM_LINE_LOCKED``, ``LINE_IN_PROGRESS`` (``require_pending``).
     """
     reason_obj = resolve_reason(reason, "line_cancel", note)
     with (
@@ -730,7 +750,15 @@ def cancel_line(
         now = timezone.now()
         approval = _approval(actor, now, reason_obj, note)
         status = line_status(locked)
+        if require_unbilled and status.billing != dsl.BillingStatus.UNBILLED:
+            raise DomainError(
+                "CREDIT_NOTE_REQUIRED", "A billed order is withdrawn by a credit note at billing"
+            )
         given = given_units(locked) if status.fulfilment in dsl.ACTIVE_FULFILMENT else 0
+        if require_pending and (status.fulfilment == dsl.FulfilmentStatus.IN_PROGRESS or given > 0):
+            raise DomainError(
+                "LINE_IN_PROGRESS", "The order is already under way and is no longer withdrawn"
+            )
         if given > 0:
             _perform(locked, actor, performed_quantity=given, note=note, at=now)
             return _cancel_remainder(
@@ -944,3 +972,266 @@ def create_replacement(line: ServiceLine, *, approval: Approval, actor: User) ->
         authorization=auth,
         **performed,
     )
+
+
+# --- the doctor's view (FEATURES 3.5, 3.7, 4.1, 4.2; no prices) ------------------------------
+
+#: Kinds a doctor orders from the catalog (the consultation fee and bed days are automatic).
+ORDERABLE_KINDS: tuple[str, ...] = (
+    ServiceKind.LAB,
+    ServiceKind.PROCEDURE,
+    ServiceKind.DRUG,
+    ServiceKind.CONSUMABLE,
+)
+
+
+def orderable_services(
+    query: str = "", *, kinds: Sequence[str] | None = None, limit: int = 30
+) -> list[Service]:
+    """Active catalog services a doctor may order, by code prefix or words of the name.
+
+    Words match the Arabic or English name, or a drug's generic or brand name, folded like
+    patient search (hamza, ta marbuta, case). Drugs carry their stock item (form, strength,
+    base unit, classes) for the prescription builder. Never prices (FEATURES 3.8).
+
+    Raises:
+        DomainError: ``INVALID_KIND`` for a kind outside :data:`ORDERABLE_KINDS`.
+    """
+    from apps.core.db import NormalizeText
+    from apps.patients import services as patient_services
+
+    wanted = list(kinds) if kinds else list(ORDERABLE_KINDS)
+    unknown = sorted(set(wanted) - set(ORDERABLE_KINDS))
+    if unknown:
+        raise DomainError("INVALID_KIND", "These kinds cannot be ordered", kinds=unknown)
+    qs: QuerySet[Service] = Service.objects.filter(active=True, kind__in=wanted)
+    term = " ".join(query.split())
+    if term:
+        words = [w for w in patient_services.normalize_text(term).split(" ") if w]
+        name_match = Q()
+        for word in words:
+            name_match &= (
+                Q(ar__contains=word)
+                | Q(en__contains=word)
+                | Q(drug_generic__contains=word)
+                | Q(drug_brand__contains=word)
+            )
+        qs = qs.annotate(
+            ar=NormalizeText("name_ar"),
+            en=NormalizeText("name_en"),
+            drug_generic=NormalizeText("stock_item__generic_name"),
+            drug_brand=NormalizeText("stock_item__brand_name"),
+        ).filter(Q(code__istartswith=term.replace(" ", "")) | name_match)
+    return list(
+        qs.select_related("department", "stock_item")
+        .prefetch_related("stock_item__drug_classes")
+        .order_by("kind", "sort_order", "code")[: max(1, min(limit, 100))]
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class DoctorLine:
+    """One order of a visit as its doctor sees it: progress, never prices (FEATURES 3.7)."""
+
+    line: ServiceLine
+    status: dsl.DoctorStatus
+    can_cancel: bool
+    result: Any | None
+
+
+def _cancellable_by_orderer(line: ServiceLine) -> bool:
+    """Only a line that has not reached the cashier: unbilled, pending, nothing given."""
+    return (
+        line.billing_status == BillingStatus.UNBILLED
+        and line.fulfilment_status == FulfilmentStatus.PENDING
+        and not line.dispense_lines.all()
+    )
+
+
+def doctor_lines(visit: Visit) -> list[DoctorLine]:
+    """The visit's clinical orders (lab, procedure, drug, consumable), oldest first, with the
+    doctor's status and the approved lab result inline (FEATURES 3.7). No prices."""
+    from apps.lab.models import ResultStatus, ResultVersion
+
+    lines = list(
+        ServiceLine.objects.filter(visit=visit, kind__in=ORDERABLE_KINDS)
+        .select_related(
+            "service",
+            "authorization",
+            "prescription",
+            "ordered_by",
+            "cancel_reason",
+            "cancelled_by",
+        )
+        .prefetch_related("allergy_overrides__overridden_by", "dispense_lines")
+        .order_by("id")
+    )
+    results = {
+        v.result_set.service_line_id: v
+        for v in ResultVersion.objects.filter(
+            result_set__service_line__in=lines, status=ResultStatus.APPROVED
+        )
+        .select_related("result_set__test__service", "result_set__service_line")
+        .prefetch_related("values__parameter")
+    }
+    return [
+        DoctorLine(
+            line=ln,
+            status=doctor_status(ln),
+            can_cancel=_cancellable_by_orderer(ln),
+            result=results.get(ln.pk),
+        )
+        for ln in lines
+    ]
+
+
+def doctor_line(line: ServiceLine) -> DoctorLine:
+    """One line in the doctor's view (after an order or a cancellation).
+
+    Raises:
+        DomainError: ``LINE_NOT_CLINICAL`` (a consultation fee or bed day).
+    """
+    found = [d for d in doctor_lines(line.visit) if d.line.pk == line.pk]
+    if not found:
+        raise DomainError("LINE_NOT_CLINICAL", "This line is not a clinical order")
+    return found[0]
+
+
+def withdraw_order(line: ServiceLine, *, reason: str, note: str, actor: User) -> DoctorLine:
+    """Withdraw an order that has not reached the cashier, with a reason (FEATURES 4.2).
+
+    A billed order is credited by billing instead; the ordering side never moves money. Only
+    a line ``can_withdraw`` shows is withdrawn: unbilled, not started and nothing given (one
+    under a perform-first authorization that is under way belongs to its work list). The
+    early checks give a fast answer; ``cancel_line`` repeats them under the row lock.
+
+    The answer is the doctor's line view (prescription, approved result, allergy override
+    reasons), part of the clinical record (ADR 0007 a), so the actor also needs
+    ``clinical.view``: a cashier or pharmacist cancels lines through their own modules.
+
+    Raises:
+        PermissionRequired: the actor lacks ``clinical.view``.
+        DomainError: ``CREDIT_NOTE_REQUIRED``, ``LINE_NOT_CLINICAL``, ``LINE_IN_PROGRESS``,
+            ``LINE_ALREADY_CANCELLED``, ``LINE_ALREADY_PERFORMED``, the reason errors.
+    """
+    require_permission(actor, "clinical.view")
+    if line.kind not in ORDERABLE_KINDS:
+        raise DomainError("LINE_NOT_CLINICAL", "This line is not a clinical order")
+    if line.billing_status != BillingStatus.UNBILLED:
+        raise DomainError(
+            "CREDIT_NOTE_REQUIRED", "A billed order is withdrawn by a credit note at billing"
+        )
+    if line.fulfilment_status == FulfilmentStatus.IN_PROGRESS:
+        raise DomainError(
+            "LINE_IN_PROGRESS", "The order is already under way and is no longer withdrawn"
+        )
+    cancel_line(
+        line,
+        reason,
+        actor,
+        note=note,
+        open_refund=False,
+        require_unbilled=True,
+        require_pending=True,
+    )
+    return doctor_line(line)
+
+
+def withdraw_reasons() -> list[ReasonCode]:
+    """The active line cancellation reasons a withdrawal chooses from (FEATURES 4.2)."""
+    return list(
+        ReasonCode.objects.filter(category="line_cancel", active=True).order_by(
+            "sort_order", "code"
+        )
+    )
+
+
+def worklist_lines(kinds: Sequence[str], *, department: int | None = None) -> list[ServiceLine]:
+    """A department's work list (FEATURES 4.3): only lines it may work on now (invariant 1).
+
+    Raises:
+        DomainError: ``INVALID_KIND``.
+    """
+    unknown = sorted(set(kinds) - set(ServiceKind.values))
+    if not kinds or unknown:
+        raise DomainError("INVALID_KIND", "Unknown service kinds", kinds=unknown)
+    return list(
+        worklist(kinds, department=department).select_related(
+            "visit__patient", "department", "prescription"
+        )[:500]
+    )
+
+
+# --- exception reports (FEATURES 4.5, 12.2) --------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class AgedLine:
+    """A line in an exception report with its age in whole days."""
+
+    line: ServiceLine
+    age_days: int
+
+
+def _age_days(since: datetime | None, today: date) -> int:
+    if since is None:
+        return 0
+    return max(0, (today - timezone.localdate(since)).days)
+
+
+def _report_rows(qs: QuerySet[ServiceLine], since_field: str, limit: int) -> list[AgedLine]:
+    today = timezone.localdate()
+    rows = list(
+        qs.select_related(
+            "visit__patient",
+            "service",
+            "department",
+            "ordered_by",
+            "authorization__authorized_by",
+            "authorization__reason_code",
+        )[: max(1, min(limit, 1000))]
+    )
+    return [AgedLine(ln, _age_days(getattr(ln, since_field), today)) for ln in rows]
+
+
+def report_requested_not_invoiced(*, min_age_days: int = 0, limit: int = 500) -> list[AgedLine]:
+    """Ordered lines that never reached an approved invoice, oldest first (FEATURES 4.5).
+
+    Open (pending), unbilled and not under a perform-first authorization (those are in
+    :func:`report_performed_by_authorization`), at least ``min_age_days`` old.
+    """
+    qs = ServiceLine.objects.filter(
+        billing_status=BillingStatus.UNBILLED,
+        fulfilment_status=FulfilmentStatus.PENDING,
+        authorization__isnull=True,
+    )
+    if min_age_days > 0:
+        qs = qs.filter(ordered_at__lte=timezone.now() - timedelta(days=min_age_days))
+    return _report_rows(qs.order_by("ordered_at", "id"), "ordered_at", limit)
+
+
+def report_paid_not_performed(*, min_age_days: int = 0, limit: int = 500) -> list[AgedLine]:
+    """Settled lines still waiting to be performed (the first leak of pay-first), oldest
+    settlement first; the age counts from settlement (FEATURES 4.5)."""
+    qs = ServiceLine.objects.filter(
+        billing_status=BillingStatus.SETTLED,
+        fulfilment_status__in=[FulfilmentStatus.PENDING, FulfilmentStatus.IN_PROGRESS],
+    )
+    if min_age_days > 0:
+        qs = qs.filter(settled_at__lte=timezone.now() - timedelta(days=min_age_days))
+    return _report_rows(qs.order_by("settled_at", "id"), "settled_at", limit)
+
+
+def report_performed_by_authorization(
+    *, date_from: date | None = None, date_to: date | None = None, limit: int = 500
+) -> list[AgedLine]:
+    """Lines performed under a perform-first authorization, newest first, with who allowed
+    them and why; the age counts from performance (FEATURES 4.5)."""
+    qs = ServiceLine.objects.filter(
+        fulfilment_status=FulfilmentStatus.PERFORMED, authorization__isnull=False
+    )
+    if date_from is not None:
+        qs = qs.filter(performed_at__date__gte=date_from)
+    if date_to is not None:
+        qs = qs.filter(performed_at__date__lte=date_to)
+    return _report_rows(qs.order_by("-performed_at", "-id"), "performed_at", limit)

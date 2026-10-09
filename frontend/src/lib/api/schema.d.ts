@@ -553,6 +553,297 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clinical/allergies/{allergy_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Resolve an allergy, mark it entered in error, or change severity, reaction, note
+         * @description The allergen never changes; a wrong entry is marked entered_in_error, which needs a reason (409 REASON_REQUIRED) kept with who and when in the audit history.
+         */
+        patch: operations["clinical_update_allergy"];
+        trace?: never;
+    };
+    "/api/clinical/conditions/{condition_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Resolve a chronic condition, mark it entered in error, or change its note
+         * @description Marking it entered_in_error needs a reason (409 REASON_REQUIRED).
+         */
+        patch: operations["clinical_update_condition"];
+        trace?: never;
+    };
+    "/api/clinical/diagnoses/{diagnosis_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Withdraw a diagnosis recorded in error (its author, while the visit is open)
+         * @description The body states why (409 REASON_REQUIRED); the audit history keeps the row with who, when and why. 409 VISIT_NOT_OPEN, DIAGNOSIS_NOT_AUTHOR.
+         */
+        delete: operations["clinical_delete_diagnosis"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/drug-classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active drug classes, for recording a class allergy */
+        get: operations["clinical_list_drug_classes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/icd10": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ICD-10 lookup by code prefix (dot optional) or by words of the title (ar/en) */
+        get: operations["clinical_search_icd10"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the actor's own draft note
+         * @description 409 NOTE_SIGNED (write a new note), NOTE_NOT_AUTHOR.
+         */
+        patch: operations["clinical_update_note"];
+        trace?: never;
+    };
+    "/api/clinical/notes/{note_id}/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign a draft note; a signed note never changes
+         * @description 409 NOTE_SIGNED, NOTE_NOT_AUTHOR, NOTE_EMPTY.
+         */
+        post: operations["clinical_sign_note"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/order-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shared order sets of the doctor's department and the doctor's own favorites */
+        get: operations["clinical_list_order_sets"];
+        put?: never;
+        /**
+         * Save a group of orders as one of the doctor's favorites
+         * @description 409 NAME_REQUIRED, ORDER_EMPTY, SERVICE_INACTIVE.
+         */
+        post: operations["clinical_create_favorite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/order-sets/{order_set_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove one of the doctor's favorites
+         * @description 409 ORDER_SET_NOT_OWNER, ORDER_SET_INACTIVE.
+         */
+        delete: operations["clinical_delete_favorite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/patients/{patient_id}/allergies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The person's allergy registry: active first, then resolved */
+        get: operations["clinical_list_allergies"];
+        put?: never;
+        /**
+         * Record an allergy (drug, drug class, food, environmental or other)
+         * @description 409 DRUG_CLASS_REQUIRED, DRUG_CLASS_INACTIVE, ALLERGEN_REQUIRED.
+         */
+        post: operations["clinical_create_allergy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/patients/{patient_id}/allergy-alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Active allergies matching drugs of an order being written (a warning only)
+         * @description service_ids may repeat (up to 100). Placing the order still refuses a match with 409 ALLERGY_CONFLICT unless an override reason is given.
+         */
+        get: operations["clinical_list_allergy_alerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/patients/{patient_id}/conditions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The person's chronic conditions: active first, then resolved */
+        get: operations["clinical_list_conditions"];
+        put?: never;
+        /**
+         * Record a chronic condition by ICD-10 code, by name, or both
+         * @description 409 CONDITION_NAME_REQUIRED, ICD10_UNKNOWN.
+         */
+        post: operations["clinical_create_condition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/patients/{patient_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The person's visits, newest first, with diagnoses, notes and orders */
+        get: operations["clinical_list_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/patients/{patient_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Approved lab results of the person (or of one visit), newest first
+         * @description Only approved results show; drafts never reach a doctor (FEATURES 9.4).
+         */
+        get: operations["clinical_list_results"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/patients/{patient_id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What a doctor sees on opening a file: allergies, chronic conditions, active medications, last 5 visits, latest approved results */
+        get: operations["clinical_get_patient_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clinical/ping": {
         parameters: {
             query?: never;
@@ -564,6 +855,200 @@ export interface paths {
         get: operations["clinical_get_ping"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/referral-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Departments and doctors a patient can be referred to inside the center */
+        get: operations["clinical_get_referral_targets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/referrals/{referral_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel an issued referral with a reason (its author, while the visit is open)
+         * @description The reason, who and when are stored on the referral. 409 REASON_REQUIRED, REFERRAL_CLOSED, REFERRAL_NOT_AUTHOR, VISIT_NOT_OPEN.
+         */
+        post: operations["clinical_cancel_referral"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/visits/{visit_id}/diagnoses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a diagnosis: an ICD-10 code, free text, or both
+         * @description 409 ICD10_UNKNOWN, DIAGNOSIS_REQUIRED, NOTE_NOT_ON_VISIT, VISIT_NOT_OPEN.
+         */
+        post: operations["clinical_create_diagnosis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/visits/{visit_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a draft clinical note: complaint, history, examination, assessment, plan
+         * @description 409 VISIT_NOT_OPEN.
+         */
+        post: operations["clinical_create_note"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/visits/{visit_id}/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Referral note to another department or an external facility
+         * @description 409 DEPARTMENT_REQUIRED, FACILITY_REQUIRED, REASON_REQUIRED, VISIT_NOT_OPEN.
+         */
+        post: operations["clinical_create_referral"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/visits/{visit_id}/vitals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record vital signs (every measure optional, at least one)
+         * @description 409 VITALS_EMPTY, VITALS_OUT_OF_RANGE, BP_INCOMPLETE, VISIT_NOT_OPEN.
+         */
+        post: operations["clinical_create_vitals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/visits/{visit_id}/workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit as its doctor works on it: header, queue state, notes, diagnoses, vitals and referrals */
+        get: operations["clinical_get_workspace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/worklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Today's queue of the logged-in doctor: ready patients in serving order
+         * @description Paid (or authorized) visits assigned to the doctor or unassigned in the doctor's department: waiting, called and with the doctor first, then the ones seen today. Empty for a user without a doctor profile.
+         */
+        get: operations["clinical_list_worklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/worklist/call-next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Call the first waiting patient of the doctor's queue
+         * @description 409 DOCTOR_PROFILE_REQUIRED, QUEUE_EMPTY.
+         */
+        post: operations["clinical_call_next"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/worklist/{entry_id}/action": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Call, start, complete, mark no-show or requeue one of the doctor's patients
+         * @description Completing performs the consultation line and needs visits.finish_consultation (403 otherwise); the visit stays open for its orders. 409 DOCTOR_PROFILE_REQUIRED, QUEUE_OTHER_DOCTOR, QUEUE_TRANSITION_INVALID, QUEUE_NOT_READY.
+         */
+        post: operations["clinical_queue_action"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1179,6 +1664,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Services a doctor may order (lab, procedure, drug, consumable), without prices
+         * @description Search by code prefix or words of the Arabic or English name.
+         */
+        get: operations["orders_list_catalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/frequencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prescription frequency codes and their doses per day */
+        get: operations["orders_list_frequencies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/lines/{line_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw an order that has not reached the cashier, with a reason
+         * @description A billed order is cancelled by a credit note at billing (409 CREDIT_NOTE_REQUIRED); one already started or partly given belongs to its work list (409 LINE_IN_PROGRESS). The answer is the doctor's clinical line view, so the caller also needs clinical.view (403 otherwise). Also 409 LINE_NOT_CLINICAL, LINE_ALREADY_CANCELLED, LINE_ALREADY_PERFORMED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.
+         */
+        post: operations["orders_withdraw_line"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/ping": {
         parameters: {
             query?: never;
@@ -1188,6 +1730,87 @@ export interface paths {
         };
         /** Check that the /api/orders router is reachable */
         get: operations["orders_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/prescription-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The quantity a prescription would order: ceil(dose x doses per day x days)
+         * @description quantity is null when it cannot be counted (as needed, no dose quantity, no duration). 409 UNKNOWN_FREQUENCY, FREQUENCY_MISMATCH, INVALID_PRESCRIPTION.
+         */
+        post: operations["orders_preview_prescription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/visits/{visit_id}/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Estimated patient share of a draft order at today's prices (center option)
+         * @description FEATURES 3.8: the only doctor-facing money. 409 ESTIMATED_COST_DISABLED unless the center turns it on; 403 without clinical.view_estimated_cost. Also 409 PRICE_NOT_FOUND, NO_EFFECTIVE_PRICE_LIST and the prescription errors of ordering.
+         */
+        post: operations["orders_estimate_cost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/visits/{visit_id}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A visit's orders in the doctor's view: status per line, approved results inline
+         * @description Clinical content (prescriptions, approved results, allergy override reasons): restricted to clinical.view holders like the rest of the clinical record.
+         */
+        get: operations["orders_list_visit_lines"];
+        put?: never;
+        /**
+         * Order lab tests, procedures and drugs on a visit
+         * @description A drug with dose quantity, frequency and duration gets its quantity computed; an as-needed one needs a quantity. A drug matching an active allergy is refused with 409 ALLERGY_CONFLICT (details.alerts: service_id, allergy_id, match, severity, allergen, allergen_ar) unless allergy_override_reason is given; the override is stored with who and when. Also 409 VISIT_NOT_OPEN, SERVICE_INACTIVE, QUANTITY_REQUIRED, PRESCRIPTION_NOT_DRUG, UNKNOWN_FREQUENCY, FREQUENCY_MISMATCH, INVALID_PRESCRIPTION.
+         */
+        post: operations["orders_create_lines"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/withdraw-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reasons a doctor chooses from to withdraw an order */
+        get: operations["orders_list_withdraw_reasons"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1888,6 +2511,83 @@ export interface components {
             /** Doctor Id */
             doctor_id: number;
         };
+        /**
+         * AllergyAlertOut
+         * @description An active allergy matching a drug being written (same as ALLERGY_CONFLICT details).
+         */
+        AllergyAlertOut: {
+            /** Allergen */
+            allergen: string;
+            /** Allergen Ar */
+            allergen_ar: string;
+            /** Allergy Id */
+            allergy_id: number;
+            /**
+             * Match
+             * @enum {string}
+             */
+            match: "item" | "drug_class" | "substance";
+            /** Service Id */
+            service_id: number;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "mild" | "moderate" | "severe" | "life_threatening";
+        };
+        /** AllergyAlertParams */
+        AllergyAlertParams: {
+            /** Service Ids */
+            service_ids?: number[];
+        };
+        /**
+         * AllergyChipOut
+         * @description An active allergy as a prominent chip (PatientCard).
+         */
+        AllergyChipOut: {
+            /** Id */
+            id: number;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "mild" | "moderate" | "severe" | "life_threatening";
+        };
+        /** AllergyIn */
+        AllergyIn: {
+            /**
+             * Allergen Type
+             * @enum {string}
+             */
+            allergen_type: "drug" | "drug_class" | "food" | "environmental" | "other";
+            /** Drug Class Id */
+            drug_class_id?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Reaction
+             * @default
+             */
+            reaction: string;
+            /**
+             * Severity
+             * @default moderate
+             * @enum {string}
+             */
+            severity: "mild" | "moderate" | "severe" | "life_threatening";
+            /**
+             * Substance
+             * @default
+             */
+            substance: string;
+        };
         /** AllergyOut */
         AllergyOut: {
             /** Label Ar */
@@ -1896,6 +2596,37 @@ export interface components {
             label_en: string;
             /** Severity */
             severity: string;
+        };
+        /** AllergyOverrideOut */
+        AllergyOverrideOut: {
+            /** Allergy Id */
+            allergy_id: number;
+            /** Match */
+            match: string;
+            /**
+             * Overridden At
+             * Format: date-time
+             */
+            overridden_at: string;
+            overridden_by: components["schemas"]["ClinicUserRefOut"] | null;
+            /** Reason */
+            reason: string;
+        };
+        /** AllergyPatch */
+        AllergyPatch: {
+            /** Note */
+            note?: string | null;
+            /** Reaction */
+            reaction?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /** Severity */
+            severity?: ("mild" | "moderate" | "severe" | "life_threatening") | null;
+            /** Status */
+            status?: ("active" | "inactive" | "entered_in_error") | null;
         };
         /**
          * AppointmentCancelIn
@@ -2132,6 +2863,35 @@ export interface components {
             /** Doctor Id */
             doctor_id?: number | null;
         };
+        /** CancellationOut */
+        CancellationOut: {
+            /** Cancelled At */
+            cancelled_at: string | null;
+            cancelled_by: components["schemas"]["ClinicUserRefOut"] | null;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Note */
+            note: string;
+            /** Reason Code */
+            reason_code: string | null;
+        };
+        /** CatalogParams */
+        CatalogParams: {
+            /** Kind */
+            kind?: ("lab" | "procedure" | "drug" | "consumable") | null;
+            /**
+             * Limit
+             * @default 30
+             */
+            limit: number;
+            /**
+             * Q
+             * @default
+             */
+            q: string;
+        };
         /** CategoryIn */
         CategoryIn: {
             /** Code */
@@ -2274,6 +3034,99 @@ export interface components {
              * @default true
              */
             use_default_coverage: boolean;
+        };
+        /** ClinicPatientOut */
+        ClinicPatientOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** Dob Is Estimated */
+            dob_is_estimated: boolean;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Is Incomplete */
+            is_incomplete: boolean;
+            /** Phone */
+            phone: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "male" | "female";
+        };
+        /** ClinicPayerRefOut */
+        ClinicPayerRefOut: {
+            /** Code */
+            code: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** ClinicUserRefOut */
+        ClinicUserRefOut: {
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** ConditionIn */
+        ConditionIn: {
+            /** Icd10 Code */
+            icd10_code?: string | null;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Since */
+            since?: string | null;
+        };
+        /** ConditionOut */
+        ConditionOut: {
+            icd10: components["schemas"]["Icd10Out"] | null;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Since */
+            since: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "inactive" | "entered_in_error";
+        };
+        /** ConditionPatch */
+        ConditionPatch: {
+            /** Note */
+            note?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /** Status */
+            status?: ("active" | "inactive" | "entered_in_error") | null;
         };
         /** ConfirmIn */
         ConfirmIn: {
@@ -2600,6 +3453,65 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /** DepartmentRefOut */
+        DepartmentRefOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** DiagnosisIn */
+        DiagnosisIn: {
+            /**
+             * Certainty
+             * @default provisional
+             * @enum {string}
+             */
+            certainty: "provisional" | "confirmed";
+            /** Icd10 Code */
+            icd10_code?: string | null;
+            /**
+             * Kind
+             * @default primary
+             * @enum {string}
+             */
+            kind: "primary" | "secondary";
+            /** Note Id */
+            note_id?: number | null;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+        };
+        /** DiagnosisOut */
+        DiagnosisOut: {
+            /**
+             * Certainty
+             * @enum {string}
+             */
+            certainty: "provisional" | "confirmed";
+            icd10: components["schemas"]["Icd10Out"] | null;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "primary" | "secondary";
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            recorded_by: components["schemas"]["ClinicUserRefOut"] | null;
+            /** Text */
+            text: string;
+        };
         /**
          * DisplayEntryOut
          * @description A token on the waiting-room screen: abbreviated name only.
@@ -2665,6 +3577,53 @@ export interface components {
             /** User Id */
             user_id: number;
         };
+        /**
+         * DoctorLineOut
+         * @description One order of a visit as its doctor sees it (FEATURES 3.7). No prices.
+         */
+        DoctorLineOut: {
+            /** Allergy Overrides */
+            allergy_overrides: components["schemas"]["AllergyOverrideOut"][];
+            /** Authorized */
+            authorized: boolean;
+            /** Can Withdraw */
+            can_withdraw: boolean;
+            cancellation: components["schemas"]["CancellationOut"] | null;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "lab" | "procedure" | "drug" | "consumable";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Note */
+            note: string;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            ordered_by: components["schemas"]["ClinicUserRefOut"] | null;
+            prescription: components["schemas"]["PrescriptionOut"] | null;
+            /** Quantity */
+            quantity: string;
+            result: components["schemas"]["ResultOut"] | null;
+            /** Service Code */
+            service_code: string;
+            /** Service Id */
+            service_id: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "requested" | "paid" | "in_progress" | "done" | "cancelled";
+            /** Visit Id */
+            visit_id: number;
+        };
         /** DoctorListParams */
         DoctorListParams: {
             /** Active */
@@ -2713,6 +3672,56 @@ export interface components {
             specialty_ar?: string | null;
             /** Specialty En */
             specialty_en?: string | null;
+        };
+        /** DoctorRefOut */
+        DoctorRefOut: {
+            /** Department Id */
+            department_id: number;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** DrugClassOut */
+        DrugClassOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** DrugClassRefOut */
+        DrugClassRefOut: {
+            /** Code */
+            code: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** DrugInfoOut */
+        DrugInfoOut: {
+            /** Base Unit Code */
+            base_unit_code: string;
+            /** Base Unit Name Ar */
+            base_unit_name_ar: string;
+            /** Base Unit Name En */
+            base_unit_name_en: string;
+            /** Brand Name */
+            brand_name: string;
+            /** Classes */
+            classes: components["schemas"]["DrugClassRefOut"][];
+            /** Form */
+            form: string;
+            /** Generic Name */
+            generic_name: string;
+            /** Strength */
+            strength: string;
         };
         /** DuplicateOut */
         DuplicateOut: {
@@ -2806,6 +3815,31 @@ export interface components {
              */
             message: string;
         };
+        /** EstimateIn */
+        EstimateIn: {
+            /** Items */
+            items: components["schemas"]["OrderItemIn"][];
+        };
+        /**
+         * EstimateOut
+         * @description The patient's estimated share of a draft order (FEATURES 3.8): shown to a doctor only
+         *     when the center turns it on and the doctor holds clinical.view_estimated_cost.
+         */
+        EstimateOut: {
+            /** Lines */
+            lines: components["schemas"]["EstimatedLineOut"][];
+            /** Total */
+            total: string;
+        };
+        /** EstimatedLineOut */
+        EstimatedLineOut: {
+            /** Patient Share */
+            patient_share: string;
+            /** Quantity */
+            quantity: number;
+            /** Service Id */
+            service_id: number;
+        };
         /** ExclusionIn */
         ExclusionIn: {
             /**
@@ -2844,6 +3878,13 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** FrequencyOut */
+        FrequencyOut: {
+            /** Code */
+            code: string;
+            /** Per Day */
+            per_day: string | null;
+        };
         /** HealthOut */
         HealthOut: {
             /**
@@ -2863,6 +3904,55 @@ export interface components {
             time: string;
             /** Version */
             version: string;
+        };
+        /** HistoryLineOut */
+        HistoryLineOut: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Quantity */
+            quantity: string;
+            /** Service Code */
+            service_code: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "requested" | "paid" | "in_progress" | "done" | "cancelled";
+        };
+        /** HistoryVisitOut */
+        HistoryVisitOut: {
+            /** Diagnoses */
+            diagnoses: components["schemas"]["DiagnosisOut"][];
+            /** Lines */
+            lines: components["schemas"]["HistoryLineOut"][];
+            /** Notes */
+            notes: components["schemas"]["NoteOut"][];
+            visit: components["schemas"]["VisitBriefOut"];
+        };
+        /** Icd10Out */
+        Icd10Out: {
+            /** Code */
+            code: string;
+            /** Title Ar */
+            title_ar: string;
+            /** Title En */
+            title_en: string;
+        };
+        /** Icd10SearchParams */
+        Icd10SearchParams: {
+            /**
+             * Limit
+             * @default 20
+             */
+            limit: number;
+            /** Q */
+            q: string;
         };
         /** ImportJobOut */
         ImportJobOut: {
@@ -3074,6 +4164,35 @@ export interface components {
             username: string;
         };
         /**
+         * MedicationOut
+         * @description A recent drug order (FEATURES 3.1 active medications). No prices.
+         */
+        MedicationOut: {
+            /** Dose */
+            dose: string;
+            /** Duration Days */
+            duration_days: number | null;
+            /** Frequency Code */
+            frequency_code: string;
+            /** Line Id */
+            line_id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            /** Quantity */
+            quantity: string;
+            /** Service Code */
+            service_code: string;
+            /** Visit Id */
+            visit_id: number;
+        };
+        /**
          * MergeIn
          * @description Merge ``duplicate_id`` into this (surviving) file (FEATURES 1.4).
          */
@@ -3124,6 +4243,82 @@ export interface components {
             /** Requires Note */
             requires_note: boolean;
         };
+        /** NoteIn */
+        NoteIn: {
+            /**
+             * Assessment
+             * @default
+             */
+            assessment: string;
+            /**
+             * Complaint
+             * @default
+             */
+            complaint: string;
+            /**
+             * Examination
+             * @default
+             */
+            examination: string;
+            /**
+             * History
+             * @default
+             */
+            history: string;
+            /**
+             * Plan
+             * @default
+             */
+            plan: string;
+        };
+        /** NoteOut */
+        NoteOut: {
+            /** Assessment */
+            assessment: string;
+            author: components["schemas"]["ClinicUserRefOut"] | null;
+            /** Complaint */
+            complaint: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Examination */
+            examination: string;
+            /** History */
+            history: string;
+            /** Id */
+            id: number;
+            /** Plan */
+            plan: string;
+            /** Signed At */
+            signed_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "signed";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Visit Id */
+            visit_id: number;
+        };
+        /** NotePatch */
+        NotePatch: {
+            /** Assessment */
+            assessment?: string | null;
+            /** Complaint */
+            complaint?: string | null;
+            /** Examination */
+            examination?: string | null;
+            /** History */
+            history?: string | null;
+            /** Plan */
+            plan?: string | null;
+        };
         /** OpenInvoiceOut */
         OpenInvoiceOut: {
             /** Invoice Id */
@@ -3132,6 +4327,152 @@ export interface components {
             number: string;
             /** Outstanding */
             outstanding: string;
+        };
+        /** OrderIn */
+        OrderIn: {
+            /**
+             * Allergy Override Reason
+             * @description Why a drug is ordered despite a matching allergy (409 ALLERGY_CONFLICT without it; details.alerts lists the matches).
+             * @default
+             */
+            allergy_override_reason: string;
+            /** Items */
+            items: components["schemas"]["OrderItemIn"][];
+        };
+        /** OrderItemIn */
+        OrderItemIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Pre Approval Ref
+             * @default
+             */
+            pre_approval_ref: string;
+            prescription?: components["schemas"]["PrescriptionIn"] | null;
+            /** Quantity */
+            quantity?: number | null;
+            /** Service Id */
+            service_id: number;
+        };
+        /** OrderSetIn */
+        OrderSetIn: {
+            /** Items */
+            items: components["schemas"]["OrderSetItemIn"][];
+            /**
+             * Name Ar
+             * @default
+             */
+            name_ar: string;
+            /**
+             * Name En
+             * @default
+             */
+            name_en: string;
+        };
+        /** OrderSetItemIn */
+        OrderSetItemIn: {
+            /**
+             * As Needed
+             * @default false
+             */
+            as_needed: boolean;
+            /**
+             * Dose
+             * @default
+             */
+            dose: string;
+            /** Dose Quantity */
+            dose_quantity?: number | string | null;
+            /** Duration Days */
+            duration_days?: number | null;
+            /**
+             * Frequency Code
+             * @default
+             */
+            frequency_code: string;
+            /**
+             * Instructions
+             * @default
+             */
+            instructions: string;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Route */
+            route?: ("oral" | "iv" | "im" | "sc" | "topical" | "inhaled" | "rectal" | "ophthalmic" | "otic" | "nasal" | "other") | null;
+            /** Service Id */
+            service_id: number;
+        };
+        /** OrderSetItemOut */
+        OrderSetItemOut: {
+            /** As Needed */
+            as_needed: boolean;
+            /** Dose */
+            dose: string;
+            /** Dose Quantity */
+            dose_quantity: string | null;
+            /** Duration Days */
+            duration_days: number | null;
+            /** Frequency Code */
+            frequency_code: string;
+            /** Instructions */
+            instructions: string;
+            /** Kind */
+            kind: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Quantity */
+            quantity: string;
+            /** Route */
+            route: ("oral" | "iv" | "im" | "sc" | "topical" | "inhaled" | "rectal" | "ophthalmic" | "otic" | "nasal" | "other") | null;
+            /** Service Code */
+            service_code: string;
+            /** Service Id */
+            service_id: number;
+        };
+        /** OrderSetOut */
+        OrderSetOut: {
+            /** Department Id */
+            department_id: number | null;
+            /** Id */
+            id: number;
+            /** Items */
+            items: components["schemas"]["OrderSetItemOut"][];
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Personal */
+            personal: boolean;
+        };
+        /**
+         * OrderableServiceOut
+         * @description A catalog service a doctor may order. Never a price (FEATURES 3.8).
+         */
+        OrderableServiceOut: {
+            /** Code */
+            code: string;
+            /** Department Code */
+            department_code: string | null;
+            drug: components["schemas"]["DrugInfoOut"] | null;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "lab" | "procedure" | "drug" | "consumable";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
         };
         /** Page[ImportRowOut] */
         Page_ImportRowOut_: {
@@ -3230,6 +4571,42 @@ export interface components {
             page: number;
             /** Page Size */
             page_size: number;
+        };
+        /** PatientAllergyOut */
+        PatientAllergyOut: {
+            /**
+             * Allergen Type
+             * @enum {string}
+             */
+            allergen_type: "drug" | "drug_class" | "food" | "environmental" | "other";
+            drug_class: components["schemas"]["DrugClassOut"] | null;
+            /** Id */
+            id: number;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Note */
+            note: string;
+            /** Reaction */
+            reaction: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "mild" | "moderate" | "severe" | "life_threatening";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "inactive" | "entered_in_error";
+            /** Substance */
+            substance: string;
         };
         /**
          * PatientBriefOut
@@ -3517,6 +4894,22 @@ export interface components {
             page_size: number;
             /** Q */
             q?: string | null;
+        };
+        /** PatientSummaryOut */
+        PatientSummaryOut: {
+            /** Active Medications */
+            active_medications: components["schemas"]["MedicationOut"][];
+            /** Allergies */
+            allergies: components["schemas"]["PatientAllergyOut"][];
+            /** Allergies Recorded */
+            allergies_recorded: boolean;
+            /** Conditions */
+            conditions: components["schemas"]["ConditionOut"][];
+            /** Latest Results */
+            latest_results: components["schemas"]["ResultOut"][];
+            patient: components["schemas"]["ClinicPatientOut"];
+            /** Recent Visits */
+            recent_visits: components["schemas"]["VisitBriefOut"][];
         };
         /** PayerIn */
         PayerIn: {
@@ -3877,6 +5270,87 @@ export interface components {
             /** Theme */
             theme?: ("light" | "dark" | "warm") | null;
         };
+        /** PrescriptionIn */
+        PrescriptionIn: {
+            /**
+             * As Needed
+             * @default false
+             */
+            as_needed: boolean;
+            /**
+             * Dose
+             * @default
+             */
+            dose: string;
+            /** Dose Quantity */
+            dose_quantity?: number | string | null;
+            /** Duration Days */
+            duration_days?: number | null;
+            /**
+             * Frequency Code
+             * @default
+             */
+            frequency_code: string;
+            /**
+             * Instructions
+             * @default
+             */
+            instructions: string;
+            /**
+             * Route
+             * @default oral
+             * @enum {string}
+             */
+            route: "oral" | "iv" | "im" | "sc" | "topical" | "inhaled" | "rectal" | "ophthalmic" | "otic" | "nasal" | "other";
+        };
+        /** PrescriptionOut */
+        PrescriptionOut: {
+            /** As Needed */
+            as_needed: boolean;
+            /** Dose */
+            dose: string;
+            /** Dose Quantity */
+            dose_quantity: string | null;
+            /** Duration Days */
+            duration_days: number | null;
+            /** Frequency Code */
+            frequency_code: string;
+            /** Frequency Per Day */
+            frequency_per_day: string | null;
+            /** Instructions */
+            instructions: string;
+            /**
+             * Route
+             * @enum {string}
+             */
+            route: "oral" | "iv" | "im" | "sc" | "topical" | "inhaled" | "rectal" | "ophthalmic" | "otic" | "nasal" | "other";
+        };
+        /** PrescriptionPreviewIn */
+        PrescriptionPreviewIn: {
+            /**
+             * As Needed
+             * @default false
+             */
+            as_needed: boolean;
+            /** Dose Quantity */
+            dose_quantity?: number | string | null;
+            /** Duration Days */
+            duration_days?: number | null;
+            /**
+             * Frequency Code
+             * @default
+             */
+            frequency_code: string;
+        };
+        /** PrescriptionPreviewOut */
+        PrescriptionPreviewOut: {
+            /** Frequency Code */
+            frequency_code: string;
+            /** Frequency Per Day */
+            frequency_per_day: string | null;
+            /** Quantity */
+            quantity: number | null;
+        };
         /** PriceChangeIn */
         PriceChangeIn: {
             /** Service Id */
@@ -4040,6 +5514,50 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /** QueueActionIn */
+        QueueActionIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "call" | "start" | "complete" | "no_show" | "requeue";
+        };
+        /** QueueEntryOut */
+        QueueEntryOut: {
+            /** Allergies */
+            allergies: components["schemas"]["AllergyChipOut"][];
+            /** Allergies Recorded */
+            allergies_recorded: boolean;
+            /** Called At */
+            called_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Done At */
+            done_at: string | null;
+            /** Id */
+            id: number;
+            patient: components["schemas"]["ClinicPatientOut"];
+            /** Priority */
+            priority: number;
+            /**
+             * Queue Date
+             * Format: date
+             */
+            queue_date: string;
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "waiting" | "called" | "in_progress" | "done" | "no_show" | "cancelled";
+            /** Token No */
+            token_no: number;
+            visit: components["schemas"]["VisitBriefOut"];
+        };
         /** QueueMoveIn */
         QueueMoveIn: {
             /**
@@ -4178,6 +5696,87 @@ export interface components {
             /** Requires Note */
             requires_note: boolean;
         };
+        /** ReferralCancelIn */
+        ReferralCancelIn: {
+            /** Reason */
+            reason: string;
+        };
+        /** ReferralIn */
+        ReferralIn: {
+            /**
+             * Clinical Summary
+             * @default
+             */
+            clinical_summary: string;
+            /**
+             * External Facility
+             * @default
+             */
+            external_facility: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "internal" | "external";
+            /** Reason */
+            reason: string;
+            /** To Department Id */
+            to_department_id?: number | null;
+            /** To Doctor Id */
+            to_doctor_id?: number | null;
+            /**
+             * Urgency
+             * @default routine
+             * @enum {string}
+             */
+            urgency: "routine" | "urgent" | "emergency";
+        };
+        /** ReferralOut */
+        ReferralOut: {
+            /** Cancel Reason */
+            cancel_reason: string;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            cancelled_by: components["schemas"]["ClinicUserRefOut"] | null;
+            /** Clinical Summary */
+            clinical_summary: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** External Facility */
+            external_facility: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "internal" | "external";
+            /** Reason */
+            reason: string;
+            referred_by: components["schemas"]["ClinicUserRefOut"] | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "issued" | "completed" | "cancelled";
+            to_department: components["schemas"]["DepartmentRefOut"] | null;
+            to_doctor: components["schemas"]["DoctorRefOut"] | null;
+            /**
+             * Urgency
+             * @enum {string}
+             */
+            urgency: "routine" | "urgent" | "emergency";
+        };
+        /** ReferralTargetsOut */
+        ReferralTargetsOut: {
+            /** Departments */
+            departments: components["schemas"]["DepartmentRefOut"][];
+            /** Doctors */
+            doctors: components["schemas"]["DoctorRefOut"][];
+        };
         /** RescheduleIn */
         RescheduleIn: {
             /** Ends At */
@@ -4192,6 +5791,61 @@ export interface components {
         ResetPasswordIn: {
             /** New Password */
             new_password: string;
+        };
+        /**
+         * ResultOut
+         * @description An approved lab result as the doctor sees it (FEATURES 3.7, 9.4).
+         */
+        ResultOut: {
+            /** Amended */
+            amended: boolean;
+            /** Approved At */
+            approved_at: string | null;
+            /** Comment */
+            comment: string;
+            /** Id */
+            id: number;
+            /** Line Id */
+            line_id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Test Code */
+            test_code: string;
+            /** Values */
+            values: components["schemas"]["ResultValueOut"][];
+            /** Version No */
+            version_no: number;
+            /** Visit Id */
+            visit_id: number;
+        };
+        /** ResultParams */
+        ResultParams: {
+            /**
+             * Limit
+             * @default 20
+             */
+            limit: number;
+            /** Visit Id */
+            visit_id?: number | null;
+        };
+        /** ResultValueOut */
+        ResultValueOut: {
+            /** Flag */
+            flag: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Parameter Code */
+            parameter_code: string;
+            /** Reference */
+            reference: string;
+            /** Unit */
+            unit: string;
+            /** Value */
+            value: string;
         };
         /** RoleOut */
         RoleOut: {
@@ -4737,6 +6391,33 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** VisitBriefOut */
+        VisitBriefOut: {
+            /** Chief Complaint */
+            chief_complaint: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            department: components["schemas"]["DepartmentRefOut"] | null;
+            doctor: components["schemas"]["DoctorRefOut"] | null;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            payer: components["schemas"]["ClinicPayerRefOut"] | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed" | "cancelled";
+            /**
+             * Visit Type
+             * @enum {string}
+             */
+            visit_type: "new" | "follow_up" | "emergency" | "pharmacy_sale" | "inpatient";
+        };
         /**
          * VisitCancelIn
          * @description Cancel with a ``visit_cancel`` reason code (FEATURES 2.7, invariant 4).
@@ -4932,12 +6613,126 @@ export interface components {
             /** Name En */
             name_en: string;
         };
+        /** VitalsIn */
+        VitalsIn: {
+            /** Blood Glucose Mg Dl */
+            blood_glucose_mg_dl?: number | null;
+            /** Bp Diastolic */
+            bp_diastolic?: number | null;
+            /** Bp Systolic */
+            bp_systolic?: number | null;
+            /** Height Cm */
+            height_cm?: number | string | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Pain Score */
+            pain_score?: number | null;
+            /** Pulse Bpm */
+            pulse_bpm?: number | null;
+            /** Respiratory Rate */
+            respiratory_rate?: number | null;
+            /** Spo2 Percent */
+            spo2_percent?: number | null;
+            /** Temperature C */
+            temperature_c?: number | string | null;
+            /** Weight Kg */
+            weight_kg?: number | string | null;
+        };
+        /** VitalsOut */
+        VitalsOut: {
+            /** Blood Glucose Mg Dl */
+            blood_glucose_mg_dl: number | null;
+            /** Bp Diastolic */
+            bp_diastolic: number | null;
+            /** Bp Systolic */
+            bp_systolic: number | null;
+            /** Height Cm */
+            height_cm: string | null;
+            /** Id */
+            id: number;
+            /** Note */
+            note: string;
+            /** Pain Score */
+            pain_score: number | null;
+            /** Pulse Bpm */
+            pulse_bpm: number | null;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            recorded_by: components["schemas"]["ClinicUserRefOut"] | null;
+            /** Respiratory Rate */
+            respiratory_rate: number | null;
+            /** Spo2 Percent */
+            spo2_percent: number | null;
+            /** Temperature C */
+            temperature_c: string | null;
+            /** Weight Kg */
+            weight_kg: string | null;
+        };
         /** WaitingRoomOut */
         WaitingRoomOut: {
             /** Serving */
             serving: components["schemas"]["DisplayEntryOut"][];
             /** Waiting */
             waiting: components["schemas"]["DisplayEntryOut"][];
+        };
+        /** WithdrawIn */
+        WithdrawIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason Code */
+            reason_code: string;
+        };
+        /** WithdrawReasonOut */
+        WithdrawReasonOut: {
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Requires Note */
+            requires_note: boolean;
+        };
+        /**
+         * WithdrawRecordIn
+         * @description Why a clinical record is withdrawn (invariant 4).
+         */
+        WithdrawRecordIn: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * WorkspaceOut
+         * @description One visit as its doctor works on it: the header, queue state and clinical record.
+         */
+        WorkspaceOut: {
+            /** Allergies */
+            allergies: components["schemas"]["AllergyChipOut"][];
+            /** Allergies Recorded */
+            allergies_recorded: boolean;
+            /** Diagnoses */
+            diagnoses: components["schemas"]["DiagnosisOut"][];
+            /** Notes */
+            notes: components["schemas"]["NoteOut"][];
+            patient: components["schemas"]["ClinicPatientOut"];
+            /** Queue Entry Id */
+            queue_entry_id: number | null;
+            /** Queue Status */
+            queue_status: ("waiting" | "called" | "in_progress" | "done" | "no_show" | "cancelled") | null;
+            /** Referrals */
+            referrals: components["schemas"]["ReferralOut"][];
+            visit: components["schemas"]["VisitBriefOut"];
+            /** Vitals */
+            vitals: components["schemas"]["VitalsOut"][];
         };
     };
     responses: never;
@@ -7183,6 +8978,1155 @@ export interface operations {
             };
         };
     };
+    clinical_update_allergy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                allergy_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllergyPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientAllergyOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_update_condition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                condition_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConditionPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_delete_diagnosis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                diagnosis_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithdrawRecordIn"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_list_drug_classes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DrugClassOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_search_icd10: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Icd10Out"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_update_note: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_sign_note: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_list_order_sets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderSetOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_create_favorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderSetIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderSetOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_delete_favorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_set_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_list_allergies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientAllergyOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_create_allergy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllergyIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientAllergyOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_list_allergy_alerts: {
+        parameters: {
+            query?: {
+                service_ids?: number[];
+            };
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllergyAlertOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_list_conditions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_create_condition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConditionIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_list_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryVisitOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_list_results: {
+        parameters: {
+            query?: {
+                visit_id?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_get_patient_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientSummaryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     clinical_get_ping: {
         parameters: {
             query?: never;
@@ -7212,6 +10156,667 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_get_referral_targets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralTargetsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_cancel_referral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                referral_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferralCancelIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_create_diagnosis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_create_note: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_create_referral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferralIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_create_vitals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VitalsIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VitalsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_get_workspace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_list_worklist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueEntryOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_call_next: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueEntryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_queue_action: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueueActionIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueEntryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9883,6 +13488,193 @@ export interface operations {
             };
         };
     };
+    orders_list_catalog: {
+        parameters: {
+            query?: {
+                q?: string;
+                kind?: ("lab" | "procedure" | "drug" | "consumable") | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderableServiceOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_list_frequencies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrequencyOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_withdraw_line: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithdrawIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorLineOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     orders_get_ping: {
         parameters: {
             query?: never;
@@ -9912,6 +13704,331 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_preview_prescription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrescriptionPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrescriptionPreviewOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_estimate_cost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EstimateIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstimateOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_list_visit_lines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorLineOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_create_lines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorLineOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_list_withdraw_reasons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WithdrawReasonOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
