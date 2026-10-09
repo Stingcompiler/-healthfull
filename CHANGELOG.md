@@ -80,6 +80,15 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   vitals, allergies (with recorded overrides), conditions, diagnoses, referrals, favorites,
   prescriptions and the order builder; withdrawing an unstarted line and removing a diagnosis
   record a reason; doctors see no prices and hold no billing permission.
+- Wave a, billing, payments and shifts (FEATURES 0.10, 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9,
+  7.1-7.6): the cashier desk (patient lookup, visit billing, draft invoices with per-line payer,
+  pre-approval references, line cancellation and discounts approved by a supervisor at the desk,
+  approval with frozen prices), payments by cash, transfer, QR, card and patient credit with
+  allocation, unique transfer references with a supervised override, the transfers queue with
+  confirmation and late rejection, credit notes, refunds, perform-first authorizations, shifts
+  with opening float, close with variance, frozen report and manager review, cash handovers to a
+  named receiver or the safe, receipts with a QR check screen and A4/80 mm printing of receipts,
+  invoices and the shift report (ADRs 0008, 0009).
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
@@ -125,6 +134,13 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   against the core and catalog shapes; a test fails on any repeated schema class name.
 - The reason-code API and admin screen accept the `patient_merge` and `appointment_cancel`
   categories, with Arabic and English labels.
+- The doctor billing access sweep (e2e) checks every billing and payments operation for a 403
+  instead of reporting `fixme`.
+- An empty credit note shows "Enter at least one unit to credit" under its lines (the message
+  was filed under `qty.root` and never displayed).
+- The helpers e2e spec no longer fails when a cashier spec has already added its `CSH70` payer.
+- Billing `PatientSummaryOut` is published as `BillingPatientSummaryOut` so it no longer
+  overwrites the clinic's patient summary in the OpenAPI contract.
 - Cashier review (ADR 0008): a credit note is approved by someone other than its drafter
   (`CREDIT_NOTE_SELF_APPROVAL`) and a transfer confirmed by someone other than its taker
   (`SELF_CONFIRMATION_NOT_ALLOWED`); the transfers queue says when a closed shift's transfer needs

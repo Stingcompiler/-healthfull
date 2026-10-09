@@ -8,7 +8,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 1. Domain core + schema | done on `feat/1-domain-core`; merge to main pending | backend 1290 tests (396 domain), all passing; ADR 0006; follow-ups below |
 | 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merge to main pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
-| 4. Billing, payments, shifts | next (wave a) | |
+| 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | not started | |
 | 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3; claims, reports and ops not started |
 | 7. Patient portal | not started | |
@@ -70,8 +70,14 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (clinic, wave a review)
 
-- Print: referral letters and prescriptions have no print view yet; add them on the shared
-  A4/80mm templates of FEATURES 0.10 when those land (hide the app shell under `@media print`).
+- Print: referral letters and prescriptions have no print view yet. The A4/80 mm templates of
+  FEATURES 0.10 landed with the cashier module but live in `features/cashier`
+  (`components/PrintFrame.tsx`, `components/print.css`, `DocHeader` in `pages/ReceiptPage.tsx`),
+  and the document header reads the center profile from billing endpoints a doctor cannot
+  call. Wiring the clinic needs: move the frame, stylesheet and header to `src/components/print/`,
+  a center header the doctor may read (core), two print routes (`/clinic/visits/$visitId/
+  referrals/$id/print`, `.../prescription/print`) with ar/en strings, responsive-matrix entries in
+  `e2e/module-routes/clinic.ts` and a print e2e. Not done in the wave a integration.
 - Results tab screenshots show the empty state only: approved results need the lab module's
   endpoints (FEATURES 4.x lab); add a populated capture to `e2e/tests/clinic/states.spec.ts`
   then.
@@ -80,9 +86,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Work lists and exception reports (FEATURES 4.3, 4.5) exist as tested services
   (`orders.services.worklist_lines`, `report_*`); their endpoints and screens come with the
   lab, pharmacy, procedures and reports modules.
-- Billing access sweep for doctors (`e2e/tests/clinic/access.spec.ts`) reports `fixme` while
-  the billing and payments routers hold only their pings; it runs by itself once the cashier
-  module adds operations to the contract.
+- [x] Billing access sweep for doctors (`e2e/tests/clinic/access.spec.ts`): runs against every
+  billing and payments operation of the contract now that the cashier module publishes them,
+  and fails (never passes empty) if the contract has none.
 - Schema names (fixed on `wave/a`): django-ninja publishes one OpenAPI component per class
   name, so equal names in two apps collide. Visits now uses `VisitDepartmentOut`,
   `VisitDoctorOut`, `VisitRoomOut` and patients `PatientPayerOut`;
@@ -90,7 +96,8 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (wave a integration)
 
-- Billing, payments and shifts (Phase 4, `feat/a-cashier`) are not part of this merge.
+- [x] Billing, payments and shifts (Phase 4, `feat/a-cashier`): merged in the second wave a
+  integration (see the log).
 - Kiosk: `/display/queue` runs in a signed-in session of a user with `visits.view_queue`; a
   display-only role needs a core role change.
 - Paid-visit cancellation: reception sees the `billed` flag and a supervisor
@@ -103,6 +110,21 @@ Source of truth for build status. Update at the end of every task. Phases from `
   supervisor exception (ADR 0007).
 - shellcheck is not installed on the build machine; `lint-shell` ran `bash -n` only, CI runs
   shellcheck.
+
+## Follow-ups (cashier, wave a)
+
+- FEATURES 0.10: invoice, receipt (QR, 6.9) and shift report print on A4 and 80 mm; the
+  prescription, lab result and claim export templates come with the clinic print views (above),
+  the lab module and claims.
+- FEATURES 5.12 (walk-in pharmacy sale) exists as a tested service
+  (`billing.services` walk-in sale) with its permission; the screen comes with the pharmacy
+  module.
+- FEATURES 7.7 (multi-till, V1?): a shift may name its till when it opens; several cashiers on
+  one till per shift is not built.
+- Errors: amounts in error placeholders are still raw backend strings (see the Phase 1
+  follow-up); the cashier screens format their own amounts with `MoneyText`.
+- The Phase 1 schema follow-up on `RefundMethod.bank_transfer` is unchanged: refunds are paid in
+  cash from a credit note only.
 
 ## Next: wave a (Phases 2-4)
 
@@ -211,3 +233,19 @@ including the full money cycle with a shift variance and a transfer rejected aft
   `/api/auth/me`). The rerun of `@helpers|@admin users` passed 11 of 11. The skip is the doctor
   billing sweep, which waits for the cashier module. `feat/a-cashier` (Phase 4) is not part of
   this merge.
+- 2026-10-09: Wave a complete on `wave/a`: merged `feat/a-cashier` (Phase 4; FEATURES 0.10 for
+  invoice, receipt and shift report, 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; its review
+  found 22 issues, all fixed on the branch, ADR 0008). Conflicts: `orders/api.py` (clinic order
+  endpoints kept, perform-first router mounted at `/api/orders/perform-first`), `ui/tabs.tsx`
+  (cashier's 44px phone tabs), `CHANGELOG.md` (both entries); generated API files regenerated
+  with `make api`. Integration fixes: billing `PatientSummaryOut` renamed
+  `BillingPatientSummaryOut` (collided with clinical's); the cashier's ADR 0007 (desk approvals)
+  renumbered 0009; the doctor billing sweep runs (no `fixme`) and fails on an empty contract;
+  an empty credit note shows its "at least one unit" message (`qty.root`); the helpers spec
+  accepts module fixture payers. No migration clashes (cashier added none). Clinic print views
+  not wired to the cashier print frame (see clinic follow-ups). Results: `make check` green
+  (backend 1678 passed, frontend 440 passed, ruff, mypy, eslint, prettier and tsc clean, no
+  missing migrations, API contract in sync; shellcheck not installed here). Full `make e2e`:
+  977 passed, 0 failed, 0 skipped (43.8 min). The first full run had 975 passed, 2 failed
+  (the credit note message and the helpers payer set, both fixed above, then 7 of 7 passed in a
+  rerun of `@cashier refund|@helpers factories`).
