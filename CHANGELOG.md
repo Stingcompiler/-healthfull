@@ -115,6 +115,14 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   visit, transfer, discharge, bed out of service, posting the nights due as lines for the
   cashier); `/api/orders/procedures`, `/api/clinical/nursing`, `/api/visits/inpatient`,
   `manage.py charge_bed_nights` (ADR 0011).
+- Wave b, insurance claims (FEATURES 11.2-11.7): `/api/claims` and the claim screens. Payer
+  receivables by stage (accrued, claimed, accepted unpaid, rejected unresolved, collected), the
+  batch builder per payer and period, Excel export (Arabic or English) and A4 print in the payer
+  layout, the payer's answer per line (accepted, partial, rejected with reason), rejected parts
+  rebilled to the patient or written off with a reason, short-paid amounts written off, payer
+  payments by transfer, cheque (cleared later) or cash into the recorder's shift, allocated per
+  claim or oldest first, reversal of a bounced payment, and aging by payer (0-30, 31-60, 61-90,
+  over 90 days). Only `claims.*` holders reach any of it (ADR 0012).
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)

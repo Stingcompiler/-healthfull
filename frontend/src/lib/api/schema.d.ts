@@ -865,6 +865,335 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/claims/accrued": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A payer's unclaimed shares of approved invoices, by approval date */
+        get: operations["claims_list_accrued_lines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/aging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Outstanding payer receivable per payer: 0-30, 31-60, 61-90 and over 90 days */
+        get: operations["claims_get_aging"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Claim batches, newest first, with their collection totals */
+        get: operations["claims_list_claims"];
+        put?: never;
+        /**
+         * Build a draft claim of a payer's accrued shares in a period (all or chosen lines)
+         * @description 409 INVALID_DATE_RANGE, CLAIM_EMPTY, CLAIM_LINE_NOT_ACCRUED.
+         */
+        post: operations["claims_build_claim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One claim batch with its lines, answers, resolutions and payments */
+        get: operations["claims_get_claim"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a claim once every line is paid or resolved */
+        post: operations["claims_close_claim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The claim as an Excel workbook in the payer layout (.xlsx attachment) */
+        get: operations["claims_export_claim"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/lines/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Take a line off a draft claim (its payer share is claimable again) */
+        delete: operations["claims_remove_claim_line"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/lines/{line_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rebill a rejected amount to the patient or write it off, with a reason
+         * @description 409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN.
+         */
+        post: operations["claims_resolve_rejection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/lines/{line_id}/write-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write off accepted money the payer will not pay, with a reason
+         * @description 409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT.
+         */
+        post: operations["claims_write_off_shortfall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The claim addressed to its payer, with the center header, for A4 printing */
+        get: operations["claims_get_claim_print"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the payer's answer per line: accepted, rejected or partial, with reason
+         * @description 409 CLAIM_STATUS_INVALID, CLAIM_LINE_UNKNOWN, CLAIM_LINE_NOT_CLAIMED, CLAIM_AMOUNT_INVALID, REASON_REQUIRED, DUPLICATE_LINE.
+         */
+        post: operations["claims_record_responses"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a draft claim as sent to the payer */
+        post: operations["claims_submit_claim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/batches/{claim_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Void a claim the payer has not answered (its lines are claimable again) */
+        post: operations["claims_void_claim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payers, banks, write-off reasons and the viewer's open shift */
+        get: operations["claims_get_options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/payer-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payer payments, newest first */
+        get: operations["claims_list_payer_payments"];
+        put?: never;
+        /**
+         * Record money from a payer and allocate it to its claims
+         * @description A transfer goes to the bank, a cheque waits until cleared, cash goes into the recorder's open shift (409 SHIFT_NOT_OPEN). The allocations must equal the amount (PAYER_PAYMENT_UNBALANCED); also CLAIM_PAYMENT_EXCEEDS_ACCEPTED, CLAIM_NOTHING_UNPAID, DUPLICATE_REFERENCE, PAYER_ALLOCATION_CONFLICT.
+         */
+        post: operations["claims_record_payer_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/payer-payments/{payment_id}/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A payer cheque cleared at the bank
+         * @description 409 PAYMENT_NOT_PENDING.
+         */
+        post: operations["claims_clear_payer_cheque"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/payer-payments/{payment_id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse a bounced payer transfer or cheque (its allocations owe again)
+         * @description 409 REASON_REQUIRED, PAYMENT_NOT_REVERSIBLE, CLAIM_FINAL.
+         */
+        post: operations["claims_reverse_payer_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/payers/{payer_id}/payable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A payer's claims with accepted money still unpaid, oldest first */
+        get: operations["claims_list_payable_claims"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/claims/ping": {
         parameters: {
             query?: never;
@@ -874,6 +1203,26 @@ export interface paths {
         };
         /** Check that the /api/claims router is reachable */
         get: operations["claims_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/receivables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payer receivables by stage: accrued, claimed, accepted unpaid, rejected, collected
+         * @description Payer share is a receivable until a payer payment is recorded (invariant 7).
+         */
+        get: operations["claims_list_receivables"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5394,6 +5743,911 @@ export interface components {
              */
             use_default_coverage: boolean;
         };
+        /**
+         * ClaimAccruedLineOut
+         * @description An unclaimed payer share: ``amount`` is what may be claimed.
+         */
+        ClaimAccruedLineOut: {
+            /** Age Days */
+            age_days: number;
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /**
+             * Approved On
+             * Format: date
+             */
+            approved_on: string;
+            /** Card Number */
+            card_number: string;
+            /** Description Ar */
+            description_ar: string;
+            /** Description En */
+            description_en: string;
+            /**
+             * Gross
+             * @example 15000.00
+             */
+            gross: string;
+            /** Invoice Id */
+            invoice_id: number;
+            /** Invoice Line Id */
+            invoice_line_id: number;
+            /** Invoice Number */
+            invoice_number: string;
+            patient: components["schemas"]["ClaimPatientOut"];
+            /** Pre Approval Ref */
+            pre_approval_ref: string;
+            /** Quantity */
+            quantity: number;
+            /** Service Code */
+            service_code: string;
+        };
+        /** ClaimAccruedOut */
+        ClaimAccruedOut: {
+            /** Items */
+            items: components["schemas"]["ClaimAccruedLineOut"][];
+            payer: components["schemas"]["ClaimPayerOut"];
+            /** Period End */
+            period_end: string | null;
+            /** Period Start */
+            period_start: string | null;
+            /**
+             * Total
+             * @example 15000.00
+             */
+            total: string;
+        };
+        /** ClaimAccruedParams */
+        ClaimAccruedParams: {
+            /** Payer Id */
+            payer_id: number;
+            /** Period End */
+            period_end?: string | null;
+            /** Period Start */
+            period_start?: string | null;
+        };
+        /**
+         * ClaimAgingOut
+         * @description The outstanding receivable by days since invoice approval.
+         */
+        ClaimAgingOut: {
+            /**
+             * Days 0 30
+             * @example 15000.00
+             */
+            days_0_30: string;
+            /**
+             * Days 31 60
+             * @example 15000.00
+             */
+            days_31_60: string;
+            /**
+             * Days 61 90
+             * @example 15000.00
+             */
+            days_61_90: string;
+            /**
+             * Days Over 90
+             * @example 15000.00
+             */
+            days_over_90: string;
+            /**
+             * Total
+             * @example 15000.00
+             */
+            total: string;
+        };
+        /** ClaimAgingReportOut */
+        ClaimAgingReportOut: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Items */
+            items: components["schemas"]["ClaimAgingRowOut"][];
+            totals: components["schemas"]["ClaimAgingOut"];
+        };
+        /** ClaimAgingRowOut */
+        ClaimAgingRowOut: {
+            aging: components["schemas"]["ClaimAgingOut"];
+            payer: components["schemas"]["ClaimPayerOut"];
+        };
+        /** ClaimAllocationIn */
+        ClaimAllocationIn: {
+            /**
+             * Amount
+             * @example 15000
+             * @example 2500.50
+             */
+            amount: string;
+            /** Claim Id */
+            claim_id: number;
+        };
+        /** ClaimAsOfParams */
+        ClaimAsOfParams: {
+            /**
+             * As Of
+             * @description Age receivables on this day (default today).
+             */
+            as_of?: string | null;
+        };
+        /** ClaimBuildIn */
+        ClaimBuildIn: {
+            /**
+             * Invoice Line Ids
+             * @description The accrued lines to claim; all of the period when omitted.
+             */
+            invoice_line_ids?: number[] | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Payer Id */
+            payer_id: number;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+        };
+        /** ClaimCenterOut */
+        ClaimCenterOut: {
+            /** Address */
+            address: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+            /** Registration No */
+            registration_no: string;
+            /** Tax No */
+            tax_no: string;
+        };
+        /** ClaimDetailOut */
+        ClaimDetailOut: {
+            /**
+             * Accepted Total
+             * @example 15000.00
+             */
+            accepted_total: string;
+            /**
+             * Claimed Total
+             * @example 15000.00
+             */
+            claimed_total: string;
+            /** Closed At */
+            closed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["ClaimUserOut"];
+            /** Id */
+            id: number;
+            /** Line Count */
+            line_count: number;
+            /** Lines */
+            lines: components["schemas"]["ClaimLineOut"][];
+            /** Note */
+            note: string;
+            /** Number */
+            number: string;
+            /**
+             * Paid Total
+             * @example 15000.00
+             */
+            paid_total: string;
+            payer: components["schemas"]["ClaimNameOut"];
+            /** Payments */
+            payments: components["schemas"]["ClaimPaymentRefOut"][];
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Receivable
+             * @example 15000.00
+             */
+            receivable: string;
+            /**
+             * Rejected Total
+             * @example 15000.00
+             */
+            rejected_total: string;
+            /** Response At */
+            response_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted" | "responded" | "closed" | "void";
+            /** Submitted At */
+            submitted_at: string | null;
+            submitted_by: components["schemas"]["ClaimUserOut"] | null;
+            /**
+             * Unpaid Total
+             * @description Accepted, not paid, not written off.
+             * @example 15000.00
+             */
+            unpaid_total: string;
+        };
+        /** ClaimExportParams */
+        ClaimExportParams: {
+            /**
+             * Language
+             * @default en
+             * @enum {string}
+             */
+            language: "ar" | "en";
+        };
+        /** ClaimLineAllocationIn */
+        ClaimLineAllocationIn: {
+            /**
+             * Amount
+             * @example 15000
+             * @example 2500.50
+             */
+            amount: string;
+            /** Claim Line Id */
+            claim_line_id: number;
+        };
+        /** ClaimLineOut */
+        ClaimLineOut: {
+            /**
+             * Accepted Amount
+             * @example 15000.00
+             */
+            accepted_amount: string;
+            /**
+             * Amount Claimed
+             * @example 15000.00
+             */
+            amount_claimed: string;
+            /**
+             * Approved On
+             * Format: date
+             */
+            approved_on: string;
+            /** Card Number */
+            card_number: string;
+            /** Description Ar */
+            description_ar: string;
+            /** Description En */
+            description_en: string;
+            /**
+             * Gross
+             * @example 15000.00
+             */
+            gross: string;
+            /** Id */
+            id: number;
+            /** Invoice Id */
+            invoice_id: number;
+            /** Invoice Line Id */
+            invoice_line_id: number;
+            /** Invoice Number */
+            invoice_number: string;
+            /**
+             * Paid
+             * @example 15000.00
+             */
+            paid: string;
+            patient: components["schemas"]["ClaimPatientOut"];
+            /** Payer Reason */
+            payer_reason: string;
+            /** Payer Reference */
+            payer_reference: string;
+            /** Pre Approval Ref */
+            pre_approval_ref: string;
+            /** Quantity */
+            quantity: number;
+            /**
+             * Receivable
+             * @example 15000.00
+             */
+            receivable: string;
+            /**
+             * Rejected Amount
+             * @example 15000.00
+             */
+            rejected_amount: string;
+            /**
+             * Resolution
+             * @enum {string}
+             */
+            resolution: "none" | "rebilled" | "written_off";
+            /** Resolution Note */
+            resolution_note: string;
+            resolution_reason: components["schemas"]["ClaimReasonOut"] | null;
+            /** Resolved At */
+            resolved_at: string | null;
+            resolved_by: components["schemas"]["ClaimUserOut"] | null;
+            /** Responded At */
+            responded_at: string | null;
+            /** Service Code */
+            service_code: string;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "claimed" | "accepted" | "rejected" | "partially_accepted" | "paid" | "rebilled" | "written_off" | "voided";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "rejected" | "partial" | "withdrawn";
+            /**
+             * Unpaid
+             * @example 15000.00
+             */
+            unpaid: string;
+            /**
+             * Unresolved Rejection
+             * @example 15000.00
+             */
+            unresolved_rejection: string;
+            /** Withdraw Note */
+            withdraw_note: string;
+            /**
+             * Written Off Amount
+             * @example 15000.00
+             */
+            written_off_amount: string;
+            /** Written Off Note */
+            written_off_note: string;
+            written_off_reason: components["schemas"]["ClaimReasonOut"] | null;
+        };
+        /** ClaimListParams */
+        ClaimListParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Payer Id */
+            payer_id?: number | null;
+            /** Q */
+            q?: string | null;
+            /** Status */
+            status?: ("draft" | "submitted" | "responded" | "closed" | "void") | null;
+        };
+        /**
+         * ClaimNameOut
+         * @description A coded row (payer, bank).
+         */
+        ClaimNameOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** ClaimNoteIn */
+        ClaimNoteIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /**
+         * ClaimOptionsOut
+         * @description What the claim screens choose from: payers, banks, write-off reasons, and the viewer's
+         *     open shift (payer cash goes into it, ARCHITECTURE 4.7).
+         */
+        ClaimOptionsOut: {
+            /** Banks */
+            banks: components["schemas"]["ClaimNameOut"][];
+            open_shift: components["schemas"]["ClaimShiftOut"] | null;
+            /** Payers */
+            payers: components["schemas"]["ClaimPayerOut"][];
+            /** Write Off Reasons */
+            write_off_reasons: components["schemas"]["ClaimReasonOut"][];
+        };
+        /** ClaimPatientOut */
+        ClaimPatientOut: {
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+        };
+        /**
+         * ClaimPayableOut
+         * @description A claim with accepted money the payer still owes (a payment can be allocated to it).
+         */
+        ClaimPayableOut: {
+            /**
+             * Accepted Total
+             * @example 15000.00
+             */
+            accepted_total: string;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Paid Total
+             * @example 15000.00
+             */
+            paid_total: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Unpaid Total
+             * @example 15000.00
+             */
+            unpaid_total: string;
+        };
+        /** ClaimPayerAllocationOut */
+        ClaimPayerAllocationOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Claim Id */
+            claim_id: number;
+            /** Claim Line Id */
+            claim_line_id: number | null;
+            /** Claim Number */
+            claim_number: string;
+        };
+        /** ClaimPayerOut */
+        ClaimPayerOut: {
+            /** Active */
+            active: boolean;
+            /** Claim Period */
+            claim_period: string;
+            /** Code */
+            code: string;
+            /** Contract No */
+            contract_no: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** ClaimPayerOutDetail */
+        ClaimPayerOutDetail: {
+            /** Active */
+            active: boolean;
+            /** Address */
+            address: string;
+            /** Claim Period */
+            claim_period: string;
+            /** Code */
+            code: string;
+            /** Contact Name */
+            contact_name: string;
+            /** Contract No */
+            contract_no: string;
+            /** Email */
+            email: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+        };
+        /** ClaimPayerPaymentIn */
+        ClaimPayerPaymentIn: {
+            /**
+             * Amount
+             * @example 15000
+             * @example 2500.50
+             */
+            amount: string;
+            /** Bank Id */
+            bank_id?: number | null;
+            /**
+             * Claims
+             * @description Amounts per claim; with neither claims nor lines, oldest claims first.
+             */
+            claims?: components["schemas"]["ClaimAllocationIn"][] | null;
+            /** Lines */
+            lines?: components["schemas"]["ClaimLineAllocationIn"][] | null;
+            /**
+             * Method
+             * @default bank_transfer
+             * @enum {string}
+             */
+            method: "bank_transfer" | "cheque" | "cash";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Payer Id */
+            payer_id: number;
+            /**
+             * Received On
+             * Format: date
+             */
+            received_on: string;
+            /**
+             * Reference
+             * @default
+             */
+            reference: string;
+        };
+        /** ClaimPayerPaymentOut */
+        ClaimPayerPaymentOut: {
+            /** Allocations */
+            allocations: components["schemas"]["ClaimPayerAllocationOut"][];
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            bank: components["schemas"]["ClaimNameOut"] | null;
+            /** Cleared At */
+            cleared_at: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "bank_transfer" | "cheque" | "cash";
+            /** Note */
+            note: string;
+            /** Number */
+            number: string;
+            payer: components["schemas"]["ClaimNameOut"];
+            /**
+             * Received On
+             * Format: date
+             */
+            received_on: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            recorded_by: components["schemas"]["ClaimUserOut"];
+            /** Reference */
+            reference: string;
+            /** Reverse Note */
+            reverse_note: string;
+            /** Reversed At */
+            reversed_at: string | null;
+            shift: components["schemas"]["ClaimShiftOut"] | null;
+            /**
+             * Standing
+             * @enum {string}
+             */
+            standing: "bank" | "cash" | "cheque_pending" | "cheque_cleared" | "reversed";
+        };
+        /** ClaimPaymentListParams */
+        ClaimPaymentListParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Payer Id */
+            payer_id?: number | null;
+            /** Q */
+            q?: string | null;
+            /** Standing */
+            standing?: ("cheque_pending" | "reversed") | null;
+        };
+        /**
+         * ClaimPaymentRefOut
+         * @description A payer payment allocated to this claim (the claim's share of it).
+         */
+        ClaimPaymentRefOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Id */
+            id: number;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "bank_transfer" | "cheque" | "cash";
+            /** Number */
+            number: string;
+            /**
+             * Received On
+             * Format: date
+             */
+            received_on: string;
+            /** Reversed */
+            reversed: boolean;
+        };
+        /** ClaimPrintOut */
+        ClaimPrintOut: {
+            center: components["schemas"]["ClaimCenterOut"];
+            claim: components["schemas"]["ClaimDetailOut"];
+            payer: components["schemas"]["ClaimPayerOutDetail"];
+        };
+        /** ClaimReasonOut */
+        ClaimReasonOut: {
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Requires Note */
+            requires_note: boolean;
+        };
+        /** ClaimReceivableOut */
+        ClaimReceivableOut: {
+            aging: components["schemas"]["ClaimAgingOut"];
+            payer: components["schemas"]["ClaimPayerOut"];
+            stages: components["schemas"]["ClaimStagesOut"];
+        };
+        /** ClaimReceivablesOut */
+        ClaimReceivablesOut: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Items */
+            items: components["schemas"]["ClaimReceivableOut"][];
+            totals: components["schemas"]["ClaimStagesOut"];
+        };
+        /** ClaimResolveIn */
+        ClaimResolveIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Reason
+             * @description A write-off reason code.
+             */
+            reason: string;
+            /**
+             * Resolution
+             * @enum {string}
+             */
+            resolution: "rebilled" | "written_off";
+        };
+        /** ClaimResponseIn */
+        ClaimResponseIn: {
+            /**
+             * Accepted
+             * @description The accepted part of a partial.
+             */
+            accepted?: string | null;
+            /** Claim Line Id */
+            claim_line_id: number;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "accepted" | "rejected" | "partial";
+            /**
+             * Reason
+             * @description The payer's reason for a rejection.
+             * @default
+             */
+            reason: string;
+            /**
+             * Reference
+             * @default
+             */
+            reference: string;
+        };
+        /** ClaimResponsesIn */
+        ClaimResponsesIn: {
+            /** Responses */
+            responses: components["schemas"]["ClaimResponseIn"][];
+        };
+        /** ClaimShiftOut */
+        ClaimShiftOut: {
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+        };
+        /** ClaimShortfallIn */
+        ClaimShortfallIn: {
+            /**
+             * Amount
+             * @example 15000
+             * @example 2500.50
+             */
+            amount: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * ClaimStagesOut
+         * @description A payer share by stage. ``receivable`` (AR_PAYER) = accrued + claimed + accepted unpaid
+         *     + rejected unresolved; ``collected`` is the only part that is money (invariant 7).
+         */
+        ClaimStagesOut: {
+            /**
+             * Accepted Unpaid
+             * @example 15000.00
+             */
+            accepted_unpaid: string;
+            /**
+             * Accrued
+             * @example 15000.00
+             */
+            accrued: string;
+            /**
+             * Claimed
+             * @example 15000.00
+             */
+            claimed: string;
+            /**
+             * Collected
+             * @example 15000.00
+             */
+            collected: string;
+            /**
+             * Rebilled
+             * @example 15000.00
+             */
+            rebilled: string;
+            /**
+             * Receivable
+             * @example 15000.00
+             */
+            receivable: string;
+            /**
+             * Rejected Unresolved
+             * @example 15000.00
+             */
+            rejected_unresolved: string;
+            /**
+             * Written Off
+             * @example 15000.00
+             */
+            written_off: string;
+        };
+        /** ClaimSummaryOut */
+        ClaimSummaryOut: {
+            /**
+             * Accepted Total
+             * @example 15000.00
+             */
+            accepted_total: string;
+            /**
+             * Claimed Total
+             * @example 15000.00
+             */
+            claimed_total: string;
+            /** Closed At */
+            closed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Line Count */
+            line_count: number;
+            /** Number */
+            number: string;
+            /**
+             * Paid Total
+             * @example 15000.00
+             */
+            paid_total: string;
+            payer: components["schemas"]["ClaimNameOut"];
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Receivable
+             * @example 15000.00
+             */
+            receivable: string;
+            /**
+             * Rejected Total
+             * @example 15000.00
+             */
+            rejected_total: string;
+            /** Response At */
+            response_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted" | "responded" | "closed" | "void";
+            /** Submitted At */
+            submitted_at: string | null;
+            /**
+             * Unpaid Total
+             * @description Accepted, not paid, not written off.
+             * @example 15000.00
+             */
+            unpaid_total: string;
+        };
+        /** ClaimUserOut */
+        ClaimUserOut: {
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
+        };
+        /** ClaimVoidIn */
+        ClaimVoidIn: {
+            /** Note */
+            note: string;
+        };
         /** ClinicPatientOut */
         ClinicPatientOut: {
             /** Date Of Birth */
@@ -9099,6 +10353,34 @@ export interface components {
             count: number;
             /** Items */
             items: components["schemas"]["AuthorizationOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ClaimPayerPaymentOut] */
+        Page_ClaimPayerPaymentOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ClaimPayerPaymentOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ClaimSummaryOut] */
+        Page_ClaimSummaryOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ClaimSummaryOut"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -16575,6 +17857,1386 @@ export interface operations {
             };
         };
     };
+    claims_list_accrued_lines: {
+        parameters: {
+            query: {
+                payer_id: number;
+                period_start?: string | null;
+                period_end?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimAccruedOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_get_aging: {
+        parameters: {
+            query?: {
+                /** @description Age receivables on this day (default today). */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimAgingReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_list_claims: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                payer_id?: number | null;
+                status?: ("draft" | "submitted" | "responded" | "closed" | "void") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ClaimSummaryOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_build_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimBuildIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_get_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_close_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_export_claim: {
+        parameters: {
+            query?: {
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path: {
+                claim_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_remove_claim_line: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_resolve_rejection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimResolveIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_write_off_shortfall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimShortfallIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_get_claim_print: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimPrintOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_record_responses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimResponsesIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_submit_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_void_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claim_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimVoidIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_get_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimOptionsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_list_payer_payments: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                payer_id?: number | null;
+                standing?: ("cheque_pending" | "reversed") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ClaimPayerPaymentOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_record_payer_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimPayerPaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimPayerPaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_clear_payer_cheque: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimNoteIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimPayerPaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_reverse_payer_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimNoteIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimPayerPaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_list_payable_claims: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimPayableOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     claims_get_ping: {
         parameters: {
             query?: never;
@@ -16604,6 +19266,74 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    claims_list_receivables: {
+        parameters: {
+            query?: {
+                /** @description Age receivables on this day (default today). */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimReceivablesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -29,7 +29,7 @@ Error codes: ``INVALID_AMOUNT``, ``CLAIM_AMOUNT_INVALID``, ``CLAIM_LINE_NOT_ACCR
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from enum import StrEnum
@@ -40,18 +40,21 @@ from domain.money import ZERO, require_non_negative, require_positive
 
 __all__ = [
     "AGING_BUCKETS",
+    "RESPONSE_OUTCOMES",
     "ClaimLine",
     "ClaimLineStatus",
     "Resolution",
     "accrue",
     "aging_bucket",
     "allocate_oldest_first",
+    "allocate_to_claims",
     "is_settled",
     "record_payment",
     "reduce_for_credit",
     "require_creditable",
     "resolve_rejection",
     "respond",
+    "response_amount",
     "reverse_payment",
     "submit",
     "validate_payer_payment",
@@ -242,6 +245,37 @@ def respond(line: ClaimLine, accepted: Decimal, *, reason: str | None = None) ->
     return replace(line, status=status, accepted=value)
 
 
+#: How the accountant enters a payer's answer for one line (FEATURES 11.4).
+RESPONSE_OUTCOMES = ("accepted", "rejected", "partial")
+
+
+def response_amount(outcome: str, claimed: Decimal, accepted: Decimal | None) -> Decimal:
+    """The accepted amount of a line answered ``outcome``: all of it, nothing, or a part.
+
+    A partial answer names the accepted part, strictly between nothing and the whole claimed
+    amount; an amount given with a whole answer is ignored.
+
+    Raises:
+        DomainError: ``CLAIM_AMOUNT_INVALID`` (unknown outcome), ``CLAIM_PARTIAL_INVALID``
+            (partial without a part, or a part not strictly inside the claimed amount).
+    """
+    whole = require_positive(claimed, "claimed")
+    if outcome == "accepted":
+        return whole
+    if outcome == "rejected":
+        return ZERO
+    if outcome != "partial":
+        raise _bad("Unknown response outcome", outcome=outcome)
+    if accepted is None or not ZERO < accepted < whole:
+        raise DomainError(
+            "CLAIM_PARTIAL_INVALID",
+            "A partial answer accepts more than nothing and less than the claimed amount",
+            claimed=str(whole),
+            accepted=None if accepted is None else str(accepted),
+        )
+    return accepted
+
+
 def record_payment(line: ClaimLine, amount: Decimal) -> ClaimLine:
     """Apply part of a payer payment to this line."""
     value = require_positive(amount, "amount")
@@ -353,6 +387,41 @@ def allocate_oldest_first(
             take = min(owed, left)
             out[line_id] = take
             left -= take
+    return out
+
+
+def allocate_to_claims(
+    amounts: Mapping[int, Decimal], dues: Mapping[int, Sequence[tuple[int, Decimal]]]
+) -> dict[int, Decimal]:
+    """Spread the amount paid for each claim over that claim's own lines, oldest first.
+
+    ``amounts`` maps a claim id to what the payer paid for it (a remittance advice lists
+    payments per claim batch). ``dues`` maps a claim id to its ``(claim line id, unpaid
+    accepted amount)`` rows in claim order. The result maps claim line ids to their part;
+    each claim's parts add up exactly to its amount.
+
+    Raises:
+        DomainError: ``INVALID_AMOUNT`` (an amount not positive), ``CLAIM_NOTHING_UNPAID``
+            (the claim has no accepted amount left unpaid), ``CLAIM_PAYMENT_EXCEEDS_ACCEPTED``
+            (more than the claim still owes).
+    """
+    out: dict[int, Decimal] = {}
+    for claim_id, amount in amounts.items():
+        value = require_positive(amount, "amount")
+        rows = list(dues.get(claim_id, ()))
+        owed = sum((require_non_negative(due, "due") for _, due in rows), ZERO)
+        if owed == 0:
+            raise DomainError(
+                "CLAIM_NOTHING_UNPAID", "No accepted amount is left unpaid", claim_id=claim_id
+            )
+        if value > owed:
+            raise DomainError(
+                "CLAIM_PAYMENT_EXCEEDS_ACCEPTED",
+                "Payment is larger than the accepted amount left",
+                claim_id=claim_id,
+                left=str(owed),
+            )
+        out.update(allocate_oldest_first(value, rows))
     return out
 
 

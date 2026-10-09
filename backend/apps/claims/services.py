@@ -560,6 +560,24 @@ def _auto_allocation(payer: Payer, amount: Decimal) -> dict[int, Decimal]:
     )
 
 
+def _claim_allocation(payer: Payer, claim_amounts: Mapping[int, Decimal]) -> dict[int, Decimal]:
+    """Each claim's amount over its own accepted, unpaid lines in line order (the caller
+    holds the payer lock; the lines are locked and checked again by the caller)."""
+    lines = (
+        ClaimLine.objects.filter(
+            claim__payer=payer,
+            claim_id__in=list(claim_amounts),
+            status__in=[ClaimLineStatus.ACCEPTED, ClaimLineStatus.PARTIAL],
+        )
+        .exclude(claim__status=ClaimStatus.VOID)
+        .order_by("claim_id", "id")
+    )
+    dues: dict[int, list[tuple[int, Decimal]]] = defaultdict(list)
+    for cl in lines:
+        dues[cl.claim_id].append((cl.pk, claim_line_state(cl).unpaid))
+    return dclaims.allocate_to_claims(claim_amounts, dues)
+
+
 _MONEY = {
     PayerPaymentMethod.BANK_TRANSFER: dl.PayerMoney.BANK,
     PayerPaymentMethod.CHEQUE: dl.PayerMoney.CHEQUE,
@@ -577,11 +595,16 @@ def record_payer_payment(
     bank: Bank | None = None,
     reference: str = "",
     allocations: Mapping[int, Decimal] | None = None,
+    claim_amounts: Mapping[int, Decimal] | None = None,
     note: str = "",
 ) -> PayerPayment:
     """Money received from a payer, allocated to accepted claim lines (FEATURES 11.6).
 
-    Without ``allocations`` the payment pays accepted amounts of the oldest claims first.
+    ``allocations`` name claim lines; ``claim_amounts`` name claim batches (what the payer's
+    remittance advice paid per claim), each spread over that claim's accepted, unpaid lines,
+    oldest first (``domain.claims.allocate_to_claims``); give one or the other
+    (``PAYER_ALLOCATION_CONFLICT``). With neither, the payment pays accepted amounts of the
+    oldest claims first.
     The allocations must equal the payment. Where the money lands depends on the method:
     a bank transfer Dr BANK; a cheque Dr BANK_PENDING until :func:`clear_payer_cheque`; cash
     Dr CASH in the recording user's open shift (it is counted in that drawer) / Cr AR_PAYER.
@@ -590,9 +613,15 @@ def record_payer_payment(
         DomainError: ``INVALID_AMOUNT``, ``INVALID_PAYMENT_METHOD``, ``BANK_REQUIRED``,
             ``REFERENCE_REQUIRED``, ``DUPLICATE_REFERENCE``, ``CLAIM_LINE_UNKNOWN``,
             ``CLAIM_LINE_NOT_ACCEPTED``, ``CLAIM_PAYMENT_EXCEEDS_ACCEPTED``,
-            ``PAYER_PAYMENT_UNBALANCED``, ``SHIFT_NOT_OPEN`` (cash without an open shift).
+            ``PAYER_PAYMENT_UNBALANCED``, ``SHIFT_NOT_OPEN`` (cash without an open shift),
+            ``CLAIM_NOTHING_UNPAID`` (a claim with nothing accepted left unpaid),
+            ``PAYER_ALLOCATION_CONFLICT`` (both lines and claims named).
     """
     total = require_positive(amount, "amount")
+    if allocations is not None and claim_amounts is not None:
+        raise DomainError(
+            "PAYER_ALLOCATION_CONFLICT", "Allocate to claim lines or to claims, not both"
+        )
     if method not in PayerPaymentMethod.values:
         raise DomainError("INVALID_PAYMENT_METHOD", "Unknown payment method", method=method)
     if method == PayerPaymentMethod.BANK_TRANSFER:
@@ -612,7 +641,12 @@ def record_payer_payment(
                 raise DomainError("SHIFT_NOT_OPEN", "Payer cash goes into your open shift")
             shift_id = shift.pk
         Payer.objects.select_for_update(no_key=True).get(pk=payer.pk)
-        wanted = dict(allocations) if allocations is not None else _auto_allocation(payer, total)
+        if allocations is not None:
+            wanted = dict(allocations)
+        elif claim_amounts is not None:
+            wanted = _claim_allocation(payer, claim_amounts)
+        else:
+            wanted = _auto_allocation(payer, total)
         lines = {
             cl.pk: cl
             for cl in ClaimLine.objects.select_for_update()

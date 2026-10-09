@@ -10,7 +10,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
-| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3; claims, reports and ops not started |
+| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); reports and ops not started |
 | 7. Patient portal | not started | |
 | 8. Hardening and handover | not started | |
 
@@ -331,3 +331,18 @@ patient portal (Phases 6-7).
   flows, the 5 nursing screens x 3 viewports x 3 themes x 2 languages, route registry, helpers).
   Shared files touched: `errors.json` (5 codes), generated OpenAPI files, the three app routers
   (one `add_router` line each), `visits/permissions.py`, `visits/tests/test_contract.py`.
+- 2026-10-09: Insurance claims on `feat/b-claims` (wave b, from `wave/b`): FEATURES 11.2-11.7.
+  `/api/claims` (21 operations, every one behind a `claims.*` code: receivables by stage, aging,
+  accrued lines, batches, per-line answers, rebill/write-off, short-pay write-off, Excel export
+  and print data, payer payments with cheque clearing and reversal); screens `/claims`,
+  `/claims/batches`, `/claims/new`, `/claims/$claimId`, `/claims/$claimId/print`,
+  `/claims/payments`, `/claims/aging`. New domain rules `response_amount` and
+  `allocate_to_claims` (Hypothesis), `record_payer_payment(claim_amounts=...)`, error codes
+  `CLAIM_PARTIAL_INVALID` and `PAYER_ALLOCATION_CONFLICT` (ADR 0012). The export writes text
+  starting with `=` as text (formula injection). Results: `make check` green (backend 1702
+  passed, frontend 440 passed, lint, typecheck, no missing migrations, API contract in sync);
+  `make e2e E2E_GREP="@claims|@responsive.*claims|route registry"`: 165 passed, 1 failed (the
+  payment spec's amount locator, fixed), then `@claims` 3 of 3 passed.
+  Follow-ups: per-payer export templates; a payer cash payment needs the recorder's own open
+  shift (an accountant has none); rebill and write-off approval is the recording user with
+  `claims.resolve_rejection` (no second person, ADR 0012).
