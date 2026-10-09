@@ -98,6 +98,15 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   with send, receive, shortage approval and cancel; expiry (30/60/90 days) and low-stock reports;
   walk-in sale draft invoice for the cashier. Adjustment requests and transfer drafts refuse more
   than the batch holds when made. Stock batches are "التشغيلة" in Arabic.
+- Wave b, laboratory (FEATURES 9.1-9.8): `/api/lab` (25 operations) and the lab screens: the
+  work list of paid or authorized tests with collect, receive and reject (a rejected sample's
+  draft values are discarded), a 50 x 30 mm tube label, result entry per parameter with
+  high/low/critical flags from sex- and age-specific ranges, the supervisor approval queue
+  (approval names the draft revision it read, `RESULT_CHANGED`), amendments as new versions
+  with the history kept, A4 result print in Arabic or English, "test cannot be performed" with
+  a billing approver's credentials at the bench for a paid test (credit note, refund at the
+  cashier), the test catalog editor and the turnaround report (median and 90th percentile).
+  New permissions `lab.cancel_test` and `lab.view_reports` (ADR 0010).
 - Wave b, nursing (FEATURES 3.4 for nurses, 10.1-10.3, 10.5): the procedure desk at `/nursing`
   (paid or authorized procedures as large tablet cards, one-tap done with a five-second undo
   window or with a note, done today), `/nursing/visits` (inpatients and today's visits) leading

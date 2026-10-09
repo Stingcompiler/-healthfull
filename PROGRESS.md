@@ -55,7 +55,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
   `translateError` passes `details` so the 23 messages with placeholders show their values.
 - Errors: database trigger codes (`CREDIT_NOTE_FROZEN`, `APPEND_ONLY`, `LINE_TERMINAL`, ...) are
   not mapped to API error codes and reach the user as `INTERNAL_ERROR`.
-- Terminology: `الدفعة` means both a stock batch and a payment; settle on `التشغيلة` for batches
+- [x] Terminology: `الدفعة` means both a stock batch and a payment; settle on `التشغيلة` for batches
   in the pharmacy screens.
 - Errors: amounts in error placeholders are raw backend strings (`15000.00`); format them with
   the money formatter when the billing screens land.
@@ -85,8 +85,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
   of visits to reach it until the nursing screens of FEATURES 10.3. Done on `feat/b-nursing`:
   `/nursing/visits` leads to the nursing chart.
 - Work lists and exception reports (FEATURES 4.3, 4.5) exist as tested services
-  (`orders.services.worklist_lines`, `report_*`); their endpoints and screens come with the
-  lab, pharmacy, procedures and reports modules.
+  (`orders.services.worklist_lines`, `report_*`). The lab, pharmacy and procedure work lists
+  have their endpoints and screens since wave b; the exception reports come with the reports
+  module.
 - [x] Billing access sweep for doctors (`e2e/tests/clinic/access.spec.ts`): runs against every
   billing and payments operation of the contract now that the cashier module publishes them,
   and fails (never passes empty) if the contract has none.
@@ -116,10 +117,11 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - FEATURES 0.10: invoice, receipt (QR, 6.9) and shift report print on A4 and 80 mm; the
   prescription, lab result and claim export templates come with the clinic print views (above),
-  the lab module and claims.
-- FEATURES 5.12 (walk-in pharmacy sale) exists as a tested service
+  the lab module and claims. The lab result (A4) and tube label prints landed with the lab
+  module (wave b); prescription and claim export prints are still open.
+- [x] FEATURES 5.12 (walk-in pharmacy sale) exists as a tested service
   (`billing.services` walk-in sale) with its permission; the screen comes with the pharmacy
-  module.
+  module. Done on `feat/b-pharmacy` (`/pharmacy/sale`).
 - FEATURES 7.7 (multi-till, V1?): a shift may name its till when it opens; several cashiers on
   one till per shift is not built.
 - Errors: amounts in error placeholders are still raw backend strings (see the Phase 1
@@ -155,12 +157,35 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Consumables used per procedure (FEATURES 10.4, P2) and the medication administration record
   (10.6, Later) are not built.
 
-## Next: wave a (Phases 2-4)
+## Follow-ups (lab, wave b)
 
-Run `workflow-drafts/wave.js` with `{wave: 'a', base: 'main', prep: true}` after Phase 1 is merged:
-patients and visits (FEATURES 1, 2, Excel import), doctor and orders (3, 4), billing, payments and
-shifts (5, 6, 7, printing). Exit gates per `docs/PROMPT.md`: Playwright flows at three viewports,
-including the full money cycle with a shift variance and a transfer rejected after close.
+- The clinic's results tab can now show approved results; its screenshot in
+  `e2e/tests/clinic/states.spec.ts` still captures the empty state (clinic follow-up above).
+- Results reach the patient with the portal (Phase 7); FEATURES 9.4 "visible to the patient"
+  is not wired yet.
+- Lab prints (`LabPrintFrame`) import the cashier's `features/cashier/components/print.css`
+  across features; moving the print frame and stylesheet to `src/components/print/` (clinic
+  follow-up) should take the lab with it.
+- Result PDF is the browser's print to PDF of the A4 report; tube labels print 50 x 30 mm from
+  the browser, not through the device agent (FEATURES 0.11).
+- A paid test that cannot be performed needs a billing approver (cashier supervisor or
+  accountant) at the bench; the refund itself is approved by a second person at the cashier
+  (ADR 0010, ADR 0008).
+- A lab supervisor may approve a result they entered (ADR 0010); revisit if centers want a
+  second-person check.
+- Outsourced tests, analyzer integration and radiology (FEATURES 9.9-9.11, P2) are not built.
+
+## Follow-ups (wave b integration)
+
+- ADR numbers: lab took 0010 and nursing's ADR was renumbered 0011 at the merge; the claims
+  module (still on `feat/b-claims`) must number its ADRs 0012 and up.
+- `feat/b-claims` is not part of this merge.
+
+## Next: wave b (claims), then merge to main
+
+Pharmacy, lab and nursing are merged on `wave/b`. Merge `feat/b-claims` when its builder
+finishes (its ADRs start at 0012), then take `wave/b` to `main`. Then reports, ops and the
+patient portal (Phases 6-7).
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.
