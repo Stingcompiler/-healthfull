@@ -91,7 +91,12 @@ __all__ = [
     "VisitOptions",
     "VisitView",
     "WaitingRoom",
+    "BedBoard",
+    "BedView",
+    "WardView",
     "admit",
+    "admit_patient",
+    "bed_board",
     "appointment_day",
     "available_slots",
     "bed_charge_dates",
@@ -106,6 +111,7 @@ __all__ = [
     "cancel_visit_view",
     "change_coverage",
     "charge_bed_days",
+    "charge_due_bed_nights",
     "check_in",
     "close_visit",
     "convert_appointment",
@@ -125,6 +131,7 @@ __all__ = [
     "reassign_future_appointments",
     "replace_weekly_schedule",
     "requeue",
+    "set_bed_status",
     "reschedule_appointment",
     "schedule_prefetch",
     "start_consultation",
@@ -843,6 +850,8 @@ def bed_charge_dates(
 
 
 def _free_bed(bed: Bed) -> Bed:
+    """Lock the bed row and check it can take a patient: two admissions or transfers racing
+    for one bed serialize here (the partial unique index on open stays is the backstop)."""
     locked = Bed.objects.select_for_update().get(pk=bed.pk)
     if not locked.active or locked.status != BedStatus.AVAILABLE:
         raise DomainError("BED_NOT_AVAILABLE", "The bed is not available", bed=locked.code)
@@ -901,6 +910,179 @@ def admit(
         free.status = BedStatus.OCCUPIED
         free.save(update_fields=["status"])
     return admission
+
+
+def admit_patient(
+    patient: Patient,
+    *,
+    bed: Bed,
+    doctor: DoctorProfile,
+    actor: User,
+    visit: Visit | None = None,
+    diagnosis: str = "",
+    at: datetime | None = None,
+) -> Admission:
+    """Admit a patient from the bed board (FEATURES 10.5).
+
+    On ``visit`` (an open visit of the patient, e.g. the consultation that decided it), or on
+    a new ``inpatient`` visit with the admitting doctor in the ward's department (no
+    consultation fee, no queue token). The patient is locked first, so a refused admission
+    leaves no visit behind and two admissions of one patient serialize.
+
+    Raises:
+        DomainError: ``VISIT_PATIENT_MISMATCH``, ``VISIT_NOT_ADMITTABLE``, and the errors of
+            :func:`admit` and :func:`create_visit`.
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="admit"):
+        _orders().lock_patient(patient.pk)
+        if visit is not None:
+            if visit.patient_id != patient.pk:
+                raise DomainError(
+                    "VISIT_PATIENT_MISMATCH", "The visit belongs to another patient"
+                )
+            if visit.visit_type == VisitType.PHARMACY_SALE:
+                raise DomainError(
+                    "VISIT_NOT_ADMITTABLE", "A pharmacy sale cannot become an admission"
+                )
+            target = visit
+        else:
+            if Admission.objects.filter(
+                patient_id=patient.pk, status=AdmissionStatus.ADMITTED
+            ).exists():
+                raise DomainError("PATIENT_ALREADY_ADMITTED", "The patient is already admitted")
+            room = bed.room
+            target = create_visit(
+                patient=patient,
+                actor=actor,
+                doctor=doctor,
+                department=room.department if room is not None else None,
+                visit_type=VisitType.INPATIENT,
+                chief_complaint=diagnosis,
+                now=at,
+            )
+        return admit(target, doctor=doctor, bed=bed, actor=actor, diagnosis=diagnosis, at=at)
+
+
+def set_bed_status(bed: Bed, *, status: str, actor: User) -> Bed:
+    """Take a free bed out of service or back into service (FEATURES 10.5).
+
+    Raises:
+        DomainError: ``INVALID_BED_STATUS`` (only available or maintenance), ``BED_OCCUPIED``.
+    """
+    if status not in (BedStatus.AVAILABLE, BedStatus.MAINTENANCE):
+        raise DomainError("INVALID_BED_STATUS", "A bed is set available or out of service")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"bed {status}"):
+        locked = Bed.objects.select_for_update().get(pk=bed.pk)
+        if locked.status == BedStatus.OCCUPIED or BedStay.objects.filter(
+            bed=locked, ended_at__isnull=True
+        ).exists():
+            raise DomainError("BED_OCCUPIED", "A patient is in this bed", bed=locked.code)
+        if locked.status != status:
+            locked.status = status
+            locked.save(update_fields=["status"])
+        return locked
+
+
+@dataclass(frozen=True, slots=True)
+class BedView:
+    """One bed on the board, with its occupant and the nights of the stay."""
+
+    bed: Bed
+    admission: Admission | None = None
+    stay: BedStay | None = None
+    nights_charged: int = 0
+    nights_due: int = 0
+    nights_at_discharge: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class WardView:
+    """The beds of one room (ward); ``room`` is None for beds without a room."""
+
+    room: Room | None
+    beds: list[BedView] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class BedBoard:
+    wards: list[WardView]
+    counts: dict[str, int]
+    nights_due: int
+
+
+def _nights(admission: Admission, charged: set[date], today: date) -> tuple[int, int]:
+    """(nights due now, nights a discharge today would charge), not yet charged."""
+    admitted_on = timezone.localdate(admission.admitted_at)
+    due = set(bed_charge_dates(admitted_on, through=today)) - charged
+    at_discharge = set(
+        bed_charge_dates(admitted_on, through=today, discharged_on=today)
+    ) - charged
+    return len(due), len(at_discharge)
+
+
+def bed_board(*, today: date | None = None) -> BedBoard:
+    """Wards and their active beds in code order, with occupants (FEATURES 10.5)."""
+    day = today or timezone.localdate()
+    beds = list(
+        Bed.objects.filter(active=True)
+        .select_related("room__department", "bed_service")
+        .order_by("room__code", "code")
+    )
+    stays = {
+        st.bed_id: st
+        for st in BedStay.objects.filter(
+            ended_at__isnull=True, admission__status=AdmissionStatus.ADMITTED
+        ).select_related(
+            "admission__patient",
+            "admission__visit",
+            "admission__admitting_doctor__user",
+            "admission__admitted_by",
+        )
+    }
+    charged: dict[int, set[date]] = {}
+    for adm_id, day_charged in BedCharge.objects.filter(
+        admission__status=AdmissionStatus.ADMITTED
+    ).values_list("admission_id", "charge_date"):
+        charged.setdefault(adm_id, set()).add(day_charged)
+    wards: dict[int | None, WardView] = {}
+    counts = {s: 0 for s in BedStatus.values}
+    total_due = 0
+    for bed in beds:
+        stay = stays.get(bed.pk)
+        counts[bed.status] = counts.get(bed.status, 0) + 1
+        if stay is None:
+            view = BedView(bed=bed)
+        else:
+            adm = stay.admission
+            done = charged.get(adm.pk, set())
+            due, at_discharge = _nights(adm, done, day)
+            total_due += due
+            view = BedView(
+                bed=bed,
+                admission=adm,
+                stay=stay,
+                nights_charged=len(done),
+                nights_due=due,
+                nights_at_discharge=at_discharge,
+            )
+        ward = wards.setdefault(bed.room_id, WardView(room=bed.room))
+        ward.beds.append(view)
+    ordered = sorted(
+        wards.values(), key=lambda w: (w.room is None, w.room.code if w.room else "")
+    )
+    return BedBoard(wards=ordered, counts=counts, nights_due=total_due)
+
+
+def charge_due_bed_nights(*, actor: User, through: date | None = None) -> list[BedCharge]:
+    """Charge every open admission's passed nights (the daily run; idempotent).
+
+    Each admission is charged in its own transaction (:func:`charge_bed_days`), so one
+    refused admission never holds back the others' lines.
+    """
+    created: list[BedCharge] = []
+    for admission in Admission.objects.filter(status=AdmissionStatus.ADMITTED).order_by("pk"):
+        created.extend(charge_bed_days(admission, actor=actor, through=through))
+    return created
 
 
 def _stay_for(admission: Admission, day: date) -> BedStay:
