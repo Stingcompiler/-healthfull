@@ -67,6 +67,19 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 - E2E route registry split per module: `e2e/module-routes/<module>.ts` lists a module's screens
   for the responsive matrix (loaded automatically), and a route with path parameters builds its
   data with `resolve`.
+- Wave a, patients and visits (FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7): patient list, registration with
+  duplicate detection, profile, coverage, merge with a reason code, Excel/CSV patient import with
+  preview and validation (`/patients/import`), patient results in the global quick search, visits,
+  queue board, token slips, the kiosk waiting-room display `/display/queue`, and appointments with
+  free slots and a doctor's day agenda.
+- Wave a, administration (FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3): users with role guards,
+  the role permission matrix, center profile and policies, departments, rooms, doctors and weekly
+  schedules, reason codes, the service catalog, dated price-list versions with bulk updates and
+  withdrawal of scheduled versions, payers with contracts, coverage rules and exclusions.
+- Wave a, doctor and orders (FEATURES 3.1-3.9, 4.1, 4.2): doctor queue and visit workspace with
+  vitals, allergies (with recorded overrides), conditions, diagnoses, referrals, favorites,
+  prescriptions and the order builder; withdrawing an unstarted line and removing a diagnosis
+  record a reason; doctors see no prices and hold no billing permission.
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
@@ -107,6 +120,11 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   before the swap. Role passwords: 16-128 characters of `A-Z a-z 0-9 . _ - ~`.
 
 ### Fixed
+- OpenAPI components no longer collide between apps: visits publishes `VisitDepartmentOut`,
+  `VisitDoctorOut` and `VisitRoomOut`, patients `PatientPayerOut`, so the admin screens type
+  against the core and catalog shapes; a test fails on any repeated schema class name.
+- The reason-code API and admin screen accept the `patient_merge` and `appointment_cancel`
+  categories, with Arabic and English labels.
 - Patient names are never truncated (four-part Sudanese names wrap instead of losing the family name).
 - Error messages with placeholders (amounts, dates, bed codes, units) show their values:
   `translateError` passes the error's `details` to i18next for interpolation only.

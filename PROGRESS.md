@@ -6,11 +6,11 @@ Source of truth for build status. Update at the end of every task. Phases from `
 |---|---|---|
 | 0. Foundation | done (merged PR #1); Docker run pending in CI | `make check` and `make e2e` green locally; Docker exit gate (`docker compose up` shows a working login) not run: no Docker on the build machine, first run is the CI `docker` job |
 | 1. Domain core + schema | done on `feat/1-domain-core`; merge to main pending | backend 1290 tests (396 domain), all passing; ADR 0006; follow-ups below |
-| 2. Patients and visits | built and reviewed on `feat/a-patients`; merge pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7; integration notes below |
-| 3. Doctor and orders | built and reviewed on `feat/a-clinic`; merge pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
+| 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merge to main pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
+| 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | next (wave a) | |
 | 5. Pharmacy, lab, procedures | not started | |
-| 6. Claims, reports, admin, ops | not started | |
+| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3; claims, reports and ops not started |
 | 7. Patient portal | not started | |
 | 8. Hardening and handover | not started | |
 
@@ -83,11 +83,26 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Billing access sweep for doctors (`e2e/tests/clinic/access.spec.ts`) reports `fixme` while
   the billing and payments routers hold only their pings; it runs by itself once the cashier
   module adds operations to the contract.
-- Schema names: django-ninja publishes one OpenAPI component per class name, so equal names in
-  two apps collide. Clinic names are unique (guarded by
-  `apps/clinical/tests/test_schema_names.py`); wave a still has `DoctorOut`, `DepartmentOut`,
-  `RoomOut` (core vs visits) and `PayerOut` (patients vs catalog), which break the admin
-  screens' types after `make api`.
+- Schema names (fixed on `wave/a`): django-ninja publishes one OpenAPI component per class
+  name, so equal names in two apps collide. Visits now uses `VisitDepartmentOut`,
+  `VisitDoctorOut`, `VisitRoomOut` and patients `PatientPayerOut`;
+  `api/tests/test_main.py::test_schema_class_names_are_unique_across_apps` fails on any clash.
+
+## Follow-ups (wave a integration)
+
+- Billing, payments and shifts (Phase 4, `feat/a-cashier`) are not part of this merge.
+- Kiosk: `/display/queue` runs in a signed-in session of a user with `visits.view_queue`; a
+  display-only role needs a core role change.
+- Paid-visit cancellation: reception sees the `billed` flag and a supervisor
+  (`cashier_supervisor`) cancels directly; there is no in-app request for supervisor approval.
+- `/administration/imports` is still the placeholder section; it can link to `/patients/import`
+  when the item and price imports land.
+- Admin: a role with `core.manage_departments` but no `catalog.view` sees an empty consultation
+  fee picker in the doctor dialog (it reads `/api/catalog/services`).
+- Allergy `resolved` needs no reason (entered-in-error does); referral cancellation has no
+  supervisor exception (ADR 0007).
+- shellcheck is not installed on the build machine; `lint-shell` ran `bash -n` only, CI runs
+  shellcheck.
 
 ## Next: wave a (Phases 2-4)
 
@@ -180,3 +195,19 @@ including the full money cycle with a shift variance and a transfer rejected aft
   contract in sync, no missing migrations; `make e2e E2E_GREP=@clinic` 14 passed, 1 skipped
   (billing sweep); clinic responsive matrix 36 passed. Frontend lint/typecheck still stop at
   the admin screens' wave a `DoctorOut` collision (unchanged, see clinic follow-ups).
+- 2026-10-09: Wave a integration on `wave/a`: merged `feat/a-patients` (FEATURES 0.9, 1.1-1.6,
+  1.8, 2.1-2.7), `feat/a-admin` (0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3; merged twice, the second
+  time for its review fixes) and `feat/a-clinic` (3.1-3.9, 4.1, 4.2; this round's review covered
+  3.2, 3.5-3.7, 3.9, 4.2). Core merge migration `0010_merge_wave_a_admin_patients`; generated API
+  files regenerated with `make api` at each merge. Integration fixes: OpenAPI component names
+  made unique across apps (visits `Visit*Out`, patients `PatientPayerOut`; guard test in
+  `api/tests/test_main.py`), which unblocks the admin screens' lint and typecheck; the
+  `patient_merge` and `appointment_cancel` reason categories on the reason-code API and admin
+  screen (ar and en labels); the helpers e2e spec expects `ALLERGY_CONFLICT`. Results:
+  `make check` green (backend 1597 passed, frontend 427 passed, ruff, mypy, eslint, prettier and
+  tsc clean, no missing migrations, API contract in sync; shellcheck not installed here). Full
+  `make e2e`: 725 passed, 2 failed, 1 skipped (37.5 min). The failures were the helpers spec
+  (fixed above) and `@admin users` create-and-sign-in (`ECONNRESET` from the dev server on
+  `/api/auth/me`). The rerun of `@helpers|@admin users` passed 11 of 11. The skip is the doctor
+  billing sweep, which waits for the cashier module. `feat/a-cashier` (Phase 4) is not part of
+  this merge.
