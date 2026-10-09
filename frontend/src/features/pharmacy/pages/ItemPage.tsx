@@ -79,7 +79,11 @@ function ItemBody({ item }: { item: StockItem }) {
   const unit = names.baseUnit(item);
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <section className="card-surface grid gap-3 p-4 md:p-5" aria-labelledby="item-summary" data-testid="item-summary">
+      <section
+        className="card-surface grid content-start gap-3 p-4 md:p-5"
+        aria-labelledby="item-summary"
+        data-testid="item-summary"
+      >
         <h2 id="item-summary" className="text-base font-semibold">
           {t("item.summary")}
         </h2>
@@ -181,7 +185,7 @@ function EditItemForm({ item }: { item: StockItem }) {
   });
 
   return (
-    <section className="card-surface grid gap-3 p-4 md:p-5" aria-labelledby="item-edit">
+    <section className="card-surface grid content-start gap-3 p-4 md:p-5" aria-labelledby="item-edit">
       <h2 id="item-edit" className="text-base font-semibold">
         {t("item.edit")}
       </h2>
@@ -448,7 +452,7 @@ function StockCardSection({ item }: { item: StockItem }) {
           getRowId={(r) => String(r.id)}
           caption={t("card.title")}
           minTableWidth={820}
-          pageSize={20}
+          pageSize={25}
           emptyState={<EmptyState bare size="compact" title={t("card.empty")} />}
           renderCard={(r) => (
             <div className="card-surface flex flex-col gap-1 p-3 text-sm" data-testid="card-row">

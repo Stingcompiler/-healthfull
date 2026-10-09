@@ -313,6 +313,21 @@ def test_item_master_create_edit_units_scan_and_search(ph: Ph) -> None:
     )
 
 
+def test_item_search_never_multiplies_on_hand_by_pack_units(ph: Ph) -> None:
+    """Review: a search that may match a pack unit's barcode joins the units; the total
+    on-hand must still be the batches' sum, not one sum per unit."""
+    UnitConversion.objects.create(
+        item=ph.item, unit_code="box", name_ar="علبة", name_en="box", factor=30, barcode="BOX-A"
+    )
+    ph.batch(40, 200)
+    ph.batch(10, 300)
+    for term in ("Amoxicillin", "BOX-A"):
+        page = ok(ph.api.get(f"/api/pharmacy/items?q={term}"))
+        (row,) = page["items"]
+        assert row["on_hand"] == 50, term
+    assert ok(ph.api.get("/api/pharmacy/items"))["items"][0]["on_hand"] == 50
+
+
 def test_suppliers_list_and_create(ph: Ph) -> None:
     created = ok(
         ph.api.post("/api/pharmacy/suppliers", {"code": "acme", "name_en": "Acme"}),

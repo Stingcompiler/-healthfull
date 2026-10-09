@@ -73,6 +73,8 @@ __all__ = [
 QUEUE_LIMIT = 100
 #: Rows of a picker list (sale services, customers, batches).
 PICKER_LIMIT = 30
+#: Most recent moves shown on a stock card (balances still count the whole history).
+STOCK_CARD_LIMIT = 500
 
 
 # --- shapes -----------------------------------------------------------------------------------
@@ -235,13 +237,16 @@ def items(
     qs = _items_qs().order_by("generic_name", "id")
     term = (q or "").strip()
     if term:
-        qs = qs.filter(
+        # Match in a subquery: joining the pack units next to the on-hand Sum would count each
+        # balance once per unit.
+        matching = Item.objects.filter(
             Q(generic_name__icontains=term)
             | Q(brand_name__icontains=term)
             | Q(service__code__iexact=term)
             | Q(barcode=term)
             | Q(units__barcode=term)
-        ).distinct()
+        ).values("pk")
+        qs = qs.filter(pk__in=matching)
     if active is not None:
         qs = qs.filter(active=active)
     rows = [_item_row(it) for it in qs]
@@ -304,7 +309,7 @@ def stock_card(item_id: int, *, store_id: int | None) -> dict[str, Any]:
                 "note": r.move.note,
                 "created_by": _user(r.move.created_by),
             }
-            for r in reversed(rows)  # newest first on screen
+            for r in list(reversed(rows))[:STOCK_CARD_LIMIT]  # newest first on screen
         ],
     }
 
