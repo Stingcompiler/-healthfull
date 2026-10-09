@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 import { useResultPrint } from "../api";
 import { LabPrintFrame } from "../components/LabPrintFrame";
-import { isCritical, isFlagged, rangeText } from "../lib/flags";
+import { isCritical, isFlagged, posNeg, rangeText } from "../lib/flags";
 import { parsePrintSearch } from "../lib/search";
 import { useLabNames } from "../lib/use-lab-names";
 import type { LabPrint } from "../types";
@@ -41,6 +41,10 @@ function ReportBody({ data, lang }: { data: LabPrint; lang: Lang }) {
   const v = data.version;
   const p = data.patient;
   const age = p.date_of_birth ? ageFromBirthDate(p.date_of_birth) : null;
+  const shown = (text: string) => {
+    const word = posNeg(text);
+    return word ? t(`entry.${word}`) : text;
+  };
   const when = (value: string | null | undefined) => (value ? formatDate(value, lang, "datetime") : "");
   return (
     <div className="flex flex-col gap-4" data-testid="result-print" data-lang={lang}>
@@ -97,9 +101,9 @@ function ReportBody({ data, lang }: { data: LabPrint; lang: Lang }) {
         <table className="w-full border-collapse text-start">
           <thead>
             <tr className="border-b border-border text-xs text-muted">
-              <th className="py-1 text-start font-medium">{t("print.parameter")}</th>
-              <th className="py-1 text-start font-medium">{t("print.result")}</th>
-              <th className="py-1 text-start font-medium">{t("print.flag")}</th>
+              <th className="py-1 pe-2 text-start font-medium">{t("print.parameter")}</th>
+              <th className="py-1 pe-2 text-start font-medium">{t("print.result")}</th>
+              <th className="py-1 pe-2 text-start font-medium">{t("print.flag")}</th>
               <th className="py-1 text-start font-medium">{t("print.reference")}</th>
             </tr>
           </thead>
@@ -114,7 +118,7 @@ function ReportBody({ data, lang }: { data: LabPrint; lang: Lang }) {
                 <td className="py-1 pe-2">{names.text(x.name_ar, x.name_en)}</td>
                 <td className={cn("py-1 pe-2 tabular", isFlagged(x.flag) && "font-bold")}>
                   <bdi dir="ltr">
-                    {x.value}
+                    {shown(x.value)}
                     {x.unit ? ` ${x.unit}` : ""}
                   </bdi>
                 </td>
@@ -122,7 +126,7 @@ function ReportBody({ data, lang }: { data: LabPrint; lang: Lang }) {
                   {isFlagged(x.flag) ? t(`flag.${x.flag}`) : ""}
                 </td>
                 <td className="py-1">
-                  <bdi dir="ltr">{rangeText(x.reference_low, x.reference_high, x.reference_text)}</bdi>
+                  <bdi dir="ltr">{rangeText(x.reference_low, x.reference_high, shown(x.reference_text))}</bdi>
                 </td>
               </tr>
             ))}

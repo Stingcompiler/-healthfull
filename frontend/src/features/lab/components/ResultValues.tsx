@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 
-import { isCritical, rangeText } from "../lib/flags";
+import { isCritical, posNeg, rangeText } from "../lib/flags";
 import { useLabNames } from "../lib/use-lab-names";
 import type { ResultValue } from "../types";
 import { FlagBadge } from "./badges";
@@ -11,11 +11,15 @@ import { FlagBadge } from "./badges";
 export function ResultValues({ values }: { values: readonly ResultValue[] }) {
   const { t } = useTranslation("lab");
   const names = useLabNames();
+  const shown = (text: string) => {
+    const word = posNeg(text);
+    return word ? t(`entry.${word}`) : text;
+  };
   if (values.length === 0) return <p className="text-sm text-muted">{t("versions.noValues")}</p>;
   return (
     <ul className="flex flex-col divide-y divide-border text-sm" data-testid="result-values">
       {values.map((v) => {
-        const reference = rangeText(v.reference_low, v.reference_high, v.reference_text);
+        const reference = rangeText(v.reference_low, v.reference_high, shown(v.reference_text));
         return (
           <li
             key={v.parameter_id}
@@ -29,7 +33,7 @@ export function ResultValues({ values }: { values: readonly ResultValue[] }) {
           >
             <span className="min-w-0 flex-1 text-fg-muted">{names.text(v.name_ar, v.name_en)}</span>
             <bdi dir="ltr" className="tabular font-semibold">
-              {v.value}
+              {shown(v.value)}
               {v.unit ? <span className="ms-1 text-xs font-normal text-muted">{v.unit}</span> : null}
             </bdi>
             {v.flag !== "none" && v.flag !== "normal" ? <FlagBadge flag={v.flag} /> : null}

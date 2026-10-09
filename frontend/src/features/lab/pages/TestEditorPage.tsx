@@ -240,7 +240,11 @@ function ParametersCard({ test }: { test: LabTest }) {
               <span className="flex min-w-0 flex-col">
                 <span className="font-medium">
                   {names.text(p.name_ar, p.name_en)}
-                  {p.unit ? <span className="ms-1 text-xs text-muted">({p.unit})</span> : null}
+                  {p.unit ? (
+                    <bdi dir="ltr" className="ms-1 text-xs text-muted">
+                      ({p.unit})
+                    </bdi>
+                  ) : null}
                 </span>
                 <span className="text-xs text-muted">
                   <bdi>{p.code}</bdi> · {t(`valueType.${p.value_type}`)}

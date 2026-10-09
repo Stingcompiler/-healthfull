@@ -93,7 +93,7 @@ export const routes: readonly AppRoute[] = [
   }),
   appRoute("lab-catalog-test", "/lab/catalog/$testId", {
     resolve: async () => {
-      const id = (await seededCatalog()).lab_tests.CBC;
+      const id = (await seededCatalog()).lab_tests["LAB-CBC"];
       if (id === undefined) throw new Error("No seeded CBC test");
       return `/lab/catalog/${String(id)}`;
     },

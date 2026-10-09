@@ -13,7 +13,7 @@ import { useTranslateError } from "@/lib/api/translate-error";
 import { cn } from "@/lib/utils";
 
 import { useEnterResults } from "../api";
-import { isCritical, isNumber, normalizeNumber, previewFlag, rangeText } from "../lib/flags";
+import { isCritical, isNumber, normalizeNumber, posNeg, previewFlag, rangeText } from "../lib/flags";
 import { useLabNames } from "../lib/use-lab-names";
 import type { EntryParameter, LabResult } from "../types";
 import { FlagBadge } from "./badges";
@@ -104,7 +104,9 @@ export function ResultEntryForm({
           const flag = previewFlag(raw, p.value_type, p.range);
           const bad = invalid(p) && (submitted || raw.length > 0);
           const id = `param-${p.code}`;
-          const reference = p.range ? rangeText(p.range.low, p.range.high, p.range.normal_text) : "";
+          const normal = p.range ? p.range.normal_text : "";
+          const word = posNeg(normal);
+          const reference = p.range ? rangeText(p.range.low, p.range.high, word ? t(`entry.${word}`) : normal) : "";
           return (
             <li
               key={p.code}
@@ -118,7 +120,11 @@ export function ResultEntryForm({
               <div className="flex min-w-0 flex-col">
                 <Label htmlFor={id} className="font-medium">
                   {names.text(p.name_ar, p.name_en)}
-                  {p.unit ? <span className="ms-1 text-xs font-normal text-muted">({p.unit})</span> : null}
+                  {p.unit ? (
+                    <bdi dir="ltr" className="ms-1 text-xs font-normal text-muted">
+                      ({p.unit})
+                    </bdi>
+                  ) : null}
                 </Label>
                 {reference ? (
                   <span className="text-xs text-muted">

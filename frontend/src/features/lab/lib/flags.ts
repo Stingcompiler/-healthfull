@@ -70,3 +70,9 @@ export function rangeText(low: string | null, high: string | null, text = ""): s
   if (low !== null) return `≥ ${low}`;
   return text;
 }
+
+/** "positive" / "negative" results are stored in English; screens and reports translate them. */
+export function posNeg(text: string): "positive" | "negative" | null {
+  const value = text.trim().toLowerCase();
+  return value === "positive" || value === "negative" ? value : null;
+}
