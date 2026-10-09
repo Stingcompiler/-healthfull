@@ -28,6 +28,7 @@ from apps.orders import schemas as s
 from apps.orders import services
 from apps.orders.models import ServiceLine
 from apps.orders.perform_first_api import perform_first_router
+from apps.orders.procedures_api import procedures_router
 from apps.visits.models import Visit
 
 orders_router = Router(tags=["orders"])
@@ -216,3 +217,6 @@ def withdraw_line(request: HttpRequest, line_id: int, payload: s.WithdrawIn) -> 
 
 # Perform-first authorizations (FEATURES 4.4), owned by the cashier module.
 orders_router.add_router("/perform-first", perform_first_router)
+
+# The procedure work list and one-tap done (FEATURES 10.1, 10.2), owned by the nursing module.
+orders_router.add_router("/procedures", procedures_router)

@@ -98,6 +98,14 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   with send, receive, shortage approval and cancel; expiry (30/60/90 days) and low-stock reports;
   walk-in sale draft invoice for the cashier. Adjustment requests and transfer drafts refuse more
   than the batch holds when made. Stock batches are "التشغيلة" in Arabic.
+- Wave b, nursing (FEATURES 3.4 for nurses, 10.1-10.3, 10.5): the procedure desk at `/nursing`
+  (paid or authorized procedures as large tablet cards, one-tap done with a five-second undo
+  window or with a note, done today), `/nursing/visits` (inpatients and today's visits) leading
+  to the nursing chart (vitals, nursing notes, the visit's procedures and admission), and the
+  bed board `/nursing/beds` (wards and beds with occupants, admit on an open or a new inpatient
+  visit, transfer, discharge, bed out of service, posting the nights due as lines for the
+  cashier); `/api/orders/procedures`, `/api/clinical/nursing`, `/api/visits/inpatient`,
+  `manage.py charge_bed_nights` (ADR 0011).
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
@@ -119,6 +127,9 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   `PUBLIC` loses `CONNECT`/`TEMP` on the database and `CREATE` on schema `public`.
 
 ### Changed
+- Nurses hold `visits.admit` by default (they record the admission on the doctor's decision);
+  the Nursing menu entry shows to holders of any nursing permission. A cancelled visit takes no
+  nursing notes (`VISIT_CANCELLED`).
 - `MeOut.language` / `MeOut.theme` are `null` until the user chooses; the SPA keeps the device's choice.
 - `money()` accepts only plain positional decimals (Arabic-Indic digits normalised).
 - Phone touch targets are 44px and phone text inputs 16px; menus, selects and the command palette show a

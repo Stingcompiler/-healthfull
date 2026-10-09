@@ -42,6 +42,16 @@ OPERATIONS = {
     ): "visits_mark_appointment_no_show",
     ("post", "/api/visits/appointments/{appointment_id}/check-in"): "visits_check_in_appointment",
     ("get", "/api/visits/ping"): "visits_get_ping",
+    ("get", "/api/visits/inpatient/board"): "visits_get_bed_board",
+    ("post", "/api/visits/inpatient/admissions"): "visits_admit_patient",
+    ("get", "/api/visits/inpatient/admissions/{admission_id}"): "visits_get_admission",
+    ("post", "/api/visits/inpatient/admissions/{admission_id}/transfer"): "visits_transfer_bed",
+    (
+        "post",
+        "/api/visits/inpatient/admissions/{admission_id}/discharge",
+    ): "visits_discharge_patient",
+    ("post", "/api/visits/inpatient/beds/{bed_id}/status"): "visits_set_bed_status",
+    ("post", "/api/visits/inpatient/charge-due"): "visits_charge_bed_nights",
 }
 
 

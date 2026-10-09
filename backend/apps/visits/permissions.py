@@ -100,7 +100,8 @@ register_permission(
     "visits.admit",
     label_ar="تنويم مريض",
     label_en="Admit a patient",
-    default_roles={RECEPTIONIST, DOCTOR, ADMIN},
+    # Nurses record the admission on the bed board on the doctor's decision (FEATURES 10.5).
+    default_roles={RECEPTIONIST, DOCTOR, NURSE, ADMIN},
 )
 
 register_permission(

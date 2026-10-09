@@ -1016,6 +1016,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clinical/nursing/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inpatients, then today's open visits in arrival order, for vitals and notes */
+        get: operations["clinical_list_nursing_visits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/nursing/visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit's vitals, nursing notes, procedures and admission */
+        get: operations["clinical_get_nursing_chart"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/nursing/visits/{visit_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a nursing note to a visit
+         * @description 409 NOTE_EMPTY, INVALID_NOTE_KIND, VISIT_CANCELLED.
+         */
+        post: operations["clinical_create_nursing_note"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clinical/order-sets": {
         parameters: {
             query?: never;
@@ -2524,6 +2578,60 @@ export interface paths {
          * @description quantity is null when it cannot be counted (as needed, no dose quantity, no duration). 409 UNKNOWN_FREQUENCY, FREQUENCY_MISMATCH, INVALID_PRESCRIPTION.
          */
         post: operations["orders_preview_prescription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/procedures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paid or authorized procedures waiting to be done, oldest order first */
+        get: operations["orders_list_procedure_worklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/procedures/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Procedures done today, newest first */
+        get: operations["orders_list_procedures_done"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/procedures/{line_id}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a procedure done: records who and when, with an optional note
+         * @description 409 LINE_NOT_ELIGIBLE (neither paid nor authorized), LINE_ALREADY_PERFORMED, LINE_CANCELLED, LINE_NOT_PROCEDURE.
+         */
+        post: operations["orders_perform_procedure"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4116,6 +4224,140 @@ export interface paths {
          * @description 409 APPOINTMENT_NOT_BOOKED, APPOINTMENT_CONFLICT, OUTSIDE_SCHEDULE.
          */
         post: operations["visits_reschedule_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/inpatient/admissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admit a patient to a free bed, on an open visit or a new inpatient visit
+         * @description 409 VISIT_PATIENT_MISMATCH, VISIT_NOT_ADMITTABLE, VISIT_NOT_OPEN, ALREADY_ADMITTED, PATIENT_ALREADY_ADMITTED, BED_NOT_AVAILABLE, BED_SERVICE_INVALID, PATIENT_MERGED, PATIENT_INACTIVE, DOCTOR_INACTIVE, COVERAGE_INVALID, CARD_NUMBER_REQUIRED.
+         */
+        post: operations["visits_admit_patient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/inpatient/admissions/{admission_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One admission with its current bed and the nights charged */
+        get: operations["visits_get_admission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/inpatient/admissions/{admission_id}/discharge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discharge: charge the remaining nights, free the bed and close the visit
+         * @description 409 NOT_ADMITTED.
+         */
+        post: operations["visits_discharge_patient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/inpatient/admissions/{admission_id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move an admitted patient to another free bed
+         * @description 409 NOT_ADMITTED, SAME_BED, BED_NOT_AVAILABLE, BED_SERVICE_INVALID.
+         */
+        post: operations["visits_transfer_bed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/inpatient/beds/{bed_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take a free bed out of service or back into service
+         * @description 409 BED_OCCUPIED, INVALID_BED_STATUS.
+         */
+        post: operations["visits_set_bed_status"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/inpatient/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Wards and beds with their occupants and the nights due (bed board) */
+        get: operations["visits_get_bed_board"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/inpatient/charge-due": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add every open admission's passed nights as bed day lines (the daily run)
+         * @description Idempotent: a night is charged once. The lines are given under the admission's documented perform-first exception and wait for the cashier's invoice.
+         */
+        post: operations["visits_charge_bed_nights"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6925,6 +7167,196 @@ export interface components {
             /** Warnings */
             warnings: components["schemas"]["RowHintOut"][];
         };
+        /** InpatientAdmissionOut */
+        InpatientAdmissionOut: {
+            /**
+             * Admitted At
+             * Format: date-time
+             */
+            admitted_at: string;
+            admitted_by: components["schemas"]["InpatientPersonOut"];
+            admitting_doctor: components["schemas"]["InpatientPersonOut"];
+            /** @description The current bed (last bed when out) */
+            bed: components["schemas"]["InpatientRefOut"] | null;
+            /** Diagnosis */
+            diagnosis: string;
+            /** Discharge Summary */
+            discharge_summary: string;
+            /** Discharged At */
+            discharged_at: string | null;
+            discharged_by: components["schemas"]["InpatientPersonOut"] | null;
+            /** Id */
+            id: number;
+            /** Nights Charged */
+            nights_charged: number;
+            /** Number */
+            number: string;
+            patient: components["schemas"]["PatientBriefOut"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "admitted" | "discharged" | "cancelled";
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** InpatientAdmitIn */
+        InpatientAdmitIn: {
+            /** Bed Id */
+            bed_id: number;
+            /**
+             * Diagnosis
+             * @default
+             */
+            diagnosis: string;
+            /** Doctor Id */
+            doctor_id: number;
+            /** Patient Id */
+            patient_id: number;
+            /**
+             * Visit Id
+             * @description An open visit of the patient; null opens a new inpatient visit
+             */
+            visit_id?: number | null;
+        };
+        /** InpatientBedOut */
+        InpatientBedOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            occupant: components["schemas"]["InpatientOccupantOut"] | null;
+            service: components["schemas"]["InpatientRefOut"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "occupied" | "maintenance";
+        };
+        /** InpatientBedStatusIn */
+        InpatientBedStatusIn: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "maintenance";
+        };
+        /** InpatientBoardOut */
+        InpatientBoardOut: {
+            counts: components["schemas"]["InpatientCountsOut"];
+            /** Nights Due */
+            nights_due: number;
+            /** Wards */
+            wards: components["schemas"]["InpatientWardOut"][];
+        };
+        /** InpatientChargeOut */
+        InpatientChargeOut: {
+            /**
+             * Admissions
+             * @description Admissions that got at least one line
+             */
+            admissions: number;
+            /**
+             * Charged
+             * @description Bed night lines created
+             */
+            charged: number;
+        };
+        /** InpatientCountsOut */
+        InpatientCountsOut: {
+            /** Available */
+            available: number;
+            /** Maintenance */
+            maintenance: number;
+            /** Occupied */
+            occupied: number;
+        };
+        /** InpatientDischargeIn */
+        InpatientDischargeIn: {
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+        };
+        /** InpatientOccupantOut */
+        InpatientOccupantOut: {
+            /** Admission Id */
+            admission_id: number;
+            /**
+             * Admitted At
+             * Format: date-time
+             */
+            admitted_at: string;
+            admitting_doctor: components["schemas"]["InpatientPersonOut"];
+            /** Diagnosis */
+            diagnosis: string;
+            /**
+             * In Bed Since
+             * Format: date-time
+             */
+            in_bed_since: string;
+            /**
+             * Nights At Discharge
+             * @description Nights a discharge now would charge (at least one for the stay)
+             */
+            nights_at_discharge: number;
+            /** Nights Charged */
+            nights_charged: number;
+            /**
+             * Nights Due
+             * @description Passed nights not charged yet (the daily run)
+             */
+            nights_due: number;
+            /** Number */
+            number: string;
+            patient: components["schemas"]["PatientBriefOut"];
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** InpatientPersonOut */
+        InpatientPersonOut: {
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /**
+         * InpatientRefOut
+         * @description A named row (room, service, bed): code and both names.
+         */
+        InpatientRefOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** InpatientTransferIn */
+        InpatientTransferIn: {
+            /** Bed Id */
+            bed_id: number;
+        };
+        /** InpatientWardOut */
+        InpatientWardOut: {
+            /** Beds */
+            beds: components["schemas"]["InpatientBedOut"][];
+            /** @description null: beds outside any ward */
+            room: components["schemas"]["InpatientRefOut"] | null;
+        };
         /** InvoiceCreateIn */
         InvoiceCreateIn: {
             /**
@@ -8255,6 +8687,146 @@ export interface components {
             history?: string | null;
             /** Plan */
             plan?: string | null;
+        };
+        /** NursingAdmissionOut */
+        NursingAdmissionOut: {
+            /**
+             * Admitted At
+             * Format: date-time
+             */
+            admitted_at: string;
+            bed: components["schemas"]["NursingRefOut"] | null;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "admitted" | "discharged" | "cancelled";
+            ward: components["schemas"]["NursingRefOut"] | null;
+        };
+        /** NursingChartOut */
+        NursingChartOut: {
+            admission: components["schemas"]["NursingAdmissionOut"] | null;
+            /** Allergies */
+            allergies: components["schemas"]["AllergyChipOut"][];
+            /** Allergies Recorded */
+            allergies_recorded: boolean;
+            /** Notes */
+            notes: components["schemas"]["NursingNoteOut"][];
+            patient: components["schemas"]["ClinicPatientOut"];
+            /** Procedures */
+            procedures: components["schemas"]["NursingProcedureOut"][];
+            visit: components["schemas"]["VisitBriefOut"];
+            /** Vitals */
+            vitals: components["schemas"]["VitalsOut"][];
+        };
+        /** NursingNoteIn */
+        NursingNoteIn: {
+            /**
+             * Kind
+             * @default general
+             * @enum {string}
+             */
+            kind: "general" | "procedure" | "handover";
+            /** Text */
+            text: string;
+        };
+        /** NursingNoteOut */
+        NursingNoteOut: {
+            author: components["schemas"]["ClinicUserRefOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "general" | "procedure" | "handover";
+            /** Service Line Id */
+            service_line_id: number | null;
+            /** Text */
+            text: string;
+        };
+        /** NursingProcedureOut */
+        NursingProcedureOut: {
+            /** Id */
+            id: number;
+            /** Note */
+            note: string;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            /** Performed At */
+            performed_at: string | null;
+            performed_by: components["schemas"]["ClinicUserRefOut"] | null;
+            /** Performed Note */
+            performed_note: string;
+            /** Quantity */
+            quantity: number;
+            service: components["schemas"]["NursingRefOut"];
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "requested" | "invoiced" | "paid" | "performed" | "cancelled";
+        };
+        /** NursingQueueOut */
+        NursingQueueOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "waiting" | "called" | "in_progress" | "done" | "no_show" | "cancelled";
+            /** Token No */
+            token_no: number;
+        };
+        /** NursingRefOut */
+        NursingRefOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** NursingVisitOut */
+        NursingVisitOut: {
+            admission: components["schemas"]["NursingAdmissionOut"] | null;
+            /** Allergies */
+            allergies: components["schemas"]["AllergyChipOut"][];
+            /**
+             * Allergies Recorded
+             * @description false: the registry was never filled in
+             */
+            allergies_recorded: boolean;
+            /** Last Vitals At */
+            last_vitals_at: string | null;
+            patient: components["schemas"]["ClinicPatientOut"];
+            /**
+             * Procedures Waiting
+             * @description Paid or authorized procedures not done
+             */
+            procedures_waiting: number;
+            queue: components["schemas"]["NursingQueueOut"] | null;
+            visit: components["schemas"]["VisitBriefOut"];
+            /** Vitals Count */
+            vitals_count: number;
+        };
+        /** NursingVisitParams */
+        NursingVisitParams: {
+            /** Q */
+            q?: string | null;
         };
         /** OpenInvoiceOut */
         OpenInvoiceOut: {
@@ -9903,6 +10475,99 @@ export interface components {
             show_logo: boolean;
             /** Updated At */
             updated_at: string | null;
+        };
+        /** ProcedureAllergyOut */
+        ProcedureAllergyOut: {
+            /** Id */
+            id: number;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "mild" | "moderate" | "severe" | "life_threatening";
+        };
+        /** ProcedureDoneIn */
+        ProcedureDoneIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** ProcedureLineOut */
+        ProcedureLineOut: {
+            /** Allergies */
+            allergies: components["schemas"]["ProcedureAllergyOut"][];
+            /**
+             * Allergies Recorded
+             * @description false: the registry was never filled in
+             */
+            allergies_recorded: boolean;
+            /**
+             * Authorized
+             * @description Performed under a perform-first authorization (not yet paid)
+             */
+            authorized: boolean;
+            department: components["schemas"]["ProcedureRefOut"] | null;
+            /** Id */
+            id: number;
+            /**
+             * Note
+             * @description The doctor's order note
+             */
+            note: string;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            ordered_by: components["schemas"]["ProcedurePersonOut"] | null;
+            patient: components["schemas"]["PatientBriefOut"];
+            /** Performed */
+            performed: boolean;
+            /** Performed At */
+            performed_at: string | null;
+            performed_by: components["schemas"]["ProcedurePersonOut"] | null;
+            /** Performed Note */
+            performed_note: string;
+            /** Quantity */
+            quantity: number;
+            service: components["schemas"]["ProcedureRefOut"];
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** ProcedureListParams */
+        ProcedureListParams: {
+            /** Department Id */
+            department_id?: number | null;
+            /** Q */
+            q?: string | null;
+        };
+        /** ProcedurePersonOut */
+        ProcedurePersonOut: {
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** ProcedureRefOut */
+        ProcedureRefOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
         };
         /** QueueActionIn */
         QueueActionIn: {
@@ -16412,6 +17077,193 @@ export interface operations {
             };
         };
     };
+    clinical_list_nursing_visits: {
+        parameters: {
+            query?: {
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NursingVisitOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_get_nursing_chart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NursingChartOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_create_nursing_note: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NursingNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NursingNoteOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     clinical_list_order_sets: {
         parameters: {
             query?: never;
@@ -22703,6 +23555,192 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PrescriptionPreviewOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_list_procedure_worklist: {
+        parameters: {
+            query?: {
+                department_id?: number | null;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcedureLineOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_list_procedures_done: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcedureLineOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_perform_procedure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcedureDoneIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcedureLineOut"];
                 };
             };
             /** @description Unauthorized */
@@ -29603,6 +30641,467 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_admit_patient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InpatientAdmitIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientAdmissionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_admission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                admission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientAdmissionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_discharge_patient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                admission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InpatientDischargeIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientAdmissionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_transfer_bed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                admission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InpatientTransferIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientAdmissionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_set_bed_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bed_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InpatientBedStatusIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientRefOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_get_bed_board: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientBoardOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_charge_bed_nights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientChargeOut"];
                 };
             };
             /** @description Unauthorized */

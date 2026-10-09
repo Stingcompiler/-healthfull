@@ -29,6 +29,7 @@ from apps.clinical.models import (
     OrderSet,
     Referral,
 )
+from apps.clinical.nursing_api import nursing_router
 from apps.core.models import Department, DoctorProfile, User
 from apps.patients.models import Patient
 from apps.visits.models import QueueEntry, Visit
@@ -539,3 +540,7 @@ def delete_favorite(request: HttpRequest, order_set_id: int) -> Status[None]:
     order_set = get_object_or_404(OrderSet, pk=order_set_id)
     services.deactivate_order_set(order_set, actor=_actor(request))
     return Status(204, None)
+
+
+# The nurse's visits, nursing chart and notes (FEATURES 3.4, 10.3), owned by the nursing module.
+clinical_router.add_router("/nursing", nursing_router)
