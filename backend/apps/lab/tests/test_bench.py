@@ -258,6 +258,21 @@ def test_rejecting_a_sample_discards_its_draft_values(tech, supervisor, cbc) -> 
     assert set(draft.values.values_list("parameter__code", flat=True)) == {"HB"}
 
 
+def test_only_an_amender_edits_an_amendment(tech, supervisor, cbc) -> None:
+    from api.errors import PermissionRequired
+
+    visit = b.visit(adult())
+    line = lab_line(visit, cbc)
+    received(visit, [line], tech)
+    ls.enter_results(line, values={"HB": "14", "BG": "A"}, actor=tech)
+    ls.approve_results(line, actor=supervisor)
+    ls.start_amendment(line, actor=supervisor, reason_code="ENTRY_ERROR")
+    with pytest.raises(PermissionRequired):
+        ls.enter_results(line, values={"HB": "15"}, actor=tech)
+    draft = ls.enter_results(line, values={"HB": "15"}, actor=supervisor)
+    assert draft.values.get(parameter__code="HB").value_numeric == Decimal("15.0")
+
+
 def test_approval_needs_the_sample_still_received(tech, supervisor, cbc) -> None:
     visit = b.visit(adult())
     line = lab_line(visit, cbc)

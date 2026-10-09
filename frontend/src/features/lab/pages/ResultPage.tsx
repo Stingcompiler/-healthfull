@@ -132,8 +132,10 @@ function Bench({ result }: { result: LabResult }) {
   const draft = result.versions.find((v) => v.status === "draft");
   const current = result.versions.find((v) => v.status === "approved");
   const sampleIn = result.sample?.status === "received";
-  const entering = canEnter && sampleIn && (result.stage === "to_enter" || result.stage === "to_approve");
-  const editingAmendment = canAmend && draft !== undefined && draft.amends_version_no !== null;
+  const amendment = draft !== undefined && draft.amends_version_no !== null;
+  // A first result is entered by the bench; a correction of an approved one only by an amender.
+  const entering = !amendment && canEnter && sampleIn && (result.stage === "to_enter" || result.stage === "to_approve");
+  const editingAmendment = amendment && canAmend;
   const showForm = entering || editingAmendment;
   const criticals = (draft?.values ?? []).filter((v) => isCritical(v.flag));
   const open = result.stage !== "done" && result.stage !== "cancelled";

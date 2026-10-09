@@ -695,6 +695,9 @@ def enter_results(
             draft = ResultVersion.objects.create(
                 result_set=rs, version_no=dlab.first_version().number, entered_by=actor
             )
+        elif draft.amends_id is not None:
+            # A correction of an approved result stays with those who may amend (9.5).
+            require_permission(actor, "lab.amend_results")
         params = {p.code: p for p in rs.test.parameters.filter(active=True)}
         unknown = sorted(set(values) - set(params))
         if unknown:
