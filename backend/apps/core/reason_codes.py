@@ -71,7 +71,7 @@ REASON_CODES: tuple[ReasonDef, ...] = (
     ReasonDef(
         "override", "DUPLICATE_VERIFIED", "مرجع مكرر تم التحقق منه", "Duplicate reference verified"
     ),
-    ReasonDef("override", "BATCH_CHOICE", "اختيار دفعة أخرى", "Different batch chosen"),
+    ReasonDef("override", "BATCH_CHOICE", "اختيار تشغيلة أخرى", "Different batch chosen"),
     ReasonDef("override", "DISCOUNT_ABOVE_LIMIT", "خصم فوق الحد", "Discount above the limit"),
     ReasonDef("override", "OTHER", "سبب آخر", "Other", True),
     # Payer rejections: rebill to the patient or write off (FEATURES 11.5).

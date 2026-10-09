@@ -30,7 +30,7 @@ register_permission(
 
 register_permission(
     "pharmacy.override_batch",
-    label_ar="صرف من دفعة غير المقترحة",
+    label_ar="صرف من تشغيلة غير المقترحة",
     label_en="Dispense from a non-FEFO batch",
     default_roles={PHARMACIST, ADMIN},
 )
