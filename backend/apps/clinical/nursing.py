@@ -118,8 +118,10 @@ def nursing_visits(
     ids = [v.pk for v in rows]
     stays = _open_stays(ids)
     waiting: dict[int, int] = {}
-    for visit_id in orders.worklist([ServiceKind.PROCEDURE]).filter(visit_id__in=ids).values_list(
-        "visit_id", flat=True
+    for visit_id in (
+        orders.worklist([ServiceKind.PROCEDURE])
+        .filter(visit_id__in=ids)
+        .values_list("visit_id", flat=True)
     ):
         waiting[visit_id] = waiting.get(visit_id, 0) + 1
     queue: dict[int, QueueEntry] = {}
@@ -141,7 +143,7 @@ def nursing_visits(
     ]
     inpatients = sorted(
         (r for r in out if r.bed is not None),
-        key=lambda r: (r.bed.bed.code if r.bed is not None else ""),
+        key=lambda r: r.bed.bed.code if r.bed is not None else "",
     )
     return inpatients + [r for r in out if r.bed is None]
 

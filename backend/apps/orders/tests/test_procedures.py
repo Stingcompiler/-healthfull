@@ -115,7 +115,8 @@ def test_done_records_who_when_and_note(doctor, nurse, cashier) -> None:
     done = orders.perform_procedure(line, nurse, note="  left deltoid  ")
     assert done.fulfilment_status == "performed"
     assert done.performed_by == nurse
-    assert done.performed_at is not None and done.performed_at >= before
+    assert done.performed_at is not None
+    assert done.performed_at >= before
     assert done.performed_note == "left deltoid"
     assert orders.line_state(done) == "performed"
     assert [ln.pk for ln in orders.procedures_done()] == [line.pk]

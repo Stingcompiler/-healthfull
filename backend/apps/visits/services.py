@@ -81,6 +81,8 @@ __all__ = [
     "EMERGENCY_PRIORITY",
     "FINANCIAL_EVENTS",
     "AgendaItem",
+    "BedBoard",
+    "BedView",
     "DayAgenda",
     "DisplayEntry",
     "LineView",
@@ -91,14 +93,12 @@ __all__ = [
     "VisitOptions",
     "VisitView",
     "WaitingRoom",
-    "BedBoard",
-    "BedView",
     "WardView",
     "admit",
     "admit_patient",
-    "bed_board",
     "appointment_day",
     "available_slots",
+    "bed_board",
     "bed_charge_dates",
     "board",
     "board_row",
@@ -131,9 +131,9 @@ __all__ = [
     "reassign_future_appointments",
     "replace_weekly_schedule",
     "requeue",
-    "set_bed_status",
     "reschedule_appointment",
     "schedule_prefetch",
+    "set_bed_status",
     "start_consultation",
     "timeline",
     "timeline_view",
@@ -937,9 +937,7 @@ def admit_patient(
         _orders().lock_patient(patient.pk)
         if visit is not None:
             if visit.patient_id != patient.pk:
-                raise DomainError(
-                    "VISIT_PATIENT_MISMATCH", "The visit belongs to another patient"
-                )
+                raise DomainError("VISIT_PATIENT_MISMATCH", "The visit belongs to another patient")
             if visit.visit_type == VisitType.PHARMACY_SALE:
                 raise DomainError(
                     "VISIT_NOT_ADMITTABLE", "A pharmacy sale cannot become an admission"
@@ -973,9 +971,10 @@ def set_bed_status(bed: Bed, *, status: str, actor: User) -> Bed:
         raise DomainError("INVALID_BED_STATUS", "A bed is set available or out of service")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"bed {status}"):
         locked = Bed.objects.select_for_update().get(pk=bed.pk)
-        if locked.status == BedStatus.OCCUPIED or BedStay.objects.filter(
-            bed=locked, ended_at__isnull=True
-        ).exists():
+        if (
+            locked.status == BedStatus.OCCUPIED
+            or BedStay.objects.filter(bed=locked, ended_at__isnull=True).exists()
+        ):
             raise DomainError("BED_OCCUPIED", "A patient is in this bed", bed=locked.code)
         if locked.status != status:
             locked.status = status
@@ -1014,9 +1013,7 @@ def _nights(admission: Admission, charged: set[date], today: date) -> tuple[int,
     """(nights due now, nights a discharge today would charge), not yet charged."""
     admitted_on = timezone.localdate(admission.admitted_at)
     due = set(bed_charge_dates(admitted_on, through=today)) - charged
-    at_discharge = set(
-        bed_charge_dates(admitted_on, through=today, discharged_on=today)
-    ) - charged
+    at_discharge = set(bed_charge_dates(admitted_on, through=today, discharged_on=today)) - charged
     return len(due), len(at_discharge)
 
 
@@ -1045,7 +1042,7 @@ def bed_board(*, today: date | None = None) -> BedBoard:
     ).values_list("admission_id", "charge_date"):
         charged.setdefault(adm_id, set()).add(day_charged)
     wards: dict[int | None, WardView] = {}
-    counts = {s: 0 for s in BedStatus.values}
+    counts = dict.fromkeys(BedStatus.values, 0)
     total_due = 0
     for bed in beds:
         stay = stays.get(bed.pk)
@@ -1067,9 +1064,7 @@ def bed_board(*, today: date | None = None) -> BedBoard:
             )
         ward = wards.setdefault(bed.room_id, WardView(room=bed.room))
         ward.beds.append(view)
-    ordered = sorted(
-        wards.values(), key=lambda w: (w.room is None, w.room.code if w.room else "")
-    )
+    ordered = sorted(wards.values(), key=lambda w: (w.room is None, w.room.code if w.room else ""))
     return BedBoard(wards=ordered, counts=counts, nights_due=total_due)
 
 

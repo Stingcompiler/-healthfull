@@ -1202,9 +1202,7 @@ def procedures_done(*, on: date | None = None, limit: int = 100) -> list[Service
             performed_at__gte=start,
             performed_at__lt=start + timedelta(days=1),
         )
-        .select_related(
-            "visit__patient", "service", "department", "ordered_by", "performed_by"
-        )
+        .select_related("visit__patient", "service", "department", "ordered_by", "performed_by")
         .order_by("-performed_at", "-id")[:limit]
     )
 

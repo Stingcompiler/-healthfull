@@ -5670,6 +5670,467 @@
         "title": "ImportRowOut",
         "type": "object"
       },
+      "InpatientAdmissionOut": {
+        "properties": {
+          "admitted_at": {
+            "format": "date-time",
+            "title": "Admitted At",
+            "type": "string"
+          },
+          "admitted_by": {
+            "$ref": "#/components/schemas/InpatientPersonOut"
+          },
+          "admitting_doctor": {
+            "$ref": "#/components/schemas/InpatientPersonOut"
+          },
+          "bed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpatientRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The current bed (last bed when out)"
+          },
+          "diagnosis": {
+            "title": "Diagnosis",
+            "type": "string"
+          },
+          "discharge_summary": {
+            "title": "Discharge Summary",
+            "type": "string"
+          },
+          "discharged_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discharged At"
+          },
+          "discharged_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpatientPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "nights_charged": {
+            "title": "Nights Charged",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientBriefOut"
+          },
+          "status": {
+            "enum": [
+              "admitted",
+              "discharged",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "visit_id",
+          "visit_number",
+          "patient",
+          "bed",
+          "admitted_at",
+          "admitted_by",
+          "admitting_doctor",
+          "diagnosis",
+          "discharged_at",
+          "discharged_by",
+          "discharge_summary",
+          "nights_charged"
+        ],
+        "title": "InpatientAdmissionOut",
+        "type": "object"
+      },
+      "InpatientAdmitIn": {
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "diagnosis": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Diagnosis",
+            "type": "string"
+          },
+          "doctor_id": {
+            "title": "Doctor Id",
+            "type": "integer"
+          },
+          "patient_id": {
+            "title": "Patient Id",
+            "type": "integer"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An open visit of the patient; null opens a new inpatient visit",
+            "title": "Visit Id"
+          }
+        },
+        "required": [
+          "patient_id",
+          "bed_id",
+          "doctor_id"
+        ],
+        "title": "InpatientAdmitIn",
+        "type": "object"
+      },
+      "InpatientBedOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "occupant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpatientOccupantOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "service": {
+            "$ref": "#/components/schemas/InpatientRefOut"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "occupied",
+              "maintenance"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en",
+          "status",
+          "service",
+          "occupant"
+        ],
+        "title": "InpatientBedOut",
+        "type": "object"
+      },
+      "InpatientBedStatusIn": {
+        "properties": {
+          "status": {
+            "enum": [
+              "available",
+              "maintenance"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "InpatientBedStatusIn",
+        "type": "object"
+      },
+      "InpatientBoardOut": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/InpatientCountsOut"
+          },
+          "nights_due": {
+            "title": "Nights Due",
+            "type": "integer"
+          },
+          "wards": {
+            "items": {
+              "$ref": "#/components/schemas/InpatientWardOut"
+            },
+            "title": "Wards",
+            "type": "array"
+          }
+        },
+        "required": [
+          "wards",
+          "counts",
+          "nights_due"
+        ],
+        "title": "InpatientBoardOut",
+        "type": "object"
+      },
+      "InpatientChargeOut": {
+        "properties": {
+          "admissions": {
+            "description": "Admissions that got at least one line",
+            "title": "Admissions",
+            "type": "integer"
+          },
+          "charged": {
+            "description": "Bed night lines created",
+            "title": "Charged",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "charged",
+          "admissions"
+        ],
+        "title": "InpatientChargeOut",
+        "type": "object"
+      },
+      "InpatientCountsOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "integer"
+          },
+          "maintenance": {
+            "title": "Maintenance",
+            "type": "integer"
+          },
+          "occupied": {
+            "title": "Occupied",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "available",
+          "occupied",
+          "maintenance"
+        ],
+        "title": "InpatientCountsOut",
+        "type": "object"
+      },
+      "InpatientDischargeIn": {
+        "properties": {
+          "summary": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "title": "InpatientDischargeIn",
+        "type": "object"
+      },
+      "InpatientOccupantOut": {
+        "properties": {
+          "admission_id": {
+            "title": "Admission Id",
+            "type": "integer"
+          },
+          "admitted_at": {
+            "format": "date-time",
+            "title": "Admitted At",
+            "type": "string"
+          },
+          "admitting_doctor": {
+            "$ref": "#/components/schemas/InpatientPersonOut"
+          },
+          "diagnosis": {
+            "title": "Diagnosis",
+            "type": "string"
+          },
+          "in_bed_since": {
+            "format": "date-time",
+            "title": "In Bed Since",
+            "type": "string"
+          },
+          "nights_at_discharge": {
+            "description": "Nights a discharge now would charge (at least one for the stay)",
+            "title": "Nights At Discharge",
+            "type": "integer"
+          },
+          "nights_charged": {
+            "title": "Nights Charged",
+            "type": "integer"
+          },
+          "nights_due": {
+            "description": "Passed nights not charged yet (the daily run)",
+            "title": "Nights Due",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientBriefOut"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "admission_id",
+          "number",
+          "visit_id",
+          "visit_number",
+          "patient",
+          "admitted_at",
+          "in_bed_since",
+          "admitting_doctor",
+          "diagnosis",
+          "nights_charged",
+          "nights_due",
+          "nights_at_discharge"
+        ],
+        "title": "InpatientOccupantOut",
+        "type": "object"
+      },
+      "InpatientPersonOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "InpatientPersonOut",
+        "type": "object"
+      },
+      "InpatientRefOut": {
+        "description": "A named row (room, service, bed): code and both names.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "InpatientRefOut",
+        "type": "object"
+      },
+      "InpatientTransferIn": {
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bed_id"
+        ],
+        "title": "InpatientTransferIn",
+        "type": "object"
+      },
+      "InpatientWardOut": {
+        "properties": {
+          "beds": {
+            "items": {
+              "$ref": "#/components/schemas/InpatientBedOut"
+            },
+            "title": "Beds",
+            "type": "array"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpatientRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null: beds outside any ward"
+          }
+        },
+        "required": [
+          "room",
+          "beds"
+        ],
+        "title": "InpatientWardOut",
+        "type": "object"
+      },
       "InvoiceCreateIn": {
         "properties": {
           "line_ids": {
@@ -6986,6 +7447,419 @@
           }
         },
         "title": "NotePatch",
+        "type": "object"
+      },
+      "NursingAdmissionOut": {
+        "properties": {
+          "admitted_at": {
+            "format": "date-time",
+            "title": "Admitted At",
+            "type": "string"
+          },
+          "bed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NursingRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "admitted",
+              "discharged",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "ward": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NursingRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "admitted_at",
+          "bed",
+          "ward"
+        ],
+        "title": "NursingAdmissionOut",
+        "type": "object"
+      },
+      "NursingChartOut": {
+        "properties": {
+          "admission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NursingAdmissionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allergies": {
+            "items": {
+              "$ref": "#/components/schemas/AllergyChipOut"
+            },
+            "title": "Allergies",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/NursingNoteOut"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/ClinicPatientOut"
+          },
+          "procedures": {
+            "items": {
+              "$ref": "#/components/schemas/NursingProcedureOut"
+            },
+            "title": "Procedures",
+            "type": "array"
+          },
+          "visit": {
+            "$ref": "#/components/schemas/VisitBriefOut"
+          },
+          "vitals": {
+            "items": {
+              "$ref": "#/components/schemas/VitalsOut"
+            },
+            "title": "Vitals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "visit",
+          "patient",
+          "allergies",
+          "vitals",
+          "notes",
+          "procedures",
+          "admission"
+        ],
+        "title": "NursingChartOut",
+        "type": "object"
+      },
+      "NursingNoteIn": {
+        "properties": {
+          "kind": {
+            "default": "general",
+            "enum": [
+              "general",
+              "procedure",
+              "handover"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "NursingNoteIn",
+        "type": "object"
+      },
+      "NursingNoteOut": {
+        "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClinicUserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "general",
+              "procedure",
+              "handover"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "service_line_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Line Id"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "text",
+          "author",
+          "created_at",
+          "service_line_id"
+        ],
+        "title": "NursingNoteOut",
+        "type": "object"
+      },
+      "NursingProcedureOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "ordered_at": {
+            "format": "date-time",
+            "title": "Ordered At",
+            "type": "string"
+          },
+          "performed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Performed At"
+          },
+          "performed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClinicUserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "performed_note": {
+            "title": "Performed Note",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "service": {
+            "$ref": "#/components/schemas/NursingRefOut"
+          },
+          "state": {
+            "enum": [
+              "requested",
+              "invoiced",
+              "paid",
+              "performed",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "service",
+          "quantity",
+          "note",
+          "state",
+          "ordered_at",
+          "performed_at",
+          "performed_by",
+          "performed_note"
+        ],
+        "title": "NursingProcedureOut",
+        "type": "object"
+      },
+      "NursingQueueOut": {
+        "properties": {
+          "status": {
+            "enum": [
+              "waiting",
+              "called",
+              "in_progress",
+              "done",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "token_no": {
+            "title": "Token No",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "status",
+          "token_no"
+        ],
+        "title": "NursingQueueOut",
+        "type": "object"
+      },
+      "NursingRefOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "NursingRefOut",
+        "type": "object"
+      },
+      "NursingVisitOut": {
+        "properties": {
+          "admission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NursingAdmissionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allergies": {
+            "items": {
+              "$ref": "#/components/schemas/AllergyChipOut"
+            },
+            "title": "Allergies",
+            "type": "array"
+          },
+          "last_vitals_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Vitals At"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/ClinicPatientOut"
+          },
+          "procedures_waiting": {
+            "description": "Paid or authorized procedures not done",
+            "title": "Procedures Waiting",
+            "type": "integer"
+          },
+          "queue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NursingQueueOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visit": {
+            "$ref": "#/components/schemas/VisitBriefOut"
+          },
+          "vitals_count": {
+            "title": "Vitals Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "visit",
+          "patient",
+          "allergies",
+          "vitals_count",
+          "last_vitals_at",
+          "procedures_waiting",
+          "queue",
+          "admission"
+        ],
+        "title": "NursingVisitOut",
+        "type": "object"
+      },
+      "NursingVisitParams": {
+        "properties": {
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          }
+        },
+        "title": "NursingVisitParams",
         "type": "object"
       },
       "OpenInvoiceOut": {
@@ -10938,6 +11812,250 @@
           "updated_at"
         ],
         "title": "PrintTemplateOut",
+        "type": "object"
+      },
+      "ProcedureAllergyOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "mild",
+              "moderate",
+              "severe",
+              "life_threatening"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label_ar",
+          "label_en",
+          "severity"
+        ],
+        "title": "ProcedureAllergyOut",
+        "type": "object"
+      },
+      "ProcedureDoneIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "ProcedureDoneIn",
+        "type": "object"
+      },
+      "ProcedureLineOut": {
+        "properties": {
+          "allergies": {
+            "items": {
+              "$ref": "#/components/schemas/ProcedureAllergyOut"
+            },
+            "title": "Allergies",
+            "type": "array"
+          },
+          "authorized": {
+            "description": "Performed under a perform-first authorization (not yet paid)",
+            "title": "Authorized",
+            "type": "boolean"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcedureRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "note": {
+            "description": "The doctor's order note",
+            "title": "Note",
+            "type": "string"
+          },
+          "ordered_at": {
+            "format": "date-time",
+            "title": "Ordered At",
+            "type": "string"
+          },
+          "ordered_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcedurePersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientBriefOut"
+          },
+          "performed": {
+            "title": "Performed",
+            "type": "boolean"
+          },
+          "performed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Performed At"
+          },
+          "performed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcedurePersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "performed_note": {
+            "title": "Performed Note",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "service": {
+            "$ref": "#/components/schemas/ProcedureRefOut"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "service",
+          "quantity",
+          "note",
+          "department",
+          "patient",
+          "allergies",
+          "visit_id",
+          "visit_number",
+          "ordered_at",
+          "ordered_by",
+          "authorized",
+          "performed",
+          "performed_at",
+          "performed_by",
+          "performed_note"
+        ],
+        "title": "ProcedureLineOut",
+        "type": "object"
+      },
+      "ProcedureListParams": {
+        "properties": {
+          "department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Id"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          }
+        },
+        "title": "ProcedureListParams",
+        "type": "object"
+      },
+      "ProcedurePersonOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "ProcedurePersonOut",
+        "type": "object"
+      },
+      "ProcedureRefOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "ProcedureRefOut",
         "type": "object"
       },
       "QueueActionIn": {
@@ -21686,6 +22804,270 @@
         ]
       }
     },
+    "/api/clinical/nursing/visits": {
+      "get": {
+        "operationId": "clinical_list_nursing_visits",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NursingVisitOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Inpatients, then today's open visits in arrival order, for vitals and notes",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/nursing/visits/{visit_id}": {
+      "get": {
+        "operationId": "clinical_get_nursing_chart",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NursingChartOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A visit's vitals, nursing notes, procedures and admission",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
+    "/api/clinical/nursing/visits/{visit_id}/notes": {
+      "post": {
+        "description": "409 NOTE_EMPTY, INVALID_NOTE_KIND, VISIT_CANCELLED.",
+        "operationId": "clinical_create_nursing_note",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NursingNoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NursingNoteOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Add a nursing note to a visit",
+        "tags": [
+          "clinical"
+        ]
+      }
+    },
     "/api/clinical/order-sets": {
       "get": {
         "operationId": "clinical_list_order_sets",
@@ -28225,6 +29607,280 @@
         ]
       }
     },
+    "/api/orders/procedures": {
+      "get": {
+        "operationId": "orders_list_procedure_worklist",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "department_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Department Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProcedureLineOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Paid or authorized procedures waiting to be done, oldest order first",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/procedures/done": {
+      "get": {
+        "operationId": "orders_list_procedures_done",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProcedureLineOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Procedures done today, newest first",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/orders/procedures/{line_id}/done": {
+      "post": {
+        "description": "409 LINE_NOT_ELIGIBLE (neither paid nor authorized), LINE_ALREADY_PERFORMED, LINE_CANCELLED, LINE_NOT_PROCEDURE.",
+        "operationId": "orders_perform_procedure",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "title": "Line Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcedureDoneIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcedureLineOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Mark a procedure done: records who and when, with an optional note",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
     "/api/orders/visits/{visit_id}/estimate": {
       "post": {
         "description": "FEATURES 3.8: the only doctor-facing money. 409 ESTIMATED_COST_DISABLED unless the center turns it on; 403 without clinical.view_estimated_cost. Also 409 PRICE_NOT_FOUND, NO_EFFECTIVE_PRICE_LIST and the prescription errors of ordering.",
@@ -33734,6 +35390,610 @@
           }
         ],
         "summary": "Move a booking to another slot (the old one is kept as rescheduled)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/inpatient/admissions": {
+      "post": {
+        "description": "409 VISIT_PATIENT_MISMATCH, VISIT_NOT_ADMITTABLE, VISIT_NOT_OPEN, ALREADY_ADMITTED, PATIENT_ALREADY_ADMITTED, BED_NOT_AVAILABLE, BED_SERVICE_INVALID, PATIENT_MERGED, PATIENT_INACTIVE, DOCTOR_INACTIVE, COVERAGE_INVALID, CARD_NUMBER_REQUIRED.",
+        "operationId": "visits_admit_patient",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InpatientAdmitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientAdmissionOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Admit a patient to a free bed, on an open visit or a new inpatient visit",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/inpatient/admissions/{admission_id}": {
+      "get": {
+        "operationId": "visits_get_admission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "admission_id",
+            "required": true,
+            "schema": {
+              "title": "Admission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientAdmissionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "One admission with its current bed and the nights charged",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/inpatient/admissions/{admission_id}/discharge": {
+      "post": {
+        "description": "409 NOT_ADMITTED.",
+        "operationId": "visits_discharge_patient",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "admission_id",
+            "required": true,
+            "schema": {
+              "title": "Admission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InpatientDischargeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientAdmissionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Discharge: charge the remaining nights, free the bed and close the visit",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/inpatient/admissions/{admission_id}/transfer": {
+      "post": {
+        "description": "409 NOT_ADMITTED, SAME_BED, BED_NOT_AVAILABLE, BED_SERVICE_INVALID.",
+        "operationId": "visits_transfer_bed",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "admission_id",
+            "required": true,
+            "schema": {
+              "title": "Admission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InpatientTransferIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientAdmissionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Move an admitted patient to another free bed",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/inpatient/beds/{bed_id}/status": {
+      "post": {
+        "description": "409 BED_OCCUPIED, INVALID_BED_STATUS.",
+        "operationId": "visits_set_bed_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bed_id",
+            "required": true,
+            "schema": {
+              "title": "Bed Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InpatientBedStatusIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientRefOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Take a free bed out of service or back into service",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/inpatient/board": {
+      "get": {
+        "operationId": "visits_get_bed_board",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientBoardOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Wards and beds with their occupants and the nights due (bed board)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/inpatient/charge-due": {
+      "post": {
+        "description": "Idempotent: a night is charged once. The lines are given under the admission's documented perform-first exception and wait for the cashier's invoice.",
+        "operationId": "visits_charge_bed_nights",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientChargeOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Add every open admission's passed nights as bed day lines (the daily run)",
         "tags": [
           "visits"
         ]

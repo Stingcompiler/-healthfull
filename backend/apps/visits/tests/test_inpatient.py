@@ -72,7 +72,9 @@ def test_admit_without_a_visit_opens_an_inpatient_visit(nurse, doctor) -> None:
     assert visit.visit_type == "inpatient"
     assert visit.status == "open"
     assert visit.patient == patient
-    assert visit.department == beds[0].room.department
+    room = beds[0].room
+    assert room is not None
+    assert visit.department == room.department
     assert visit.doctor == doctor
     # An inpatient visit has no consultation fee line and no queue token.
     assert not ServiceLine.objects.filter(visit=visit).exists()
@@ -158,7 +160,8 @@ def test_board_groups_beds_by_ward_with_occupants_and_nights(nurse, doctor) -> N
     ward = next(w for w in board.wards if w.room is not None and w.room == beds[0].room)
     assert [v.bed.pk for v in ward.beds] == [bd.pk for bd in beds]
     occupied = ward.beds[0]
-    assert occupied.admission is not None and occupied.admission.pk == adm.pk
+    assert occupied.admission is not None
+    assert occupied.admission.pk == adm.pk
     assert occupied.nights_charged == 0
     assert occupied.nights_due == 2
     # Discharging today charges the two passed nights (today is not a night yet).
@@ -167,7 +170,9 @@ def test_board_groups_beds_by_ward_with_occupants_and_nights(nurse, doctor) -> N
     assert ward.beds[2].bed.status == "maintenance"
     assert board.nights_due >= 2
     counts = board.counts
-    assert counts["occupied"] >= 1 and counts["maintenance"] >= 1 and counts["available"] >= 1
+    assert counts["occupied"] >= 1
+    assert counts["maintenance"] >= 1
+    assert counts["available"] >= 1
 
 
 def test_same_day_admission_charges_one_night_at_discharge(nurse, doctor) -> None:
@@ -203,9 +208,7 @@ def test_due_nights_are_charged_once_and_reach_the_invoice(nurse, doctor) -> Non
     inv = fin.invoice(adm.visit, cashier)
     assert inv.status == "approved"
     assert inv.patient_total == D("60000.00")
-    assert {ln.billing_status for ln in ServiceLine.objects.filter(visit=adm.visit)} == {
-        "invoiced"
-    }
+    assert {ln.billing_status for ln in ServiceLine.objects.filter(visit=adm.visit)} == {"invoiced"}
 
 
 def test_transfer_moves_the_occupant_and_charges_the_new_bed_from_then(nurse, doctor) -> None:

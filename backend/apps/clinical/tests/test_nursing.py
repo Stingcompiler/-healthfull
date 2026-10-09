@@ -67,9 +67,12 @@ def test_today_lists_open_visits_and_inpatients(nurse) -> None:
     ids = [r.visit.pk for r in rows]
     # Inpatients first, then today's visits in arrival order.
     assert ids == [admission.visit_id, first.pk, second.pk]
-    assert old.pk not in ids and closed.pk not in ids and sale.pk not in ids
+    assert old.pk not in ids
+    assert closed.pk not in ids
+    assert sale.pk not in ids
     inpatient = rows[0]
-    assert inpatient.admission is not None and inpatient.bed is not None
+    assert inpatient.admission is not None
+    assert inpatient.bed is not None
     assert rows[1].admission is None
 
 
@@ -92,7 +95,7 @@ def test_rows_carry_active_allergies_and_waiting_procedures(nurse) -> None:
     cs.record_allergy(
         visit.patient, actor=nurse, allergen_type="other", substance="Latex", severity="severe"
     )
-    paid, unpaid = fin.order(visit, doctor, fin.priced("procedure"), fin.priced("procedure"))
+    paid, _unpaid = fin.order(visit, doctor, fin.priced("procedure"), fin.priced("procedure"))
     inv = fin.invoice(visit, cashier, [paid])
     from apps.payments import services as pay
 
