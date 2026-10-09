@@ -36,6 +36,8 @@ ReasonCategoryCode = Literal[
     "transfer_reject",
     "result_amend",
     "sample_reject",
+    "patient_merge",
+    "appointment_cancel",
 ]
 PrintDocumentCode = Literal[
     "invoice", "receipt", "prescription", "lab_result", "claim_export", "shift_report"

@@ -199,10 +199,10 @@
             "type": "string"
           },
           "department": {
-            "$ref": "#/components/schemas/DepartmentOut"
+            "$ref": "#/components/schemas/VisitDepartmentOut"
           },
           "doctor": {
-            "$ref": "#/components/schemas/DoctorOut"
+            "$ref": "#/components/schemas/VisitDoctorOut"
           },
           "ends_at": {
             "format": "date-time",
@@ -1158,7 +1158,7 @@
             "title": "Patient Percent Override"
           },
           "payer": {
-            "$ref": "#/components/schemas/PayerOut"
+            "$ref": "#/components/schemas/PatientPayerOut"
           },
           "relation": {
             "title": "Relation",
@@ -1807,7 +1807,7 @@
             "type": "string"
           },
           "doctor": {
-            "$ref": "#/components/schemas/DoctorOut"
+            "$ref": "#/components/schemas/VisitDoctorOut"
           },
           "items": {
             "items": {
@@ -1889,9 +1889,19 @@
       },
       "DepartmentOut": {
         "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
           "code": {
             "title": "Code",
             "type": "string"
+          },
+          "doctor_count": {
+            "default": 0,
+            "description": "Active doctors",
+            "title": "Doctor Count",
+            "type": "integer"
           },
           "id": {
             "title": "Id",
@@ -1904,13 +1914,24 @@
           "name_en": {
             "title": "Name En",
             "type": "string"
+          },
+          "room_count": {
+            "default": 0,
+            "title": "Room Count",
+            "type": "integer"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
           }
         },
         "required": [
           "id",
           "code",
           "name_ar",
-          "name_en"
+          "name_en",
+          "active",
+          "sort_order"
         ],
         "title": "DepartmentOut",
         "type": "object"
@@ -1987,12 +2008,12 @@
             "title": "Called At"
           },
           "department": {
-            "$ref": "#/components/schemas/DepartmentOut"
+            "$ref": "#/components/schemas/VisitDepartmentOut"
           },
           "doctor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/DoctorOut"
+                "$ref": "#/components/schemas/VisitDoctorOut"
               },
               {
                 "type": "null"
@@ -2010,7 +2031,7 @@
           "room": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RoomOut"
+                "$ref": "#/components/schemas/VisitRoomOut"
               },
               {
                 "type": "null"
@@ -2140,25 +2161,58 @@
       },
       "DoctorOut": {
         "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "consultation_service_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consultation Service Code"
+          },
+          "consultation_service_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consultation Service Id"
+          },
+          "department_code": {
+            "title": "Department Code",
+            "type": "string"
+          },
           "department_id": {
             "title": "Department Id",
             "type": "integer"
           },
-          "has_consultation_fee": {
-            "title": "Has Consultation Fee",
-            "type": "boolean"
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
           },
           "id": {
             "title": "Id",
             "type": "integer"
           },
-          "name_ar": {
-            "title": "Name Ar",
-            "type": "string"
-          },
-          "name_en": {
-            "title": "Name En",
-            "type": "string"
+          "schedule": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleSessionOut"
+            },
+            "title": "Schedule",
+            "type": "array"
           },
           "specialty_ar": {
             "title": "Specialty Ar",
@@ -2167,16 +2221,30 @@
           "specialty_en": {
             "title": "Specialty En",
             "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
           }
         },
         "required": [
           "id",
+          "user_id",
+          "username",
+          "full_name_ar",
+          "full_name_en",
           "department_id",
-          "name_ar",
-          "name_en",
+          "department_code",
           "specialty_ar",
           "specialty_en",
-          "has_consultation_fee"
+          "consultation_service_id",
+          "consultation_service_code",
+          "active",
+          "schedule"
         ],
         "title": "DoctorOut",
         "type": "object"
@@ -4025,6 +4093,44 @@
         "title": "PatientPatch",
         "type": "object"
       },
+      "PatientPayerOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "requires_card_number": {
+            "title": "Requires Card Number",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en",
+          "kind",
+          "requires_card_number"
+        ],
+        "title": "PatientPayerOut",
+        "type": "object"
+      },
       "PatientProfileOut": {
         "description": "A file with what reception shows around it.",
         "properties": {
@@ -5656,12 +5762,12 @@
             "type": "string"
           },
           "department": {
-            "$ref": "#/components/schemas/DepartmentOut"
+            "$ref": "#/components/schemas/VisitDepartmentOut"
           },
           "doctor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/DoctorOut"
+                "$ref": "#/components/schemas/VisitDoctorOut"
               },
               {
                 "type": "null"
@@ -5704,7 +5810,7 @@
           "room": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RoomOut"
+                "$ref": "#/components/schemas/VisitRoomOut"
               },
               {
                 "type": "null"
@@ -5786,7 +5892,9 @@
               "perform_first",
               "transfer_reject",
               "result_amend",
-              "sample_reject"
+              "sample_reject",
+              "patient_merge",
+              "appointment_cancel"
             ],
             "title": "Category",
             "type": "string"
@@ -5859,7 +5967,9 @@
                   "perform_first",
                   "transfer_reject",
                   "result_amend",
-                  "sample_reject"
+                  "sample_reject",
+                  "patient_merge",
+                  "appointment_cancel"
                 ],
                 "type": "string"
               },
@@ -6175,9 +6285,35 @@
       },
       "RoomOut": {
         "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
           "code": {
             "title": "Code",
             "type": "string"
+          },
+          "department_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Code"
+          },
+          "department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Id"
           },
           "id": {
             "title": "Id",
@@ -6196,7 +6332,10 @@
           "id",
           "code",
           "name_ar",
-          "name_en"
+          "name_en",
+          "active",
+          "department_id",
+          "department_code"
         ],
         "title": "RoomOut",
         "type": "object"
@@ -7600,6 +7739,34 @@
         "title": "VisitCancelIn",
         "type": "object"
       },
+      "VisitDepartmentOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "VisitDepartmentOut",
+        "type": "object"
+      },
       "VisitDetailOut": {
         "properties": {
           "lines": {
@@ -7634,6 +7801,49 @@
           "queue_ready"
         ],
         "title": "VisitDetailOut",
+        "type": "object"
+      },
+      "VisitDoctorOut": {
+        "properties": {
+          "department_id": {
+            "title": "Department Id",
+            "type": "integer"
+          },
+          "has_consultation_fee": {
+            "title": "Has Consultation Fee",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "specialty_ar": {
+            "title": "Specialty Ar",
+            "type": "string"
+          },
+          "specialty_en": {
+            "title": "Specialty En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "department_id",
+          "name_ar",
+          "name_en",
+          "specialty_ar",
+          "specialty_en",
+          "has_consultation_fee"
+        ],
+        "title": "VisitDoctorOut",
         "type": "object"
       },
       "VisitIn": {
@@ -7825,14 +8035,14 @@
           },
           "departments": {
             "items": {
-              "$ref": "#/components/schemas/DepartmentOut"
+              "$ref": "#/components/schemas/VisitDepartmentOut"
             },
             "title": "Departments",
             "type": "array"
           },
           "doctors": {
             "items": {
-              "$ref": "#/components/schemas/DoctorOut"
+              "$ref": "#/components/schemas/VisitDoctorOut"
             },
             "title": "Doctors",
             "type": "array"
@@ -7927,7 +8137,7 @@
           "department": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/DepartmentOut"
+                "$ref": "#/components/schemas/VisitDepartmentOut"
               },
               {
                 "type": "null"
@@ -7937,7 +8147,7 @@
           "doctor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/DoctorOut"
+                "$ref": "#/components/schemas/VisitDoctorOut"
               },
               {
                 "type": "null"
@@ -8020,6 +8230,34 @@
           "billed"
         ],
         "title": "VisitOut",
+        "type": "object"
+      },
+      "VisitRoomOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "VisitRoomOut",
         "type": "object"
       },
       "WaitingRoomOut": {
@@ -12758,7 +12996,9 @@
                     "perform_first",
                     "transfer_reject",
                     "result_amend",
-                    "sample_reject"
+                    "sample_reject",
+                    "patient_merge",
+                    "appointment_cancel"
                   ],
                   "type": "string"
                 },
@@ -15577,7 +15817,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/PayerOut"
+                    "$ref": "#/components/schemas/PatientPayerOut"
                   },
                   "title": "Response",
                   "type": "array"

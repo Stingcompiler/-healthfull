@@ -65,7 +65,7 @@ class UserRefOut(Schema):
         return str(obj.display_name_en)
 
 
-class PayerOut(Schema):
+class PatientPayerOut(Schema):
     id: int
     code: str
     name_ar: str
@@ -275,7 +275,7 @@ class MergeOut(Schema):
 class CoverageOut(Schema):
     id: int
     patient_id: int
-    payer: PayerOut
+    payer: PatientPayerOut
     card_number: str
     member_name: str
     relation: str

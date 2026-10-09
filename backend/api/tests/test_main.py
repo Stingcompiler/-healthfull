@@ -219,3 +219,30 @@ def test_api_docs_use_bundled_assets_only(settings: Any) -> None:
     schema = Client().get("/api/openapi.json")
     assert schema.status_code == 200
     assert schema.json()["info"]["title"] == "Hospital System API"
+
+
+def test_schema_class_names_are_unique_across_apps() -> None:
+    # The OpenAPI generator keys components by class name, so two apps declaring the same name
+    # (patients.PayerOut and catalog.PayerOut once did) silently document one endpoint with the
+    # other's shape and the generated frontend types follow the wrong one.
+    import importlib
+    import inspect
+    import pkgutil
+    from collections import defaultdict
+
+    from ninja import Schema
+
+    import apps
+
+    owners: dict[str, set[str]] = defaultdict(set)
+    for info in pkgutil.iter_modules(apps.__path__):
+        for part in ("schemas", "api"):
+            try:
+                module = importlib.import_module(f"apps.{info.name}.{part}")
+            except ModuleNotFoundError:
+                continue
+            for name, cls in inspect.getmembers(module, inspect.isclass):
+                if issubclass(cls, Schema) and cls.__module__ == module.__name__:
+                    owners[name].add(module.__name__)
+    clashes = {name: sorted(mods) for name, mods in owners.items() if len(mods) > 1}
+    assert clashes == {}

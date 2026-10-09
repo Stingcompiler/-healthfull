@@ -650,3 +650,28 @@ def test_core_api_surface_is_pinned() -> None:
             "core.manage_print_templates",
         ),
     }
+
+
+def test_reason_category_schema_lists_every_model_category() -> None:
+    # A category added to the model (with its data migration) must also be creatable and
+    # filterable on the admin screen; the API literal and the model choices stay in step.
+    from typing import get_args
+
+    from apps.core.models import ReasonCategory
+    from apps.core.schemas import ReasonCategoryCode
+
+    assert set(get_args(ReasonCategoryCode)) == set(ReasonCategory.values)
+
+
+def test_create_reason_in_a_wave_a_category(client: ApiClient) -> None:
+    res = client.post(
+        "/api/core/reason-codes",
+        {
+            "category": "patient_merge",
+            "code": "SAME_PHONE",
+            "label_ar": "نفس رقم الهاتف",
+            "label_en": "Same phone number",
+        },
+    )
+    assert res.status_code == 201, res.content
+    assert ReasonCode.objects.filter(category="patient_merge", code="SAME_PHONE").exists()

@@ -68,18 +68,23 @@ export const SERVICE_KINDS: readonly ServiceKind[] = ["consultation", "lab", "pr
 export const RULE_KINDS: readonly RuleKind[] = ["percentage", "copay", "ceiling"];
 export const PAYER_KINDS: readonly PayerKind[] = ["insurance", "company", "government", "ngo", "other"];
 export const CLAIM_PERIODS: readonly ClaimPeriod[] = ["weekly", "biweekly", "monthly", "quarterly"];
-export const REASON_CATEGORIES: readonly ReasonCategory[] = [
-  "line_cancel",
-  "visit_cancel",
-  "discount",
-  "refund",
-  "credit_note",
-  "stock_adjust",
-  "variance",
-  "override",
-  "writeoff",
-  "perform_first",
-  "transfer_reject",
-  "result_amend",
-  "sample_reject",
-];
+// A record keyed by every category the API accepts, so a category added on the backend fails the
+// type check here until the admin screen lists it (and its label is added to admin.json).
+const REASON_CATEGORY_SET: Record<ReasonCategory, true> = {
+  line_cancel: true,
+  visit_cancel: true,
+  discount: true,
+  refund: true,
+  credit_note: true,
+  stock_adjust: true,
+  variance: true,
+  override: true,
+  writeoff: true,
+  perform_first: true,
+  transfer_reject: true,
+  result_amend: true,
+  sample_reject: true,
+  patient_merge: true,
+  appointment_cancel: true,
+};
+export const REASON_CATEGORIES = Object.keys(REASON_CATEGORY_SET) as ReasonCategory[];

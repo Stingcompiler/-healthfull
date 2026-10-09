@@ -4,8 +4,8 @@ import type { components } from "@/lib/api/schema";
 type S = components["schemas"];
 
 export type VisitOptions = S["VisitOptionsOut"];
-export type Department = S["DepartmentOut"];
-export type Doctor = S["DoctorOut"];
+export type Department = S["VisitDepartmentOut"];
+export type Doctor = S["VisitDoctorOut"];
 export type Visit = S["VisitOut"];
 export type VisitDetail = S["VisitDetailOut"];
 export type VisitInput = S["VisitIn"];

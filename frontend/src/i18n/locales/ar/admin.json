@@ -332,7 +332,9 @@
       "perform_first": "تفويض التنفيذ قبل الدفع",
       "transfer_reject": "رفض تحويل بنكي",
       "result_amend": "تعديل نتيجة مختبر",
-      "sample_reject": "رفض عينة مختبر"
+      "sample_reject": "رفض عينة مختبر",
+      "patient_merge": "دمج ملفات المرضى",
+      "appointment_cancel": "إلغاء موعد"
     }
   },
   "catalog": {

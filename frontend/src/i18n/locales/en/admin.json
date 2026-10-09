@@ -320,7 +320,9 @@
       "perform_first": "Perform-first authorization",
       "transfer_reject": "Bank transfer rejection",
       "result_amend": "Lab result amendment",
-      "sample_reject": "Lab sample rejection"
+      "sample_reject": "Lab sample rejection",
+      "patient_merge": "Patient file merge",
+      "appointment_cancel": "Appointment cancellation"
     }
   },
   "catalog": {
