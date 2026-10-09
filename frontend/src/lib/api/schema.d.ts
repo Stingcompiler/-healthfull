@@ -1956,6 +1956,158 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lab/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Complete drafts waiting for a supervisor: first results and amendments */
+        get: operations["lab_list_approvals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/lines/{line_id}/cannot-perform": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a test that cannot be performed, with a reason (refund flow for paid tests)
+         * @description A billed test needs a billing supervisor's credentials in `approver` (409 CANCEL_NEEDS_BILLING_APPROVER, APPROVER_INVALID); 409 RESULT_APPROVED_IMMUTABLE.
+         */
+        post: operations["lab_cancel_test"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/lines/{line_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One test: sample, parameters with the patient's reference ranges, every version */
+        get: operations["lab_get_result"];
+        /**
+         * Enter or correct values (by parameter code) on the draft; flags are computed
+         * @description 409 SAMPLE_NOT_RECEIVED, LINE_NOT_ELIGIBLE, RESULT_APPROVED_IMMUTABLE, PARAMETER_UNKNOWN, RESULT_VALUE_INVALID.
+         */
+        put: operations["lab_enter_results"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/lines/{line_id}/result/amend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct an approved result: a new draft version; the original is kept */
+        post: operations["lab_amend_results"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/lines/{line_id}/result/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve the draft the supervisor read (the first approval performs the test)
+         * @description 409 RESULT_CHANGED when values changed since `revision`, RESULT_INCOMPLETE, RESULT_NOT_DRAFT, LINE_CANCELLED, LINE_NOT_ELIGIBLE.
+         */
+        post: operations["lab_approve_results"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/lines/{line_id}/result/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An approved result with the center header, for A4 printing in Arabic or English
+         * @description 409 RESULT_NOT_APPROVED: drafts are never printed.
+         */
+        get: operations["lab_get_result_print"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/parameters/{parameter_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename a parameter, change its unit or entry type, or retire it */
+        patch: operations["lab_update_parameter"];
+        trace?: never;
+    };
+    "/api/lab/parameters/{parameter_id}/ranges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a reference range (by sex and age, with critical limits)
+         * @description 409 INVALID_REFERENCE_RANGE.
+         */
+        post: operations["lab_create_range"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lab/ping": {
         parameters: {
             query?: never;
@@ -1965,6 +2117,228 @@ export interface paths {
         };
         /** Check that the /api/lab router is reachable */
         get: operations["lab_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/ranges/{range_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a reference range; stored results keep the limits they were judged by */
+        put: operations["lab_update_range"];
+        post?: never;
+        /** Remove a reference range */
+        delete: operations["lab_delete_range"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/reports/turnaround": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Turnaround per test: median, 90th percentile, share within target, overdue now
+         * @description Defaults to the last seven days. 409 INVALID_DATE_RANGE.
+         */
+        get: operations["lab_get_turnaround_report"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * One sample for tests of a visit; with `receive` it is received in the lab at once
+         * @description Starts the tests (in progress). 409 LINE_NOT_ELIGIBLE, SAMPLE_TYPE_MISMATCH, SAMPLE_ALREADY_COLLECTED, LINE_NOT_ON_VISIT.
+         */
+        post: operations["lab_collect_sample"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/samples/{sample_id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the tube label prints: accession number, patient, tests, collection time */
+        get: operations["lab_get_sample_label"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/samples/{sample_id}/label-printed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record that the tube label was printed */
+        post: operations["lab_mark_label_printed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/samples/{sample_id}/receive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A sample collected outside the lab arrived */
+        post: operations["lab_receive_sample"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/samples/{sample_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject an unusable sample with a reason; its tests wait for a new sample */
+        post: operations["lab_reject_sample"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/services-available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active lab services of the catalog that have no test set up yet */
+        get: operations["lab_list_unlinked_services"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/tests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every lab test of the catalog */
+        get: operations["lab_list_tests"];
+        put?: never;
+        /**
+         * Set up the test of a lab service (sample, container, turnaround)
+         * @description 409 SERVICE_NOT_LAB, LAB_TEST_EXISTS.
+         */
+        post: operations["lab_create_test"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/tests/{test_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One test with its parameters and reference ranges */
+        get: operations["lab_get_test"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a test's sample, container, method, turnaround, instructions or status */
+        patch: operations["lab_update_test"];
+        trace?: never;
+    };
+    "/api/lab/tests/{test_id}/parameters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a parameter to a test
+         * @description 409 PARAMETER_EXISTS, PARAMETER_CHOICES_REQUIRED.
+         */
+        post: operations["lab_create_parameter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/worklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Paid or authorized lab tests by bench stage, or recently approved ones
+         * @description Unpaid tests never show (invariant 1). `counts` gives the open stages.
+         */
+        get: operations["lab_list_worklist"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6708,6 +7082,809 @@ export interface components {
         InvoicePrintOut: {
             center: components["schemas"]["BillingCenterOut"];
             invoice: components["schemas"]["InvoiceOut"];
+        };
+        /** LabAmendIn */
+        LabAmendIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * LabAppliedRangeOut
+         * @description The reference range used for this patient (sex and age on the collection date).
+         */
+        LabAppliedRangeOut: {
+            /** Critical High */
+            critical_high: string | null;
+            /** Critical Low */
+            critical_low: string | null;
+            /** High */
+            high: string | null;
+            /** Low */
+            low: string | null;
+            /** Normal Text */
+            normal_text: string;
+        };
+        /** LabApprovalPageOut */
+        LabApprovalPageOut: {
+            /** Count */
+            count: number;
+            /** Items */
+            items: components["schemas"]["LabApprovalRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** LabApprovalRowOut */
+        LabApprovalRowOut: {
+            /** Abnormal Count */
+            abnormal_count: number;
+            /** Accession No */
+            accession_no: string | null;
+            /** Amendment */
+            amendment: boolean;
+            amendment_reason: components["schemas"]["LabReasonOut"] | null;
+            /** Critical Count */
+            critical_count: number;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+            entered_by: components["schemas"]["LabUserRefOut"];
+            /** Line Id */
+            line_id: number;
+            patient: components["schemas"]["LabPatientOut"];
+            test: components["schemas"]["LabTestRefOut"];
+            /** Version Id */
+            version_id: number;
+            /** Version No */
+            version_no: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** LabApproveIn */
+        LabApproveIn: {
+            /** Revision */
+            revision: string;
+        };
+        /**
+         * LabApproverIn
+         * @description A billing supervisor's credentials typed in at the lab bench (ADR 0009).
+         */
+        LabApproverIn: {
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /** LabCancelIn */
+        LabCancelIn: {
+            approver?: components["schemas"]["LabApproverIn"] | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+        };
+        /** LabCenterOut */
+        LabCenterOut: {
+            /** Address */
+            address: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+        };
+        /**
+         * LabCompanionOut
+         * @description Another test of the visit waiting for the same kind of sample.
+         */
+        LabCompanionOut: {
+            /** Line Id */
+            line_id: number;
+            test: components["schemas"]["LabTestRefOut"];
+        };
+        /** LabEntryParameterOut */
+        LabEntryParameterOut: {
+            /** Choices */
+            choices: string[];
+            /** Code */
+            code: string;
+            /** Decimals */
+            decimals: number;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            range: components["schemas"]["LabAppliedRangeOut"] | null;
+            /** Unit */
+            unit: string;
+            /**
+             * Value Type
+             * @enum {string}
+             */
+            value_type: "numeric" | "text" | "choice" | "pos_neg";
+        };
+        /** LabLabelOut */
+        LabLabelOut: {
+            patient: components["schemas"]["LabPatientOut"];
+            sample: components["schemas"]["LabSampleOut"];
+            /** Tests */
+            tests: components["schemas"]["LabTestRefOut"][];
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** LabLineOut */
+        LabLineOut: {
+            /** Authorized */
+            authorized: boolean;
+            /** Billing Status */
+            billing_status: string;
+            /** Cancel Note */
+            cancel_note: string;
+            cancel_reason: components["schemas"]["LabReasonOut"] | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /** Fulfilment Status */
+            fulfilment_status: string;
+            /** Id */
+            id: number;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            ordered_by: components["schemas"]["LabUserRefOut"] | null;
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** LabPageParams */
+        LabPageParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+        };
+        /** LabParameterIn */
+        LabParameterIn: {
+            /** Choices */
+            choices?: string[];
+            /** Code */
+            code: string;
+            /**
+             * Decimals
+             * @default 1
+             */
+            decimals: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Unit
+             * @default
+             */
+            unit: string;
+            /**
+             * Value Type
+             * @default numeric
+             * @enum {string}
+             */
+            value_type: "numeric" | "text" | "choice" | "pos_neg";
+        };
+        /** LabParameterOut */
+        LabParameterOut: {
+            /** Active */
+            active: boolean;
+            /** Choices */
+            choices: string[];
+            /** Code */
+            code: string;
+            /** Decimals */
+            decimals: number;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Ranges */
+            ranges: components["schemas"]["LabRangeOut"][];
+            /** Sort Order */
+            sort_order: number;
+            /** Unit */
+            unit: string;
+            /**
+             * Value Type
+             * @enum {string}
+             */
+            value_type: "numeric" | "text" | "choice" | "pos_neg";
+        };
+        /** LabParameterPatch */
+        LabParameterPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Choices */
+            choices?: string[] | null;
+            /** Decimals */
+            decimals?: number | null;
+            /** Name Ar */
+            name_ar?: string | null;
+            /** Name En */
+            name_en?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Unit */
+            unit?: string | null;
+            /** Value Type */
+            value_type?: ("numeric" | "text" | "choice" | "pos_neg") | null;
+        };
+        /** LabPatientOut */
+        LabPatientOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Sex */
+            sex: string;
+        };
+        /** LabPrintOut */
+        LabPrintOut: {
+            center: components["schemas"]["LabCenterOut"];
+            /**
+             * Current
+             * @description False when a later amendment replaced this version.
+             */
+            current: boolean;
+            ordered_by: components["schemas"]["LabUserRefOut"] | null;
+            patient: components["schemas"]["LabPatientOut"];
+            sample: components["schemas"]["LabSampleOut"] | null;
+            test: components["schemas"]["LabTestRefOut"];
+            version: components["schemas"]["LabVersionOut"];
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** LabPrintParams */
+        LabPrintParams: {
+            /** Version Id */
+            version_id?: number | null;
+        };
+        /** LabRangeIn */
+        LabRangeIn: {
+            /** Age Max Days */
+            age_max_days?: number | null;
+            /**
+             * Age Min Days
+             * @default 0
+             */
+            age_min_days: number;
+            /** Critical High */
+            critical_high?: string | null;
+            /** Critical Low */
+            critical_low?: string | null;
+            /** High */
+            high?: string | null;
+            /** Low */
+            low?: string | null;
+            /**
+             * Normal Text
+             * @default
+             */
+            normal_text: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Sex
+             * @default any
+             * @enum {string}
+             */
+            sex: "any" | "male" | "female";
+        };
+        /** LabRangeOut */
+        LabRangeOut: {
+            /** Age Max Days */
+            age_max_days: number | null;
+            /** Age Min Days */
+            age_min_days: number;
+            /** Critical High */
+            critical_high: string | null;
+            /** Critical Low */
+            critical_low: string | null;
+            /** High */
+            high: string | null;
+            /** Id */
+            id: number;
+            /** Low */
+            low: string | null;
+            /** Normal Text */
+            normal_text: string;
+            /** Note */
+            note: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "any" | "male" | "female";
+        };
+        /** LabReasonOut */
+        LabReasonOut: {
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+        };
+        /** LabRejectIn */
+        LabRejectIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+        };
+        /** LabResultIn */
+        LabResultIn: {
+            /** Comment */
+            comment?: string | null;
+            /** Values */
+            values?: {
+                [key: string]: string;
+            };
+        };
+        /** LabResultOut */
+        LabResultOut: {
+            /** Companions */
+            companions: components["schemas"]["LabCompanionOut"][];
+            /** First Approved At */
+            first_approved_at: string | null;
+            line: components["schemas"]["LabLineOut"];
+            /** Parameters */
+            parameters: components["schemas"]["LabEntryParameterOut"][];
+            patient: components["schemas"]["LabPatientOut"];
+            sample: components["schemas"]["LabSampleOut"] | null;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "to_collect" | "to_receive" | "to_enter" | "to_approve" | "done" | "cancelled";
+            test: components["schemas"]["LabTestRefOut"];
+            /** Versions */
+            versions: components["schemas"]["LabVersionOut"][];
+        };
+        /** LabSampleIn */
+        LabSampleIn: {
+            /** Line Ids */
+            line_ids: number[];
+            /**
+             * Receive
+             * @description Drawn in the lab: collected and received at once.
+             * @default true
+             */
+            receive: boolean;
+        };
+        /** LabSampleOut */
+        LabSampleOut: {
+            /** Accession No */
+            accession_no: string;
+            /**
+             * Collected At
+             * Format: date-time
+             */
+            collected_at: string;
+            collected_by: components["schemas"]["LabUserRefOut"];
+            /** Id */
+            id: number;
+            /** Label Printed At */
+            label_printed_at: string | null;
+            /** Received At */
+            received_at: string | null;
+            received_by: components["schemas"]["LabUserRefOut"] | null;
+            /** Rejection Note */
+            rejection_note: string;
+            rejection_reason: components["schemas"]["LabReasonOut"] | null;
+            /**
+             * Sample Type
+             * @enum {string}
+             */
+            sample_type: "whole_blood" | "serum" | "plasma" | "urine" | "stool" | "swab" | "sputum" | "csf" | "fluid" | "other";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "collected" | "received" | "rejected";
+        };
+        /** LabServiceOptionOut */
+        LabServiceOptionOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** LabStageCountsOut */
+        LabStageCountsOut: {
+            /** To Approve */
+            to_approve: number;
+            /** To Collect */
+            to_collect: number;
+            /** To Enter */
+            to_enter: number;
+            /** To Receive */
+            to_receive: number;
+        };
+        /** LabTatOut */
+        LabTatOut: {
+            /**
+             * Date From
+             * Format: date
+             */
+            date_from: string;
+            /**
+             * Date To
+             * Format: date
+             */
+            date_to: string;
+            /** Rows */
+            rows: components["schemas"]["LabTatRowOut"][];
+            total: components["schemas"]["LabTatStatsOut"];
+        };
+        /** LabTatParams */
+        LabTatParams: {
+            /** Date From */
+            date_from?: string | null;
+            /** Date To */
+            date_to?: string | null;
+        };
+        /** LabTatRowOut */
+        LabTatRowOut: {
+            /** Open Overdue */
+            open_overdue: number;
+            stats: components["schemas"]["LabTatStatsOut"];
+            test: components["schemas"]["LabTestRefOut"];
+        };
+        /** LabTatStatsOut */
+        LabTatStatsOut: {
+            /** Count */
+            count: number;
+            /** Maximum */
+            maximum: number | null;
+            /** Mean */
+            mean: number | null;
+            /** Median */
+            median: number | null;
+            /** P90 */
+            p90: number | null;
+            /** Within Target */
+            within_target: number;
+            /** Within Target Percent */
+            within_target_percent: number | null;
+        };
+        /** LabTestIn */
+        LabTestIn: {
+            /** Code */
+            code: string;
+            /**
+             * Container
+             * @default
+             */
+            container: string;
+            /**
+             * Instructions Ar
+             * @default
+             */
+            instructions_ar: string;
+            /**
+             * Instructions En
+             * @default
+             */
+            instructions_en: string;
+            /**
+             * Method
+             * @default
+             */
+            method: string;
+            /**
+             * Sample Type
+             * @enum {string}
+             */
+            sample_type: "whole_blood" | "serum" | "plasma" | "urine" | "stool" | "swab" | "sputum" | "csf" | "fluid" | "other";
+            /** Service Id */
+            service_id: number;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Turnaround Minutes
+             * @default 60
+             */
+            turnaround_minutes: number;
+        };
+        /** LabTestListItemOut */
+        LabTestListItemOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Parameter Count */
+            parameter_count: number;
+            /**
+             * Sample Type
+             * @enum {string}
+             */
+            sample_type: "whole_blood" | "serum" | "plasma" | "urine" | "stool" | "swab" | "sputum" | "csf" | "fluid" | "other";
+            /** Turnaround Minutes */
+            turnaround_minutes: number;
+        };
+        /** LabTestOut */
+        LabTestOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Container */
+            container: string;
+            /** Id */
+            id: number;
+            /** Instructions Ar */
+            instructions_ar: string;
+            /** Instructions En */
+            instructions_en: string;
+            /** Method */
+            method: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Parameters */
+            parameters: components["schemas"]["LabParameterOut"][];
+            /**
+             * Sample Type
+             * @enum {string}
+             */
+            sample_type: "whole_blood" | "serum" | "plasma" | "urine" | "stool" | "swab" | "sputum" | "csf" | "fluid" | "other";
+            service: components["schemas"]["LabServiceOptionOut"];
+            /** Sort Order */
+            sort_order: number;
+            /** Turnaround Minutes */
+            turnaround_minutes: number;
+        };
+        /** LabTestPatch */
+        LabTestPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Container */
+            container?: string | null;
+            /** Instructions Ar */
+            instructions_ar?: string | null;
+            /** Instructions En */
+            instructions_en?: string | null;
+            /** Method */
+            method?: string | null;
+            /** Sample Type */
+            sample_type?: ("whole_blood" | "serum" | "plasma" | "urine" | "stool" | "swab" | "sputum" | "csf" | "fluid" | "other") | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Turnaround Minutes */
+            turnaround_minutes?: number | null;
+        };
+        /** LabTestRefOut */
+        LabTestRefOut: {
+            /** Code */
+            code: string;
+            /** Container */
+            container: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Sample Type
+             * @enum {string}
+             */
+            sample_type: "whole_blood" | "serum" | "plasma" | "urine" | "stool" | "swab" | "sputum" | "csf" | "fluid" | "other";
+            /** Turnaround Minutes */
+            turnaround_minutes: number;
+        };
+        /** LabUserRefOut */
+        LabUserRefOut: {
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
+        };
+        /** LabValueOut */
+        LabValueOut: {
+            /**
+             * Flag
+             * @enum {string}
+             */
+            flag: "normal" | "low" | "high" | "critical_low" | "critical_high" | "abnormal" | "none";
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Parameter Code */
+            parameter_code: string;
+            /** Parameter Id */
+            parameter_id: number;
+            /** Reference High */
+            reference_high: string | null;
+            /** Reference Low */
+            reference_low: string | null;
+            /** Reference Text */
+            reference_text: string;
+            /** Unit */
+            unit: string;
+            /**
+             * Value
+             * @description As shown: a number to the parameter's decimals, or text.
+             */
+            value: string;
+        };
+        /** LabVersionOut */
+        LabVersionOut: {
+            /** Amendment Note */
+            amendment_note: string;
+            amendment_reason: components["schemas"]["LabReasonOut"] | null;
+            /** Amends Version No */
+            amends_version_no: number | null;
+            /** Approved At */
+            approved_at: string | null;
+            approved_by: components["schemas"]["LabUserRefOut"] | null;
+            /** Comment */
+            comment: string;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+            entered_by: components["schemas"]["LabUserRefOut"];
+            /** Id */
+            id: number;
+            /**
+             * Revision
+             * @description Draft fingerprint to send with the approval.
+             */
+            revision: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "approved" | "amended";
+            /** Superseded At */
+            superseded_at: string | null;
+            superseded_by: components["schemas"]["LabUserRefOut"] | null;
+            /** Values */
+            values: components["schemas"]["LabValueOut"][];
+            /** Version No */
+            version_no: number;
+        };
+        /** LabWorklistPageOut */
+        LabWorklistPageOut: {
+            /** Count */
+            count: number;
+            counts: components["schemas"]["LabStageCountsOut"];
+            /** Items */
+            items: components["schemas"]["LabWorklistRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** LabWorklistParams */
+        LabWorklistParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+            /**
+             * Status
+             * @default open
+             * @enum {string}
+             */
+            status: "open" | "to_collect" | "to_receive" | "to_enter" | "to_approve" | "done";
+        };
+        /** LabWorklistRowOut */
+        LabWorklistRowOut: {
+            /** Approved At */
+            approved_at: string | null;
+            /**
+             * Authorized
+             * @description Performed first under an authorization (not paid).
+             */
+            authorized: boolean;
+            /**
+             * Critical
+             * @description A value of the current draft or result is critical.
+             */
+            critical: boolean;
+            /**
+             * Due At
+             * @description Sample receipt plus the test's turnaround.
+             */
+            due_at: string | null;
+            /** Line Id */
+            line_id: number;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            ordered_by: components["schemas"]["LabUserRefOut"] | null;
+            patient: components["schemas"]["LabPatientOut"];
+            sample: components["schemas"]["LabSampleOut"] | null;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "to_collect" | "to_receive" | "to_enter" | "to_approve" | "done" | "cancelled";
+            test: components["schemas"]["LabTestRefOut"];
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
         };
         /** LineCancelIn */
         LineCancelIn: {
@@ -19214,6 +20391,636 @@ export interface operations {
             };
         };
     };
+    lab_list_approvals: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabApprovalPageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_cancel_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabCancelIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabResultOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_get_result: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabResultOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_enter_results: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabResultIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabResultOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_amend_results: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabAmendIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabResultOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_approve_results: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabApproveIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabResultOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_get_result_print: {
+        parameters: {
+            query?: {
+                version_id?: number | null;
+            };
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabPrintOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_update_parameter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                parameter_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabParameterPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_create_range: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                parameter_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabRangeIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     lab_get_ping: {
         parameters: {
             query?: never;
@@ -19243,6 +21050,1031 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_update_range: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                range_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabRangeIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_delete_range: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                range_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_get_turnaround_report: {
+        parameters: {
+            query?: {
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTatOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_collect_sample: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabSampleIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabResultOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_get_sample_label: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sample_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabLabelOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_mark_label_printed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sample_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabLabelOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_receive_sample: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sample_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabLabelOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_reject_sample: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sample_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabRejectIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabLabelOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_list_unlinked_services: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabServiceOptionOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_list_tests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestListItemOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_create_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabTestIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_get_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                test_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_update_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                test_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabTestPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_create_parameter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                test_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabParameterIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabTestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_list_worklist: {
+        parameters: {
+            query?: {
+                status?: "open" | "to_collect" | "to_receive" | "to_enter" | "to_approve" | "done";
+                q?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabWorklistPageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
