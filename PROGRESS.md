@@ -175,17 +175,31 @@ Source of truth for build status. Update at the end of every task. Phases from `
   second-person check.
 - Outsourced tests, analyzer integration and radiology (FEATURES 9.9-9.11, P2) are not built.
 
+## Follow-ups (claims, wave b)
+
+- FEATURES 11.5 asks for approval of rebills and write-offs: today the recording user with
+  `claims.resolve_rejection` is the approver (reason and time recorded, no second person;
+  ADR 0012). Add a second-person check if centers want one.
+- One export layout (Excel and A4 print, Arabic or English) for every payer; a payer that wants
+  its own column order or codes needs a per-payer export template (ADR 0012).
+- A payer cash payment goes into the recorder's own open shift; an accountant has no till, so a
+  supervisor with an open shift records it.
+- Electronic claim submission (FEATURES 11.8, Later) is not built; claim export templates of
+  FEATURES 0.10 are the claims print above.
+
 ## Follow-ups (wave b integration)
 
-- ADR numbers: lab took 0010 and nursing's ADR was renumbered 0011 at the merge; the claims
-  module (still on `feat/b-claims`) must number its ADRs 0012 and up.
-- `feat/b-claims` is not part of this merge.
+- ADR numbers: lab took 0010, nursing's ADR was renumbered 0011 at the merge and claims uses
+  0012; the next ADR is 0013.
+- E2E across midnight: specs that build "today's" data once in `beforeAll` (the clinic doctor
+  states spec) fail when a full run crosses midnight, and the seed's scheduled +10% cash price
+  version (starting the day after the seed) takes effect mid-run. Pin the date or build per test
+  if CI runs at night.
 
-## Next: wave b (claims), then merge to main
+## Next: merge wave b to main
 
-Pharmacy, lab and nursing are merged on `wave/b`. Merge `feat/b-claims` when its builder
-finishes (its ADRs start at 0012), then take `wave/b` to `main`. Then reports, ops and the
-patient portal (Phases 6-7).
+Pharmacy, lab, nursing and claims are merged on `wave/b`; take `wave/b` to `main`. Then
+reports, ops and the patient portal (Phases 6-7).
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.
@@ -346,3 +360,20 @@ patient portal (Phases 6-7).
   Follow-ups: per-payer export templates; a payer cash payment needs the recorder's own open
   shift (an accountant has none); rebill and write-off approval is the recording user with
   `claims.resolve_rejection` (no second person, ADR 0012).
+- 2026-10-10: Wave b integration on `wave/b`: merged `feat/b-pharmacy` (FEATURES 5.12,
+  8.1-8.10), `feat/b-lab` (9.1-9.8, ADR 0010), `feat/b-nursing` (3.4 for nurses, 10.1-10.3,
+  10.5) and `feat/b-claims` (11.2-11.7, ADR 0012), in that order, `--no-ff`. Conflicts:
+  `CHANGELOG.md` and `PROGRESS.md` (both sides kept at each merge), `errors.json` ar/en at the
+  claims merge (pharmacy's 7 codes and claims' 2 kept; 385 codes, ar/en in parity). Pharmacy and
+  lab merged without conflicts. Nursing's ADR renumbered 0011 (lab took 0010); claims already
+  used 0012. Generated API files regenerated with `make api` after each conflicting merge (no
+  drift); no migration clashes (only pharmacy added one, `pharmacy.0004`); OpenAPI schema
+  class names stay unique. No integration fixes were needed. Results: `make check` green
+  (backend 1820 passed, frontend 460 passed, ruff, mypy, eslint, prettier and tsc clean, no
+  missing migrations, API contract in sync; shellcheck not installed here). Full `make e2e`:
+  1548 passed, 2 failed, 3 did not run of 1553 (1.2 h). Both failures were flakes and passed
+  in a rerun of `@clinic @responsive doctor states|patient-file` (27 of 27): the clinic doctor
+  states case at 768 warm ar ran at midnight, when the visits its `beforeAll` made the day
+  before left the doctor's queue (an empty queue; the three 1280 cases after it did not run
+  because the file is serial); the patient-file 768 warm en case did not find the merge
+  history, while the other 11 cases of the same route passed in the same run.
