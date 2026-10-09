@@ -19,8 +19,11 @@ export interface PatientCardPatient {
   /** Estimated age when only age was recorded. */
   ageYears?: number | null;
   phone?: string | null;
-  /** null = not recorded yet; [] = no known allergies. */
-  allergies: readonly string[] | null;
+  /**
+   * null = not recorded yet; [] = no known allergies. Leave it out on screens that do not
+   * carry the clinical record (the cashier): no allergy badge is shown then.
+   */
+  allergies?: readonly string[] | null;
   /** Payer for this visit/file; null = self-pay (cash). */
   coverage?: { nameAr: string; nameEn?: string | null; cardNo?: string | null } | null;
   /** Emergency file registered with name and sex only. */
@@ -30,12 +33,14 @@ export interface PatientCardPatient {
 export interface PatientCardProps {
   patient: PatientCardPatient;
   actions?: ReactNode;
+  /** Screen-specific rows under the identity (e.g. the visit and the balance at the cashier). */
+  children?: ReactNode;
   /** Dense variant for lists and side panels. */
   compact?: boolean;
   className?: string;
 }
 
-export function PatientCard({ patient, actions, compact = false, className }: PatientCardProps) {
+export function PatientCard({ patient, actions, children, compact = false, className }: PatientCardProps) {
   const { t } = useTranslation();
   const language = useLanguage();
   const uiDirection = useDirection();
@@ -96,7 +101,7 @@ export function PatientCard({ patient, actions, compact = false, className }: Pa
                   <span className="sr-only">{t("patient.phone")}</span>
                 </dt>
                 <dd className="tabular">
-                  <bdi>{patient.phone}</bdi>
+                  <bdi dir="ltr">{patient.phone}</bdi>
                 </dd>
               </div>
             ) : null}
@@ -108,7 +113,7 @@ export function PatientCard({ patient, actions, compact = false, className }: Pa
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {allergies === null ? (
+        {allergies === undefined ? null : allergies === null ? (
           <Badge variant="warning">
             <TriangleAlert aria-hidden="true" />
             {t("patient.allergiesUnknown")}
@@ -138,6 +143,7 @@ export function PatientCard({ patient, actions, compact = false, className }: Pa
         </Badge>
         {patient.incomplete ? <Badge variant="warning">{t("patient.incompleteFile")}</Badge> : null}
       </div>
+      {children}
     </article>
   );
 }

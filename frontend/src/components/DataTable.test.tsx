@@ -93,6 +93,29 @@ describe("DataTable", () => {
     expect(screen.getByRole("columnheader", { name: /Name/ })).toHaveAttribute("aria-sort", "descending");
   });
 
+  it("pages on the server with one pager and the true total", async () => {
+    setViewportWidth(1280);
+    const user = userEvent.setup();
+    const onPageChange = vi.fn();
+    await renderWithProviders(
+      <DataTable
+        caption="Lines"
+        columns={columns}
+        data={rows.slice(5, 10)}
+        serverPagination={{ page: 2, pageSize: 5, count: 12, onPageChange }}
+      />,
+    );
+    // The loaded page is page 2 of 3 on the server, not "1 of 1" of what was loaded.
+    expect(screen.getByText("6–10 of 12")).toBeInTheDocument();
+    expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(6);
+    expect(screen.queryByText("Rows per page")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    expect(onPageChange).toHaveBeenCalledWith(3);
+    await user.click(screen.getByRole("button", { name: "Previous page" }));
+    expect(onPageChange).toHaveBeenCalledWith(1);
+  });
+
   it("shows the empty state and skeletons", async () => {
     setViewportWidth(1280);
     const { rerender } = await renderWithProviders(<DataTable caption="Lines" columns={columns} data={[]} />);

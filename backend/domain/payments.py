@@ -20,6 +20,7 @@ Error codes: ``INVALID_AMOUNT``, ``BANK_REQUIRED``, ``REFERENCE_REQUIRED``,
 
 from __future__ import annotations
 
+import re
 import unicodedata
 from collections.abc import Collection
 from dataclasses import dataclass
@@ -35,6 +36,8 @@ __all__ = [
     "REFERENCE_METHODS",
     "PaymentDetails",
     "PaymentMethod",
+    "ReceiptCode",
+    "ReceiptStanding",
     "ReferenceCheck",
     "Verification",
     "check_reference",
@@ -44,7 +47,10 @@ __all__ = [
     "initial_verification",
     "normalize_bank",
     "normalize_reference",
+    "parse_receipt_code",
     "pending_age_days",
+    "receipt_code",
+    "receipt_standing",
     "reject",
     "validate_payment",
 ]
@@ -213,3 +219,81 @@ def pending_age_days(received_on: date, today: date) -> int:
     if received_on > today:
         raise DomainError("INVALID_DATE_RANGE", "A payment cannot be received in the future")
     return (today - received_on).days
+
+
+# --- receipt verification (FEATURES 6.9, 15.1) ----------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class ReceiptCode:
+    """What a receipt's QR carries: the payment number, and the amount and day printed."""
+
+    number: str
+    amount: Decimal | None = None
+    day: date | None = None
+
+
+def receipt_code(number: str, amount: Decimal, day: date) -> str:
+    """The QR text of a receipt: ``number|amount|YYYY-MM-DD``."""
+    return f"{number}|{amount:.2f}|{day.isoformat()}"
+
+
+_CODE_AMOUNT = re.compile(r"[0-9]{1,15}(?:\.[0-9]{1,2})?")
+
+
+def parse_receipt_code(text: str) -> ReceiptCode:
+    """Read a scanned QR (``number|amount|day``) or a typed receipt number.
+
+    Parts that do not parse are dropped, so a damaged code still finds the payment and is then
+    reported as not matching.
+    """
+    parts = [p.strip() for p in text.strip().split("|")]
+    number = parts[0].upper()
+    amount: Decimal | None = None
+    day: date | None = None
+    if len(parts) > 1 and _CODE_AMOUNT.fullmatch(parts[1]):
+        amount = Decimal(parts[1])
+    if len(parts) > 2:
+        try:
+            day = date.fromisoformat(parts[2])
+        except ValueError:
+            day = None
+    return ReceiptCode(number, amount, day)
+
+
+class ReceiptStanding(StrEnum):
+    """What checking a receipt against the system says."""
+
+    VALID = "valid"
+    PENDING = "pending"
+    REJECTED = "rejected"
+    REVERSED = "reversed"
+    MISMATCH = "mismatch"
+
+
+def receipt_standing(
+    code: ReceiptCode,
+    *,
+    amount: Decimal,
+    day: date,
+    verification: Verification,
+    reversed_: bool,
+    is_reversal: bool,
+) -> ReceiptStanding:
+    """Whether a printed receipt stands, for the payment its number names.
+
+    A code whose amount or day differs from the payment was altered or belongs to another
+    receipt (``mismatch``, checked first). A reversal row or a reversed payment never stands;
+    a rejected transfer is ``rejected``; a transfer still waiting for the bank is ``pending``.
+    """
+    if (code.amount is not None and code.amount != amount) or (
+        code.day is not None and code.day != day
+    ):
+        return ReceiptStanding.MISMATCH
+    if verification is Verification.REJECTED:
+        return ReceiptStanding.REJECTED
+    if reversed_ or is_reversal:
+        return ReceiptStanding.REVERSED
+    if verification is Verification.PENDING:
+        return ReceiptStanding.PENDING
+    return ReceiptStanding.VALID

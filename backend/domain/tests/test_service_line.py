@@ -18,6 +18,7 @@ from domain.service_line import (
     LineStatus,
     apply_settlement,
     authorize,
+    can_authorize,
     can_enter_worklist,
     cancel,
     credit,
@@ -208,6 +209,21 @@ def test_authorize_rules() -> None:
         "LINE_ALREADY_PERFORMED"
     )
     assert _code(lambda: authorize(LineStatus(B.UNBILLED, F.CANCELLED), OK)) == "LINE_CANCELLED"
+
+
+@pytest.mark.parametrize(("billing", "fulfilment", "authorized"), ALL_COMBOS)
+def test_can_authorize_says_exactly_when_authorize_succeeds(
+    billing: BillingStatus, fulfilment: FulfilmentStatus, authorized: bool
+) -> None:
+    """The screen's "authorizable" flag and the rule never disagree (invariant 1)."""
+    status = LineStatus(billing, fulfilment, authorized)
+    try:
+        authorize(status, OK)
+    except DomainError:
+        accepted = False
+    else:
+        accepted = True
+    assert can_authorize(status) is accepted
 
 
 def test_replacement_for_a_correction() -> None:

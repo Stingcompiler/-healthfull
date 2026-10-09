@@ -131,6 +131,23 @@ def role_permissions(role_codes: Iterable[str]) -> frozenset[str]:
     return resolve_permissions(role_codes, defaults, overrides)
 
 
+def roles_holding(code: str) -> frozenset[str]:
+    """Role codes that grant ``code`` on their own (defaults with ``RolePermission``
+    overrides applied). Lets a caller narrow a user list in one query before checking each
+    remaining user with :func:`effective_permissions`."""
+    from apps.core.models import Role, RolePermission
+
+    codes = list(Role.objects.values_list("code", flat=True))
+    overrides = {
+        (role_code, c): allowed
+        for role_code, c, allowed in RolePermission.objects.filter(code=code).values_list(
+            "role__code", "code", "allowed"
+        )
+    }
+    defaults = {c: perm.default_roles for c, perm in _REGISTRY.items()}
+    return frozenset(r for r in codes if code in resolve_permissions([r], defaults, overrides))
+
+
 # --- Core and ops codes ------------------------------------------------------------------
 
 register_permission(

@@ -12,7 +12,9 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        "inline-flex h-12 w-fit max-w-full scrollbar-thin items-center justify-start gap-1 overflow-x-auto rounded-control bg-subtle p-1 text-muted md:h-10",
+        // Phones: triggers fill the list, so 52px less the padding gives the 44px touch target
+        // of the other controls (Button sizes are h-11 below md); compact from md.
+        "inline-flex h-13 w-fit max-w-full scrollbar-thin items-center justify-start gap-1 overflow-x-auto rounded-control bg-subtle p-1 text-muted md:h-10",
         className,
       )}
       {...props}
@@ -25,7 +27,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "inline-flex h-full flex-1 items-center justify-center gap-1.5 rounded-[6px] px-3 text-sm font-medium whitespace-nowrap",
+        "inline-flex h-full min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[6px] px-3 text-sm font-medium whitespace-nowrap md:min-h-8",
         "transition-[color,background-color,box-shadow] hover:text-fg",
         "focus-ring-inset",
         "disabled:pointer-events-none disabled:opacity-50",

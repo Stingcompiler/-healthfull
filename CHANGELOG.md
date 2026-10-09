@@ -125,6 +125,13 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   against the core and catalog shapes; a test fails on any repeated schema class name.
 - The reason-code API and admin screen accept the `patient_merge` and `appointment_cancel`
   categories, with Arabic and English labels.
+- Cashier review (ADR 0008): a credit note is approved by someone other than its drafter
+  (`CREDIT_NOTE_SELF_APPROVAL`) and a transfer confirmed by someone other than its taker
+  (`SELF_CONFIRMATION_NOT_ALLOWED`); the transfers queue says when a closed shift's transfer needs
+  the viewer's own open shift; the shift report lists desk line cancellations and voided drafts;
+  money inputs refuse a third decimal; perform-first records who asked; one pager with the true
+  total on the cashier queues; the payment method shows as selected; 80 mm print page rule fixed;
+  credit-note quantities accept Arabic-Indic digits; 44px tabs on phones; Arabic wording fixes.
 - Patient names are never truncated (four-part Sudanese names wrap instead of losing the family name).
 - Error messages with placeholders (amounts, dates, bed codes, units) show their values:
   `translateError` passes the error's `details` to i18next for interpolation only.

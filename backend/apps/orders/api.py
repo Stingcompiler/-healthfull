@@ -5,8 +5,9 @@ The orderable catalog (no prices), prescription frequencies and the quantity a p
 orders, a visit's orders in the doctor's view (requested, paid, in progress, done, cancelled,
 with the approved result inline), placing orders (refused with 409 ``ALLERGY_CONFLICT``
 unless an override reason is given) and withdrawing an order that has not reached the
-cashier. Routers stay thin: business rules live in ``domain``, ``apps.orders.services`` and
-``apps.clinical.services``.
+cashier. Perform-first authorizations (FEATURES 4.4) are mounted at ``/perform-first`` from
+``apps.orders.perform_first_api``. Routers stay thin: business rules live in ``domain``,
+``apps.orders.services`` and ``apps.clinical.services``.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from apps.core.models import User
 from apps.orders import schemas as s
 from apps.orders import services
 from apps.orders.models import ServiceLine
+from apps.orders.perform_first_api import perform_first_router
 from apps.visits.models import Visit
 
 orders_router = Router(tags=["orders"])
@@ -210,3 +212,7 @@ def withdraw_line(request: HttpRequest, line_id: int, payload: s.WithdrawIn) -> 
         line, reason=payload.reason_code, note=payload.note, actor=_actor(request)
     )
     return s.line_out(view)
+
+
+# Perform-first authorizations (FEATURES 4.4), owned by the cashier module.
+orders_router.add_router("/perform-first", perform_first_router)

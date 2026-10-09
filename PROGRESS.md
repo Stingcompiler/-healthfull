@@ -64,8 +64,8 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Pharmacy: a `Policy` setting for `min_days_left` (domain only today); consider a DB backstop
   against dispensing from an expired batch.
 - Cash: a safe count / opening balance for `CASH_SAFE` (relative balance today).
-- Segregation of duties for confirming one's own transfer and approving one's own credit note
-  (enforced today only for refunds and shift reviews).
+- [x] Segregation of duties for confirming one's own transfer and approving one's own credit
+  note (ADR 0008, `SELF_CONFIRMATION_NOT_ALLOWED`, `CREDIT_NOTE_SELF_APPROVAL`).
 - Admin: show `Policy.default_pay_first` read-only.
 
 ## Follow-ups (clinic, wave a review)

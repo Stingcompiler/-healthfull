@@ -112,6 +112,284 @@ export interface paths {
         patch: operations["auth_update_preferences"];
         trace?: never;
     };
+    "/api/billing/credit-notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Credit notes, newest first (status=draft: the approval queue) */
+        get: operations["billing_list_credit_notes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/credit-notes/{credit_note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One credit note with its lines and refunds */
+        get: operations["billing_get_credit_note"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/credit-notes/{credit_note_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a credit note (supervisor); released money may open a refund request */
+        post: operations["billing_approve_credit_note"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft an invoice from the visit's unbilled lines */
+        post: operations["billing_create_invoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One invoice with lines, coverage split, payments and credit notes */
+        get: operations["billing_get_invoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a draft: prices freeze from today's list and the invoice is numbered */
+        post: operations["billing_approve_invoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/credit-notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft a credit note of whole units of approved invoice lines */
+        post: operations["billing_create_credit_note"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/discount": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Spread one discount over a draft's lines by patient share */
+        post: operations["billing_discount_invoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/lines/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Take a line off a draft (it stays requested) */
+        delete: operations["billing_remove_draft_line"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/lines/{line_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a draft line's service with a reason (e.g. the patient refused it)
+         * @description Needs billing.create_invoice (the router) and orders.cancel_line (the service): roles outside the cashier's desk never see the invoice this returns.
+         */
+        post: operations["billing_cancel_draft_line"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/lines/{line_id}/discount": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discount one draft line's patient share (reason; supervisor above the limit)
+         * @description Give `amount` or `percent`. Above the cashier's role limit a supervisor holding billing.override_discount_limit approves by typing their credentials into `approver` (409 APPROVER_INVALID on wrong credentials). A zero amount removes the discount.
+         */
+        post: operations["billing_discount_line"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/lines/{line_id}/pre-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record the payer's pre-approval reference on a draft line */
+        post: operations["billing_set_preapproval_ref"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An invoice with the center header, for A4 or 80 mm printing */
+        get: operations["billing_get_invoice_print"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/invoices/{invoice_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Void a draft invoice with a reason */
+        post: operations["billing_void_invoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/lines/{service_line_id}/payer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bill an unbilled line to another payer of the patient, or to cash */
+        post: operations["billing_set_line_payer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find patients and their billable visits by file number, visit number, phone or name */
+        get: operations["billing_lookup_patients"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/ping": {
         parameters: {
             query?: never;
@@ -121,6 +399,57 @@ export interface paths {
         };
         /** Check that the /api/billing router is reachable */
         get: operations["billing_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active reasons of one cashier list (discount, credit note, variance, ...) */
+        get: operations["billing_list_reasons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit's unbilled lines, invoices, payers and the patient's balance */
+        get: operations["billing_get_visit_billing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/visits/{visit_id}/unbilled-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The visit's requested lines that can be invoiced */
+        get: operations["billing_list_unbilled_lines"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1721,6 +2050,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/perform-first": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Perform-first authorizations, newest first */
+        get: operations["orders_list_perform_first"];
+        put?: never;
+        /** Authorize open, unpaid lines of one visit to be performed before payment */
+        post: operations["orders_authorize_perform_first"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/perform-first/requesters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active staff who may have asked for a perform-first exception */
+        get: operations["orders_list_perform_first_requesters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/perform-first/visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A visit's open lines, marking those that may be authorized to go first */
+        get: operations["orders_get_perform_first_visit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/perform-first/{authorization_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw an authorization for lines that have not started */
+        post: operations["orders_revoke_perform_first"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/ping": {
         parameters: {
             query?: never;
@@ -2055,6 +2453,179 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/banks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Banks for transfer, QR and card payments */
+        get: operations["payments_list_banks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/handover-receivers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The supervisors and accountants who can receive cash handed over by the user */
+        get: operations["payments_list_handover_receivers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/handovers/{handover_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an unreceived handover while the sending shift is open */
+        post: operations["payments_cancel_handover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/handovers/{handover_id}/receive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm handed-over cash arrived */
+        post: operations["payments_receive_handover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take a payment into the user's open shift and allocate it
+         * @description Bank transfer, QR and card need `bank` and `reference`; they start pending. A reference already used for the bank answers 409 DUPLICATE_REFERENCE unless `override` gives a reason and a supervisor holding payments.override_duplicate (the user, or `override.approver` credentials: 409 APPROVER_INVALID when wrong).
+         */
+        post: operations["payments_record_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/payments/{payment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One payment with its allocations */
+        get: operations["payments_get_payment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/payments/{payment_id}/allocate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Allocate a payment's remainder to open invoices */
+        post: operations["payments_allocate_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/payments/{payment_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a pending transfer, saying what was checked */
+        post: operations["payments_confirm_transfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/payments/{payment_id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A payment receipt for 80 mm or A4 printing, with its verification code */
+        get: operations["payments_get_receipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/payments/{payment_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a transfer (after its shift closed: reversal in the user's open shift) */
+        post: operations["payments_reject_transfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments/ping": {
         parameters: {
             query?: never;
@@ -2064,6 +2635,249 @@ export interface paths {
         };
         /** Check that the /api/payments router is reachable */
         get: operations["payments_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/receipts/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check a printed receipt: its scanned QR code or its receipt number
+         * @description `code` is the QR text (`number|amount|YYYY-MM-DD`) or a receipt number. 404 when no payment has that number.
+         */
+        get: operations["payments_check_receipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Refunds, newest first (status=requested: the approval queue) */
+        get: operations["payments_list_refunds"];
+        put?: never;
+        /** Request a refund of credit an approved credit note created */
+        post: operations["payments_request_refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/refunds/{refund_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a refund request (never one's own) */
+        post: operations["payments_approve_refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/refunds/{refund_id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pay an approved refund in cash from the user's open shift */
+        post: operations["payments_pay_refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/refunds/{refund_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refuse a refund request; the money stays as patient credit */
+        post: operations["payments_reject_refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shifts, newest first (status=closed&reviewed=false: the review queue) */
+        get: operations["payments_list_shifts"];
+        put?: never;
+        /** Open the user's shift with an opening float */
+        post: operations["payments_open_shift"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/shifts/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The user's open shift report (or null) and cash handed to them that waits */
+        get: operations["payments_get_current_shift"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/shifts/handover-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Other cashiers' open shifts that can receive a next-shift handover */
+        get: operations["payments_list_handover_targets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/shifts/{shift_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A shift's report (own shift, or any with payments.view_all_shifts) */
+        get: operations["payments_get_shift"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/shifts/{shift_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a shift with the counted cash (a variance needs a reason) */
+        post: operations["payments_close_shift"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/shifts/{shift_id}/handovers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hand cash from the drawer to the next shift, the safe, the bank or a supervisor */
+        post: operations["payments_create_handover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/shifts/{shift_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign off (or flag) a closed shift; never one's own */
+        post: operations["payments_review_shift"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/tills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active tills (cash drawers) */
+        get: operations["payments_list_tills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Transfers, QR and card payments by verification state (pending: oldest first) */
+        get: operations["payments_list_transfers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2628,6 +3442,53 @@ export interface components {
             /** Status */
             status?: ("active" | "inactive" | "entered_in_error") | null;
         };
+        /** AllocateIn */
+        AllocateIn: {
+            /** Allocations */
+            allocations?: components["schemas"]["AllocationIn"][] | null;
+            /**
+             * Auto
+             * @default false
+             */
+            auto: boolean;
+            /**
+             * Visit Id
+             * @description With auto: only this visit's open invoices
+             */
+            visit_id?: number | null;
+        };
+        /** AllocationIn */
+        AllocationIn: {
+            /**
+             * Amount
+             * @example 15000
+             * @example 2500.50
+             */
+            amount: string;
+            /** Invoice Id */
+            invoice_id: number;
+        };
+        /** AllocationOut */
+        AllocationOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Invoice Id */
+            invoice_id: number;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Kind */
+            kind: string;
+        };
         /**
          * AppointmentCancelIn
          * @description Cancel with an ``appointment_cancel`` reason code (invariant 4) and the caller's words.
@@ -2722,6 +3583,111 @@ export interface components {
             notes?: string | null;
         };
         /**
+         * ApproverIn
+         * @description A supervisor's credentials typed into the cashier's approval dialog (ADR 0009).
+         */
+        ApproverIn: {
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /** ApproverTotalOut */
+        ApproverTotalOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            user: components["schemas"]["BillingUserRefOut"] | null;
+        };
+        /** AuthorizableLineOut */
+        AuthorizableLineOut: {
+            /**
+             * Authorizable
+             * @description Open and unpaid, with no authorization yet
+             */
+            authorizable: boolean;
+            /** Authorized */
+            authorized: boolean;
+            /** Billing Status */
+            billing_status: string;
+            /** Fulfilment Status */
+            fulfilment_status: string;
+            /** Id */
+            id: number;
+            /** Quantity */
+            quantity: number;
+            service: components["schemas"]["ServiceRefOut"];
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "requested" | "invoiced" | "paid" | "performed" | "cancelled";
+        };
+        /** AuthorizationOut */
+        AuthorizationOut: {
+            /** Approval Reference */
+            approval_reference: string;
+            /**
+             * Authorized At
+             * Format: date-time
+             */
+            authorized_at: string;
+            authorized_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "insurance_approval" | "emergency" | "credit_account" | "other";
+            /** Lines */
+            lines: components["schemas"]["AuthorizableLineOut"][];
+            patient: components["schemas"]["BillingPatientSummaryOut"];
+            reason: components["schemas"]["BillingReasonOut"] | null;
+            /** Reason Note */
+            reason_note: string;
+            requested_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Revoke Note */
+            revoke_note: string;
+            /** Revoked At */
+            revoked_at: string | null;
+            revoked_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** AuthorizeIn */
+        AuthorizeIn: {
+            /**
+             * Approval Reference
+             * @default
+             */
+            approval_reference: string;
+            /**
+             * Kind
+             * @default other
+             * @enum {string}
+             */
+            kind: "insurance_approval" | "emergency" | "credit_account" | "other";
+            /** Line Ids */
+            line_ids: number[];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Requested By Id
+             * @description The active user who asked for the exception (default: the authorizer)
+             */
+            requested_by_id?: number | null;
+        };
+        /**
          * BalanceOut
          * @description The person's money position (FEATURES 1.5); decimal strings in SDG.
          */
@@ -2753,6 +3719,108 @@ export interface components {
              * @description Credit that may be spent or refunded now
              */
             spendable: string;
+        };
+        /**
+         * BillingBalanceOut
+         * @description The person's money position (FEATURES 1.5), every merged file included.
+         */
+        BillingBalanceOut: {
+            /**
+             * Credit
+             * @description Pooled patient credit; negative when owed
+             * @example 15000.00
+             */
+            credit: string;
+            /**
+             * Outstanding
+             * @description Patient money still owed on invoices
+             * @example 15000.00
+             */
+            outstanding: string;
+            /**
+             * Pending
+             * @description Unallocated money of pending transfers
+             * @example 15000.00
+             */
+            pending: string;
+            /**
+             * Spendable
+             * @description Credit that may be spent or refunded now
+             * @example 15000.00
+             */
+            spendable: string;
+        };
+        /** BillingCenterOut */
+        BillingCenterOut: {
+            /** Address */
+            address: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+            /** Registration No */
+            registration_no: string;
+            /** Tax No */
+            tax_no: string;
+        };
+        /** BillingOpenInvoiceOut */
+        BillingOpenInvoiceOut: {
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /** Visit Id */
+            visit_id: number;
+        };
+        /** BillingPatientSummaryOut */
+        BillingPatientSummaryOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Is Incomplete */
+            is_incomplete: boolean;
+            /** Merged Into Id */
+            merged_into_id: number | null;
+            /** Phone */
+            phone: string;
+            /** Sex */
+            sex: string;
+        };
+        /** BillingReasonOut */
+        BillingReasonOut: {
+            /** Code */
+            code: string;
+            /** Label Ar */
+            label_ar: string;
+            /** Label En */
+            label_en: string;
+            /** Requires Note */
+            requires_note: boolean;
+        };
+        /** BillingUserRefOut */
+        BillingUserRefOut: {
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
         };
         /** BoardParams */
         BoardParams: {
@@ -3077,6 +4145,40 @@ export interface components {
             /** Name En */
             name_en: string;
         };
+        /** CollectionOut */
+        CollectionOut: {
+            /**
+             * Bank Confirmed
+             * @example 15000.00
+             */
+            bank_confirmed: string;
+            /**
+             * Bank Pending
+             * @description Never counted as collected (FLOW 9)
+             * @example 15000.00
+             */
+            bank_pending: string;
+            /**
+             * Bank Rejected
+             * @example 15000.00
+             */
+            bank_rejected: string;
+            /**
+             * Cash Confirmed
+             * @example 15000.00
+             */
+            cash_confirmed: string;
+            /**
+             * Confirmed Total
+             * @example 15000.00
+             */
+            confirmed_total: string;
+            /**
+             * Credit Used
+             * @example 15000.00
+             */
+            credit_used: string;
+        };
         /** ConditionIn */
         ConditionIn: {
             /** Icd10 Code */
@@ -3379,6 +4481,184 @@ export interface components {
             /** Rule Kind */
             rule_kind?: ("percentage" | "copay" | "ceiling") | null;
         };
+        /** CreditNoteApproveIn */
+        CreditNoteApproveIn: {
+            /**
+             * Open Refund
+             * @description Open a refund request for released money
+             * @default true
+             */
+            open_refund: boolean;
+            /**
+             * Rebill
+             * @description Re-bill each fully credited line (a correction)
+             * @default false
+             */
+            rebill: boolean;
+        };
+        /** CreditNoteIn */
+        CreditNoteIn: {
+            /** Lines */
+            lines: components["schemas"]["CreditNoteLineIn"][];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+        };
+        /** CreditNoteLineIn */
+        CreditNoteLineIn: {
+            /** Invoice Line Id */
+            invoice_line_id: number;
+            /** Quantity */
+            quantity: number;
+        };
+        /** CreditNoteLineOut */
+        CreditNoteLineOut: {
+            /** Cancels Service Line */
+            cancels_service_line: boolean;
+            /**
+             * Discount
+             * @example 15000.00
+             */
+            discount: string;
+            /**
+             * Gross
+             * @example 15000.00
+             */
+            gross: string;
+            /** Id */
+            id: number;
+            /** Invoice Line Id */
+            invoice_line_id: number;
+            /** Line No */
+            line_no: number;
+            /**
+             * Patient Share
+             * @example 15000.00
+             */
+            patient_share: string;
+            /**
+             * Payer Share
+             * @example 15000.00
+             */
+            payer_share: string;
+            /** Quantity */
+            quantity: number;
+            service: components["schemas"]["ServiceRefOut"];
+        };
+        /** CreditNoteOut */
+        CreditNoteOut: {
+            /** Approved At */
+            approved_at: string | null;
+            approved_by: components["schemas"]["BillingUserRefOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["BillingUserRefOut"] | null;
+            /**
+             * Discount Total
+             * @example 15000.00
+             */
+            discount_total: string;
+            /**
+             * Gross Total
+             * @example 15000.00
+             */
+            gross_total: string;
+            /** Id */
+            id: number;
+            /** Invoice Id */
+            invoice_id: number;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Lines */
+            lines: components["schemas"]["CreditNoteLineOut"][];
+            /** Number */
+            number: string | null;
+            patient: components["schemas"]["BillingPatientSummaryOut"];
+            /**
+             * Patient Total
+             * @example 15000.00
+             */
+            patient_total: string;
+            /**
+             * Payer Total
+             * @example 15000.00
+             */
+            payer_total: string;
+            reason: components["schemas"]["BillingReasonOut"];
+            /** Reason Note */
+            reason_note: string;
+            /**
+             * Refundable
+             * @description Released money not yet refunded
+             * @example 15000.00
+             */
+            refundable: string;
+            /** Refunds */
+            refunds: components["schemas"]["RefundRefOut"][];
+            /**
+             * Released
+             * @description Patient money it turned into credit
+             * @example 15000.00
+             */
+            released: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "approved" | "void";
+        };
+        /** CreditNoteRefOut */
+        CreditNoteRefOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Gross Total
+             * @example 15000.00
+             */
+            gross_total: string;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string | null;
+            /**
+             * Patient Total
+             * @example 15000.00
+             */
+            patient_total: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "approved" | "void";
+        };
+        /** CreditOutcomeOut */
+        CreditOutcomeOut: {
+            credit_note: components["schemas"]["CreditNoteOut"];
+            /**
+             * Deallocated
+             * @example 15000.00
+             */
+            deallocated: string;
+            refund: components["schemas"]["RefundRefOut"] | null;
+            /** Replacement Line Ids */
+            replacement_line_ids: number[];
+        };
+        /** CurrentShiftOut */
+        CurrentShiftOut: {
+            /** Incoming Handovers */
+            incoming_handovers: components["schemas"]["HandoverOut"][];
+            report: components["schemas"]["ShiftReportOut"] | null;
+        };
         /** DayAgendaOut */
         DayAgendaOut: {
             /**
@@ -3391,6 +4671,14 @@ export interface components {
             items: components["schemas"]["AgendaItemOut"][];
             /** Works */
             works: boolean;
+        };
+        /** DecisionIn */
+        DecisionIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
         };
         /** DepartmentIn */
         DepartmentIn: {
@@ -3511,6 +4799,22 @@ export interface components {
             recorded_by: components["schemas"]["ClinicUserRefOut"] | null;
             /** Text */
             text: string;
+        };
+        /** DiscountIn */
+        DiscountIn: {
+            /** Amount */
+            amount?: string | null;
+            /** @description A supervisor approving above the cashier's limit */
+            approver?: components["schemas"]["ApproverIn"] | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Percent */
+            percent?: string | null;
+            /** Reason */
+            reason: string;
         };
         /**
          * DisplayEntryOut
@@ -3885,6 +5189,83 @@ export interface components {
             /** Per Day */
             per_day: string | null;
         };
+        /** HandoverCancelIn */
+        HandoverCancelIn: {
+            /** Note */
+            note: string;
+        };
+        /** HandoverIn */
+        HandoverIn: {
+            /**
+             * Amount
+             * @example 15000
+             * @example 2500.50
+             */
+            amount: string;
+            /**
+             * Bank Reference
+             * @default
+             */
+            bank_reference: string;
+            /**
+             * Destination
+             * @enum {string}
+             */
+            destination: "next_shift" | "safe" | "bank_deposit" | "supervisor";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** To Shift Id */
+            to_shift_id?: number | null;
+            /** To User Id */
+            to_user_id?: number | null;
+        };
+        /** HandoverOut */
+        HandoverOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Bank Reference */
+            bank_reference: string;
+            /** Cancel Note */
+            cancel_note: string;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            cancelled_by: components["schemas"]["BillingUserRefOut"] | null;
+            /**
+             * Destination
+             * @enum {string}
+             */
+            destination: "next_shift" | "safe" | "bank_deposit" | "supervisor";
+            /**
+             * Handed At
+             * Format: date-time
+             */
+            handed_at: string;
+            handed_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Id */
+            id: number;
+            /** Note */
+            note: string;
+            /** Number */
+            number: string;
+            /** Received At */
+            received_at: string | null;
+            received_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Shift Id */
+            shift_id: number;
+            /** Shift Number */
+            shift_number: string;
+            /** To Shift Id */
+            to_shift_id: number | null;
+            /** To Shift Number */
+            to_shift_number: string | null;
+            to_user: components["schemas"]["BillingUserRefOut"] | null;
+        };
         /** HealthOut */
         HealthOut: {
             /**
@@ -4072,6 +5453,174 @@ export interface components {
             /** Warnings */
             warnings: components["schemas"]["RowHintOut"][];
         };
+        /** InvoiceCreateIn */
+        InvoiceCreateIn: {
+            /**
+             * Line Ids
+             * @description Default: every unbilled line
+             */
+            line_ids?: number[] | null;
+            /** Visit Id */
+            visit_id: number;
+        };
+        /** InvoiceLineOut */
+        InvoiceLineOut: {
+            /** Credited Quantity */
+            credited_quantity: number;
+            /** Description Ar */
+            description_ar: string;
+            /** Description En */
+            description_en: string;
+            /**
+             * Discount
+             * @example 15000.00
+             */
+            discount: string;
+            discount_approved_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Discount Note */
+            discount_note: string;
+            /** Discount Percent */
+            discount_percent: string | null;
+            discount_reason: components["schemas"]["BillingReasonOut"] | null;
+            /** Excluded */
+            excluded: boolean;
+            /**
+             * Gross
+             * @example 15000.00
+             */
+            gross: string;
+            /** Id */
+            id: number;
+            /** Line No */
+            line_no: number;
+            /**
+             * Outstanding
+             * @description Patient money owed (approved only)
+             */
+            outstanding: string | null;
+            /**
+             * Patient Share
+             * @example 15000.00
+             */
+            patient_share: string;
+            payer: components["schemas"]["NameOut"] | null;
+            /**
+             * Payer Share
+             * @example 15000.00
+             */
+            payer_share: string;
+            /** Pre Approval Ref */
+            pre_approval_ref: string;
+            /** Quantity */
+            quantity: number;
+            /** Requires Pre Approval */
+            requires_pre_approval: boolean;
+            service: components["schemas"]["ServiceRefOut"];
+            /** Service Line Id */
+            service_line_id: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "requested" | "invoiced" | "paid" | "performed" | "cancelled";
+            /**
+             * Unit Price
+             * @example 15000.00
+             */
+            unit_price: string;
+        };
+        /** InvoiceOut */
+        InvoiceOut: {
+            /** Approved At */
+            approved_at: string | null;
+            approved_by: components["schemas"]["BillingUserRefOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Credit Notes */
+            credit_notes: components["schemas"]["CreditNoteRefOut"][];
+            /**
+             * Discount Total
+             * @example 15000.00
+             */
+            discount_total: string;
+            /**
+             * Gross Total
+             * @example 15000.00
+             */
+            gross_total: string;
+            /** Id */
+            id: number;
+            /** Lines */
+            lines: components["schemas"]["InvoiceLineOut"][];
+            /** Number */
+            number: string | null;
+            /** Outstanding */
+            outstanding: string | null;
+            /** Paid */
+            paid: string | null;
+            patient: components["schemas"]["BillingPatientSummaryOut"];
+            /**
+             * Patient Total
+             * @example 15000.00
+             */
+            patient_total: string;
+            /**
+             * Payer Total
+             * @example 15000.00
+             */
+            payer_total: string;
+            /** Payments */
+            payments: components["schemas"]["InvoicePaymentOut"][];
+            /** Priced On */
+            priced_on: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "approved" | "void";
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /**
+         * InvoicePaymentOut
+         * @description Money applied to the invoice by one payment (allocation rows summed, signed).
+         */
+        InvoicePaymentOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Method */
+            method: string;
+            /** Number */
+            number: string;
+            /** Payment Id */
+            payment_id: number;
+            /** Verification */
+            verification: string;
+        };
+        /** InvoicePrintOut */
+        InvoicePrintOut: {
+            center: components["schemas"]["BillingCenterOut"];
+            invoice: components["schemas"]["InvoiceOut"];
+        };
+        /** LineCancelIn */
+        LineCancelIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+        };
         /**
          * LineOut
          * @description A service line of the visit with its display state; never a price.
@@ -4102,12 +5651,62 @@ export interface components {
              */
             state: "requested" | "invoiced" | "paid" | "performed" | "cancelled";
         };
+        /** LinePayerIn */
+        LinePayerIn: {
+            /** Note */
+            note: string;
+            /**
+             * Payer Id
+             * @description null bills the line to the patient (cash)
+             */
+            payer_id: number | null;
+        };
         /** LoginIn */
         LoginIn: {
             /** Password */
             password: string;
             /** Username */
             username: string;
+        };
+        /** LookupOut */
+        LookupOut: {
+            /** Items */
+            items: components["schemas"]["LookupPatientOut"][];
+        };
+        /** LookupPatientOut */
+        LookupPatientOut: {
+            balance: components["schemas"]["BillingBalanceOut"];
+            patient: components["schemas"]["BillingPatientSummaryOut"];
+            /** Visits */
+            visits: components["schemas"]["LookupVisitOut"][];
+        };
+        /** LookupVisitOut */
+        LookupVisitOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            department: components["schemas"]["NameOut"] | null;
+            doctor: components["schemas"]["BillingUserRefOut"] | null;
+            /** Draft Invoice Count */
+            draft_invoice_count: number;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            payer: components["schemas"]["NameOut"] | null;
+            /** Status */
+            status: string;
+            /** Unbilled Count */
+            unbilled_count: number;
+            /** Visit Type */
+            visit_type: string;
         };
         /** MatrixChangeIn */
         MatrixChangeIn: {
@@ -4243,6 +5842,48 @@ export interface components {
             /** Requires Note */
             requires_note: boolean;
         };
+        /** MovementsOut */
+        MovementsOut: {
+            /**
+             * Cash In
+             * @example 15000.00
+             */
+            cash_in: string;
+            /**
+             * Cash Refunds
+             * @example 15000.00
+             */
+            cash_refunds: string;
+            /**
+             * Handovers In
+             * @example 15000.00
+             */
+            handovers_in: string;
+            /**
+             * Handovers Out
+             * @example 15000.00
+             */
+            handovers_out: string;
+            /**
+             * Opening Float
+             * @example 15000.00
+             */
+            opening_float: string;
+        };
+        /**
+         * NameOut
+         * @description A coded catalog row (payer, department, bank, till, service).
+         */
+        NameOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
         /** NoteIn */
         NoteIn: {
             /**
@@ -4327,6 +5968,19 @@ export interface components {
             number: string;
             /** Outstanding */
             outstanding: string;
+        };
+        /** OpenShiftRefOut */
+        OpenShiftRefOut: {
+            cashier: components["schemas"]["BillingUserRefOut"];
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
         };
         /** OrderIn */
         OrderIn: {
@@ -4474,6 +6128,67 @@ export interface components {
             /** Name En */
             name_en: string;
         };
+        /**
+         * OverrideIn
+         * @description Accept a reference already used for the bank (FEATURES 6.2): reason and a supervisor.
+         */
+        OverrideIn: {
+            /** @description A supervisor's credentials; omit when the cashier may override */
+            approver?: components["schemas"]["ApproverIn"] | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * PageParams
+         * @description Query parameters accepted by every list endpoint (use with ``Query[PageParams]``).
+         */
+        PageParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+        };
+        /** Page[AuthorizationOut] */
+        Page_AuthorizationOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["AuthorizationOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[CreditNoteOut] */
+        Page_CreditNoteOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["CreditNoteOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[ImportRowOut] */
         Page_ImportRowOut_: {
             /**
@@ -4530,6 +6245,20 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /** Page[RefundOut] */
+        Page_RefundOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["RefundOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[ServiceOut] */
         Page_ServiceOut_: {
             /**
@@ -4539,6 +6268,34 @@ export interface components {
             count: number;
             /** Items */
             items: components["schemas"]["ServiceOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ShiftListItemOut] */
+        Page_ShiftListItemOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ShiftListItemOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[TransferOut] */
+        Page_TransferOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["TransferOut"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -5146,6 +6903,136 @@ export interface components {
             /** Requires Card Number */
             requires_card_number: boolean;
         };
+        /** PaymentIn */
+        PaymentIn: {
+            /** Allocations */
+            allocations?: components["schemas"]["AllocationIn"][] | null;
+            /**
+             * Amount
+             * @example 15000
+             * @example 2500.50
+             */
+            amount: string;
+            /**
+             * Auto
+             * @description Allocate to the oldest open invoices
+             * @default false
+             */
+            auto: boolean;
+            /**
+             * Bank
+             * @description Bank code (transfer, QR, card)
+             */
+            bank?: string | null;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "cash" | "bank_transfer" | "qr" | "card" | "patient_credit";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            override?: components["schemas"]["OverrideIn"] | null;
+            /** Patient Id */
+            patient_id: number;
+            /**
+             * Reference
+             * @default
+             */
+            reference: string;
+            /**
+             * Sender Name
+             * @default
+             */
+            sender_name: string;
+            /** Transfer Date */
+            transfer_date?: string | null;
+            /**
+             * Visit Id
+             * @description With auto: only this visit's open invoices (the visit at the desk)
+             */
+            visit_id?: number | null;
+        };
+        /** PaymentOut */
+        PaymentOut: {
+            /** Age Days */
+            age_days: number;
+            /** Allocations */
+            allocations: components["schemas"]["AllocationOut"][];
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            bank: components["schemas"]["NameOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Duplicate Of Number */
+            duplicate_of_number: string | null;
+            /** Duplicate Override */
+            duplicate_override: boolean;
+            /** Id */
+            id: number;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "cash" | "bank_transfer" | "qr" | "card" | "patient_credit";
+            /** Note */
+            note: string;
+            /** Number */
+            number: string;
+            override_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Override Note */
+            override_note: string;
+            override_reason: components["schemas"]["BillingReasonOut"] | null;
+            patient: components["schemas"]["BillingPatientSummaryOut"];
+            /** Reference */
+            reference: string;
+            /** Rejection Note */
+            rejection_note: string;
+            rejection_reason: components["schemas"]["BillingReasonOut"] | null;
+            /** Reversal Number */
+            reversal_number: string | null;
+            /** Reversal Of Number */
+            reversal_of_number: string | null;
+            /** Sender Name */
+            sender_name: string;
+            /** Shift Id */
+            shift_id: number;
+            /** Shift Number */
+            shift_number: string;
+            /** Shift Status */
+            shift_status: string;
+            /** Transfer Date */
+            transfer_date: string | null;
+            /**
+             * Unallocated
+             * @example 15000.00
+             */
+            unallocated: string;
+            /**
+             * Verification
+             * @enum {string}
+             */
+            verification: "pending" | "confirmed" | "rejected";
+            /** Verified At */
+            verified_at: string | null;
+            verified_by: components["schemas"]["BillingUserRefOut"] | null;
+        };
+        /** PerformFirstVisitOut */
+        PerformFirstVisitOut: {
+            /** Lines */
+            lines: components["schemas"]["AuthorizableLineOut"][];
+            patient: components["schemas"]["BillingPatientSummaryOut"];
+            visit: components["schemas"]["VisitRefOut"];
+        };
         /** PermissionMatrixIn */
         PermissionMatrixIn: {
             /** Changes */
@@ -5262,6 +7149,11 @@ export interface components {
             show_estimated_cost: boolean;
             /** Updated At */
             updated_at: string | null;
+        };
+        /** PreApprovalIn */
+        PreApprovalIn: {
+            /** Reference */
+            reference: string;
         };
         /** PreferencesPatch */
         PreferencesPatch: {
@@ -5680,6 +7572,14 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /** ReasonCountOut */
+        ReasonCountOut: {
+            /** Code */
+            code: string;
+            /** Count */
+            count: number;
+            reason: components["schemas"]["BillingReasonOut"] | null;
+        };
         /** ReasonIn */
         ReasonIn: {
             /** Reason */
@@ -5695,6 +7595,90 @@ export interface components {
             label_en: string;
             /** Requires Note */
             requires_note: boolean;
+        };
+        /** ReasonTotalOut */
+        ReasonTotalOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Code */
+            code: string;
+            /** Count */
+            count: number;
+            reason: components["schemas"]["BillingReasonOut"] | null;
+        };
+        /**
+         * ReceiptCheckOut
+         * @description A printed receipt checked against the system (FEATURES 6.9, 15.1).
+         */
+        ReceiptCheckOut: {
+            /**
+             * Code Amount
+             * @description The amount the scanned code carries
+             */
+            code_amount?: string | null;
+            /** Code Day */
+            code_day?: string | null;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            payment: components["schemas"]["PaymentOut"];
+            /**
+             * Standing
+             * @description valid; pending (transfer not yet confirmed by the bank); rejected (the transfer bounced); reversed; mismatch (the code's amount or day differs from the payment)
+             * @enum {string}
+             */
+            standing: "valid" | "pending" | "rejected" | "reversed" | "mismatch";
+        };
+        /** ReceiptInvoiceOut */
+        ReceiptInvoiceOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Id */
+            id: number;
+            /** Lines */
+            lines: components["schemas"]["ReceiptLineOut"][];
+            /** Number */
+            number: string | null;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+        };
+        /** ReceiptLineOut */
+        ReceiptLineOut: {
+            /** Description Ar */
+            description_ar: string;
+            /** Description En */
+            description_en: string;
+            /**
+             * Patient Share
+             * @example 15000.00
+             */
+            patient_share: string;
+            /** Quantity */
+            quantity: number;
+        };
+        /** ReceiptOut */
+        ReceiptOut: {
+            cashier: components["schemas"]["BillingUserRefOut"] | null;
+            center: components["schemas"]["BillingCenterOut"];
+            /** Invoices */
+            invoices: components["schemas"]["ReceiptInvoiceOut"][];
+            payment: components["schemas"]["PaymentOut"];
+            /**
+             * Verify Code
+             * @description Encoded in the receipt's QR (FEATURES 6.9)
+             */
+            verify_code: string;
         };
         /** ReferralCancelIn */
         ReferralCancelIn: {
@@ -5777,6 +7761,124 @@ export interface components {
             /** Doctors */
             doctors: components["schemas"]["DoctorRefOut"][];
         };
+        /** RefundIn */
+        RefundIn: {
+            /**
+             * Amount
+             * @example 15000
+             * @example 2500.50
+             */
+            amount: string;
+            /** Credit Note Id */
+            credit_note_id: number;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Patient Id
+             * @description Default: the credit note's patient
+             */
+            patient_id?: number | null;
+            /** Reason */
+            reason: string;
+        };
+        /** RefundOut */
+        RefundOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Credit Note Id */
+            credit_note_id: number | null;
+            /** Credit Note Number */
+            credit_note_number: string | null;
+            /** Decided At */
+            decided_at: string | null;
+            decided_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Decision Note */
+            decision_note: string;
+            /** Id */
+            id: number;
+            /** Method */
+            method: string;
+            /** Number */
+            number: string;
+            /** Paid At */
+            paid_at: string | null;
+            paid_by: components["schemas"]["BillingUserRefOut"] | null;
+            patient: components["schemas"]["BillingPatientSummaryOut"];
+            reason: components["schemas"]["BillingReasonOut"] | null;
+            /** Reason Note */
+            reason_note: string;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            requested_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Shift Number */
+            shift_number: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "requested" | "approved" | "rejected" | "paid";
+        };
+        /** RefundRefOut */
+        RefundRefOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /** Status */
+            status: string;
+        };
+        /** RejectIn */
+        RejectIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason */
+            reason: string;
+        };
+        /** RejectionOut */
+        RejectionOut: {
+            payment: components["schemas"]["PaymentOut"];
+            reversal: components["schemas"]["PaymentOut"] | null;
+            /**
+             * Uncovered
+             * @example 15000.00
+             */
+            uncovered: string;
+        };
+        /** ReportTransferOut */
+        ReportTransferOut: {
+            /** Age Days */
+            age_days: number | null;
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Bank */
+            bank: string;
+            /** Number */
+            number: string;
+            /** Payment Id */
+            payment_id: number;
+            /** Reference */
+            reference: string;
+        };
         /** RescheduleIn */
         RescheduleIn: {
             /** Ends At */
@@ -5846,6 +7948,11 @@ export interface components {
             unit: string;
             /** Value */
             value: string;
+        };
+        /** RevokeIn */
+        RevokeIn: {
+            /** Note */
+            note: string;
         };
         /** RoleOut */
         RoleOut: {
@@ -6081,6 +8188,43 @@ export interface components {
              */
             sort_order: number;
         };
+        /**
+         * ServiceLineOut
+         * @description A visit's service line as the cashier sees it.
+         */
+        ServiceLineOut: {
+            /** Authorized */
+            authorized: boolean;
+            /** Billing Status */
+            billing_status: string;
+            /**
+             * Draft Invoice Id
+             * @description The draft invoice holding the line
+             */
+            draft_invoice_id: number | null;
+            /** Fulfilment Status */
+            fulfilment_status: string;
+            /** Id */
+            id: number;
+            /** Order Source */
+            order_source: string;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            payer: components["schemas"]["NameOut"] | null;
+            /** Pre Approval Ref */
+            pre_approval_ref: string;
+            /** Quantity */
+            quantity: number;
+            service: components["schemas"]["ServiceRefOut"];
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "requested" | "invoiced" | "paid" | "performed" | "cancelled";
+        };
         /** ServiceListParams */
         ServiceListParams: {
             /** Active */
@@ -6151,6 +8295,215 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /** ServiceRefOut */
+        ServiceRefOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** ShiftCloseIn */
+        ShiftCloseIn: {
+            /**
+             * Counted
+             * @example 15000
+             * @example 2500.50
+             */
+            counted: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Reason
+             * @description Variance reason code
+             */
+            reason?: string | null;
+        };
+        /** ShiftListItemOut */
+        ShiftListItemOut: {
+            /**
+             * Pending Amount
+             * @example 15000.00
+             */
+            pending_amount: string;
+            /** Pending Count */
+            pending_count: number;
+            shift: components["schemas"]["ShiftOut"];
+        };
+        /** ShiftOpenIn */
+        ShiftOpenIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Opening Float
+             * @example 15000
+             * @example 2500.50
+             */
+            opening_float: string;
+            /**
+             * Till
+             * @description Till code
+             */
+            till?: string | null;
+        };
+        /** ShiftOut */
+        ShiftOut: {
+            cashier: components["schemas"]["BillingUserRefOut"];
+            /** Closed At */
+            closed_at: string | null;
+            closed_by: components["schemas"]["BillingUserRefOut"] | null;
+            /** Counted Cash */
+            counted_cash: string | null;
+            /**
+             * Expected Cash
+             * @description Live while open, frozen at close
+             * @example 15000.00
+             */
+            expected_cash: string;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            /**
+             * Opening Float
+             * @example 15000.00
+             */
+            opening_float: string;
+            review: components["schemas"]["ShiftReviewOut"] | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed";
+            till: components["schemas"]["NameOut"] | null;
+            /** Variance */
+            variance: string | null;
+            /** Variance Note */
+            variance_note: string;
+            variance_reason: components["schemas"]["BillingReasonOut"] | null;
+        };
+        /**
+         * ShiftReportOut
+         * @description The shift report (FLOW 9, FEATURES 7.3): confirmed money apart from pending.
+         */
+        ShiftReportOut: {
+            /** Cancellations */
+            cancellations: components["schemas"]["ReasonTotalOut"][];
+            collection: components["schemas"]["CollectionOut"];
+            /** Confirmed Transfers */
+            confirmed_transfers: components["schemas"]["ReportTransferOut"][];
+            /** Counted Cash */
+            counted_cash: string | null;
+            /**
+             * Credit From Cancellations
+             * @example 15000.00
+             */
+            credit_from_cancellations: string;
+            /**
+             * Credit Notes
+             * @example 15000.00
+             */
+            credit_notes: string;
+            /**
+             * Credit Unallocated
+             * @example 15000.00
+             */
+            credit_unallocated: string;
+            /** Discounts */
+            discounts: components["schemas"]["ApproverTotalOut"][];
+            /**
+             * Expected Cash
+             * @example 15000.00
+             */
+            expected_cash: string;
+            /**
+             * Frozen
+             * @description Served from the snapshot taken at close
+             */
+            frozen: boolean;
+            /** Handovers */
+            handovers: components["schemas"]["HandoverOut"][];
+            /**
+             * Late Confirmations
+             * @example 15000.00
+             */
+            late_confirmations: string;
+            /**
+             * Late Reversals
+             * @description Earlier shifts' transfers rejected here
+             * @example 15000.00
+             */
+            late_reversals: string;
+            /**
+             * Line Cancellations
+             * @description Unbilled lines the shift's cashier cancelled during the shift (FLOW 4)
+             */
+            line_cancellations: components["schemas"]["ReasonCountOut"][];
+            movements: components["schemas"]["MovementsOut"];
+            /** Pending */
+            pending: components["schemas"]["ReportTransferOut"][];
+            /** Refunds */
+            refunds: components["schemas"]["ReasonTotalOut"][];
+            /**
+             * Refunds Paid
+             * @example 15000.00
+             */
+            refunds_paid: string;
+            shift: components["schemas"]["ShiftOut"];
+            /** Variance */
+            variance: string | null;
+            /**
+             * Voided Drafts
+             * @description Draft invoices the shift's cashier voided during the shift
+             */
+            voided_drafts: components["schemas"]["VoidedDraftOut"][];
+        };
+        /** ShiftReviewIn */
+        ShiftReviewIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Outcome
+             * @default approved
+             * @enum {string}
+             */
+            outcome: "approved" | "flagged";
+        };
+        /** ShiftReviewOut */
+        ShiftReviewOut: {
+            /** Note */
+            note: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "approved" | "flagged";
+            /**
+             * Reviewed At
+             * Format: date-time
+             */
+            reviewed_at: string;
+            reviewed_by: components["schemas"]["BillingUserRefOut"] | null;
+        };
         /** TemplateParams */
         TemplateParams: {
             /**
@@ -6189,6 +8542,29 @@ export interface components {
             ahead: number;
             center: components["schemas"]["CenterOut"];
             entry: components["schemas"]["QueueRowOut"];
+        };
+        /** TransferConfirmIn */
+        TransferConfirmIn: {
+            /**
+             * Note
+             * @description What was checked
+             */
+            note: string;
+        };
+        /** TransferOut */
+        TransferOut: {
+            cashier: components["schemas"]["BillingUserRefOut"] | null;
+            payment: components["schemas"]["PaymentOut"];
+            /**
+             * Reject Needs Open Shift
+             * @description Its shift is closed and the viewer has no open shift to book the reversal
+             */
+            reject_needs_open_shift: boolean;
+            /**
+             * Self Recorded
+             * @description The viewer took it or it is their shift's: another checker confirms it
+             */
+            self_recorded: boolean;
         };
         /** UpcomingParams */
         UpcomingParams: {
@@ -6390,6 +8766,31 @@ export interface components {
         VersionWithdrawIn: {
             /** Reason */
             reason: string;
+        };
+        /**
+         * VisitBillingOut
+         * @description Everything the billing panel shows for one visit (FLOW step 4).
+         */
+        VisitBillingOut: {
+            balance: components["schemas"]["BillingBalanceOut"];
+            /** Drafts */
+            drafts: components["schemas"]["InvoiceOut"][];
+            /** Invoices */
+            invoices: components["schemas"]["InvoiceOut"][];
+            /**
+             * Open Invoices
+             * @description Person-wide, oldest first
+             */
+            open_invoices: components["schemas"]["BillingOpenInvoiceOut"][];
+            patient: components["schemas"]["BillingPatientSummaryOut"];
+            /**
+             * Payers
+             * @description Payers a line may be billed to (valid cover)
+             */
+            payers: components["schemas"]["NameOut"][];
+            /** Unbilled */
+            unbilled: components["schemas"]["ServiceLineOut"][];
+            visit: components["schemas"]["VisitRefOut"];
         };
         /** VisitBriefOut */
         VisitBriefOut: {
@@ -6602,6 +9003,27 @@ export interface components {
              */
             visit_type: "new" | "follow_up" | "emergency" | "pharmacy_sale" | "inpatient";
         };
+        /** VisitRefOut */
+        VisitRefOut: {
+            /** Card Number */
+            card_number: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            department: components["schemas"]["NameOut"] | null;
+            doctor: components["schemas"]["BillingUserRefOut"] | null;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            payer: components["schemas"]["NameOut"] | null;
+            /** Status */
+            status: string;
+            /** Visit Type */
+            visit_type: string;
+        };
         /** VisitRoomOut */
         VisitRoomOut: {
             /** Code */
@@ -6673,6 +9095,24 @@ export interface components {
             temperature_c: string | null;
             /** Weight Kg */
             weight_kg: string | null;
+        };
+        /** VoidIn */
+        VoidIn: {
+            /** Note */
+            note: string;
+        };
+        /** VoidedDraftOut */
+        VoidedDraftOut: {
+            /**
+             * Amount
+             * @description Gross total of the draft when it was voided
+             * @example 15000.00
+             */
+            amount: string;
+            /** Invoice Id */
+            invoice_id: number;
+            /** Note */
+            note: string;
         };
         /** WaitingRoomOut */
         WaitingRoomOut: {
@@ -7004,6 +9444,1120 @@ export interface operations {
             };
         };
     };
+    billing_list_credit_notes: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                status?: ("draft" | "approved" | "void") | null;
+                invoice_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CreditNoteOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_get_credit_note: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credit_note_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditNoteOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_approve_credit_note: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credit_note_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreditNoteApproveIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditOutcomeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_create_invoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_get_invoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_approve_invoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_create_credit_note: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreditNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditNoteOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_discount_invoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscountIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_remove_draft_line: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_cancel_draft_line: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LineCancelIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_discount_line: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscountIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_set_preapproval_ref: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreApprovalIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_get_invoice_print: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoicePrintOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_void_invoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_set_line_payer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinePayerIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitBillingOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_lookup_patients: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     billing_get_ping: {
         parameters: {
             query?: never;
@@ -7033,6 +10587,207 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_list_reasons: {
+        parameters: {
+            query: {
+                category: "discount" | "credit_note" | "line_cancel" | "override" | "variance" | "refund" | "transfer_reject" | "perform_first";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingReasonOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_get_visit_billing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitBillingOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    billing_list_unbilled_lines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceLineOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13675,6 +17430,351 @@ export interface operations {
             };
         };
     };
+    orders_list_perform_first: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                active?: boolean | null;
+                visit_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AuthorizationOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_authorize_perform_first: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthorizeIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorizationOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_list_perform_first_requesters: {
+        parameters: {
+            query?: {
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingUserRefOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_get_perform_first_visit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformFirstVisitOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    orders_revoke_perform_first: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                authorization_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorizationOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     orders_get_ping: {
         parameters: {
             query?: never;
@@ -15040,6 +19140,708 @@ export interface operations {
             };
         };
     };
+    payments_list_banks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NameOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_list_handover_receivers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingUserRefOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_cancel_handover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handover_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverCancelIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HandoverOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_receive_handover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handover_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HandoverOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_record_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Locked */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_get_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_allocate_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocateIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_confirm_transfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_get_receipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_reject_transfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RejectionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     payments_get_ping: {
         parameters: {
             query?: never;
@@ -15069,6 +19871,1106 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_check_receipt: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptCheckOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_list_refunds: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                status?: ("requested" | "approved" | "rejected" | "paid") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_RefundOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_request_refund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_approve_refund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_pay_refund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_reject_refund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_list_shifts: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                status?: string | null;
+                reviewed?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ShiftListItemOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_open_shift: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShiftOpenIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_get_current_shift: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentShiftOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_list_handover_targets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenShiftRefOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_get_shift: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shift_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_close_shift: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shift_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShiftCloseIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_create_handover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shift_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HandoverOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_review_shift: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shift_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShiftReviewIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_list_tills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NameOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_list_transfers: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                verification?: "pending" | "confirmed" | "rejected";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_TransferOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

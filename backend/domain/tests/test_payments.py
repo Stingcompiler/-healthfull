@@ -12,6 +12,8 @@ from domain.errors import DomainError
 from domain.payments import (
     REFERENCE_METHODS,
     PaymentMethod,
+    ReceiptCode,
+    ReceiptStanding,
     Verification,
     check_reference,
     confirm,
@@ -19,7 +21,10 @@ from domain.payments import (
     covers_lines,
     initial_verification,
     normalize_reference,
+    parse_receipt_code,
     pending_age_days,
+    receipt_code,
+    receipt_standing,
     reject,
     validate_payment,
 )
@@ -150,3 +155,75 @@ def test_pending_age_days() -> None:
     assert pending_age_days(date(2026, 10, 7), date(2026, 10, 7)) == 0
     with pytest.raises(DomainError):
         pending_age_days(date(2026, 10, 8), date(2026, 10, 7))
+
+
+# --- receipt verification ----------------------------------------------------------------------
+
+
+@given(
+    number=st.from_regex(r"\APAY-[0-9]{1,8}\Z"),
+    amount=st.decimals(min_value=Decimal("0.01"), max_value=Decimal("1e9"), places=2),
+    day=st.dates(min_value=date(2000, 1, 1), max_value=date(2100, 1, 1)),
+)
+def test_a_receipt_code_reads_back(number: str, amount: Decimal, day: date) -> None:
+    code = parse_receipt_code(receipt_code(number, amount, day))
+    assert code == ReceiptCode(number, amount, day)
+    standing = receipt_standing(
+        code,
+        amount=amount,
+        day=day,
+        verification=Verification.CONFIRMED,
+        reversed_=False,
+        is_reversal=False,
+    )
+    assert standing is ReceiptStanding.VALID
+
+
+def test_receipt_code_parsing_is_forgiving() -> None:
+    assert parse_receipt_code(" pay-12 ") == ReceiptCode("PAY-12")
+    assert parse_receipt_code("PAY-12|abc|2026-13-40") == ReceiptCode("PAY-12")
+    assert parse_receipt_code("PAY-12|NaN|x") == ReceiptCode("PAY-12")
+    assert parse_receipt_code("PAY-12|1e9") == ReceiptCode("PAY-12")
+    assert parse_receipt_code("PAY-12|10.5") == ReceiptCode("PAY-12", Decimal("10.5"))
+
+
+@pytest.mark.parametrize(
+    ("code", "verification", "reversed_", "is_reversal", "expected"),
+    [
+        (ReceiptCode("P"), Verification.CONFIRMED, False, False, ReceiptStanding.VALID),
+        (ReceiptCode("P"), Verification.PENDING, False, False, ReceiptStanding.PENDING),
+        (ReceiptCode("P"), Verification.REJECTED, True, False, ReceiptStanding.REJECTED),
+        (ReceiptCode("P"), Verification.CONFIRMED, True, False, ReceiptStanding.REVERSED),
+        (ReceiptCode("P"), Verification.CONFIRMED, False, True, ReceiptStanding.REVERSED),
+        (
+            ReceiptCode("P", Decimal("99.00")),
+            Verification.CONFIRMED,
+            False,
+            False,
+            ReceiptStanding.MISMATCH,
+        ),
+        (
+            ReceiptCode("P", Decimal("10.00"), date(2026, 1, 2)),
+            Verification.REJECTED,
+            True,
+            False,
+            ReceiptStanding.MISMATCH,
+        ),
+    ],
+)
+def test_receipt_standing(
+    code: ReceiptCode,
+    verification: Verification,
+    reversed_: bool,
+    is_reversal: bool,
+    expected: ReceiptStanding,
+) -> None:
+    standing = receipt_standing(
+        code,
+        amount=Decimal("10.00"),
+        day=date(2026, 1, 1),
+        verification=verification,
+        reversed_=reversed_,
+        is_reversal=is_reversal,
+    )
+    assert standing is expected
