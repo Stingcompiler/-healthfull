@@ -256,8 +256,8 @@ def response_amount(outcome: str, claimed: Decimal, accepted: Decimal | None) ->
     amount; an amount given with a whole answer is ignored.
 
     Raises:
-        DomainError: ``CLAIM_AMOUNT_INVALID`` (unknown outcome, partial without a part, or a
-            part that is not strictly inside the claimed amount).
+        DomainError: ``CLAIM_AMOUNT_INVALID`` (unknown outcome), ``CLAIM_PARTIAL_INVALID``
+            (partial without a part, or a part not strictly inside the claimed amount).
     """
     whole = require_positive(claimed, "claimed")
     if outcome == "accepted":
@@ -267,7 +267,8 @@ def response_amount(outcome: str, claimed: Decimal, accepted: Decimal | None) ->
     if outcome != "partial":
         raise _bad("Unknown response outcome", outcome=outcome)
     if accepted is None or not ZERO < accepted < whole:
-        raise _bad(
+        raise DomainError(
+            "CLAIM_PARTIAL_INVALID",
             "A partial answer accepts more than nothing and less than the claimed amount",
             claimed=str(whole),
             accepted=None if accepted is None else str(accepted),

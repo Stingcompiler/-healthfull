@@ -261,7 +261,7 @@
   "CLAIM_LINE_LOCKED": "The payer share on this line is already claimed. Correct it through the claim: rejection, re-billing, or write-off.",
   "CLAIM_LINE_NOT_ACCEPTED": "Only accepted amounts can be paid.",
   "CLAIM_PAYMENT_EXCEEDS_ACCEPTED": "The payment is larger than the accepted amount still unpaid.",
-  "CLAIM_NOTHING_UNPAID": "No accepted amount is left unpaid on this line.",
+  "CLAIM_NOTHING_UNPAID": "No accepted amount is left unpaid on this line or claim.",
   "CLAIM_NOTHING_REJECTED": "There is no unresolved rejected amount on this line.",
   "CLAIM_AMOUNT_INVALID": "The claim amounts do not add up. Check the accepted, rejected, paid, and written-off amounts.",
   "INVALID_RESOLUTION": "Choose how to resolve the rejection: re-bill the patient or write it off.",
@@ -362,5 +362,7 @@
   "ALLOCATION_REQUIRED": "Choose the invoices to pay, or allocate automatically.",
   "APPROVER_INVALID": "The approver's username or password is wrong.",
   "HANDOVER_SELF_RECEIPT": "You handed over this cash, so someone else must confirm they received it.",
-  "HANDOVER_RECEIVER_INVALID": "This person cannot receive cash for the center. Choose a supervisor or an accountant."
+  "HANDOVER_RECEIVER_INVALID": "This person cannot receive cash for the center. Choose a supervisor or an accountant.",
+  "PAYER_ALLOCATION_CONFLICT": "Allocate the payer payment to claims or to claim lines, not both.",
+  "CLAIM_PARTIAL_INVALID": "A partial answer accepts more than nothing and less than the claimed amount. Choose accepted or rejected for the whole amount."
 }

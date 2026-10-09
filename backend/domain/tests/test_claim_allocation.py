@@ -135,10 +135,10 @@ def test_a_partial_answer_accepts_strictly_between_nothing_and_all(
         assert response_amount("partial", claimed, accepted) == accepted
     else:
         assert _code(lambda: response_amount("partial", claimed, accepted)) == (
-            "CLAIM_AMOUNT_INVALID"
+            "CLAIM_PARTIAL_INVALID"
         )
 
 
 def test_a_partial_answer_needs_its_amount_and_a_known_outcome() -> None:
-    assert _code(lambda: response_amount("partial", D("10.00"), None)) == "CLAIM_AMOUNT_INVALID"
+    assert _code(lambda: response_amount("partial", D("10.00"), None)) == "CLAIM_PARTIAL_INVALID"
     assert _code(lambda: response_amount("maybe", D("10.00"), None)) == "CLAIM_AMOUNT_INVALID"

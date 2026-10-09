@@ -185,7 +185,7 @@ def test_answers_rebill_write_off_and_payment_by_claim(s: Setup) -> None:
     error(acc.post(_url(f"/batches/{cid}/responses"), answers), 409, "REASON_REQUIRED")
     answers["responses"][1]["reason"] = "tariff limit"
     answers["responses"][1]["accepted"] = "3500"
-    error(acc.post(_url(f"/batches/{cid}/responses"), answers), 409, "CLAIM_AMOUNT_INVALID")
+    error(acc.post(_url(f"/batches/{cid}/responses"), answers), 409, "CLAIM_PARTIAL_INVALID")
     answers["responses"][1]["accepted"] = "2000"
     answered = ok(acc.post(_url(f"/batches/{cid}/responses"), answers))
     assert answered["status"] == "responded"
