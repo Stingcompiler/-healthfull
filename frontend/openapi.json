@@ -1984,6 +1984,2154 @@
         "title": "CheckInIn",
         "type": "object"
       },
+      "ClaimAccruedLineOut": {
+        "description": "An unclaimed payer share: ``amount`` is what may be claimed.",
+        "properties": {
+          "age_days": {
+            "title": "Age Days",
+            "type": "integer"
+          },
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "approved_on": {
+            "format": "date",
+            "title": "Approved On",
+            "type": "string"
+          },
+          "card_number": {
+            "title": "Card Number",
+            "type": "string"
+          },
+          "description_ar": {
+            "title": "Description Ar",
+            "type": "string"
+          },
+          "description_en": {
+            "title": "Description En",
+            "type": "string"
+          },
+          "gross": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Gross",
+            "type": "string"
+          },
+          "invoice_id": {
+            "title": "Invoice Id",
+            "type": "integer"
+          },
+          "invoice_line_id": {
+            "title": "Invoice Line Id",
+            "type": "integer"
+          },
+          "invoice_number": {
+            "title": "Invoice Number",
+            "type": "string"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/ClaimPatientOut"
+          },
+          "pre_approval_ref": {
+            "title": "Pre Approval Ref",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "service_code": {
+            "title": "Service Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invoice_line_id",
+          "invoice_id",
+          "invoice_number",
+          "approved_on",
+          "patient",
+          "card_number",
+          "service_code",
+          "description_ar",
+          "description_en",
+          "quantity",
+          "gross",
+          "pre_approval_ref",
+          "amount",
+          "age_days"
+        ],
+        "title": "ClaimAccruedLineOut",
+        "type": "object"
+      },
+      "ClaimAccruedOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimAccruedLineOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/ClaimPayerOut"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payer",
+          "period_start",
+          "period_end",
+          "items",
+          "total"
+        ],
+        "title": "ClaimAccruedOut",
+        "type": "object"
+      },
+      "ClaimAccruedParams": {
+        "properties": {
+          "payer_id": {
+            "title": "Payer Id",
+            "type": "integer"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          }
+        },
+        "required": [
+          "payer_id"
+        ],
+        "title": "ClaimAccruedParams",
+        "type": "object"
+      },
+      "ClaimAgingOut": {
+        "description": "The outstanding receivable by days since invoice approval.",
+        "properties": {
+          "days_0_30": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Days 0 30",
+            "type": "string"
+          },
+          "days_31_60": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Days 31 60",
+            "type": "string"
+          },
+          "days_61_90": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Days 61 90",
+            "type": "string"
+          },
+          "days_over_90": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Days Over 90",
+            "type": "string"
+          },
+          "total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "days_0_30",
+          "days_31_60",
+          "days_61_90",
+          "days_over_90",
+          "total"
+        ],
+        "title": "ClaimAgingOut",
+        "type": "object"
+      },
+      "ClaimAgingReportOut": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimAgingRowOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ClaimAgingOut"
+          }
+        },
+        "required": [
+          "as_of",
+          "items",
+          "totals"
+        ],
+        "title": "ClaimAgingReportOut",
+        "type": "object"
+      },
+      "ClaimAgingRowOut": {
+        "properties": {
+          "aging": {
+            "$ref": "#/components/schemas/ClaimAgingOut"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/ClaimPayerOut"
+          }
+        },
+        "required": [
+          "payer",
+          "aging"
+        ],
+        "title": "ClaimAgingRowOut",
+        "type": "object"
+      },
+      "ClaimAllocationIn": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000",
+              "2500.50"
+            ],
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[^.٫]*(?:[.٫]\\S{0,2})?\\s*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "claim_id": {
+            "title": "Claim Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "claim_id",
+          "amount"
+        ],
+        "title": "ClaimAllocationIn",
+        "type": "object"
+      },
+      "ClaimAsOfParams": {
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Age receivables on this day (default today).",
+            "title": "As Of"
+          }
+        },
+        "title": "ClaimAsOfParams",
+        "type": "object"
+      },
+      "ClaimBuildIn": {
+        "properties": {
+          "invoice_line_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The accrued lines to claim; all of the period when omitted.",
+            "title": "Invoice Line Ids"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "payer_id": {
+            "title": "Payer Id",
+            "type": "integer"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payer_id",
+          "period_start",
+          "period_end"
+        ],
+        "title": "ClaimBuildIn",
+        "type": "object"
+      },
+      "ClaimCenterOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "registration_no": {
+            "title": "Registration No",
+            "type": "string"
+          },
+          "tax_no": {
+            "title": "Tax No",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name_ar",
+          "name_en",
+          "address",
+          "phone",
+          "registration_no",
+          "tax_no"
+        ],
+        "title": "ClaimCenterOut",
+        "type": "object"
+      },
+      "ClaimDetailOut": {
+        "properties": {
+          "accepted_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Accepted Total",
+            "type": "string"
+          },
+          "claimed_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Claimed Total",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/ClaimUserOut"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "line_count": {
+            "title": "Line Count",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "paid_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Paid Total",
+            "type": "string"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/ClaimNameOut"
+          },
+          "payments": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimPaymentRefOut"
+            },
+            "title": "Payments",
+            "type": "array"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "receivable": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Receivable",
+            "type": "string"
+          },
+          "rejected_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Rejected Total",
+            "type": "string"
+          },
+          "response_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response At"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "submitted",
+              "responded",
+              "closed",
+              "void"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimUserOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unpaid_total": {
+            "description": "Accepted, not paid, not written off.",
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Unpaid Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "payer",
+          "period_start",
+          "period_end",
+          "status",
+          "claimed_total",
+          "accepted_total",
+          "rejected_total",
+          "paid_total",
+          "unpaid_total",
+          "receivable",
+          "line_count",
+          "created_at",
+          "submitted_at",
+          "response_at",
+          "closed_at",
+          "note",
+          "created_by",
+          "submitted_by",
+          "lines",
+          "payments"
+        ],
+        "title": "ClaimDetailOut",
+        "type": "object"
+      },
+      "ClaimExportParams": {
+        "properties": {
+          "language": {
+            "default": "en",
+            "enum": [
+              "ar",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          }
+        },
+        "title": "ClaimExportParams",
+        "type": "object"
+      },
+      "ClaimLineAllocationIn": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000",
+              "2500.50"
+            ],
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[^.٫]*(?:[.٫]\\S{0,2})?\\s*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "claim_line_id": {
+            "title": "Claim Line Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "claim_line_id",
+          "amount"
+        ],
+        "title": "ClaimLineAllocationIn",
+        "type": "object"
+      },
+      "ClaimLineOut": {
+        "properties": {
+          "accepted_amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Accepted Amount",
+            "type": "string"
+          },
+          "amount_claimed": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount Claimed",
+            "type": "string"
+          },
+          "approved_on": {
+            "format": "date",
+            "title": "Approved On",
+            "type": "string"
+          },
+          "card_number": {
+            "title": "Card Number",
+            "type": "string"
+          },
+          "description_ar": {
+            "title": "Description Ar",
+            "type": "string"
+          },
+          "description_en": {
+            "title": "Description En",
+            "type": "string"
+          },
+          "gross": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Gross",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "invoice_id": {
+            "title": "Invoice Id",
+            "type": "integer"
+          },
+          "invoice_line_id": {
+            "title": "Invoice Line Id",
+            "type": "integer"
+          },
+          "invoice_number": {
+            "title": "Invoice Number",
+            "type": "string"
+          },
+          "paid": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Paid",
+            "type": "string"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/ClaimPatientOut"
+          },
+          "payer_reason": {
+            "title": "Payer Reason",
+            "type": "string"
+          },
+          "payer_reference": {
+            "title": "Payer Reference",
+            "type": "string"
+          },
+          "pre_approval_ref": {
+            "title": "Pre Approval Ref",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "receivable": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Receivable",
+            "type": "string"
+          },
+          "rejected_amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Rejected Amount",
+            "type": "string"
+          },
+          "resolution": {
+            "enum": [
+              "none",
+              "rebilled",
+              "written_off"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          },
+          "resolution_note": {
+            "title": "Resolution Note",
+            "type": "string"
+          },
+          "resolution_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimReasonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolved_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimUserOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "responded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responded At"
+          },
+          "service_code": {
+            "title": "Service Code",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "claimed",
+              "accepted",
+              "rejected",
+              "partially_accepted",
+              "paid",
+              "rebilled",
+              "written_off",
+              "voided"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected",
+              "partial",
+              "withdrawn"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "unpaid": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Unpaid",
+            "type": "string"
+          },
+          "unresolved_rejection": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Unresolved Rejection",
+            "type": "string"
+          },
+          "withdraw_note": {
+            "title": "Withdraw Note",
+            "type": "string"
+          },
+          "written_off_amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Written Off Amount",
+            "type": "string"
+          },
+          "written_off_note": {
+            "title": "Written Off Note",
+            "type": "string"
+          },
+          "written_off_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimReasonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "invoice_line_id",
+          "invoice_id",
+          "invoice_number",
+          "approved_on",
+          "patient",
+          "card_number",
+          "service_code",
+          "description_ar",
+          "description_en",
+          "quantity",
+          "gross",
+          "pre_approval_ref",
+          "id",
+          "amount_claimed",
+          "status",
+          "stage",
+          "accepted_amount",
+          "rejected_amount",
+          "paid",
+          "written_off_amount",
+          "unpaid",
+          "unresolved_rejection",
+          "receivable",
+          "payer_reason",
+          "payer_reference",
+          "responded_at",
+          "resolution",
+          "resolution_reason",
+          "resolution_note",
+          "resolved_by",
+          "resolved_at",
+          "written_off_reason",
+          "written_off_note",
+          "withdraw_note"
+        ],
+        "title": "ClaimLineOut",
+        "type": "object"
+      },
+      "ClaimListParams": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "payer_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payer Id"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "submitted",
+                  "responded",
+                  "closed",
+                  "void"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "ClaimListParams",
+        "type": "object"
+      },
+      "ClaimNameOut": {
+        "description": "A coded row (payer, bank).",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "ClaimNameOut",
+        "type": "object"
+      },
+      "ClaimNoteIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "ClaimNoteIn",
+        "type": "object"
+      },
+      "ClaimOptionsOut": {
+        "description": "What the claim screens choose from: payers, banks, write-off reasons, and the viewer's\nopen shift (payer cash goes into it, ARCHITECTURE 4.7).",
+        "properties": {
+          "banks": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimNameOut"
+            },
+            "title": "Banks",
+            "type": "array"
+          },
+          "open_shift": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimShiftOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payers": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimPayerOut"
+            },
+            "title": "Payers",
+            "type": "array"
+          },
+          "write_off_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimReasonOut"
+            },
+            "title": "Write Off Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "payers",
+          "banks",
+          "write_off_reasons",
+          "open_shift"
+        ],
+        "title": "ClaimOptionsOut",
+        "type": "object"
+      },
+      "ClaimPatientOut": {
+        "properties": {
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "file_no",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "ClaimPatientOut",
+        "type": "object"
+      },
+      "ClaimPayableOut": {
+        "description": "A claim with accepted money the payer still owes (a payment can be allocated to it).",
+        "properties": {
+          "accepted_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Accepted Total",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "paid_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Paid Total",
+            "type": "string"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "unpaid_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Unpaid Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "period_start",
+          "period_end",
+          "accepted_total",
+          "paid_total",
+          "unpaid_total"
+        ],
+        "title": "ClaimPayableOut",
+        "type": "object"
+      },
+      "ClaimPayerAllocationOut": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "claim_id": {
+            "title": "Claim Id",
+            "type": "integer"
+          },
+          "claim_line_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Line Id"
+          },
+          "claim_number": {
+            "title": "Claim Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_id",
+          "claim_number",
+          "claim_line_id",
+          "amount"
+        ],
+        "title": "ClaimPayerAllocationOut",
+        "type": "object"
+      },
+      "ClaimPayerOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "claim_period": {
+            "title": "Claim Period",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "contract_no": {
+            "title": "Contract No",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en",
+          "kind",
+          "claim_period",
+          "contract_no",
+          "active"
+        ],
+        "title": "ClaimPayerOut",
+        "type": "object"
+      },
+      "ClaimPayerOutDetail": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "claim_period": {
+            "title": "Claim Period",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "contact_name": {
+            "title": "Contact Name",
+            "type": "string"
+          },
+          "contract_no": {
+            "title": "Contract No",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en",
+          "kind",
+          "claim_period",
+          "contract_no",
+          "active",
+          "address",
+          "contact_name",
+          "phone",
+          "email"
+        ],
+        "title": "ClaimPayerOutDetail",
+        "type": "object"
+      },
+      "ClaimPayerPaymentIn": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000",
+              "2500.50"
+            ],
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[^.٫]*(?:[.٫]\\S{0,2})?\\s*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "bank_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Id"
+          },
+          "claims": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClaimAllocationIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Amounts per claim; with neither claims nor lines, oldest claims first.",
+            "title": "Claims"
+          },
+          "lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClaimLineAllocationIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lines"
+          },
+          "method": {
+            "default": "bank_transfer",
+            "enum": [
+              "bank_transfer",
+              "cheque",
+              "cash"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "payer_id": {
+            "title": "Payer Id",
+            "type": "integer"
+          },
+          "received_on": {
+            "format": "date",
+            "title": "Received On",
+            "type": "string"
+          },
+          "reference": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payer_id",
+          "amount",
+          "received_on"
+        ],
+        "title": "ClaimPayerPaymentIn",
+        "type": "object"
+      },
+      "ClaimPayerPaymentOut": {
+        "properties": {
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimPayerAllocationOut"
+            },
+            "title": "Allocations",
+            "type": "array"
+          },
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "bank": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimNameOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cleared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleared At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "method": {
+            "enum": [
+              "bank_transfer",
+              "cheque",
+              "cash"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/ClaimNameOut"
+          },
+          "received_on": {
+            "format": "date",
+            "title": "Received On",
+            "type": "string"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "recorded_by": {
+            "$ref": "#/components/schemas/ClaimUserOut"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "reverse_note": {
+            "title": "Reverse Note",
+            "type": "string"
+          },
+          "reversed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reversed At"
+          },
+          "shift": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimShiftOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "standing": {
+            "enum": [
+              "bank",
+              "cash",
+              "cheque_pending",
+              "cheque_cleared",
+              "reversed"
+            ],
+            "title": "Standing",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "payer",
+          "amount",
+          "method",
+          "standing",
+          "bank",
+          "reference",
+          "received_on",
+          "shift",
+          "note",
+          "recorded_by",
+          "recorded_at",
+          "cleared_at",
+          "reversed_at",
+          "reverse_note",
+          "allocations"
+        ],
+        "title": "ClaimPayerPaymentOut",
+        "type": "object"
+      },
+      "ClaimPaymentListParams": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "payer_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payer Id"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "standing": {
+            "anyOf": [
+              {
+                "enum": [
+                  "cheque_pending",
+                  "reversed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standing"
+          }
+        },
+        "title": "ClaimPaymentListParams",
+        "type": "object"
+      },
+      "ClaimPaymentRefOut": {
+        "description": "A payer payment allocated to this claim (the claim's share of it).",
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "method": {
+            "enum": [
+              "bank_transfer",
+              "cheque",
+              "cash"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "received_on": {
+            "format": "date",
+            "title": "Received On",
+            "type": "string"
+          },
+          "reversed": {
+            "title": "Reversed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "received_on",
+          "method",
+          "amount",
+          "reversed"
+        ],
+        "title": "ClaimPaymentRefOut",
+        "type": "object"
+      },
+      "ClaimPrintOut": {
+        "properties": {
+          "center": {
+            "$ref": "#/components/schemas/ClaimCenterOut"
+          },
+          "claim": {
+            "$ref": "#/components/schemas/ClaimDetailOut"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/ClaimPayerOutDetail"
+          }
+        },
+        "required": [
+          "center",
+          "payer",
+          "claim"
+        ],
+        "title": "ClaimPrintOut",
+        "type": "object"
+      },
+      "ClaimReasonOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "label_ar": {
+            "title": "Label Ar",
+            "type": "string"
+          },
+          "label_en": {
+            "title": "Label En",
+            "type": "string"
+          },
+          "requires_note": {
+            "title": "Requires Note",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "label_ar",
+          "label_en",
+          "requires_note"
+        ],
+        "title": "ClaimReasonOut",
+        "type": "object"
+      },
+      "ClaimReceivableOut": {
+        "properties": {
+          "aging": {
+            "$ref": "#/components/schemas/ClaimAgingOut"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/ClaimPayerOut"
+          },
+          "stages": {
+            "$ref": "#/components/schemas/ClaimStagesOut"
+          }
+        },
+        "required": [
+          "payer",
+          "stages",
+          "aging"
+        ],
+        "title": "ClaimReceivableOut",
+        "type": "object"
+      },
+      "ClaimReceivablesOut": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimReceivableOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ClaimStagesOut"
+          }
+        },
+        "required": [
+          "as_of",
+          "items",
+          "totals"
+        ],
+        "title": "ClaimReceivablesOut",
+        "type": "object"
+      },
+      "ClaimResolveIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "description": "A write-off reason code.",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "resolution": {
+            "enum": [
+              "rebilled",
+              "written_off"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resolution",
+          "reason"
+        ],
+        "title": "ClaimResolveIn",
+        "type": "object"
+      },
+      "ClaimResponseIn": {
+        "properties": {
+          "accepted": {
+            "anyOf": [
+              {
+                "examples": [
+                  "15000",
+                  "2500.50"
+                ],
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[^.٫]*(?:[.٫]\\S{0,2})?\\s*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The accepted part of a partial.",
+            "title": "Accepted"
+          },
+          "claim_line_id": {
+            "title": "Claim Line Id",
+            "type": "integer"
+          },
+          "outcome": {
+            "enum": [
+              "accepted",
+              "rejected",
+              "partial"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "description": "The payer's reason for a rejection.",
+            "maxLength": 300,
+            "title": "Reason",
+            "type": "string"
+          },
+          "reference": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_line_id",
+          "outcome"
+        ],
+        "title": "ClaimResponseIn",
+        "type": "object"
+      },
+      "ClaimResponsesIn": {
+        "properties": {
+          "responses": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimResponseIn"
+            },
+            "minItems": 1,
+            "title": "Responses",
+            "type": "array"
+          }
+        },
+        "required": [
+          "responses"
+        ],
+        "title": "ClaimResponsesIn",
+        "type": "object"
+      },
+      "ClaimShiftOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number"
+        ],
+        "title": "ClaimShiftOut",
+        "type": "object"
+      },
+      "ClaimShortfallIn": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000",
+              "2500.50"
+            ],
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[^.٫]*(?:[.٫]\\S{0,2})?\\s*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "reason"
+        ],
+        "title": "ClaimShortfallIn",
+        "type": "object"
+      },
+      "ClaimStagesOut": {
+        "description": "A payer share by stage. ``receivable`` (AR_PAYER) = accrued + claimed + accepted unpaid\n+ rejected unresolved; ``collected`` is the only part that is money (invariant 7).",
+        "properties": {
+          "accepted_unpaid": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Accepted Unpaid",
+            "type": "string"
+          },
+          "accrued": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Accrued",
+            "type": "string"
+          },
+          "claimed": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Claimed",
+            "type": "string"
+          },
+          "collected": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Collected",
+            "type": "string"
+          },
+          "rebilled": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Rebilled",
+            "type": "string"
+          },
+          "receivable": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Receivable",
+            "type": "string"
+          },
+          "rejected_unresolved": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Rejected Unresolved",
+            "type": "string"
+          },
+          "written_off": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Written Off",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accrued",
+          "claimed",
+          "accepted_unpaid",
+          "rejected_unresolved",
+          "receivable",
+          "collected",
+          "rebilled",
+          "written_off"
+        ],
+        "title": "ClaimStagesOut",
+        "type": "object"
+      },
+      "ClaimSummaryOut": {
+        "properties": {
+          "accepted_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Accepted Total",
+            "type": "string"
+          },
+          "claimed_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Claimed Total",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "line_count": {
+            "title": "Line Count",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "paid_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Paid Total",
+            "type": "string"
+          },
+          "payer": {
+            "$ref": "#/components/schemas/ClaimNameOut"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "receivable": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Receivable",
+            "type": "string"
+          },
+          "rejected_total": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Rejected Total",
+            "type": "string"
+          },
+          "response_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response At"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "submitted",
+              "responded",
+              "closed",
+              "void"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "unpaid_total": {
+            "description": "Accepted, not paid, not written off.",
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Unpaid Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "payer",
+          "period_start",
+          "period_end",
+          "status",
+          "claimed_total",
+          "accepted_total",
+          "rejected_total",
+          "paid_total",
+          "unpaid_total",
+          "receivable",
+          "line_count",
+          "created_at",
+          "submitted_at",
+          "response_at",
+          "closed_at"
+        ],
+        "title": "ClaimSummaryOut",
+        "type": "object"
+      },
+      "ClaimUserOut": {
+        "properties": {
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "ClaimUserOut",
+        "type": "object"
+      },
+      "ClaimVoidIn": {
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "ClaimVoidIn",
+        "type": "object"
+      },
       "ClinicPatientOut": {
         "properties": {
           "date_of_birth": {
@@ -7554,6 +9702,76 @@
           "page_size"
         ],
         "title": "Page[AuthorizationOut]",
+        "type": "object"
+      },
+      "Page_ClaimPayerPaymentOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimPayerPaymentOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[ClaimPayerPaymentOut]",
+        "type": "object"
+      },
+      "Page_ClaimSummaryOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimSummaryOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[ClaimSummaryOut]",
         "type": "object"
       },
       "Page_CreditNoteOut_": {
@@ -21000,6 +23218,2018 @@
         ]
       }
     },
+    "/api/claims/accrued": {
+      "get": {
+        "operationId": "claims_list_accrued_lines",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "payer_id",
+            "required": true,
+            "schema": {
+              "title": "Payer Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period_start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period_end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimAccruedOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A payer's unclaimed shares of approved invoices, by approval date",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/aging": {
+      "get": {
+        "operationId": "claims_get_aging",
+        "parameters": [
+          {
+            "description": "Age receivables on this day (default today).",
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Age receivables on this day (default today).",
+              "title": "As Of"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimAgingReportOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Outstanding payer receivable per payer: 0-30, 31-60, 61-90 and over 90 days",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches": {
+      "get": {
+        "operationId": "claims_list_claims",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "payer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Payer Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "draft",
+                    "submitted",
+                    "responded",
+                    "closed",
+                    "void"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ClaimSummaryOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Claim batches, newest first, with their collection totals",
+        "tags": [
+          "claims"
+        ]
+      },
+      "post": {
+        "description": "409 INVALID_DATE_RANGE, CLAIM_EMPTY, CLAIM_LINE_NOT_ACCRUED.",
+        "operationId": "claims_build_claim",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimBuildIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Build a draft claim of a payer's accrued shares in a period (all or chosen lines)",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}": {
+      "get": {
+        "operationId": "claims_get_claim",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "One claim batch with its lines, answers, resolutions and payments",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/close": {
+      "post": {
+        "operationId": "claims_close_claim",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Close a claim once every line is paid or resolved",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/export": {
+      "get": {
+        "operationId": "claims_export_claim",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "default": "en",
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The claim as an Excel workbook in the payer layout (.xlsx attachment)",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/lines/{line_id}": {
+      "delete": {
+        "operationId": "claims_remove_claim_line",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "title": "Line Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Take a line off a draft claim (its payer share is claimable again)",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/lines/{line_id}/resolve": {
+      "post": {
+        "description": "409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN.",
+        "operationId": "claims_resolve_rejection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "title": "Line Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimResolveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Rebill a rejected amount to the patient or write it off, with a reason",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/lines/{line_id}/write-off": {
+      "post": {
+        "description": "409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT.",
+        "operationId": "claims_write_off_shortfall",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "title": "Line Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimShortfallIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Write off accepted money the payer will not pay, with a reason",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/print": {
+      "get": {
+        "operationId": "claims_get_claim_print",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimPrintOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The claim addressed to its payer, with the center header, for A4 printing",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/responses": {
+      "post": {
+        "description": "409 CLAIM_STATUS_INVALID, CLAIM_LINE_UNKNOWN, CLAIM_LINE_NOT_CLAIMED, CLAIM_AMOUNT_INVALID, REASON_REQUIRED, DUPLICATE_LINE.",
+        "operationId": "claims_record_responses",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimResponsesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Record the payer's answer per line: accepted, rejected or partial, with reason",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/submit": {
+      "post": {
+        "operationId": "claims_submit_claim",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Mark a draft claim as sent to the payer",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/batches/{claim_id}/void": {
+      "post": {
+        "operationId": "claims_void_claim",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimVoidIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Void a claim the payer has not answered (its lines are claimable again)",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/options": {
+      "get": {
+        "operationId": "claims_get_options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimOptionsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Payers, banks, write-off reasons and the viewer's open shift",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/payer-payments": {
+      "get": {
+        "operationId": "claims_list_payer_payments",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "payer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Payer Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "standing",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "cheque_pending",
+                    "reversed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Standing"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ClaimPayerPaymentOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Payer payments, newest first",
+        "tags": [
+          "claims"
+        ]
+      },
+      "post": {
+        "description": "A transfer goes to the bank, a cheque waits until cleared, cash goes into the recorder's open shift (409 SHIFT_NOT_OPEN). The allocations must equal the amount (PAYER_PAYMENT_UNBALANCED); also CLAIM_PAYMENT_EXCEEDS_ACCEPTED, CLAIM_NOTHING_UNPAID, DUPLICATE_REFERENCE, PAYER_ALLOCATION_CONFLICT.",
+        "operationId": "claims_record_payer_payment",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimPayerPaymentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimPayerPaymentOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Record money from a payer and allocate it to its claims",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/payer-payments/{payment_id}/clear": {
+      "post": {
+        "description": "409 PAYMENT_NOT_PENDING.",
+        "operationId": "claims_clear_payer_cheque",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "title": "Payment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimNoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimPayerPaymentOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A payer cheque cleared at the bank",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/payer-payments/{payment_id}/reverse": {
+      "post": {
+        "description": "409 REASON_REQUIRED, PAYMENT_NOT_REVERSIBLE, CLAIM_FINAL.",
+        "operationId": "claims_reverse_payer_payment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "title": "Payment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimNoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimPayerPaymentOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Reverse a bounced payer transfer or cheque (its allocations owe again)",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/payers/{payer_id}/payable": {
+      "get": {
+        "operationId": "claims_list_payable_claims",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payer_id",
+            "required": true,
+            "schema": {
+              "title": "Payer Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClaimPayableOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A payer's claims with accepted money still unpaid, oldest first",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
     "/api/claims/ping": {
       "get": {
         "operationId": "claims_get_ping",
@@ -21042,6 +25272,104 @@
           }
         ],
         "summary": "Check that the /api/claims router is reachable",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/claims/receivables": {
+      "get": {
+        "description": "Payer share is a receivable until a payer payment is recorded (invariant 7).",
+        "operationId": "claims_list_receivables",
+        "parameters": [
+          {
+            "description": "Age receivables on this day (default today).",
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Age receivables on this day (default today).",
+              "title": "As Of"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimReceivablesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Payer receivables by stage: accrued, claimed, accepted unpaid, rejected, collected",
         "tags": [
           "claims"
         ]

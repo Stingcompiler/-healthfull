@@ -40,6 +40,7 @@ from domain.money import ZERO, require_non_negative, require_positive
 
 __all__ = [
     "AGING_BUCKETS",
+    "RESPONSE_OUTCOMES",
     "ClaimLine",
     "ClaimLineStatus",
     "Resolution",
@@ -53,6 +54,7 @@ __all__ = [
     "require_creditable",
     "resolve_rejection",
     "respond",
+    "response_amount",
     "reverse_payment",
     "submit",
     "validate_payer_payment",
@@ -241,6 +243,36 @@ def respond(line: ClaimLine, accepted: Decimal, *, reason: str | None = None) ->
     else:
         status = S.PARTIALLY_ACCEPTED
     return replace(line, status=status, accepted=value)
+
+
+#: How the accountant enters a payer's answer for one line (FEATURES 11.4).
+RESPONSE_OUTCOMES = ("accepted", "rejected", "partial")
+
+
+def response_amount(outcome: str, claimed: Decimal, accepted: Decimal | None) -> Decimal:
+    """The accepted amount of a line answered ``outcome``: all of it, nothing, or a part.
+
+    A partial answer names the accepted part, strictly between nothing and the whole claimed
+    amount; an amount given with a whole answer is ignored.
+
+    Raises:
+        DomainError: ``CLAIM_AMOUNT_INVALID`` (unknown outcome, partial without a part, or a
+            part that is not strictly inside the claimed amount).
+    """
+    whole = require_positive(claimed, "claimed")
+    if outcome == "accepted":
+        return whole
+    if outcome == "rejected":
+        return ZERO
+    if outcome != "partial":
+        raise _bad("Unknown response outcome", outcome=outcome)
+    if accepted is None or not ZERO < accepted < whole:
+        raise _bad(
+            "A partial answer accepts more than nothing and less than the claimed amount",
+            claimed=str(whole),
+            accepted=None if accepted is None else str(accepted),
+        )
+    return accepted
 
 
 def record_payment(line: ClaimLine, amount: Decimal) -> ClaimLine:

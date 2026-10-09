@@ -13,7 +13,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from domain.claims import allocate_to_claims
+from domain.claims import allocate_to_claims, response_amount
 from domain.errors import DomainError
 
 D = Decimal
@@ -110,3 +110,35 @@ def test_amounts_are_positive(bad: Decimal) -> None:
 
 def test_nothing_entered_allocates_nothing() -> None:
     assert allocate_to_claims({}, {7: [(70, D("1.00"))]}) == {}
+
+
+# --- the payer's answer per line as the accountant enters it (FEATURES 11.4) ----------------
+
+
+@given(st.decimals(min_value=D("0.01"), max_value=D("100000"), places=2))
+def test_accepted_and_rejected_outcomes_take_the_whole_amount(claimed: Decimal) -> None:
+    assert response_amount("accepted", claimed, None) == claimed
+    assert response_amount("rejected", claimed, None) == D("0.00")
+    # An amount typed for a whole answer is ignored, never half applied.
+    assert response_amount("accepted", claimed, D("0.01")) == claimed
+
+
+@given(
+    st.decimals(min_value=D("0.02"), max_value=D("100000"), places=2),
+    st.decimals(min_value=D("0"), max_value=D("1"), places=4),
+)
+def test_a_partial_answer_accepts_strictly_between_nothing_and_all(
+    claimed: Decimal, share: Decimal
+) -> None:
+    accepted = (claimed * share).quantize(D("0.01"))
+    if D("0") < accepted < claimed:
+        assert response_amount("partial", claimed, accepted) == accepted
+    else:
+        assert _code(lambda: response_amount("partial", claimed, accepted)) == (
+            "CLAIM_AMOUNT_INVALID"
+        )
+
+
+def test_a_partial_answer_needs_its_amount_and_a_known_outcome() -> None:
+    assert _code(lambda: response_amount("partial", D("10.00"), None)) == "CLAIM_AMOUNT_INVALID"
+    assert _code(lambda: response_amount("maybe", D("10.00"), None)) == "CLAIM_AMOUNT_INVALID"
