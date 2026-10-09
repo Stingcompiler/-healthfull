@@ -10,6 +10,7 @@ export const nav: NavItem[] = [
     icon: Syringe,
     group: "services",
     order: 90,
-    permission: "orders.perform_procedure",
+    // Any nursing section: procedures, vitals and notes, or the bed board.
+    permission: ["orders.perform_procedure", "clinical.record_vitals", "visits.manage_beds"],
   },
 ];
