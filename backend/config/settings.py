@@ -221,6 +221,10 @@ MEDIA_ROOT = Path(env_str("MEDIA_ROOT", str(BASE_DIR / "media")))
 # a member of the app's group (infra/docker/db.Dockerfile), so group read is required.
 FILE_UPLOAD_PERMISSIONS = 0o640
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
+#: Folder of the backup scripts' status JSON lines (backup-runs.jsonl, restore-tests.jsonl),
+#: mounted read-only into the app container; empty when not configured (the status page says
+#: so). docs/runbooks/backup-restore.md.
+BACKUP_STATUS_DIR = env_str("BACKUP_STATUS_DIR", "")
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {
