@@ -35,7 +35,7 @@ test.describe("@claims payer payment", () => {
     await expect(dialog.getByRole("radio", { name: t("claims:method.cash") })).toBeDisabled();
     await choose(page, t("claims:payments.bank"), "Bank of Khartoum (Bankak)");
     await dialog.getByLabel(t("claims:payments.reference")).fill(`RA-${made.payer.code}-${String(Date.now())}`);
-    await dialog.getByLabel(t("claims:payments.amount")).fill("10000");
+    await dialog.getByRole("textbox", { name: t("claims:payments.amount") }).fill("10000");
     await dialog.getByRole("radio", { name: t("claims:payments.perClaim") }).click();
     const allocation = dialog.getByTestId("allocation-claims");
     await expect(allocation).toContainText(claim.number);
