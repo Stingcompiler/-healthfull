@@ -115,9 +115,14 @@ jobs:
       - run: make api-check
 
   e2e:
-    name: e2e (Playwright, chromium)
+    # The full suite outgrew one 45-minute job (about 1,000 tests), so it runs in four shards.
+    name: e2e (Playwright, chromium, shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:16
@@ -200,12 +205,14 @@ jobs:
       # scripts/e2e.sh: reset e2e_hospital_<hash>, seed_e2e, start backend and frontend on
       # per-checkout ports, run Playwright (chromium only), write artifacts/screens/.
       - name: Run e2e
+        env:
+          E2E_SHARD: ${{ matrix.shard }}/4
         run: make e2e
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screens
+          name: screens-${{ matrix.shard }}
           path: artifacts/screens/
           if-no-files-found: ignore
           retention-days: 14
@@ -213,7 +220,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             e2e/playwright-report/
             e2e/test-results/

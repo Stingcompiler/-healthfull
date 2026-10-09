@@ -9,6 +9,7 @@
 #
 # Environment:
 #   E2E_GREP            passed to Playwright as --grep
+#   E2E_SHARD           passed to Playwright as --shard (e.g. 2/4); CI runs four shards
 #   E2E_DB_NAME         e2e database (default e2e_hospital_<hash>). It is DROPPED and recreated,
 #                       so it must be e2e_hospital_<this worktree's hash>, unless
 #   E2E_ALLOW_FOREIGN_DB=1  allows another e2e_hospital_* name (e.g. a CI-specific one)
@@ -102,7 +103,7 @@ log "seeding (seed_e2e)"
 mkdir -p "$ROOT/artifacts/screens" "$E2E/.logs"
 # A full run replaces every screenshot, so stale ones (renamed or removed routes) go first. A filtered
 # run (E2E_GREP or extra arguments) only overwrites the files it produces and keeps the rest.
-if [[ -z "${E2E_GREP:-}" && $# -eq 0 ]]; then
+if [[ -z "${E2E_GREP:-}" && -z "${E2E_SHARD:-}" && $# -eq 0 ]]; then
   find "$ROOT/artifacts/screens" -maxdepth 1 -type f -name '*.png' -delete
 fi
 : >"$E2E/.logs/backend.log"
@@ -110,6 +111,10 @@ fi
 
 # ------------------------------------------------------------------ Playwright
 args=()
+if [[ -n "${E2E_SHARD:-}" ]]; then
+  args+=(--shard "$E2E_SHARD")
+  log "shard: $E2E_SHARD"
+fi
 if [[ -n "${E2E_GREP:-}" ]]; then
   args+=(--grep "$E2E_GREP")
   log "filter: --grep '$E2E_GREP'"
