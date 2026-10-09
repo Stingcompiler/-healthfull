@@ -1307,10 +1307,16 @@ def add_nursing_note(
     kind: str = NursingNoteKind.GENERAL,
     service_line: ServiceLine | None = None,
 ) -> NursingNote:
-    """Nursing note on a visit, optionally about one service line (FEATURES 10.3)."""
+    """Nursing note on a visit, optionally about one service line (FEATURES 10.3).
+
+    A closed visit still takes a late note (written after discharge); a cancelled one does
+    not (``VISIT_CANCELLED``).
+    """
     _choice(kind, NursingNoteKind, "INVALID_NOTE_KIND")
     if not text.strip():
         raise DomainError("NOTE_EMPTY", "A nursing note needs text")
+    if visit.status == VisitStatus.CANCELLED:
+        raise DomainError("VISIT_CANCELLED", "A cancelled visit takes no nursing notes")
     if service_line is not None and service_line.visit_id != visit.pk:
         raise DomainError("LINE_NOT_ON_VISIT", "The line belongs to another visit")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="nursing note"):
