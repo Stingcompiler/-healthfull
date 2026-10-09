@@ -91,7 +91,7 @@ describe("useSecondsLeft", () => {
 
   it("counts down to zero", () => {
     const deadline = Date.now() + 3000;
-    const hook = renderHook(() => useSecondsLeft(deadline));
+    const hook = renderHook(() => useSecondsLeft(deadline, 3000));
     expect(hook.result.current).toBe(3);
     act(() => {
       vi.advanceTimersByTime(1250);

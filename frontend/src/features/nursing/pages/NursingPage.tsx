@@ -146,6 +146,7 @@ export function NursingPage() {
                 <ProcedureCard
                   line={line}
                   deadline={undo.pending.get(line.id)?.deadline}
+                  undoWindowMs={UNDO_WINDOW_MS}
                   saving={saving.has(line.id)}
                   onDone={() => {
                     undo.schedule(line.id, "");

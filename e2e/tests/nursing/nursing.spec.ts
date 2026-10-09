@@ -42,10 +42,10 @@ test.afterAll(async () => {
   await disposeApiClients();
 });
 
+/** A line in the doctor's view: status requested, paid, in_progress, done or cancelled. */
 interface LineRow {
   id: number;
-  fulfilment_status: string;
-  performed_by: { id: number } | null;
+  status: string;
 }
 
 interface BoardRow {
@@ -67,7 +67,7 @@ async function paidProcedure(
 
 async function lineStatus(visitId: number, lineId: number): Promise<LineRow | undefined> {
   const doctor = await apiAs("doctor");
-  const rows = await doctor.get<(LineRow & { status: string })[]>(`/api/orders/visits/${String(visitId)}/lines`);
+  const rows = await doctor.get<LineRow[]>(`/api/orders/visits/${String(visitId)}/lines`);
   return rows.find((r) => r.id === lineId);
 }
 
@@ -113,11 +113,10 @@ test.describe("@nursing procedure desk", () => {
     await snap(page, "nursing-desk-undo-window");
     await expect(card).toHaveCount(0, { timeout: 15_000 });
     await expect(page.getByTestId("procedures-done").locator(`[data-line-id="${String(paid.line.id)}"]`)).toBeVisible();
-    const stored = await lineStatus(paid.ready.visit.id, paid.line.id);
-    expect(stored?.fulfilment_status).toBe("performed");
+    expect((await lineStatus(paid.ready.visit.id, paid.line.id))?.status).toBe("done");
 
     // The undone line was never sent.
-    expect((await lineStatus(undone.ready.visit.id, undone.line.id))?.fulfilment_status).toBe("pending");
+    expect((await lineStatus(undone.ready.visit.id, undone.line.id))?.status).toBe("paid");
     await expect(undoCard.getByTestId("procedure-done")).toBeVisible();
     expect(logged.errors()).toEqual([]);
   });

@@ -20,6 +20,7 @@ import { AllergyChips } from "./AllergyChips";
 export function ProcedureCard({
   line,
   deadline,
+  undoWindowMs,
   saving,
   onDone,
   onDoneWithNote,
@@ -29,6 +30,7 @@ export function ProcedureCard({
   line: ProcedureLine;
   /** Set while the undo window runs. */
   deadline: number | undefined;
+  undoWindowMs: number;
   saving: boolean;
   onDone: () => void;
   onDoneWithNote: () => void;
@@ -38,7 +40,7 @@ export function ProcedureCard({
   const { t } = useTranslation("nursing");
   const { t: tc } = useTranslation();
   const language = useLanguage();
-  const seconds = useSecondsLeft(deadline);
+  const seconds = useSecondsLeft(deadline, undoWindowMs);
   const who = patientName(line.patient, language);
   const service = nameOf(line.service, language);
   const age = line.patient.date_of_birth ? ageFromBirthDate(line.patient.date_of_birth) : null;

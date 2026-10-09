@@ -84,18 +84,22 @@ export function useUndoCommit<T>({
   return { pending, schedule, undo: drop, commitNow: fire };
 }
 
-/** Whole seconds left until `deadline`, ticking while it is in the future. */
-export function useSecondsLeft(deadline: number | undefined): number {
-  const [now, setNow] = useState(() => Date.now());
+/**
+ * Whole seconds left until `deadline` in a window of `windowMs`, ticking while it runs. Until
+ * the first tick of a new deadline the whole window is shown (never more than the window).
+ */
+export function useSecondsLeft(deadline: number | undefined, windowMs: number): number {
+  const [tick, setTick] = useState<{ deadline: number; now: number } | null>(null);
   useEffect(() => {
     if (deadline === undefined) return;
-    const tick = setInterval(() => {
-      setNow(Date.now());
+    const timer = setInterval(() => {
+      setTick({ deadline, now: Date.now() });
     }, 250);
     return () => {
-      clearInterval(tick);
+      clearInterval(timer);
     };
   }, [deadline]);
   if (deadline === undefined) return 0;
-  return Math.max(0, Math.ceil((deadline - now) / 1000));
+  const left = tick?.deadline === deadline ? deadline - tick.now : windowMs;
+  return Math.max(0, Math.min(Math.ceil(windowMs / 1000), Math.ceil(left / 1000)));
 }
