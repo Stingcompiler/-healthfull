@@ -190,7 +190,7 @@ test.describe("@helpers factories", () => {
     const clinic = await createVisit({ patient: allergic.patient });
     const amoxicillin = [{ service: "DRG-AMOX500", quantity: 21 }];
     await expect(orderLines({ visit: clinic.visit, items: amoxicillin })).rejects.toMatchObject({
-      code: "ALLERGY_ALERT",
+      code: "ALLERGY_CONFLICT",
     });
     const acknowledged = await orderLines({ visit: clinic.visit, items: amoxicillin, acknowledge_allergies: true });
     expect(acknowledged.map((line) => line.service)).toEqual(["DRG-AMOX500"]);
