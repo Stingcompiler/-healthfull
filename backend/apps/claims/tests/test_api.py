@@ -136,6 +136,29 @@ def _submitted(s: Setup) -> dict[str, Any]:
     return ok(s.acc.api.post(_url(f"/batches/{claim['id']}/submit")))
 
 
+def test_export_writes_typed_text_never_as_a_formula(s: Setup) -> None:
+    from openpyxl import load_workbook
+
+    s.patient.full_name_en = '=HYPERLINK("http://x","y")'
+    s.patient.save(update_fields=["full_name_en"])
+    claim = _submitted(s)
+    answers = {
+        "responses": [
+            {"claim_line_id": ln["id"], "outcome": "rejected", "reason": "=1+1"}
+            for ln in claim["lines"]
+        ]
+    }
+    ok(s.acc.api.post(_url(f"/batches/{claim['id']}/responses"), answers))
+    response = s.acc.api.get(_url(f"/batches/{claim['id']}/export?language=en"))
+    assert response.status_code == 200
+    sheet = load_workbook(io.BytesIO(response.content)).active
+    assert sheet is not None
+    cells = [c for row in sheet.iter_rows() for c in row if c.value is not None]
+    typed = [c for c in cells if str(c.value).startswith("=")]
+    assert {str(c.value) for c in typed} == {'=HYPERLINK("http://x","y")', "=1+1"}
+    assert all(c.data_type == "s" for c in typed)
+
+
 def test_export_is_a_valid_workbook_in_the_payer_layout(s: Setup) -> None:
     from openpyxl import load_workbook
 

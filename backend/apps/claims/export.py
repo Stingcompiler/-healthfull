@@ -199,6 +199,13 @@ def claim_workbook(claim_id: int, language: str = "en") -> tuple[str, bytes]:
     for col, width in enumerate(widths[: len(columns)], start=1):
         sheet.column_dimensions[sheet.cell(row=head_row, column=col).column_letter].width = width
     sheet.freeze_panes = sheet.cell(row=head_row + 1, column=1)
+    # openpyxl stores any text starting with "=" as a formula. Names, references and payer
+    # reasons are typed by people, so every such cell is written as plain text instead
+    # (spreadsheet formula injection); this export never writes a formula.
+    for cells in sheet.iter_rows():
+        for cell in cells:
+            if cell.data_type == "f":
+                cell.data_type = "s"
 
     out = io.BytesIO()
     book.save(out)
