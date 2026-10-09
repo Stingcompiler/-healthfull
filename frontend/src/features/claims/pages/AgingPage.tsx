@@ -7,12 +7,13 @@ import { AlertCard } from "@/components/AlertCard";
 import { DataTable } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
-import { KpiCard } from "@/components/KpiCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyText } from "@/components/MoneyText";
 import { PageHeader } from "@/components/PageHeader";
 import { useTranslateError } from "@/lib/api/translate-error";
 
 import { useAging } from "../api";
+import { AmountTiles } from "../components/AmountTiles";
 import { ClaimsNav } from "../components/ClaimsNav";
 import { useClaimNames } from "../lib/names";
 import { AGING_FIELDS, type ClaimAgingRow } from "../types";
@@ -41,7 +42,9 @@ export function AgingPage() {
         cell: ({ row }) => (
           <span className="flex min-w-0 flex-col">
             <span className="font-medium">{names.name(row.original.payer)}</span>
-            <bdi className="text-xs text-muted">{row.original.payer.code}</bdi>
+            <span className="text-xs text-muted">
+              <bdi>{row.original.payer.code}</bdi>
+            </span>
           </span>
         ),
       },
@@ -84,23 +87,17 @@ export function AgingPage() {
         </AlertCard>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5" data-testid="aging-totals">
-            {AGING_FIELDS.map((key) => (
-              <KpiCard
-                key={key}
-                label={t(`aging.${key}`)}
-                value={totals ? <MoneyText value={totals[key]} /> : null}
-                tone={TONES[key]}
-                loading={aging.isPending}
-              />
-            ))}
-            <KpiCard
-              label={t("aging.total")}
-              value={totals ? <MoneyText value={totals.total} /> : null}
-              loading={aging.isPending}
-              className="col-span-2 lg:col-span-1"
+          {totals ? (
+            <AmountTiles
+              testId="aging-totals"
+              tiles={[
+                ...AGING_FIELDS.map((key) => ({ key, label: t(`aging.${key}`), value: totals[key], tone: TONES[key] })),
+                { key: "total", label: t("aging.total"), value: totals.total, tone: "primary" as const, strong: true },
+              ]}
             />
-          </div>
+          ) : (
+            <Skeleton className="h-20 w-full" />
+          )}
           <DataTable
             columns={columns}
             data={rows}
@@ -114,7 +111,9 @@ export function AgingPage() {
                 <div className="flex items-start justify-between gap-2">
                   <span className="flex min-w-0 flex-col">
                     <span className="font-semibold">{names.name(r.payer)}</span>
-                    <bdi className="text-xs text-muted">{r.payer.code}</bdi>
+                    <span className="text-xs text-muted">
+                      <bdi>{r.payer.code}</bdi>
+                    </span>
                   </span>
                   <MoneyText value={r.aging.total} className="text-base font-semibold" />
                 </div>

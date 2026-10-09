@@ -69,7 +69,7 @@
     "claimedHint": "On claims sent to payers, waiting for an answer",
     "collectedHint": "Paid by payers so far",
     "rejectedTitle": "Rejected amounts to resolve",
-    "rejectedBody": "was rejected by payers. Rebill each rejected part to the patient or write it off.",
+    "rejectedBody": "Payers rejected {{amount, bidi}} that is not resolved yet. Rebill each rejected part to the patient or write it off.",
     "columns": {
       "payer": "Payer"
     }

@@ -68,12 +68,14 @@ test.describe("@claims build and export", () => {
     expect([...parts.keys()]).toEqual(
       expect.arrayContaining(["[Content_Types].xml", "xl/workbook.xml", "xl/worksheets/sheet1.xml"]),
     );
-    const strings = parts.get("xl/sharedStrings.xml") ?? "";
+    // Text cells are shared or inline strings depending on the writer: read both parts.
+    const sheet = (parts.get("xl/worksheets/sheet1.xml") ?? "") + (parts.get("xl/sharedStrings.xml") ?? "");
     const number = file.suggestedFilename().replace(/-en\.xlsx$/, "");
-    expect(strings).toContain(number);
-    expect(strings).toContain("Insurance claim");
-    expect(strings).toContain(made.payer.name_en);
-    expect(strings).toContain(made.invoice.number);
-    expect(parts.get("xl/worksheets/sheet1.xml")).toContain("15400");
+    expect(sheet).toContain(number);
+    expect(sheet).toContain("Insurance claim");
+    expect(sheet).toContain(made.payer.name_en);
+    expect(sheet).toContain(made.invoice.number);
+    // The claimed total is a number cell (7,000 + 8,400).
+    expect(sheet).toMatch(/<v>15400(\.0+)?<\/v>/);
   });
 });

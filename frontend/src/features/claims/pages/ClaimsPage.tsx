@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
+import { formatMoney } from "@/lib/format";
 
 import { useReceivables } from "../api";
 import { ClaimsNav } from "../components/ClaimsNav";
@@ -73,7 +74,9 @@ export function ClaimsPage() {
         cell: ({ row }) => (
           <span className="flex min-w-0 flex-col">
             <span className="font-medium">{names.name(row.original.payer)}</span>
-            <bdi className="text-xs text-muted">{row.original.payer.code}</bdi>
+            <span className="text-xs text-muted">
+              <bdi>{row.original.payer.code}</bdi>
+            </span>
           </span>
         ),
       },
@@ -152,10 +155,9 @@ export function ClaimsPage() {
           </div>
           {totals && totals.rejected_unresolved !== "0.00" ? (
             <AlertCard variant="warning" title={t("receivables.rejectedTitle")}>
-              <span className="flex flex-wrap items-center gap-x-2">
-                <MoneyText value={totals.rejected_unresolved} />
-                <span>{t("receivables.rejectedBody")}</span>
-              </span>
+              {t("receivables.rejectedBody", {
+                amount: formatMoney(totals.rejected_unresolved, names.language),
+              })}
             </AlertCard>
           ) : null}
           <DataTable
@@ -172,7 +174,9 @@ export function ClaimsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <span className="flex min-w-0 flex-col">
                     <span className="font-semibold">{names.name(r.payer)}</span>
-                    <bdi className="text-xs text-muted">{r.payer.code}</bdi>
+                    <span className="text-xs text-muted">
+                      <bdi>{r.payer.code}</bdi>
+                    </span>
                   </span>
                   {ctx.actions}
                 </div>
@@ -194,13 +198,14 @@ export function ClaimsPage() {
             )}
           />
           {totals ? (
-            <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted" data-testid="resolved-totals">
               <Undo2 className="size-4 shrink-0" aria-hidden="true" />
-              <span>{t("stages.rebilled")}:</span>
-              <MoneyText value={totals.rebilled} />
-              <span aria-hidden="true">·</span>
-              <span>{t("stages.written_off")}:</span>
-              <MoneyText value={totals.written_off} />
+              <span className="inline-flex items-center gap-1">
+                {t("stages.rebilled")}: <MoneyText value={totals.rebilled} />
+              </span>
+              <span className="inline-flex items-center gap-1">
+                {t("stages.written_off")}: <MoneyText value={totals.written_off} />
+              </span>
             </p>
           ) : null}
         </>

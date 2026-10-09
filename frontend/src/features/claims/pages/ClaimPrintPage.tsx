@@ -86,7 +86,7 @@ function ClaimDocument({ data }: { data: ClaimPrint }) {
         </dl>
       </div>
       <div className="min-w-0 overflow-x-auto">
-        <table className="w-full border-collapse text-start text-xs">
+        <table className="w-full min-w-[44rem] border-collapse text-start text-xs print:min-w-0">
           <thead>
             <tr className="border-b border-border text-muted">
               <th className="py-1 pe-2 text-start font-medium">#</th>

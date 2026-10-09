@@ -293,7 +293,11 @@ function MethodCell({ payment }: { payment: ClaimPayerPayment }) {
     <span className="flex min-w-0 flex-col text-sm">
       <span>{t(`method.${payment.method}`)}</span>
       {payment.bank ? <span className="text-xs text-muted">{names.name(payment.bank)}</span> : null}
-      {payment.reference ? <bdi className="text-xs break-all text-muted">{payment.reference}</bdi> : null}
+      {payment.reference ? (
+        <span className="text-xs break-all text-muted">
+          <bdi>{payment.reference}</bdi>
+        </span>
+      ) : null}
       {payment.shift ? (
         <span className="text-xs text-muted">
           {t("payments.shift")}: <bdi>{payment.shift.number}</bdi>

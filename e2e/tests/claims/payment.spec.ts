@@ -33,7 +33,7 @@ test.describe("@claims payer payment", () => {
     await choose(page, t("claims:payments.payer"), made.payer.name_en);
     // The accountant has no till: cash is not offered without an open shift.
     await expect(dialog.getByRole("radio", { name: t("claims:method.cash") })).toBeDisabled();
-    await choose(page, t("claims:payments.bank"), "Bankak");
+    await choose(page, t("claims:payments.bank"), "Bank of Khartoum (Bankak)");
     await dialog.getByLabel(t("claims:payments.reference")).fill(`RA-${made.payer.code}-${String(Date.now())}`);
     await dialog.getByLabel(t("claims:payments.amount")).fill("10000");
     await dialog.getByRole("radio", { name: t("claims:payments.perClaim") }).click();

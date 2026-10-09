@@ -22,7 +22,6 @@ import { DataTable, type DataTableRowAction } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
 import { ArrowBack } from "@/components/icons";
-import { KpiCard } from "@/components/KpiCard";
 import { MoneyText } from "@/components/MoneyText";
 import { PageHeader } from "@/components/PageHeader";
 import { ReasonDialog } from "@/components/ReasonDialog";
@@ -43,6 +42,7 @@ import {
   useSubmitClaim,
   useVoidClaim,
 } from "../api";
+import { AmountTiles } from "../components/AmountTiles";
 import { ClaimStageBadge, ClaimStatusBadge } from "../components/ClaimBadges";
 import { ClaimsNav } from "../components/ClaimsNav";
 import { Period } from "../components/Period";
@@ -332,38 +332,22 @@ export function ClaimDetailPage() {
               </Button>
             ) : null}
           </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5" data-testid="claim-totals">
-            <KpiCard
-              headingLevel="p"
-              label={t("detail.columns.claimed")}
-              value={<MoneyText value={data.claimed_total} />}
-            />
-            <KpiCard
-              headingLevel="p"
-              label={t("detail.accepted")}
-              value={<MoneyText value={data.accepted_total} />}
-              tone="info"
-            />
-            <KpiCard
-              headingLevel="p"
-              label={t("detail.rejected")}
-              value={<MoneyText value={data.rejected_total} />}
-              tone="danger"
-            />
-            <KpiCard
-              headingLevel="p"
-              label={t("detail.columns.paid")}
-              value={<MoneyText value={data.paid_total} />}
-              tone="success"
-            />
-            <KpiCard
-              headingLevel="p"
-              label={t("detail.columns.receivable")}
-              value={<MoneyText value={data.receivable} />}
-              tone="warning"
-              className="col-span-2 lg:col-span-1"
-            />
-          </div>
+          <AmountTiles
+            testId="claim-totals"
+            tiles={[
+              { key: "claimed", label: t("detail.columns.claimed"), value: data.claimed_total, tone: "primary" },
+              { key: "accepted", label: t("detail.accepted"), value: data.accepted_total, tone: "info" },
+              { key: "rejected", label: t("detail.rejected"), value: data.rejected_total, tone: "danger" },
+              { key: "paid", label: t("detail.columns.paid"), value: data.paid_total, tone: "success" },
+              {
+                key: "receivable",
+                label: t("detail.columns.receivable"),
+                value: data.receivable,
+                tone: "warning",
+                strong: true,
+              },
+            ]}
+          />
           {data.note ? <p className="text-sm text-muted">{data.note}</p> : null}
           <DataTable
             columns={columns}
