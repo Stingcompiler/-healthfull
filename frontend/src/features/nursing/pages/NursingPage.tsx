@@ -1,5 +1,5 @@
 import { CheckCheck, Syringe } from "lucide-react";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -65,6 +65,18 @@ export function NursingPage() {
     [lines, language, markDone, t, translateError],
   );
   const undo = useUndoCommit<string>({ delayMs: UNDO_WINDOW_MS, commit });
+  const waiting = undo.pending.size > 0;
+  // Closing the tab inside the undo window would drop the tap: ask the browser to confirm.
+  useEffect(() => {
+    if (!waiting) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+    };
+  }, [waiting]);
 
   const departments = useMemo(() => {
     const seen = new Map<number, NonNullable<ProcedureLine["department"]>>();
