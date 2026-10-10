@@ -22,7 +22,7 @@ RUN groupadd --system --gid 10001 hospital \
 
 COPY --chmod=0755 infra/backup/lib.sh infra/backup/backup-nightly.sh infra/backup/restore-test.sh \
      infra/backup/restore-dump.sh infra/backup/scheduler.sh infra/backup/render-pgbackrest-conf.sh \
-     infra/backup/backup-requests.sh \
+     infra/backup/backup-requests.sh infra/backup/restore-drill.sh \
      /opt/backup/
 COPY --chmod=0644 infra/backup/pgbackrest.conf.template /opt/backup/
 # Database roles (infra/db): the owner runs migrations, the app connects with DML rights only.
