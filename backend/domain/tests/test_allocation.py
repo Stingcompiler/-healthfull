@@ -286,11 +286,35 @@ def test_rejection_of_pending_transfer_only_reverses_its_own_rows() -> None:
         AllocationRecord(1, 1, Decimal("600.00"), seq=1, pending=True),
         AllocationRecord(2, 2, Decimal("300.00"), seq=2),
     ]
-    plan = plan_rejection(1, Decimal("1000.00"), rows, credit_balance=Decimal("400.00"))
+    plan = plan_rejection(1, Decimal("1000.00"), rows, pending=True, spendable=ZERO)
     assert [(d.payment_id, d.invoice_id, d.amount) for d in plan.reversals] == [
         (1, 1, Decimal("-600.00"))
     ]
     assert plan.recovery == ()
+    assert plan.uncovered == 0
+
+
+def test_rejection_of_pending_transfer_never_recovers_spent_credit() -> None:
+    # Regression (stateful machine): a pending transfer's remainder is never spendable, so
+    # even with the pool already short (an earlier bounce) its rejection takes back nothing.
+    rows = [
+        AllocationRecord(1, 1, Decimal("5.00"), seq=1, pending=True),
+        AllocationRecord(3, 2, Decimal("1205.00"), seq=2, from_credit=True),
+    ]
+    plan = plan_rejection(1, Decimal("10.14"), rows, pending=True, spendable=ZERO)
+    assert [d.amount for d in plan.reversals] == [Decimal("-5.00")]
+    assert plan.recovery == ()
+    assert plan.uncovered == 0
+
+
+def test_bounce_is_covered_by_confirmed_credit_only() -> None:
+    # Regression (stateful machine): confirmed 1205 spent in full by credit payment 3 while a
+    # 0.01 transfer was pending. The pool holds 0.01, but it is pending money: the whole
+    # spend is taken back, not 1204.99 of it.
+    rows = [AllocationRecord(3, 2, Decimal("1205.00"), seq=1, from_credit=True)]
+    spendable = spendable_credit(Decimal("0.01"), [Decimal("0.01")])
+    plan = plan_rejection(1, Decimal("1205.00"), rows, pending=False, spendable=spendable)
+    assert [(d.payment_id, d.amount) for d in plan.recovery] == [(3, Decimal("-1205.00"))]
     assert plan.uncovered == 0
 
 
@@ -302,7 +326,7 @@ def test_rejection_after_credit_was_spent_recovers_newest_credit_spend_first() -
         AllocationRecord(3, 2, Decimal("150.00"), seq=2, from_credit=True),
         AllocationRecord(3, 3, Decimal("250.00"), seq=3, from_credit=True),
     ]
-    plan = plan_rejection(1, Decimal("1000.00"), rows, credit_balance=ZERO)
+    plan = plan_rejection(1, Decimal("1000.00"), rows, pending=False, spendable=ZERO)
     assert [(d.invoice_id, d.amount) for d in plan.reversals] == [(1, Decimal("-600.00"))]
     assert [(d.payment_id, d.invoice_id, d.amount) for d in plan.recovery] == [
         (3, 3, Decimal("-250.00")),
@@ -312,22 +336,30 @@ def test_rejection_after_credit_was_spent_recovers_newest_credit_spend_first() -
 
 
 @given(records(), st.decimals(min_value=0, max_value=100000, places=2), st.data())
-def test_rejection_plan_never_leaves_credit_negative_while_recoverable(
+def test_rejection_plan_takes_back_exactly_what_confirmed_credit_cannot_cover(
     rows: list[AllocationRecord], extra: Decimal, data: st.DataObject
 ) -> None:
-    pid = 1
+    pid = data.draw(st.sampled_from([1, 2]))  # payment 2 is the pending one in records()
+    pending = pid == 2
     allocated = net_by_payment(rows).get(pid, ZERO)
     amount = allocated + extra
     assume(amount > 0)
-    balance = data.draw(st.decimals(min_value=-100, max_value=100000, places=2))
-    plan = plan_rejection(pid, amount, rows, credit_balance=balance)
-    after = balance - sum((d.amount for d in plan.reversals + plan.recovery), ZERO) - amount
-    assert after == -plan.uncovered or (plan.uncovered == 0 and after >= 0)
+    spendable = data.draw(st.decimals(min_value=0, max_value=100000, places=2))
+    plan = plan_rejection(pid, amount, rows, pending=pending, spendable=spendable)
+    # Its own allocations are always reversed in full.
+    assert all(d.payment_id == pid for d in plan.reversals)
+    assert -sum((d.amount for d in plan.reversals), ZERO) == allocated
+    taken = sum((-d.amount for d in plan.recovery), ZERO)
+    if pending:
+        # Pending money was never spendable: nothing elsewhere is taken back or reported.
+        assert (plan.recovery, plan.uncovered) == ((), ZERO)
+        return
+    # The remainder leaves the pool; spendable credit covers what it can, the rest was spent.
+    assert taken + plan.uncovered == max(extra - spendable, ZERO)
     # Recovery only ever takes back credit-funded allocations, and never more than they hold.
     for d in plan.recovery:
         assert d.payment_id == 3
     nets = net_by_payment(rows)
-    taken = sum((-d.amount for d in plan.recovery), ZERO)
     assert taken <= nets.get(3, ZERO)
     if plan.uncovered > 0:
         assert taken == nets.get(3, ZERO)

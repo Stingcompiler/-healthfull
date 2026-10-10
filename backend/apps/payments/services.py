@@ -969,11 +969,15 @@ def reject_transfer(
         )
         after_close = original.status == ShiftStatus.CLOSED
 
+        records = _records(locked.patient_id)
         plan = da.plan_rejection(
             locked.pk,
             locked.amount,
-            _records(locked.patient_id),
-            credit_balance=credit_balance(locked.patient_id),
+            records,
+            pending=was is dp.Verification.PENDING,
+            spendable=da.spendable_credit(
+                credit_balance(locked.patient_id), _pending_unallocated(locked.patient_id, records)
+            ),
         )
         rows: list[Allocation] = []
         steps = (*plan.reversals, *plan.recovery)

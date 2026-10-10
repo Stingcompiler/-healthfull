@@ -270,7 +270,9 @@ found are listed at the end.
 ### (p) Pooled patient credit can go negative
 - Decision: patient credit is one pooled balance per file. Rejecting a transfer reverses its
   own allocations, then takes its whole amount out of credit. If that credit was already spent,
-  credit-funded allocations are taken back newest first. What cannot be recovered (the money
+  credit-funded allocations are taken back newest first. "Already spent" is measured against
+  spendable credit, never against pending money; a pending transfer's rejection takes nothing
+  else back (ADR 0015). What cannot be recovered (the money
   was refunded in cash after the transfer was confirmed) stays as a negative credit balance,
   returned as `uncovered`, and managers get a `patient_credit_negative` notification next to
   the usual `transfer_rejected` one.

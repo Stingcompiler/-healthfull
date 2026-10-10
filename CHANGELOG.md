@@ -166,6 +166,9 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   before the swap. Role passwords: 16-128 characters of `A-Z a-z 0-9 . _ - ~`.
 
 ### Fixed
+- Rejecting a transfer no longer uses pending transfer money: a confirmed bounce takes back
+  every credit-funded allocation that confirmed credit cannot cover, and rejecting a pending
+  transfer recovers nothing and reports nothing uncovered (ADR 0015).
 - OpenAPI components no longer collide between apps: visits publishes `VisitDepartmentOut`,
   `VisitDoctorOut` and `VisitRoomOut`, patients `PatientPayerOut`, so the admin screens type
   against the core and catalog shapes; a test fails on any repeated schema class name.
