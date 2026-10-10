@@ -18,8 +18,38 @@ export const ROLES = [
 ] as const;
 export type Role = (typeof ROLES)[number];
 
+/** Device accounts (the waiting-room kiosk, ADR 0019): held alone, never beside a person's role. */
+export const DEVICE_ROLES: readonly Role[] = ["display"];
+
 /** Roles people hold: the ones a policy (discount limits, perform-first) can name. */
-export const PERSON_ROLES = ROLES.filter((r) => r !== "display");
+export const PERSON_ROLES = ROLES.filter((r) => !DEVICE_ROLES.includes(r));
+
+export function isDeviceRole(role: string): boolean {
+  return (DEVICE_ROLES as readonly string[]).includes(role);
+}
+
+/**
+ * The roles after ticking or unticking one, in `ROLES` order. A device role stands alone: ticking
+ * it clears every other role, and ticking a person's role clears the device role (the server
+ * refuses the mix with `DEVICE_ROLE_ALONE`).
+ */
+export function toggleRole(selected: readonly string[], role: Role, checked: boolean): Role[] {
+  const next = new Set(selected);
+  if (!checked) next.delete(role);
+  else if (isDeviceRole(role)) {
+    next.clear();
+    next.add(role);
+  } else {
+    for (const device of DEVICE_ROLES) next.delete(device);
+    next.add(role);
+  }
+  return ROLES.filter((r) => next.has(r));
+}
+
+/** Whether a set of roles mixes a device role with any other role. */
+export function mixesDeviceRole(roles: readonly string[]): boolean {
+  return roles.length > 1 && roles.some(isDeviceRole);
+}
 
 export function isKnownRole(role: string): role is Role {
   return (ROLES as readonly string[]).includes(role);

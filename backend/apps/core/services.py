@@ -62,7 +62,7 @@ from domain.lockout import (
     register_success,
 )
 from domain.numbering import format_document_number
-from domain.permissions import MatrixChange, plan_matrix_update, role_grants
+from domain.permissions import MatrixChange, check_role_set, plan_matrix_update, role_grants
 from domain.throttle import hit, is_limited, retry_after_seconds
 
 logger = structlog.get_logger(__name__)
@@ -727,7 +727,7 @@ def _check_role_codes(codes: Iterable[str]) -> list[str]:
     unknown = [c for c in wanted if c not in roles.ROLE_CODES]
     if unknown:
         raise DomainError("ROLE_UNKNOWN", "Unknown role code", role=unknown[0])
-    return wanted
+    return check_role_set(wanted, device_roles=roles.DEVICE_ROLES)
 
 
 def _password_error(password: str, user: User) -> DomainError | None:

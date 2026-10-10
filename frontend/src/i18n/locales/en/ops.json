@@ -99,6 +99,7 @@
       "name_en": "English name",
       "kind": "kind",
       "generic_name": "generic name",
+      "generic_name_ar": "Arabic generic name",
       "brand_name": "brand name",
       "form": "form",
       "strength": "strength",
@@ -121,7 +122,17 @@
       "date_of_birth": "date of birth",
       "age_years": "age",
       "phone": "phone",
-      "national_id": "national ID"
+      "national_id": "national ID",
+      "base_unit_name_ar": "base unit (Arabic)",
+      "base_unit_name_en": "base unit (English)",
+      "pack_unit_name_ar": "pack unit (Arabic)",
+      "pack_unit_name_en": "pack unit (English)",
+      "name": "service name",
+      "phone_alt": "second phone",
+      "address": "address",
+      "emergency_contact_name": "emergency contact",
+      "emergency_contact_phone": "emergency contact phone",
+      "notes": "notes"
     },
     "hint": {
       "phone": "Same phone as file {{fileNo, bidi}} ({{name}})",

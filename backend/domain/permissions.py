@@ -16,7 +16,38 @@ from dataclasses import dataclass
 
 from domain.errors import DomainError
 
-__all__ = ["MatrixChange", "MatrixPlan", "plan_matrix_update", "resolve_permissions", "role_grants"]
+__all__ = [
+    "MatrixChange",
+    "MatrixPlan",
+    "check_role_set",
+    "plan_matrix_update",
+    "resolve_permissions",
+    "role_grants",
+]
+
+
+def check_role_set(codes: Iterable[str], *, device_roles: Collection[str]) -> list[str]:
+    """The distinct role codes of one account, sorted, if they may be held together.
+
+    A device role (the waiting-room kiosk's ``display``, ADR 0019) is an account for a screen,
+    not a person: it is held alone, never beside a person's role, so a kiosk session can never
+    open a person's screens and a person never signs in as the kiosk.
+
+    Raises:
+        DomainError: ``ROLE_REQUIRED`` (no role), ``DEVICE_ROLE_ALONE`` (a device role with
+            any other role; ``role`` names it).
+    """
+    wanted = sorted(set(codes))
+    if not wanted:
+        raise DomainError("ROLE_REQUIRED", "A user needs at least one role")
+    devices = [c for c in wanted if c in device_roles]
+    if devices and len(wanted) > 1:
+        raise DomainError(
+            "DEVICE_ROLE_ALONE",
+            "A device role is held alone, never with other roles",
+            role=devices[0],
+        )
+    return wanted
 
 
 def role_grants(

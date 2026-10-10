@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from domain.permissions import resolve_permissions, role_grants
+from domain.errors import DomainError
+from domain.permissions import check_role_set, resolve_permissions, role_grants
 
 ROLES = ["a", "b", "c", "d"]
 CODES = ["x.one", "x.two", "y.three", "z.four"]
@@ -69,3 +71,31 @@ def test_override_beats_default_for_that_role_only() -> None:
     # A revoke on one role does not cancel a grant from another role the user holds.
     assert resolve_permissions(["a", "b"], defaults, overrides) == {"x.one"}
     assert resolve_permissions(["c"], defaults, {("c", "x.one"): True}) == {"x.one"}
+
+
+# --- Device roles stand alone (ADR 0019) -------------------------------------------------
+
+PEOPLE = ["receptionist", "doctor", "nurse", "cashier", "manager", "admin"]
+
+
+@given(st.frozensets(st.sampled_from(PEOPLE), min_size=1))
+def test_person_roles_combine_freely(chosen: frozenset[str]) -> None:
+    assert check_role_set(chosen, device_roles={"display"}) == sorted(chosen)
+
+
+def test_the_display_role_alone_is_accepted() -> None:
+    assert check_role_set(["display", "display"], device_roles={"display"}) == ["display"]
+
+
+@given(st.frozensets(st.sampled_from(PEOPLE), min_size=1))
+def test_the_display_role_never_combines_with_a_person_role(people: frozenset[str]) -> None:
+    with pytest.raises(DomainError) as err:
+        check_role_set({"display", *people}, device_roles={"display"})
+    assert err.value.code == "DEVICE_ROLE_ALONE"
+    assert err.value.details["role"] == "display"
+
+
+def test_an_empty_role_set_is_refused() -> None:
+    with pytest.raises(DomainError) as err:
+        check_role_set([], device_roles={"display"})
+    assert err.value.code == "ROLE_REQUIRED"

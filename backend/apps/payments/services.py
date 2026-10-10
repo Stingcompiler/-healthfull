@@ -1272,7 +1272,8 @@ def approve_refund(refund: Refund, *, actor: User, note: str = "") -> Refund:
             raise DomainError("REFUND_NOT_REQUESTED", "The refund is not awaiting approval")
         if locked.requested_by_id == actor.pk:
             raise DomainError(
-                "SELF_APPROVAL_NOT_ALLOWED", "Another supervisor must approve your refund request"
+                "SELF_APPROVAL_NOT_ALLOWED",
+                "Someone else holding payments.approve_refund must approve your refund request",
             )
         now = timezone.now()
         _check_refund(locked, Approval(actor.pk, now, note.strip(), locked.reason_code.code))

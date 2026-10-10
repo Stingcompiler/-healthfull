@@ -210,7 +210,8 @@ def check_reference(
         )
     if not can_override:
         raise DomainError(
-            "OVERRIDE_NOT_PERMITTED", "Only a cashier supervisor can accept a duplicate reference"
+            "OVERRIDE_NOT_PERMITTED",
+            "Only a holder of payments.override_duplicate can accept a duplicate reference",
         )
     return ReferenceCheck(duplicate=True, override=override)
 

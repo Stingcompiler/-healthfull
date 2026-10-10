@@ -174,7 +174,7 @@
     "chooseLines": "Enter at least one unit to credit.",
     "submit": "Draft credit note",
     "createdTitle": "Credit note drafted",
-    "createdBody": "A cashier supervisor approves it under Credit notes. Released patient money then opens a refund request.",
+    "createdBody": "A cashier supervisor or an accountant approves it under Credit notes. Released patient money then opens a refund request.",
     "qtyInvalid": "Enter a whole number from 0 to {{max}}."
   },
   "payment": {
@@ -308,12 +308,12 @@
     "counted": "Counted cash",
     "reason": "Variance reason",
     "varianceTitle": "The count differs from the expected cash",
-    "varianceBody": "Choose a variance reason. The manager reviews every variance.",
+    "varianceBody": "Choose a variance reason. A manager, cashier supervisor or accountant reviews every closed shift.",
     "submit": "Close shift",
     "confirmTitle": "Close the shift?",
     "confirmDescription": "A closed shift never changes. Later effects post to the current shift.",
     "doneTitle": "Shift {{number, bidi}} closed",
-    "doneBody": "The report is frozen and waits for the manager's review.",
+    "doneBody": "The report is frozen and waits for review by a manager, cashier supervisor or accountant.",
     "viewReport": "Report"
   },
   "handover": {
@@ -325,7 +325,7 @@
     "toUser": "Receiving supervisor",
     "toUserPlaceholder": "Choose who receives the cash",
     "bankReference": "Deposit slip number",
-    "centerHint": "A supervisor or an accountant confirms they received it. Until then it shows as in transit.",
+    "centerHint": "A supervisor, a manager or an accountant confirms they received it. Until then it shows as in transit.",
     "submit": "Record handover",
     "inTransit": "Waiting to be received",
     "cancel": "Cancel handover",
@@ -375,7 +375,7 @@
     "checked": "What you checked",
     "reject": "Reject",
     "rejectTitle": "Reject transfer {{number, bidi}}",
-    "rejectDescription": "Its invoices return to outstanding. After the shift closed, the reversal is booked in your own open shift and the manager is alerted.",
+    "rejectDescription": "Its invoices return to outstanding. After the shift closed, the reversal is booked in your own open shift. Managers and cashier supervisors are alerted.",
     "rejectedTitle": "Transfer {{number, bidi}} rejected",
     "reversalBooked": "Reversal {{number, bidi}} booked in shift {{shift, bidi}}.",
     "reversedInShift": "Reversed in its own open shift.",
@@ -498,7 +498,7 @@
     "empty": "No shifts here.",
     "open": "Open shift {{number}}",
     "title": "Review",
-    "formTitle": "Manager sign-off",
+    "formTitle": "Shift sign-off",
     "formDescription": "Check the variance, pending transfers, discounts and cancellations, then sign off or flag the shift.",
     "outcomeLabel": "Outcome",
     "outcome": {

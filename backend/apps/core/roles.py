@@ -47,3 +47,7 @@ ROLES: tuple[RoleDef, ...] = (
 )
 
 ROLE_CODES: frozenset[str] = frozenset(r.code for r in ROLES)
+
+#: Roles of device accounts rather than people (the waiting-room kiosk, ADR 0019): held alone,
+#: never beside a person's role (``domain.permissions.check_role_set``).
+DEVICE_ROLES: frozenset[str] = frozenset({DISPLAY})

@@ -90,6 +90,8 @@
     "name": "Name",
     "roles": "Roles",
     "rolesRequired": "Choose at least one role.",
+    "deviceRoleAlone": "The waiting-room display role is held alone: remove the other roles or use a separate account.",
+    "deviceRoleHint": "A screen account: held alone, never with a person's roles",
     "status": "Status",
     "lastLogin": "Last login",
     "never": "Never",

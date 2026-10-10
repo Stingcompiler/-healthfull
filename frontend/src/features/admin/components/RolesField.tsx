@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ROLES } from "@/lib/auth/permissions";
+import { isDeviceRole, ROLES, toggleRole } from "@/lib/auth/permissions";
 
 /**
  * One option of a checkbox list: the whole row (44px on touch screens, 36px from md) is the
@@ -16,11 +16,14 @@ export function CheckOption({
   checked,
   onCheckedChange,
   label,
+  hint,
 }: {
   id: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   label: string;
+  /** A short note under the label (e.g. a device role is held alone). */
+  hint?: string;
 }) {
   return (
     <div className="flex min-h-11 items-center gap-2.5 rounded-control ps-1 hover:bg-accent md:min-h-9">
@@ -31,8 +34,9 @@ export function CheckOption({
           onCheckedChange(value === true);
         }}
       />
-      <Label htmlFor={id} className="flex flex-1 cursor-pointer items-center self-stretch font-normal">
+      <Label htmlFor={id} className="flex flex-1 cursor-pointer flex-col items-start justify-center self-stretch font-normal">
         {label}
+        {hint ? <span className="text-xs text-muted">{hint}</span> : null}
       </Label>
     </div>
   );
@@ -62,12 +66,10 @@ export function RolesField<T extends FieldValues>({ control, name }: { control: 
                     id={`role-${name}-${role}`}
                     checked={selected.has(role)}
                     onCheckedChange={(checked) => {
-                      const next = new Set(selected);
-                      if (checked) next.add(role);
-                      else next.delete(role);
-                      field.onChange(ROLES.filter((r) => next.has(r)));
+                      field.onChange(toggleRole([...selected], role, checked));
                     }}
                     label={t(`common:roles.${role}`)}
+                    hint={isDeviceRole(role) ? t("admin:users.deviceRoleHint") : undefined}
                   />
                 ))}
               </div>

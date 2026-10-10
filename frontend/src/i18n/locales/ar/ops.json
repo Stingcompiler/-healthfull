@@ -119,6 +119,7 @@
       "name_en": "الاسم بالإنجليزية",
       "kind": "النوع",
       "generic_name": "الاسم العلمي",
+      "generic_name_ar": "الاسم العلمي بالعربية",
       "brand_name": "الاسم التجاري",
       "form": "الشكل الصيدلاني",
       "strength": "التركيز",
@@ -141,7 +142,17 @@
       "date_of_birth": "تاريخ الميلاد",
       "age_years": "العمر",
       "phone": "الهاتف",
-      "national_id": "الرقم الوطني"
+      "national_id": "الرقم الوطني",
+      "base_unit_name_ar": "الوحدة الصغرى بالعربية",
+      "base_unit_name_en": "الوحدة الصغرى بالإنجليزية",
+      "pack_unit_name_ar": "العبوة بالعربية",
+      "pack_unit_name_en": "العبوة بالإنجليزية",
+      "name": "اسم الخدمة",
+      "phone_alt": "هاتف آخر",
+      "address": "العنوان",
+      "emergency_contact_name": "اسم جهة الاتصال للطوارئ",
+      "emergency_contact_phone": "هاتف جهة الاتصال للطوارئ",
+      "notes": "ملاحظات"
     },
     "hint": {
       "phone": "نفس هاتف الملف {{fileNo, bidi}} ({{name}})",

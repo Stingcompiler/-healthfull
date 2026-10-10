@@ -14,7 +14,7 @@ import { PasswordField, SwitchField, TextareaField, TextField } from "@/componen
 import { SearchInput } from "@/components/SearchInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ROLES } from "@/lib/auth/permissions";
+import { mixesDeviceRole, ROLES } from "@/lib/auth/permissions";
 import { useCurrentUser } from "@/lib/auth/hooks";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { vmsg } from "@/lib/validation";
@@ -31,7 +31,10 @@ const password = z
   .string()
   .min(PASSWORD_MIN, vmsg("validation.minLength", { count: PASSWORD_MIN }))
   .refine((v) => !/^\d+$/.test(v), vmsg("validation.passwordNumeric"));
-const roles = z.array(z.enum(ROLES)).min(1, vmsg("admin:users.rolesRequired"));
+const roles = z
+  .array(z.enum(ROLES))
+  .min(1, vmsg("admin:users.rolesRequired"))
+  .refine((r) => !mixesDeviceRole(r), vmsg("admin:users.deviceRoleAlone"));
 const names = {
   full_name_ar: z.string().max(150),
   full_name_en: z.string().max(150),
