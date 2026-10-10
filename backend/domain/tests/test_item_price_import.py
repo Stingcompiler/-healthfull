@@ -129,6 +129,17 @@ def test_a_full_row_reads_into_a_new_item_with_a_batch() -> None:
     )
 
 
+def test_the_arabic_generic_name_column_is_read() -> None:
+    """Pharmacy follow-up: stock lists show the generic name in the screen's language."""
+    (row,) = parse({**NEW_ITEM, "generic_name_ar": "  كبريتات الزنك "})
+    assert row.errors == []
+    assert row.data["generic_name_ar"] == "كبريتات الزنك"
+    (plain,) = parse(NEW_ITEM)
+    assert plain.data["generic_name_ar"] == ""
+    matched = sheet.match_headers(ii.COLUMNS, ["Generic name (Arabic)", "الاسم العلمي بالعربية"])
+    assert set(matched.values()) == {"generic_name_ar"}
+
+
 def test_item_only_rows_have_no_batch() -> None:
     row = {k: v for k, v in NEW_ITEM.items() if k not in ii.BATCH_KEYS}
     (parsed,) = parse(row)

@@ -589,7 +589,10 @@ function RowRecord({ kind, row }: { kind: ImportKind; row: ImportJobRow }) {
     ));
   } else if (kind === "items") {
     const name =
-      text(d.generic_name) || (language === "ar" ? text(d.name_ar) || text(d.name_en) : text(d.name_en)) || "—";
+      (language === "ar" ? text(d.generic_name_ar) : "") ||
+      text(d.generic_name) ||
+      (language === "ar" ? text(d.name_ar) || text(d.name_en) : text(d.name_en)) ||
+      "—";
     const label = (
       <>
         <bdi className="tabular">{text(d.service_code)}</bdi> · {name}

@@ -485,6 +485,7 @@ def dispense_worklist(*, visit: Visit | None = None) -> QuerySet[ServiceLine]:
 ITEM_FIELDS = frozenset(
     {
         "generic_name",
+        "generic_name_ar",
         "brand_name",
         "form",
         "strength",

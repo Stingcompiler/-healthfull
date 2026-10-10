@@ -147,6 +147,7 @@ class StockItemListOut(Schema):
     id: int
     service: PharmacyNameOut
     generic_name: str
+    generic_name_ar: str = Field(..., description="Empty: the Arabic screens show the Latin name")
     brand_name: str
     form: DosageFormCode
     strength: str
@@ -186,6 +187,7 @@ class StoreBatchOut(BatchStockOut):
 
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     base_unit_name_ar: str
     base_unit_name_en: str
 
@@ -193,6 +195,7 @@ class StoreBatchOut(BatchStockOut):
 class StockItemIn(Schema):
     service_id: int
     generic_name: Annotated[str, Field(min_length=1, max_length=200)]
+    generic_name_ar: Annotated[str, Field(max_length=200)] = ""
     brand_name: Annotated[str, Field(max_length=200)] = ""
     form: DosageFormCode = "tablet"
     strength: Annotated[str, Field(max_length=60)] = ""
@@ -208,6 +211,7 @@ class StockItemIn(Schema):
 
 class StockItemPatch(Schema):
     generic_name: Annotated[str, Field(min_length=1, max_length=200)] | None = None
+    generic_name_ar: Annotated[str, Field(max_length=200)] | None = None
     brand_name: Annotated[str, Field(max_length=200)] | None = None
     form: DosageFormCode | None = None
     strength: Annotated[str, Field(max_length=60)] | None = None
@@ -503,6 +507,7 @@ class GoodsReceiptLineOut(Schema):
     id: int
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     batch_no: str
     expiry_date: date
     unit_code: str | None
@@ -553,6 +558,7 @@ class StockAdjustmentLineOut(Schema):
     id: int
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     batch_id: int
     batch_no: str
     expiry_date: date
@@ -594,6 +600,7 @@ class StockCountLineOut(Schema):
     id: int
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     base_unit_name_ar: str
     base_unit_name_en: str
     batch_id: int
@@ -663,6 +670,7 @@ class StockTransferLineOut(Schema):
     id: int
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     batch_id: int
     batch_no: str
     expiry_date: date
@@ -702,6 +710,7 @@ class ExpiringBatchOut(Schema):
     expired: bool
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     base_unit_name_ar: str
     base_unit_name_en: str
     store: PharmacyNameOut
@@ -712,6 +721,7 @@ class ExpiringBatchOut(Schema):
 class LowStockItemOut(Schema):
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     service_code: str
     base_unit_name_ar: str
     base_unit_name_en: str

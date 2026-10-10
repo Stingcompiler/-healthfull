@@ -210,7 +210,8 @@
       "reorderQty": "كمية إعادة الطلب",
       "inBaseUnits": "بالوحدة الأساسية",
       "controlled": "دواء خاضع للرقابة",
-      "active": "نشط"
+      "active": "نشط",
+      "genericNameAr": "الاسم العلمي بالعربية"
     }
   },
   "item": {

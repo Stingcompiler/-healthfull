@@ -84,6 +84,11 @@ class Item(models.Model):
         "catalog.Service", on_delete=models.PROTECT, related_name="stock_item"
     )
     generic_name = models.CharField(max_length=200)
+    generic_name_ar = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Arabic generic name for the Arabic screens; empty shows the Latin one.",
+    )
     brand_name = models.CharField(max_length=200, blank=True)
     form = models.CharField(max_length=20, choices=DosageForm.choices, default=DosageForm.TABLET)
     strength = models.CharField(max_length=60, blank=True)

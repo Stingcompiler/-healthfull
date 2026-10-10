@@ -135,6 +135,11 @@ def _item_name(item: Item) -> str:
     return " ".join(p for p in (item.generic_name, item.strength) if p)
 
 
+def _item_name_ar(item: Item) -> str:
+    """The Arabic screens' name: the Arabic generic name when set, else the Latin one."""
+    return " ".join(p for p in (item.generic_name_ar or item.generic_name, item.strength) if p)
+
+
 def _cost(value: Decimal) -> str:
     return f"{value.quantize(Decimal('0.0001'))}"
 
@@ -171,6 +176,7 @@ def _item_row(item: Item) -> dict[str, Any]:
         "id": item.pk,
         "service": _name(item.service),
         "generic_name": item.generic_name,
+        "generic_name_ar": item.generic_name_ar,
         "brand_name": item.brand_name,
         "form": item.form,
         "strength": item.strength,
@@ -245,6 +251,7 @@ def items(
         # balance once per unit.
         matching = Item.objects.filter(
             Q(generic_name__icontains=term)
+            | Q(generic_name_ar__icontains=term)
             | Q(brand_name__icontains=term)
             | Q(service__code__iexact=term)
             | Q(barcode=term)
@@ -334,6 +341,7 @@ def store_batches(
     if term:
         qs = qs.filter(
             Q(item__generic_name__icontains=term)
+            | Q(item__generic_name_ar__icontains=term)
             | Q(item__brand_name__icontains=term)
             | Q(batch__batch_no__iexact=term)
             | Q(item__barcode=term)
@@ -344,6 +352,7 @@ def store_batches(
             **_batch_row(bl, on),
             "item_id": bl.item_id,
             "item_name": _item_name(bl.item),
+            "item_name_ar": _item_name_ar(bl.item),
             "base_unit_name_ar": bl.item.base_unit_name_ar,
             "base_unit_name_en": bl.item.base_unit_name_en,
         }
@@ -711,6 +720,7 @@ def receipt_detail(receipt_id: int) -> dict[str, Any]:
                 "id": ln.pk,
                 "item_id": ln.item_id,
                 "item_name": _item_name(ln.item),
+                "item_name_ar": _item_name_ar(ln.item),
                 "batch_no": ln.batch_no,
                 "expiry_date": ln.expiry_date,
                 "unit_code": ln.unit.unit_code if ln.unit is not None else None,
@@ -753,6 +763,7 @@ def adjustment_detail(adjustment_id: int) -> dict[str, Any]:
                 "id": ln.pk,
                 "item_id": ln.item_id,
                 "item_name": _item_name(ln.item),
+                "item_name_ar": _item_name_ar(ln.item),
                 "batch_id": ln.batch_id,
                 "batch_no": ln.batch.batch_no,
                 "expiry_date": ln.batch.expiry_date,
@@ -798,6 +809,7 @@ def count_detail(count_id: int) -> dict[str, Any]:
                 "id": ln.pk,
                 "item_id": ln.item_id,
                 "item_name": _item_name(ln.item),
+                "item_name_ar": _item_name_ar(ln.item),
                 "base_unit_name_ar": ln.item.base_unit_name_ar,
                 "base_unit_name_en": ln.item.base_unit_name_en,
                 "batch_id": ln.batch_id,
@@ -859,6 +871,7 @@ def transfer_detail(transfer_id: int) -> dict[str, Any]:
                 "id": ln.pk,
                 "item_id": ln.item_id,
                 "item_name": _item_name(ln.item),
+                "item_name_ar": _item_name_ar(ln.item),
                 "batch_id": ln.batch_id,
                 "batch_no": ln.batch.batch_no,
                 "expiry_date": ln.batch.expiry_date,
@@ -895,6 +908,7 @@ def expiry(*, days: int, store_id: int | None, today: date | None = None) -> lis
             "expired": h.days_left < 0,
             "item_id": h.batch.item_id,
             "item_name": _item_name(names[h.batch.item_id]),
+            "item_name_ar": _item_name_ar(names[h.batch.item_id]),
             "base_unit_name_ar": names[h.batch.item_id].base_unit_name_ar,
             "base_unit_name_en": names[h.batch.item_id].base_unit_name_en,
             "store": _name(stores[h.store_id]),
@@ -916,6 +930,7 @@ def low_stock(*, store_id: int | None) -> list[dict[str, Any]]:
         {
             "item_id": r.item.pk,
             "item_name": _item_name(r.item),
+            "item_name_ar": _item_name_ar(r.item),
             "service_code": services.get(r.item.service_id, ""),
             "base_unit_name_ar": r.item.base_unit_name_ar,
             "base_unit_name_en": r.item.base_unit_name_en,

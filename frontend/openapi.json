@@ -3415,6 +3415,11 @@
             "title": "Payers",
             "type": "array"
           },
+          "second_approver_required": {
+            "description": "Rebills and write-offs need a second person (Policy, ADR 0018)",
+            "title": "Second Approver Required",
+            "type": "boolean"
+          },
           "write_off_reasons": {
             "items": {
               "$ref": "#/components/schemas/ClaimReasonOut"
@@ -3427,7 +3432,8 @@
           "payers",
           "banks",
           "write_off_reasons",
-          "open_shift"
+          "open_shift",
+          "second_approver_required"
         ],
         "title": "ClaimOptionsOut",
         "type": "object"
@@ -4108,6 +4114,17 @@
       },
       "ClaimResolveIn": {
         "properties": {
+          "approver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApproverIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A second person's credentials while the policy requires one"
+          },
           "note": {
             "default": "",
             "maxLength": 500,
@@ -4239,6 +4256,17 @@
             "pattern": "^[^.٫]*(?:[.٫]\\S{0,2})?\\s*$",
             "title": "Amount",
             "type": "string"
+          },
+          "approver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApproverIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A second person's credentials while the policy requires one"
           },
           "note": {
             "default": "",
@@ -8423,6 +8451,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "on_hand": {
             "title": "On Hand",
             "type": "integer"
@@ -8448,6 +8481,7 @@
           "expired",
           "item_id",
           "item_name",
+          "item_name_ar",
           "base_unit_name_ar",
           "base_unit_name_en",
           "store",
@@ -8632,6 +8666,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "line_total": {
             "examples": [
               "150.00"
@@ -8672,6 +8711,7 @@
           "id",
           "item_id",
           "item_name",
+          "item_name_ar",
           "batch_no",
           "expiry_date",
           "unit_code",
@@ -13296,6 +13336,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "min_stock": {
             "title": "Min Stock",
             "type": "integer"
@@ -13320,6 +13365,7 @@
         "required": [
           "item_id",
           "item_name",
+          "item_name_ar",
           "service_code",
           "base_unit_name_ar",
           "base_unit_name_en",
@@ -18472,6 +18518,18 @@
             "title": "Allow Partial Payment",
             "type": "boolean"
           },
+          "claims_second_approver": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Omitted or null keeps the current value",
+            "title": "Claims Second Approver"
+          },
           "discount_limit_percent": {
             "additionalProperties": {
               "maximum": 100,
@@ -18584,6 +18642,11 @@
             "title": "Allow Partial Payment",
             "type": "boolean"
           },
+          "claims_second_approver": {
+            "description": "Claims rebills and write-offs need a second person (ADR 0018)",
+            "title": "Claims Second Approver",
+            "type": "boolean"
+          },
           "default_pay_first": {
             "description": "Always true (invariant 1); read-only",
             "title": "Default Pay First",
@@ -18656,9 +18719,131 @@
           "discount_limit_percent",
           "session_idle_minutes",
           "perform_first_roles",
+          "claims_second_approver",
           "updated_at"
         ],
         "title": "PolicyOut",
+        "type": "object"
+      },
+      "PortalAccessCodeRowOut": {
+        "description": "An issued code as staff see it: its state, never the code.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/PortalStaffRefOut"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "failed_attempts": {
+            "title": "Failed Attempts",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "revoke_note": {
+            "title": "Revoke Note",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "revoked_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalStaffRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "active",
+              "expired",
+              "locked",
+              "revoked"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "created_at",
+          "created_by",
+          "expires_at",
+          "last_used_at",
+          "failed_attempts",
+          "revoked_at",
+          "revoked_by",
+          "revoke_note"
+        ],
+        "title": "PortalAccessCodeRowOut",
+        "type": "object"
+      },
+      "PortalAccessCodesOut": {
+        "properties": {
+          "codes": {
+            "items": {
+              "$ref": "#/components/schemas/PortalAccessCodeRowOut"
+            },
+            "title": "Codes",
+            "type": "array"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "has_phone": {
+            "description": "A code needs a phone on the file to sign in with",
+            "title": "Has Phone",
+            "type": "boolean"
+          },
+          "patient_id": {
+            "description": "The file the codes belong to (survivor of a merge)",
+            "title": "Patient Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "patient_id",
+          "file_no",
+          "has_phone",
+          "codes"
+        ],
+        "title": "PortalAccessCodesOut",
         "type": "object"
       },
       "PortalAppointmentOut": {
@@ -18858,6 +19043,42 @@
           "phone"
         ],
         "title": "PortalCenterOut",
+        "type": "object"
+      },
+      "PortalCodeSlipOut": {
+        "description": "A code issued at reception for the printed slip (shown once).",
+        "properties": {
+          "code": {
+            "description": "Shown once; only its hash is stored",
+            "title": "Code",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "expires_at",
+          "file_no",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "PortalCodeSlipOut",
         "type": "object"
       },
       "PortalDoctorOut": {
@@ -19836,6 +20057,22 @@
         "title": "PortalResultValueOut",
         "type": "object"
       },
+      "PortalRevokeCodeIn": {
+        "properties": {
+          "note": {
+            "description": "Why the code is revoked",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "PortalRevokeCodeIn",
+        "type": "object"
+      },
       "PortalSessionOut": {
         "properties": {
           "me": {
@@ -19904,6 +20141,29 @@
           "slots"
         ],
         "title": "PortalSlotsOut",
+        "type": "object"
+      },
+      "PortalStaffRefOut": {
+        "properties": {
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "PortalStaffRefOut",
         "type": "object"
       },
       "PortalSummaryOut": {
@@ -25183,6 +25443,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "note": {
             "title": "Note",
             "type": "string"
@@ -25196,6 +25461,7 @@
           "id",
           "item_id",
           "item_name",
+          "item_name_ar",
           "batch_id",
           "batch_no",
           "expiry_date",
@@ -25522,6 +25788,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "note": {
             "title": "Note",
             "type": "string"
@@ -25557,6 +25828,7 @@
           "id",
           "item_id",
           "item_name",
+          "item_name_ar",
           "base_unit_name_ar",
           "base_unit_name_en",
           "batch_id",
@@ -25729,6 +26001,12 @@
             "title": "Generic Name",
             "type": "string"
           },
+          "generic_name_ar": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Generic Name Ar",
+            "type": "string"
+          },
           "is_controlled": {
             "default": false,
             "title": "Is Controlled",
@@ -25829,6 +26107,11 @@
             "title": "Generic Name",
             "type": "string"
           },
+          "generic_name_ar": {
+            "description": "Empty: the Arabic screens show the Latin name",
+            "title": "Generic Name Ar",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -25884,6 +26167,7 @@
           "id",
           "service",
           "generic_name",
+          "generic_name_ar",
           "brand_name",
           "form",
           "strength",
@@ -25959,6 +26243,11 @@
             "title": "Generic Name",
             "type": "string"
           },
+          "generic_name_ar": {
+            "description": "Empty: the Arabic screens show the Latin name",
+            "title": "Generic Name Ar",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -26014,6 +26303,7 @@
           "id",
           "service",
           "generic_name",
+          "generic_name_ar",
           "brand_name",
           "form",
           "strength",
@@ -26135,6 +26425,18 @@
               }
             ],
             "title": "Generic Name"
+          },
+          "generic_name_ar": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generic Name Ar"
           },
           "is_controlled": {
             "anyOf": [
@@ -26321,6 +26623,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "qty_base": {
             "title": "Qty Base",
             "type": "integer"
@@ -26330,6 +26637,7 @@
           "id",
           "item_id",
           "item_name",
+          "item_name_ar",
           "batch_id",
           "batch_no",
           "expiry_date",
@@ -26542,6 +26850,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "on_hand": {
             "title": "On Hand",
             "type": "integer"
@@ -26570,6 +26883,7 @@
           "days_left",
           "item_id",
           "item_name",
+          "item_name_ar",
           "base_unit_name_ar",
           "base_unit_name_en"
         ],
@@ -34923,7 +35237,7 @@
     },
     "/api/claims/batches/{claim_id}/lines/{line_id}/resolve": {
       "post": {
-        "description": "409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN.",
+        "description": "409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN, SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID.",
         "operationId": "claims_resolve_rejection",
         "parameters": [
           {
@@ -35030,7 +35344,7 @@
     },
     "/api/claims/batches/{claim_id}/lines/{line_id}/write-off": {
       "post": {
-        "description": "409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT.",
+        "description": "409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT, SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID.",
         "operationId": "claims_write_off_shortfall",
         "parameters": [
           {
@@ -56720,6 +57034,104 @@
         ]
       }
     },
+    "/api/portal/access-codes/{code_id}/revoke": {
+      "post": {
+        "description": "409 `PORTAL_CODE_ALREADY_REVOKED`, `REASON_REQUIRED`.",
+        "operationId": "portal_revoke_access_code",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code_id",
+            "required": true,
+            "schema": {
+              "title": "Code Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalRevokeCodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalAccessCodesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Revoke a portal access code (a lost slip): it stops working, its sessions end",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
     "/api/portal/appointments": {
       "get": {
         "operationId": "portal_list_appointments",
@@ -57278,6 +57690,179 @@
           }
         ],
         "summary": "The signed-in patient's profile summary",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/patients/{patient_id}/access-codes": {
+      "get": {
+        "operationId": "portal_list_patient_access_codes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalAccessCodesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A file's portal access codes, newest first (their state, never the codes)",
+        "tags": [
+          "portal"
+        ]
+      },
+      "post": {
+        "description": "Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.",
+        "operationId": "portal_issue_patient_access_code",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalCodeSlipOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Issue a portal access code from the patient's file for a printed slip (shown once)",
         "tags": [
           "portal"
         ]

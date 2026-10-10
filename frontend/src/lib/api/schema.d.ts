@@ -999,7 +999,7 @@ export interface paths {
         put?: never;
         /**
          * Rebill a rejected amount to the patient or write it off, with a reason
-         * @description 409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN.
+         * @description 409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN, SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID.
          */
         post: operations["claims_resolve_rejection"];
         delete?: never;
@@ -1019,7 +1019,7 @@ export interface paths {
         put?: never;
         /**
          * Write off accepted money the payer will not pay, with a reason
-         * @description 409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT.
+         * @description 409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT, SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID.
          */
         post: operations["claims_write_off_shortfall"];
         delete?: never;
@@ -4667,6 +4667,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/access-codes/{code_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a portal access code (a lost slip): it stops working, its sessions end
+         * @description 409 `PORTAL_CODE_ALREADY_REVOKED`, `REASON_REQUIRED`.
+         */
+        post: operations["portal_revoke_access_code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/appointments": {
         parameters: {
             query?: never;
@@ -4821,6 +4841,27 @@ export interface paths {
         get: operations["portal_get_me"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/patients/{patient_id}/access-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A file's portal access codes, newest first (their state, never the codes) */
+        get: operations["portal_list_patient_access_codes"];
+        put?: never;
+        /**
+         * Issue a portal access code from the patient's file for a printed slip (shown once)
+         * @description Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.
+         */
+        post: operations["portal_issue_patient_access_code"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7417,6 +7458,11 @@ export interface components {
             open_shift: components["schemas"]["ClaimShiftOut"] | null;
             /** Payers */
             payers: components["schemas"]["ClaimPayerOut"][];
+            /**
+             * Second Approver Required
+             * @description Rebills and write-offs need a second person (Policy, ADR 0018)
+             */
+            second_approver_required: boolean;
             /** Write Off Reasons */
             write_off_reasons: components["schemas"]["ClaimReasonOut"][];
         };
@@ -7697,6 +7743,8 @@ export interface components {
         };
         /** ClaimResolveIn */
         ClaimResolveIn: {
+            /** @description A second person's credentials while the policy requires one */
+            approver?: components["schemas"]["ApproverIn"] | null;
             /**
              * Note
              * @default
@@ -7759,6 +7807,8 @@ export interface components {
              * @example 2500.50
              */
             amount: string;
+            /** @description A second person's credentials while the policy requires one */
+            approver?: components["schemas"]["ApproverIn"] | null;
             /**
              * Note
              * @default
@@ -9314,6 +9364,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** On Hand */
             on_hand: number;
             store: components["schemas"]["PharmacyNameOut"];
@@ -9396,6 +9451,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /**
              * Line Total
              * @example 150.00
@@ -11068,6 +11128,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** Min Stock */
             min_stock: number;
             /** On Hand */
@@ -13022,6 +13087,11 @@ export interface components {
         PolicyIn: {
             /** Allow Partial Payment */
             allow_partial_payment: boolean;
+            /**
+             * Claims Second Approver
+             * @description Omitted or null keeps the current value
+             */
+            claims_second_approver?: boolean | null;
             /** Discount Limit Percent */
             discount_limit_percent: {
                 [key: string]: number;
@@ -13048,6 +13118,11 @@ export interface components {
         PolicyOut: {
             /** Allow Partial Payment */
             allow_partial_payment: boolean;
+            /**
+             * Claims Second Approver
+             * @description Claims rebills and write-offs need a second person (ADR 0018)
+             */
+            claims_second_approver: boolean;
             /**
              * Default Pay First
              * @description Always true (invariant 1); read-only
@@ -13076,6 +13151,56 @@ export interface components {
             show_estimated_cost: boolean;
             /** Updated At */
             updated_at: string | null;
+        };
+        /**
+         * PortalAccessCodeRowOut
+         * @description An issued code as staff see it: its state, never the code.
+         */
+        PortalAccessCodeRowOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["PortalStaffRefOut"];
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Failed Attempts */
+            failed_attempts: number;
+            /** Id */
+            id: number;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Revoke Note */
+            revoke_note: string;
+            /** Revoked At */
+            revoked_at: string | null;
+            revoked_by: components["schemas"]["PortalStaffRefOut"] | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "active" | "expired" | "locked" | "revoked";
+        };
+        /** PortalAccessCodesOut */
+        PortalAccessCodesOut: {
+            /** Codes */
+            codes: components["schemas"]["PortalAccessCodeRowOut"][];
+            /** File No */
+            file_no: string;
+            /**
+             * Has Phone
+             * @description A code needs a phone on the file to sign in with
+             */
+            has_phone: boolean;
+            /**
+             * Patient Id
+             * @description The file the codes belong to (survivor of a merge)
+             */
+            patient_id: number;
         };
         /** PortalAppointmentOut */
         PortalAppointmentOut: {
@@ -13161,6 +13286,28 @@ export interface components {
             name_en: string;
             /** Phone */
             phone: string;
+        };
+        /**
+         * PortalCodeSlipOut
+         * @description A code issued at reception for the printed slip (shown once).
+         */
+        PortalCodeSlipOut: {
+            /**
+             * Code
+             * @description Shown once; only its hash is stored
+             */
+            code: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
         };
         /** PortalDoctorOut */
         PortalDoctorOut: {
@@ -13550,6 +13697,14 @@ export interface components {
             /** Value */
             value: string;
         };
+        /** PortalRevokeCodeIn */
+        PortalRevokeCodeIn: {
+            /**
+             * Note
+             * @description Why the code is revoked
+             */
+            note: string;
+        };
         /** PortalSessionOut */
         PortalSessionOut: {
             me: components["schemas"]["PortalMeOut"] | null;
@@ -13579,6 +13734,15 @@ export interface components {
             doctor: components["schemas"]["PortalDoctorOut"];
             /** Slots */
             slots: components["schemas"]["PortalSlotOut"][];
+        };
+        /** PortalStaffRefOut */
+        PortalStaffRefOut: {
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
         };
         /** PortalSummaryOut */
         PortalSummaryOut: {
@@ -15499,6 +15663,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** Note */
             note: string;
             /** Qty Base */
@@ -15626,6 +15795,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** Note */
             note: string;
             /** Variance */
@@ -15695,6 +15869,11 @@ export interface components {
             /** Generic Name */
             generic_name: string;
             /**
+             * Generic Name Ar
+             * @default
+             */
+            generic_name_ar: string;
+            /**
              * Is Controlled
              * @default false
              */
@@ -15744,6 +15923,11 @@ export interface components {
             form: "tablet" | "capsule" | "syrup" | "suspension" | "injection" | "infusion" | "cream" | "drops" | "inhaler" | "suppository" | "sachet" | "supply" | "other";
             /** Generic Name */
             generic_name: string;
+            /**
+             * Generic Name Ar
+             * @description Empty: the Arabic screens show the Latin name
+             */
+            generic_name_ar: string;
             /** Id */
             id: number;
             /** Is Controlled */
@@ -15796,6 +15980,11 @@ export interface components {
             form: "tablet" | "capsule" | "syrup" | "suspension" | "injection" | "infusion" | "cream" | "drops" | "inhaler" | "suppository" | "sachet" | "supply" | "other";
             /** Generic Name */
             generic_name: string;
+            /**
+             * Generic Name Ar
+             * @description Empty: the Arabic screens show the Latin name
+             */
+            generic_name_ar: string;
             /** Id */
             id: number;
             /** Is Controlled */
@@ -15841,6 +16030,8 @@ export interface components {
             form?: ("tablet" | "capsule" | "syrup" | "suspension" | "injection" | "infusion" | "cream" | "drops" | "inhaler" | "suppository" | "sachet" | "supply" | "other") | null;
             /** Generic Name */
             generic_name?: string | null;
+            /** Generic Name Ar */
+            generic_name_ar?: string | null;
             /** Is Controlled */
             is_controlled?: boolean | null;
             /** Min Stock */
@@ -15906,6 +16097,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** Qty Base */
             qty_base: number;
         };
@@ -15974,6 +16170,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** On Hand */
             on_hand: number;
             /** Store Id */
@@ -36337,6 +36538,77 @@ export interface operations {
             };
         };
     };
+    portal_revoke_access_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalRevokeCodeIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAccessCodesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     portal_list_appointments: {
         parameters: {
             query?: never;
@@ -36740,6 +37012,140 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_patient_access_codes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAccessCodesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_issue_patient_access_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalCodeSlipOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

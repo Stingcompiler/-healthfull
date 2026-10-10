@@ -206,7 +206,8 @@
       "reorderQty": "Reorder quantity",
       "inBaseUnits": "In base units",
       "controlled": "Controlled drug",
-      "active": "Active"
+      "active": "Active",
+      "genericNameAr": "Generic name (Arabic)"
     }
   },
   "item": {
