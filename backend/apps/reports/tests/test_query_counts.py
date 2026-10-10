@@ -40,3 +40,22 @@ def test_query_counts_do_not_grow_with_rows() -> None:
     payers = thrice.pop("payer_receivables") - once.pop("payer_receivables")
     assert payers <= 2 * 4
     assert thrice == once
+
+
+def test_reports_never_write() -> None:
+    """Every report, its workbook and the dashboard only read (no INSERT/UPDATE/DELETE)."""
+    from apps.reports import export
+
+    build_day()
+    today = timezone.localdate()
+    with CaptureQueriesContext(connection) as ctx:
+        for spec in REPORTS.values():
+            report = spec.run(Filters(today, today, days=90 if "days" in spec.filters else None))
+            export.workbook(report, spec.filters, "ar")
+        queries.dashboard()
+    writes = [
+        q["sql"]
+        for q in ctx.captured_queries
+        if q["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))
+    ]
+    assert writes == []

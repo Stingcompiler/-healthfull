@@ -8,9 +8,17 @@ from typing import Any
 
 from django.utils import timezone
 
-from apps.core.models import CenterProfile
 from apps.reports import labels
-from apps.reports.kit import MAX_ROWS, Cell, Filters, Metric, Option, Report, resolve_filters
+from apps.reports.kit import (
+    MAX_ROWS,
+    Cell,
+    Filters,
+    Metric,
+    Option,
+    Report,
+    center_name,
+    resolve_filters,
+)
 from apps.reports.queries import Dashboard
 from apps.reports.registry import ReportSpec
 
@@ -81,16 +89,12 @@ def filters_for(
 
 
 def report_json(spec: ReportSpec, report: Report) -> dict[str, Any]:
-    center = CenterProfile.load()
     f = report.filters
     return {
         "key": report.key,
         "area": spec.area,
         "title": labels.name(f"report.{report.key}"),
-        "center": {
-            "ar": center.name_ar or center.name_en,
-            "en": center.name_en or center.name_ar,
-        },
+        "center": center_name(),
         "filters_available": list(spec.filters),
         "filters": {
             "date_from": f.date_from,

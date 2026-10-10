@@ -19,9 +19,8 @@ from typing import Any
 
 from django.utils import timezone
 
-from apps.core.models import CenterProfile
 from apps.reports import labels
-from apps.reports.kit import MAX_ROWS, Cell, Column, Report, Section
+from apps.reports.kit import MAX_ROWS, Cell, Column, Report, Section, center_name
 from apps.reports.labels import Lang
 
 __all__ = ["workbook"]
@@ -149,8 +148,7 @@ def workbook(report: Report, available: tuple[str, ...], language: str = "ar") -
     summary.title = _sheet_title(labels.text("export.summary", lang), used)
     summary.sheet_view.rightToLeft = lang == "ar"
     bold = Font(bold=True)
-    center = CenterProfile.load()
-    _put(summary, 1, 1, {"ar": center.name_ar, "en": center.name_en}, "text", lang)
+    _put(summary, 1, 1, center_name(), "text", lang)
     summary.cell(row=1, column=1).font = Font(bold=True, size=14)
     summary.cell(row=2, column=1, value=labels.text(f"report.{report.key}", lang)).font = Font(
         bold=True, size=12

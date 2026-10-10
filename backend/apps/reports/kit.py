@@ -142,6 +142,17 @@ def window(filters: Filters) -> tuple[datetime, datetime]:
     return start, end
 
 
+def center_name() -> Name:
+    """The center's name for report headers, read without creating the profile (reports
+    never write; the migration seeds it)."""
+    from apps.core.models import CenterProfile
+
+    center = CenterProfile.objects.filter(pk=CenterProfile.SINGLETON_PK).first()
+    if center is None:
+        return {"ar": "", "en": ""}
+    return {"ar": center.name_ar or center.name_en, "en": center.name_en or center.name_ar}
+
+
 def name(row: Any, *, ar: str = "name_ar", en: str = "name_en") -> Name:
     """Bilingual name of a model row (each side falls back to the other)."""
     if row is None:
