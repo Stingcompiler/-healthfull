@@ -329,6 +329,24 @@ def test_staff_session_opens_no_portal_endpoint(world: dict[str, Any]) -> None:
         assert staff_client.get(path).status_code == 401
 
 
+def test_portal_responses_are_never_cached(signed_in: dict[str, PortalClient]) -> None:
+    for path in ("/api/portal/me", "/api/portal/results", "/api/portal/session"):
+        assert signed_in["a"].get(path)["Cache-Control"] == "no-store"
+
+
+def test_a_real_account_with_the_reserved_name_is_never_used(world: dict[str, Any]) -> None:
+    from django.core.exceptions import ImproperlyConfigured
+
+    from apps.core.models import User
+
+    User.objects.filter(username=services.PORTAL_ACTOR_USERNAME).delete()
+    impostor = User(username=services.PORTAL_ACTOR_USERNAME, must_change_password=False)
+    impostor.set_password("Some-Real-Pass-1")
+    impostor.save()
+    with pytest.raises(ImproperlyConfigured):
+        services.portal_actor()
+
+
 def test_portal_actor_can_never_sign_in(world: dict[str, Any]) -> None:
     actor = services.portal_actor()
     assert not actor.is_active

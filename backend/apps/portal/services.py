@@ -32,6 +32,7 @@ import pghistory
 import structlog
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Q
 from django.http import HttpRequest
@@ -165,6 +166,12 @@ def portal_actor() -> User:
     """The portal's system user (see ``PORTAL_ACTOR_USERNAME``), created on first use."""
     found = User.objects.filter(username=PORTAL_ACTOR_USERNAME).first()
     if found is not None:
+        if found.is_active or found.has_usable_password() or found.roles.exists():
+            # Someone made a real account with the reserved name: never act as it.
+            raise ImproperlyConfigured(
+                f"The user {PORTAL_ACTOR_USERNAME!r} is reserved for the patient portal and "
+                "must be inactive, without a password and without roles"
+            )
         return found
     try:
         with transaction.atomic():

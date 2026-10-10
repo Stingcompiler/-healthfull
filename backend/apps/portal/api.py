@@ -13,10 +13,12 @@ Three kinds of operation:
 
 from __future__ import annotations
 
+import functools
+from collections.abc import Callable
 from datetime import date
 from typing import Any
 
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseBase
 from ninja import Query, Router, Status
 
 from api.permissions import require_perm
@@ -50,6 +52,21 @@ from apps.portal.security import portal_auth, principal
 
 portal_router = Router(tags=["portal"])
 add_ping(portal_router, "portal")
+
+
+def _no_store(run: Callable[..., HttpResponseBase]) -> Callable[..., HttpResponseBase]:
+    """Patient data is never kept by the browser or a proxy (shared phones, clinic tablets)."""
+
+    @functools.wraps(run)
+    def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
+        response = run(request, *args, **kwargs)
+        response["Cache-Control"] = "no-store"
+        return response
+
+    return wrapper
+
+
+portal_router.add_decorator(_no_store, mode="view")
 
 _READ: dict[int, type[ErrorOut]] = {401: ErrorOut, 404: ErrorOut}
 _WRITE: dict[int, type[ErrorOut]] = {
