@@ -71,6 +71,9 @@ async function drain(): Promise<void> {
 }
 
 test.beforeAll(async () => {
+  // Hooks do not inherit the describe timeout: four paid visits through `e2e_fixture` take
+  // close to 30 s on a loaded machine, so the setup gets the same budget as a test.
+  test.setTimeout(120_000);
   await drain();
   const doctor = await apiAs(DOCTOR);
   const catalog = await seededCatalog();
