@@ -55,9 +55,12 @@ One JSON object per line, append-only, `version: 1`.
   `pgbackrest:[{repo,type,status}]`, `pruned:[files]`, `error`.
 - `status/restore-tests.jsonl`: `type:"restore_test"`, `status`, `started_at`, `finished_at`,
   `duration_s`, `dump`, `dump_size_bytes`, `dump_sha256`, `scratch_db`, `table_count`,
-  `tables:{name:rows}`, `missing_tables`, `error`.
-- `status/update-runs.jsonl`: `type:"update"`, `status` (`ok`, `failed`, `rolled_back`),
-  `from_tag`, `to_tag`, `migrations_applied`, `db_restored`, `backup`, `detail`, `log`.
+  `tables:{name:rows}`, `missing_tables`, `error`. The restore drill writes the same type with
+  `label:"drill"`, `target_db`, `kept`, `roles`, `migrations_check`, `integrity_check` (`ok`,
+  `failed`, `skipped`, `not run`) and `integrity` (the `integrity_check --json` object).
+- `status/update-runs.jsonl`: `type:"update"`, `status` (`ok`, `failed`, `rolled_back`), `run`
+  (the run key, also `ops.UpdateRun.run_key`), `from_tag`, `to_tag`, `started_at`,
+  `finished_at`, `migrations_applied`, `db_restored`, `backup`, `detail`, `log`.
 
 The app container mounts `status/` read-only at `BACKUP_STATUS_DIR`.
 
@@ -71,6 +74,48 @@ infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-test.sh --dump
 
 The restore test restores into a scratch database, checks `RESTORE_TEST_REQUIRED` tables are
 non-empty, counts rows in `RESTORE_TEST_TABLES`, logs the result and drops the scratch database.
+It proves the dump can be read; the drill below proves the restored database works.
+
+## Restore-from-scratch drill — تمرين الاستعادة من الصفر
+
+Quarterly, and after any change to the backup or role scripts. `infra/backup/restore-drill.sh`
+rebuilds the database the way a replacement server does and checks the result:
+
+1. creates a brand new database and sets the owner and app roles up on it (`infra/db/roles.sh`,
+   as the db container's first start does);
+2. restores the dump into it with `restore-dump.sh` (checksum, ownership to the owner role, row
+   rights to the app role, verification);
+3. `manage.py migrate --check` as the **owner** role (nothing pending: code and schema agree) and
+   `manage.py integrity_check` as the **app** role (trial balance zero, document positions equal the
+   ledger, stock never negative, no orphan allocations; see
+   [operations.md](operations.md#integrity-check--فحص-سلامة-البيانات));
+4. counts the rows of the key tables and records one line in `status/restore-tests.jsonl`
+   (`label:"drill"`, shown on the status page with the restore tests), then drops the database
+   unless `--keep`.
+
+The backup container has PostgreSQL's tools but not Django, and the app containers have Django
+but not `pg_restore`, so on the server the drill runs in two parts:
+
+```bash
+infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-drill.sh --keep --target restore_drill
+infra/compose.sh run --rm --no-deps -T -e DB_NAME=restore_drill migrate manage migrate --check
+infra/compose.sh run --rm --no-deps -T -e DB_NAME=restore_drill app manage integrity_check
+infra/compose.sh exec db psql -U hospital -d postgres -c 'DROP DATABASE "restore_drill" WITH (FORCE)'
+```
+
+Each command must end with exit 0 (the first records `migrations_check` and `integrity_check` as
+`skipped`; write the results of the next two in the log book). `--dump /backups/dumps/<file>.dump`
+drills a chosen dump instead of the newest. Where Django and the PostgreSQL tools are on one
+machine (a checkout with `make setup`, CI), one command does all of it and records every result:
+
+```bash
+BACKUP_DIR=/path/to/backups DB_OWNER_PASSWORD=... DB_APP_PASSWORD=... \
+  infra/backup/restore-drill.sh --manage "uv run --directory backend python manage.py"
+```
+
+`make infra-test` runs the drill end to end (`infra/tests/test_restore_drill.sh`): a database
+migrated and seeded through the services, a nightly backup, the drill with new roles, the row
+counts compared with the source, and a dump with a damaged ledger that must fail.
 
 ### From the status page — من صفحة حالة النظام
 
@@ -161,7 +206,17 @@ infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-test.sh
 infra/db-roles.sh                     # roles and grants verified on the restored database
 ```
 
-5. Log in, open a recent patient and invoice, check the last shift. Record the restore in the log book.
+5. Check the restored database (the same checks as the drill):
+
+```bash
+infra/compose.sh run --rm --no-deps -T migrate manage migrate --check    # exit 0: nothing pending
+infra/compose.sh run --rm --no-deps -T app manage integrity_check        # all checks passed
+```
+
+   `migrate --check` failing means the images are not the release the dump came from: load the
+   right `APP_IMAGE_TAG` (never run `migrate` to "fix" it outside `infra/update.sh`).
+6. Log in, open a recent patient and invoice, check the last shift. Record the restore in the log
+   book, then enter the paper records of the outage ([operations.md](operations.md#when-the-server-dies--عند-تعطل-الخادم)).
 
 ## Enable pgBackRest — تفعيل الأرشفة المستمرة
 

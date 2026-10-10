@@ -66,6 +66,13 @@ case "$sub" in
         exit 0
         ;;
       *"restore-dump.sh"*) exit "${FAKE_RESTORE_EXIT:-0}" ;;
+      *"app manage record_update"*)
+        # infra/update.sh: the plan, notes and log tail arrive on stdin. One file per call.
+        n=$(($(find "$FAKE_STATE" -maxdepth 1 -name 'record-*.stdin' | wc -l) + 1))
+        cat >"$FAKE_STATE/record-$n.stdin"
+        printf '%s\n' "TAG=${APP_IMAGE_TAG:-} $args" >"$FAKE_STATE/record-$n.args"
+        exit "${FAKE_RECORD_EXIT:-0}"
+        ;;
     esac
     ;;
 esac

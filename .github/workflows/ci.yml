@@ -251,9 +251,9 @@ jobs:
       - run: uv run pytest
 
   infra:
-    name: infra (shellcheck, backup/restore and update.sh tests)
+    name: infra (shellcheck, backup/restore, restore drill and update.sh tests)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:16
@@ -270,8 +270,19 @@ jobs:
       PGUSER: postgres
       PGPASSWORD: postgres
       REQUIRE_PG: "1"
+      REQUIRE_DJANGO: "1"
     steps:
       - uses: actions/checkout@v5
+      # The restore drill (test_restore_drill.sh) migrates, seeds and checks with the backend.
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Backend environment
+        run: uv sync --locked
+        working-directory: backend
       - name: PostgreSQL 16 client tools
         run: |
           sudo apt-get update -q
