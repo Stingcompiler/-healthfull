@@ -20,7 +20,7 @@
 #   --keep           keep the database (e.g. to point a test app at it)
 #   --manage CMD     how to run Django's manage.py here, e.g. "python manage.py" in the app
 #                    image or "uv run --directory backend python manage.py" in a checkout
-#                    [MANAGE_CMD]. Empty: steps 3 is skipped and recorded as skipped; run the
+#                    [MANAGE_CMD]. Empty: step 3 is skipped and recorded as skipped; run the
 #                    two commands in the app containers instead (docs/runbooks/backup-restore.md)
 #
 # Environment (defaults in brackets):
@@ -64,7 +64,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h | --help)
-      sed -n '2,37p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
