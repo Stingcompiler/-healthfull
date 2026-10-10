@@ -175,6 +175,10 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   `reports.export`) are gone (ADR 0013). `orders.services.report_*` take an optional department.
 - The home page no longer shows placeholder zeros: managers get the dashboard, everyone else a
   list of their modules.
+- Wave c integration (`wave/c`): reports and operations merged together. The top bar of every
+  signed-in screen, the manager dashboard included, carries the notification bell; the
+  administration area has no placeholder sections left (imports, system status, data export
+  and audit are real pages; `AdminSectionPage` removed).
 - Nurses hold `visits.admit` by default (they record the admission on the doctor's decision);
   the Nursing menu entry shows to holders of any nursing permission. A cancelled visit takes no
   nursing notes (`VISIT_CANCELLED`).
