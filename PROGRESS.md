@@ -10,7 +10,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
-| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); reports and ops not started |
+| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); ops on `feat/c-ops` (1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer, ADR 0014); reports on `feat/c-reports` |
 | 7. Patient portal | not started | |
 | 8. Hardening and handover | not started | |
 
@@ -195,6 +195,24 @@ Source of truth for build status. Update at the end of every task. Phases from `
   states spec) fail when a full run crosses midnight, and the seed's scheduled +10% cash price
   version (starting the day after the seed) takes effect mid-run. Pin the date or build per test
   if CI runs at night.
+
+## Follow-ups (ops, wave c)
+
+- [x] `/administration/imports` is the import wizard (patients, items with opening stock,
+  prices); `/patients/import` keeps working on the same service.
+- [x] FEATURES 8.13 built (ADR 0014): opening stock is a goods receipt from the `OPENING`
+  supplier per store.
+- [x] Bed nights are charged by the maintenance loop as `BED_CHARGE_USER` (empty skips it).
+- Manual backups need the backup service: in development and e2e a request stays pending.
+- `UpdateRun` rows are not written by `infra/update.sh` yet; the update history shows its JSON
+  log (`update-runs.jsonl`) and any recorded `UpdateRun` with release notes. Writing release
+  notes into `UpdateRun` from the update script is open (13.10 "update trigger" stays the
+  runbook's `infra/update.sh`).
+- Notifications are polled every minute (no push); the bell lists the latest 15.
+- Model names in the audit viewer are translated for the main records; the rest show Django's
+  English verbose name. Field names are shown as database columns.
+- The full export reads every row of nine tables in one request (streamed); very large
+  installations may prefer a scheduled export to the backup disk.
 
 ## Next: merge wave b to main
 
