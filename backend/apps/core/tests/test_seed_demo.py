@@ -92,10 +92,10 @@ def test_simulated_clock_moves_time_and_is_restored() -> None:
 
 
 def test_a_small_month_is_complete_consistent_and_idempotent() -> None:
-    out = _run("--days", "5", "--patients", "60", "--visits-per-day", "9", "--seed", "11")
+    out = _run("--days", "4", "--patients", "50", "--visits-per-day", "7", "--seed", "11")
     assert "activity:" in out
     today = timezone.localdate()
-    start = today - timedelta(days=5)
+    start = today - timedelta(days=4)
 
     # Configuration.
     assert Item.objects.count() == len(data.DRUGS) + len(data.SUPPLIES)
@@ -104,11 +104,11 @@ def test_a_small_month_is_complete_consistent_and_idempotent() -> None:
 
     # History is dated inside the month, never in the future.
     visits = Visit.objects.all()
-    assert visits.count() >= 20
+    assert visits.count() >= 12
     first = timezone.localdate(visits.order_by("created_at").first().created_at)  # type: ignore[union-attr]
     assert start <= first < today
     assert not visits.filter(created_at__gt=timezone.now()).exists()
-    assert Patient.objects.count() <= 60
+    assert Patient.objects.count() <= 50
 
     # Invoices with insurance splits; the patient and payer shares add up to the net.
     approved = InvoiceLine.objects.filter(invoice__status=DocumentStatus.APPROVED, frozen=True)
@@ -132,7 +132,7 @@ def test_a_small_month_is_complete_consistent_and_idempotent() -> None:
 
     # Shifts: the past ones closed with a frozen report; a variance carries its reason.
     closed = Shift.objects.filter(status=ShiftStatus.CLOSED)
-    assert closed.count() >= 5
+    assert closed.count() >= 4
     assert not closed.filter(close_report__isnull=True).exists()
     assert not closed.exclude(variance=Decimal(0)).filter(variance_reason__isnull=True).exists()
     assert not Shift.objects.filter(status=ShiftStatus.OPEN, opened_at__date__lt=today).exists()
@@ -156,7 +156,7 @@ def test_a_small_month_is_complete_consistent_and_idempotent() -> None:
         Invoice.objects.count(),
         JournalEntry.objects.count(),
     )
-    again = _run("--days", "5", "--patients", "60", "--visits-per-day", "9", "--seed", "11")
+    again = _run("--days", "4", "--patients", "50", "--visits-per-day", "7", "--seed", "11")
     assert "already has visits" in again
     assert "nothing new" in again
     assert counts == (

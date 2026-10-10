@@ -25,16 +25,18 @@ from __future__ import annotations
 import random
 import re
 import time as clock_time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from typing import Any
 
-import pghistory
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import connection, transaction
 from django.utils import timezone
 
-from apps.core.demo.activity import Simulation, Summary
+from apps.catalog.models import PriceListVersion
+from apps.core.demo.activity import COMPLETE_MARK, Simulation, Summary
 from apps.core.demo.catalog import DEMO_PASSWORD, seed_catalog
 from apps.core.demo.clock import DemoClock, simulated_time
 from apps.core.demo.names import make_people
@@ -57,6 +59,17 @@ def require_demo_database() -> str:
     return name
 
 
+@contextmanager
+def _no_query_log() -> Iterator[None]:
+    """Hundreds of thousands of queries: skip DEBUG's per-query log (``connection.queries``)."""
+    was = settings.DEBUG
+    settings.DEBUG = False
+    try:
+        yield
+    finally:
+        settings.DEBUG = was
+
+
 class Command(BaseCommand):
     help = "Load the demo center: catalog, 500 patients and a month of activity (demo DBs only)."
 
@@ -65,7 +78,7 @@ class Command(BaseCommand):
         parser.add_argument("--days", type=int, default=30, help="Days of history (default 30).")
         parser.add_argument("--patients", type=int, default=500, help="Patients (default 500).")
         parser.add_argument(
-            "--visits-per-day", type=int, default=42, help="Visits on a weekday (default 42)."
+            "--visits-per-day", type=int, default=30, help="Visits on a weekday (default 30)."
         )
 
     def _progress(self, began: float, verbosity: int) -> Callable[[date, Summary], None] | None:
@@ -101,15 +114,21 @@ class Command(BaseCommand):
         )
         cutoff = now - timedelta(minutes=2)
         has_activity = Visit.objects.exists()
-        with (
-            transaction.atomic(),
-            pghistory.context(command="seed_demo", seed=seed),
-            simulated_time(clock),
-        ):
-            catalog = seed_catalog(on=start, rng=rng)
-            summary = None
+        complete = PriceListVersion.objects.filter(note=COMPLETE_MARK).exists()
+        played = 0.0
+        summary = None
+        with _no_query_log(), simulated_time(clock):
+            # No run-wide audit context: each service call opens its own (a shared one would
+            # be a single row rewritten at every audited write).
+            with transaction.atomic():
+                catalog = seed_catalog(on=start, rng=rng)
+            if int(options["verbosity"]) >= 2:
+                self.stdout.write(
+                    f"seed_demo: configuration ready ({clock_time.monotonic() - began:.0f} s)"
+                )
             if not has_activity:
                 people = make_people(rng, int(options["patients"]), today=start)
+                # One transaction per played day (Simulation.run).
                 summary = Simulation(
                     cat=catalog,
                     clock=clock,
@@ -120,19 +139,36 @@ class Command(BaseCommand):
                     visits_per_day=int(options["visits_per_day"]),
                     cutoff=cutoff,
                 ).run(progress=self._progress(began, int(options["verbosity"])))
+            played = clock_time.monotonic() - began
         elapsed = clock_time.monotonic() - began
+        if int(options["verbosity"]) >= 2:
+            self.stdout.write(f"seed_demo: committed ({elapsed - played:.0f} s after the last day)")
         made = ", ".join(f"{k} {v}" for k, v in sorted(catalog.created.items())) or "nothing new"
         self.stdout.write(f"seed_demo: database {db}, seed {seed}, {start} to {today}")
         self.stdout.write(f"seed_demo: configuration: {made}")
-        if summary is None:
+        if summary is None and complete:
             self.stdout.write(
                 self.style.WARNING(
                     "seed_demo: the database already has visits; the activity was not made again"
                 )
             )
+        elif summary is None:
+            self.stdout.write(
+                self.style.WARNING(
+                    "seed_demo: the database has visits but no complete demo month (an "
+                    "interrupted run, or not a demo database); nothing was added. Start again "
+                    "on an empty database: make demo DEMO_RESET=1"
+                )
+            )
         else:
             counts = ", ".join(f"{k} {v}" for k, v in sorted(summary.counts.items()))
             self.stdout.write(f"seed_demo: activity: {counts}")
+            if int(options["verbosity"]) >= 2:
+                spent = ", ".join(
+                    f"{k} {v:.0f} s"
+                    for k, v in sorted(summary.seconds.items(), key=lambda kv: -kv[1])
+                )
+                self.stdout.write(f"seed_demo: time per event: {spent}")
         self.stdout.write(
             self.style.SUCCESS(
                 f"seed_demo: done in {elapsed:.0f} s. Sign in as reception, cashier, cashsup, "

@@ -18,13 +18,16 @@ from __future__ import annotations
 import heapq
 import itertools
 import random
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from time import perf_counter
 from typing import Any
 
+import pghistory
+from django.db import transaction
 from django.utils import timezone
 
 from apps.billing import services as billing
@@ -61,7 +64,7 @@ from apps.visits.models import (
 from domain.errors import DomainError
 from domain.money import ZERO, q
 
-__all__ = ["Simulation", "Summary"]
+__all__ = ["COMPLETE_MARK", "Simulation", "Summary"]
 
 TZ = timezone.get_current_timezone
 
@@ -70,10 +73,16 @@ MORNING = ("cashier", "T1", Decimal("20000.00"))
 EVENING = ("cashier2", "T2", Decimal("15000.00"))
 SWITCH = time(14, 0)
 
+#: Note of the cash price version for the 1st of next month: the last write of a run, so it
+#: marks a complete demo month (``seed_demo`` refuses to build on an interrupted one).
+COMPLETE_MARK = "زيادة مجدولة (بيانات تجريبية)"
+
 
 @dataclass(slots=True)
 class Summary:
     counts: Counter[str] = field(default_factory=Counter)
+    #: Wall seconds spent per kind of event (``seed_demo -v 2`` prints them).
+    seconds: defaultdict[str, float] = field(default_factory=lambda: defaultdict(float))
 
     def add(self, what: str, n: int = 1) -> None:
         self.counts[what] += n
@@ -119,6 +128,9 @@ class Simulation:
         self.visits_per_day = visits_per_day
         self.cutoff = cutoff
         self.summary = Summary()
+        #: The tills' counting has its own stream, so how many shifts close with a variance
+        #: does not hinge on how many draws the visits happened to make before each close.
+        self.till_rng = random.Random(rng.getrandbits(64))
         self._queue: list[tuple[datetime, int, Callable[..., None], tuple[Any, ...]]] = []
         self._seq = itertools.count()
         self.registered: list[Patient] = []
@@ -155,18 +167,33 @@ class Simulation:
         heapq.heappush(self._queue, (when, next(self._seq), fn, args))
 
     def run(self, progress: Callable[[date, Summary], None] | None = None) -> Summary:
+        """Play every day, one transaction per day.
+
+        One transaction for the whole month would keep every superseded row version alive
+        until the end (a sequence row updated thousands of times, service lines updated at
+        each step), and each lookup would walk those chains: a run gets slower every day. A
+        day per transaction lets PostgreSQL prune them. The next-month price version is the
+        last write, so its presence marks a complete run (``seed_demo`` checks it).
+        """
         for offset in range(self.days + 1):
             day = self.start + timedelta(days=offset)
-            self._plan_day(day)
-            day_end = _at(day, 23, 59)
-            while self._queue and self._queue[0][0] <= day_end:
-                when, _, fn, args = heapq.heappop(self._queue)
-                self.clock.set(when)
-                fn(*args)
+            with transaction.atomic():
+                self._plan_day(day)
+                day_end = _at(day, 23, 59)
+                while self._queue and self._queue[0][0] <= day_end:
+                    when, _, fn, args = heapq.heappop(self._queue)
+                    self.clock.set(when)
+                    started = perf_counter()
+                    # A fresh audit context per event: one context shared by the whole run
+                    # would be one row rewritten at every audited write.
+                    with pghistory.context(command="seed_demo", event=fn.__name__):
+                        fn(*args)
+                    self.summary.seconds[fn.__name__] += perf_counter() - started
             if progress is not None:
                 progress(day, self.summary)
         self.clock.set(self.cutoff)
-        self._schedule_next_month_prices()
+        with transaction.atomic(), pghistory.context(command="seed_demo", event="next_month"):
+            self._schedule_next_month_prices()
         return self.summary
 
     # --- the day's plan ----------------------------------------------------------------------
@@ -189,8 +216,11 @@ class Simulation:
         if index == 10:
             self.schedule(_at(day, 9, 30), self.stock_transfer)
         if index == 14:
-            self.schedule(_at(day, 17, 0), self.price_review, day)
             self.schedule(_at(day, 10, 0), self.build_claim, "WAHA", 0, 13)
+        if index == 14 and self.days >= 16:
+            # Effective tomorrow, which is still in the past: the version for the 1st of next
+            # month (the run's last write) never collides with it.
+            self.schedule(_at(day, 17, 0), self.price_review, day)
         if index == 15:
             self.schedule(_at(day, 11, 0), self.submit_claim, "WAHA")
         if index == 16:
@@ -241,15 +271,16 @@ class Simulation:
         if shift is None:
             return
         expected = payments.expected_cash(shift)
-        roll = self.rng.random()
-        if roll < 0.08:
-            short = self.rng.choice([Decimal(500), Decimal(1000), Decimal(2000), Decimal(5000)])
+        rng = self.till_rng
+        roll = rng.random()
+        if roll < 0.10:
+            short = rng.choice([Decimal(500), Decimal(1000), Decimal(2000), Decimal(5000)])
             counted = max(ZERO, expected - short)
-            reason, note = self.rng.choice(
+            reason, note = rng.choice(
                 [("COUNTING_ERROR", ""), ("CHANGE_ERROR", ""), ("UNEXPLAINED", "لم يُعرف السبب")]
             )
-        elif roll < 0.12:
-            counted = expected + self.rng.choice([Decimal(500), Decimal(1000)])
+        elif roll < 0.15:
+            counted = expected + rng.choice([Decimal(500), Decimal(1000)])
             reason, note = "UNRECORDED_PAYMENT", ""
         else:
             counted, reason, note = expected, None, ""
@@ -518,13 +549,14 @@ class Simulation:
         visits.call_patient(entry, actor=doctor)
         visits.start_consultation(entry, actor=doctor)
         if self.rng.random() < 0.6:
+            systolic = self.rng.randint(100, 165)
             clinical.record_vitals(
                 ctx.visit,
                 actor=self.u("nurse"),
                 temperature_c=Decimal(str(round(self.rng.uniform(36.4, 39.2), 1))),
                 pulse_bpm=self.rng.randint(68, 112),
-                bp_systolic=self.rng.randint(100, 165),
-                bp_diastolic=self.rng.randint(60, 100),
+                bp_systolic=systolic,
+                bp_diastolic=systolic - self.rng.randint(30, 55),
             )
         scenario = self._scenario(ctx.doctor.department.code, ctx.patient, day)
         ctx.scenario = scenario
@@ -1109,14 +1141,14 @@ class Simulation:
         cash = catalog_services.default_price_list()
         from apps.catalog.models import PriceListVersion
 
-        if PriceListVersion.objects.filter(price_list=cash, effective_from__gt=today).exists():
+        if PriceListVersion.objects.filter(price_list=cash, note=COMPLETE_MARK).exists():
             return
         catalog_services.bulk_percentage_update(
             cash,
             percent=Decimal(10),
             effective_from=first,
             actor=self.u("admin"),
-            note="زيادة مجدولة",
+            note=COMPLETE_MARK,
             today=today,
         )
         self.summary.add("price_versions")

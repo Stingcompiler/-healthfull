@@ -7,7 +7,7 @@ marked as demo data.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import time
 
 # Weekdays as stored by DoctorSchedule: 0 = Monday ... 6 = Sunday. Friday (4) is the weekend.
@@ -2112,13 +2112,3 @@ ALLERGY_SUBSTITUTES: dict[str, str] = {
     "CIPRO500": "COTRI960",
     "COTRI960": "NITRO100",
 }
-
-
-@dataclass(slots=True)
-class Volumes:
-    """How much activity a run makes (``seed_demo`` options)."""
-
-    days: int = 30
-    patients: int = 500
-    visits_per_day: int = 42
-    extra: dict[str, int] = field(default_factory=dict)

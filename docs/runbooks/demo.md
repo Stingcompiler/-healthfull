@@ -24,13 +24,16 @@ Options: `DEMO_DB_NAME=demo_<name>` picks another database, and `DEMO_ARGS` pass
 | `--seed` | 2026 | random seed: the same seed, options and day give the same data |
 | `--days` | 30 | days of history before today (1-120) |
 | `--patients` | 500 | synthetic patients |
-| `--visits-per-day` | 42 | visits on a working day (Fridays about a quarter) |
+| `--visits-per-day` | 30 | visits on a working day (Fridays about a quarter) |
 
 The default month takes several minutes (about 500 database queries per visit, all through
 the services); `DEMO_ARGS="--days 7 --visits-per-day 15"` makes a small set in about a minute.
 Running it again on the same database adds nothing: the configuration is completed if parts
 are missing, and the activity is made only when the database has no visit yet. To refresh the
-month, use `DEMO_RESET=1`.
+month, use `DEMO_RESET=1`. Each played day is committed on its own; if a run is interrupted,
+the next run reports an incomplete demo month and adds nothing: start again with
+`DEMO_RESET=1`. The same seed and options give the same past days on the same date; today's
+partial day depends on the time of the run.
 
 On a demo server running the Docker stack, set `DB_NAME=demo_hospital` in `.env` before the
 first `up`, then run the seed once through the app image's `manage` entrypoint (not run in
