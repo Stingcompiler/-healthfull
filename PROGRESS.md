@@ -392,3 +392,22 @@ reports, ops and the patient portal (Phases 6-7).
   before left the doctor's queue (an empty queue; the three 1280 cases after it did not run
   because the file is serial); the patient-file 768 warm en case did not find the merge
   history, while the other 11 cases of the same route passed in the same run.
+- 2026-10-10: Patient portal (wave c) on `feat/c-portal` from `wave/c`: FEATURES 15.1, 15.2
+  (ADR 0016). Backend `/api/portal`: sign-in with file number, phone and the receipt code
+  (hashed, 30-day, newest revokes older, locked after 5 wrong codes), per-file lockout and
+  per-address throttle with uniform 401s, its own session cookie (path `/api/portal`, hashed
+  token, 15-minute idle, 4-hour limit), own-data endpoints answering 404 for anyone else's row,
+  online booking and cancellation, the public receipt check by number and HMAC token;
+  `domain/portal.py` (Hypothesis). Frontend `src/portal` (sign-in, home, appointments, booking,
+  results with print, prescriptions, bills, `/verify/$token`), manifest and icons, no service
+  worker. Other modules touched: `api/errors.py` (2 statuses), `api/tests/test_main.py` (portal
+  allowlists), `core/tests/test_schema.py` (2 untracked portal models), core `maintenance`
+  (portal housekeeping), payments receipt payload (`verify_token`) and `domain/payments.py`
+  (staff check reads the new QR URL), cashier `ReceiptPage.tsx` (QR URL and the portal code),
+  `errors.json` (7 codes), `e2e/route-kit.ts` and `responsive.spec.ts` (`prepare` hook),
+  `e2e/README.md`. Results: `make check` green (backend 1958 passed, frontend 460 passed, ruff,
+  mypy, eslint, prettier and tsc clean, no missing migrations, API contract in sync). `make e2e
+  E2E_GREP="@portal|@cashier|@responsive.*(portal|route registry|cashier-receipt)"`: 256 passed,
+  2 failed of 258; both failures were cashier specs running while the machine slept (3.7 h test
+  time) and passed on a rerun of `@cashier (money flow|review fixes)` (5 of 5). Portal matrix
+  alone earlier: 200 of 200.
