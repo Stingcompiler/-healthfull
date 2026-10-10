@@ -70,7 +70,7 @@ function ReportView({ reportKey }: { reportKey: ReportKey }) {
         description={t(`catalog.${reportKey}.description`)}
         icon={<Icon />}
         eyebrow={
-          <Link to="/reports" className="inline-flex min-h-6 items-center gap-1 hover:text-fg">
+          <Link to="/reports" className="inline-flex min-h-11 items-center gap-1 hover:text-fg md:min-h-6">
             <ArrowBack className="size-3.5" aria-hidden="true" />
             {t("actions.back")}
           </Link>

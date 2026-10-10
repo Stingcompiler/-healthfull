@@ -47,7 +47,7 @@ export function ReportCell({
     case "datetime":
       return <DateText value={String(value)} format="datetime" className={className} />;
     case "code":
-      return <bdi className={cn("tabular", className)}>{String(value)}</bdi>;
+      return <bdi className={cn("tabular whitespace-nowrap", className)}>{String(value)}</bdi>;
     default:
       return (
         <span dir="auto" className={className}>

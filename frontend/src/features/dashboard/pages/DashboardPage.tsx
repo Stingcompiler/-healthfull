@@ -112,26 +112,26 @@ function ManagerDashboard() {
       <section aria-label={t("kpi.title")} className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
         <KpiCard
           label={t("kpi.collectedToday")}
-          value={<MoneyText value={money("collected_today")} />}
+          value={<MoneyText value={money("collected_today")} currency={false} />}
           icon={<Banknote />}
           tone="success"
           loading={loading}
           hint={
             data ? (
-              <>
+              <span className="inline-flex flex-wrap gap-x-3 gap-y-0.5">
                 <span>
                   {t("kpi.cash")} <MoneyText value={money("cash_today")} currency={false} />
                 </span>
                 <span>
                   {t("kpi.transfers")} <MoneyText value={money("bank_today")} currency={false} />
                 </span>
-              </>
+              </span>
             ) : undefined
           }
         />
         <KpiCard
           label={t("kpi.pendingTransfers")}
-          value={<MoneyText value={money("pending_transfers")} />}
+          value={<MoneyText value={money("pending_transfers")} currency={false} />}
           icon={<Hourglass />}
           tone="warning"
           loading={loading}
@@ -147,7 +147,7 @@ function ManagerDashboard() {
         />
         <KpiCard
           label={t("kpi.netRevenueToday")}
-          value={<MoneyText value={money("net_revenue_today")} />}
+          value={<MoneyText value={money("net_revenue_today")} currency={false} />}
           icon={<TrendingUp />}
           tone="primary"
           loading={loading}

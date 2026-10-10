@@ -22,10 +22,11 @@ interface Point {
 
 function TooltipBox({ active, payload }: { active?: boolean; payload?: readonly { payload?: Point }[] }) {
   const { t } = useTranslation("dashboard");
+  const direction = useDirection();
   const point = payload?.[0]?.payload;
   if (!active || !point) return null;
   return (
-    <div className="card-surface flex flex-col gap-1 p-3 text-xs shadow-raised">
+    <div dir={direction} className="card-surface flex flex-col gap-1 p-3 text-xs shadow-raised">
       <span className="font-semibold text-fg">{point.label}</span>
       <span className="flex items-center gap-2">
         <span className="size-2.5 rounded-full bg-success" aria-hidden="true" />
@@ -76,7 +77,7 @@ export function CollectionChart({ trend }: { trend: readonly ReportTrendDay[] })
       {empty ? (
         <EmptyState bare size="compact" icon={<ChartColumn />} title={t("charts.collectionsEmpty")} />
       ) : (
-        <div className="h-56 w-full min-w-0" role="img" aria-label={t("charts.collectionsTitle")}>
+        <div className="h-56 w-full min-w-0" dir="ltr" role="img" aria-label={t("charts.collectionsTitle")}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
               <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} />

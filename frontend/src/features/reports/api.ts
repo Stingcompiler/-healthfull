@@ -2,7 +2,7 @@
  * TanStack Query hooks of the reports module (ARCHITECTURE 5.5). Reports are read-only: every
  * figure is the server's; these hooks only fetch what the screens show.
  */
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api/client";
 
@@ -28,7 +28,8 @@ export function useReport(key: ReportKey, search: ReportSearch) {
   return useQuery({
     queryKey: reportsKeys.report(key, search),
     queryFn: () => unwrap(api.GET(reportPath(key), { params: { query: reportQuery(search) } })),
-    placeholderData: keepPreviousData,
+    // While new filters load, keep showing this report's rows (never another report's).
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[1] === key ? previous : undefined),
   });
 }
 

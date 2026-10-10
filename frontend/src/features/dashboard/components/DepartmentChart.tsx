@@ -19,10 +19,11 @@ interface Point {
 }
 
 function TooltipBox({ active, payload }: { active?: boolean; payload?: readonly { payload?: Point }[] }) {
+  const direction = useDirection();
   const point = payload?.[0]?.payload;
   if (!active || !point) return null;
   return (
-    <div className="card-surface flex flex-col gap-1 p-3 text-xs shadow-raised">
+    <div dir={direction} className="card-surface flex flex-col gap-1 p-3 text-xs shadow-raised">
       <span className="font-semibold text-fg">{point.name}</span>
       <MoneyText value={point.netText} />
     </div>
@@ -51,7 +52,13 @@ export function DepartmentChart({ departments }: { departments: ReportDashboard[
       {data.length === 0 ? (
         <EmptyState bare size="compact" icon={<Building2 />} title={t("charts.departmentsEmpty")} />
       ) : (
-        <div className="w-full min-w-0" style={{ height }} role="img" aria-label={t("charts.departmentsTitle")}>
+        <div
+          className="w-full min-w-0"
+          style={{ height }}
+          dir="ltr"
+          role="img"
+          aria-label={t("charts.departmentsTitle")}
+        >
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={data} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 8 }}>
               <CartesianGrid horizontal={false} stroke={CHART_COLORS.grid} />

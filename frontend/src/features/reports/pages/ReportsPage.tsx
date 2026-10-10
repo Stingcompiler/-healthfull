@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ChevronNext } from "@/components/icons";
 import { PageHeader } from "@/components/PageHeader";
 import { useCurrentUser } from "@/lib/auth/hooks";
+import { hasPermission } from "@/lib/auth/permissions";
 
 import { AREA_ICONS, REPORT_AREAS, REPORT_CATALOG } from "../catalog";
 
@@ -16,9 +17,7 @@ import { AREA_ICONS, REPORT_AREAS, REPORT_CATALOG } from "../catalog";
 export function ReportsPage() {
   const { t } = useTranslation("reports");
   const me = useCurrentUser();
-  const held = new Set(me?.permissions ?? []);
-  const isAdmin = me?.roles.includes("admin") ?? false;
-  const visible = REPORT_CATALOG.filter((r) => isAdmin || held.has(r.permission));
+  const visible = REPORT_CATALOG.filter((r) => hasPermission(me, r.permission));
 
   return (
     <div className="flex min-w-0 flex-col gap-6">

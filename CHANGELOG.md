@@ -123,6 +123,18 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   payments by transfer, cheque (cleared later) or cash into the recorder's shift, allocated per
   claim or oldest first, reversal of a bounced payment, and aging by payer (0-30, 31-60, 61-90,
   over 90 days). Only `claims.*` holders reach any of it (ADR 0012).
+- Wave c, reports and the manager dashboard (FEATURES 4.5, 12.1-12.11): `/api/reports` with
+  fourteen reports, each as JSON and as an Excel workbook (Arabic or English, formula-safe):
+  daily revenue by department, doctor and payment method with pending transfers apart, shift
+  variances, pending transfers by age (with uncleared payer cheques), discounts, credit notes,
+  cancellations and refunds by user and reason, payer receivables by stage and age,
+  requested-not-invoiced, paid-not-performed, performed-by-authorization, stock valuation,
+  movement, count variance and expiry, visits by day, department and doctor (new against
+  follow-up), lab turnaround and volume. Report figures are tested against the ledger. Screens:
+  `/reports` (catalog by area), `/reports/<key>` (filters, figures, sections with totals and
+  row search, cards on phones, Excel), `/reports/<key>/print` (A4, the browser saves PDF), and
+  the home page for managers: today's confirmed collection, pending transfers, queue, alerts and
+  two charts (recharts, theme colors). `DataTable` gains a totals row (ADR 0013).
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
@@ -144,6 +156,12 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   `PUBLIC` loses `CONNECT`/`TEMP` on the database and `CREATE` on schema `public`.
 
 ### Changed
+- Report permissions are one `reports.view_<area>` code per area (finance, exceptions, stock,
+  visits, lab, dashboard); the unused Phase 0 codes (`reports.view`, `reports.financial`,
+  `reports.operational`, `reports.stock`, `reports.lab`, `reports.dashboard`,
+  `reports.export`) are gone (ADR 0013). `orders.services.report_*` take an optional department.
+- The home page no longer shows placeholder zeros: managers get the dashboard, everyone else a
+  list of their modules.
 - Nurses hold `visits.admit` by default (they record the admission on the doctor's decision);
   the Nursing menu entry shows to holders of any nursing permission. A cancelled visit takes no
   nursing notes (`VISIT_CANCELLED`).
