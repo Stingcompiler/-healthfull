@@ -10,6 +10,7 @@ from apps.core.permissions import register_permission
 from apps.core.roles import (
     ACCOUNTANT,
     ADMIN,
+    CASHIER_SUPERVISOR,
     MANAGER,
     PHARMACIST,
 )
@@ -96,4 +97,12 @@ register_permission(
     label_ar="إدارة المخازن",
     label_en="Manage stores",
     default_roles={ADMIN},
+)
+
+register_permission(
+    "pharmacy.approve_return",
+    label_ar="اعتماد إرجاع أصناف مدفوعة إلى المخزون",
+    label_en="Approve returning paid units to stock",
+    # A second person at the counter; the refund itself stays with the cashier (ADR 0018).
+    default_roles={CASHIER_SUPERVISOR, MANAGER, ADMIN},
 )

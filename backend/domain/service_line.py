@@ -29,7 +29,7 @@ Every transition is a pure function ``LineStatus -> LineStatus`` that raises
 ``LINE_ALREADY_AUTHORIZED``, ``LINE_ALREADY_PERFORMED``, ``LINE_ALREADY_STARTED``,
 ``LINE_ALREADY_CANCELLED``, ``LINE_NOT_ELIGIBLE``, ``CREDIT_NOTE_REQUIRED``,
 ``INVALID_LINE_STATUS``, ``INVALID_AMOUNT``, ``REASON_REQUIRED``, ``INVALID_QUANTITY``,
-``CREDIT_EXCEEDS_UNGIVEN``.
+``CREDIT_EXCEEDS_UNGIVEN``, ``LINE_NOT_VOIDABLE``.
 
 Quantities (:func:`open_quantity`, :func:`remainder_to_credit`): units credited by an approved
 credit note are never given afterwards, so what may still be performed or dispensed is the
@@ -72,6 +72,7 @@ __all__ = [
     "settle",
     "start",
     "unsettle",
+    "void_in_error",
 ]
 
 
@@ -337,6 +338,38 @@ def cancel(status: LineStatus, approval: Approval, *, with_credit_note: bool = F
             )
         return replace(
             status, billing=BillingStatus.CREDITED, fulfilment=FulfilmentStatus.CANCELLED
+        )
+    return replace(status, fulfilment=FulfilmentStatus.CANCELLED)
+
+
+def void_in_error(status: LineStatus, approval: Approval) -> LineStatus:
+    """Void an unbilled line that was recorded performed under a perform-first authorization
+    that was itself made in error (a bed night of an admission made in error, ADR 0018).
+
+    The one exception to "performed is terminal": nothing was billed, so no invoice or
+    shift changes (invariants 2 and 3), and the approval records who decided, when and why
+    (invariant 4). A billed line is corrected by a credit note; an open line is cancelled.
+
+    Raises:
+        DomainError: ``CREDIT_NOTE_REQUIRED`` (invoiced or settled),
+            ``LINE_ALREADY_CANCELLED``, ``LINE_NOT_VOIDABLE`` (credited, not performed, or
+            performed without an authorization).
+    """
+    if not isinstance(approval, Approval):
+        raise TypeError("void_in_error() needs an Approval")
+    if status.billing in BILLED:
+        raise _error("CREDIT_NOTE_REQUIRED", "A billed line is corrected by a credit note", status)
+    if status.fulfilment is FulfilmentStatus.CANCELLED:
+        raise _error("LINE_ALREADY_CANCELLED", "The line is already cancelled", status)
+    if (
+        status.billing is not BillingStatus.UNBILLED
+        or status.fulfilment is not FulfilmentStatus.PERFORMED
+        or not status.authorized
+    ):
+        raise _error(
+            "LINE_NOT_VOIDABLE",
+            "Only a line performed under a perform-first authorization is voided",
+            status,
         )
     return replace(status, fulfilment=FulfilmentStatus.CANCELLED)
 

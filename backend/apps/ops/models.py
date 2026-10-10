@@ -123,10 +123,16 @@ class UpdateResult(models.TextChoices):
 class UpdateRun(models.Model):
     """One application update (FEATURES 13.10): version shown, release notes, rollback log.
 
-    Written by ``infra/update.sh`` through the ops services; the status page shows the
+    Written by ``infra/update.sh`` through ``manage.py record_update`` (one call per run, at
+    its end; ``run_key`` makes a repeated call update the same row); the status page shows the
     running version and the history.
+
+    The columns added after the first release carry database defaults, so an older image
+    started by a rollback (which does not know them) can still insert rows.
     """
 
+    #: The update script's run id (``<UTC stamp>-<tag>``); empty for rows written by hand.
+    run_key = models.CharField(max_length=100, unique=True, null=True, blank=True)
     version = models.CharField(max_length=50)
     previous_version = models.CharField(max_length=50, blank=True)
     release_notes = models.TextField(blank=True)
@@ -135,6 +141,15 @@ class UpdateRun(models.Model):
     )
     started_at = models.DateTimeField()
     finished_at = models.DateTimeField(null=True, blank=True)
+    #: ``manage.py migrate --plan`` of the new version, read before anything changed.
+    migration_plan = models.TextField(blank=True, default="", db_default="")
+    migrations_applied = models.BooleanField(default=False, db_default=False)
+    #: The rollback restored the pre-update dump (``--restore-db-on-failure``).
+    db_restored = models.BooleanField(default=False, db_default=False)
+    #: The verified pre-update dump a rollback can restore.
+    backup_file = models.CharField(max_length=500, blank=True, default="", db_default="")
+    #: Why it failed or rolled back, and in which step.
+    detail = models.TextField(blank=True, default="", db_default="")
     log = models.TextField(blank=True)
     started_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"

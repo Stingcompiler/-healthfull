@@ -391,12 +391,21 @@ def test_returned_units_go_back_on_the_shelf(cashier, supervisor, pharmacist, st
         reason_code="OTHER",
         note="patient returned sealed strips",
         credit_note=out.credit_note,
+        approver=supervisor,  # a paid line's units come back on a second person's word
     )
     assert ret.stock_move.kind == "return"
+    assert ret.approved_by == supervisor
     assert _on_hand(batch, store) == 7
     assert ps.returned_quantity(line) == 2
     with pytest.raises(DomainError) as exc:
-        ps.return_dispense(dl_row, quantity=4, actor=pharmacist, reason_code="OTHER", note="more")
+        ps.return_dispense(
+            dl_row,
+            quantity=4,
+            actor=pharmacist,
+            reason_code="OTHER",
+            note="more",
+            approver=supervisor,
+        )
     assert exc.value.code == "RETURN_EXCEEDS_DISPENSED"
 
 

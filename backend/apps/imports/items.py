@@ -158,6 +158,7 @@ def _item(code: str, data: Mapping[str, Any], actor: User) -> Item:
     if existing is not None:
         return existing
     fields: dict[str, object] = {
+        "generic_name_ar": str(data.get("generic_name_ar") or ""),
         "brand_name": str(data.get("brand_name") or ""),
         "form": str(data.get("form") or "tablet"),
         "strength": str(data.get("strength") or ""),

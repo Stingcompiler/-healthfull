@@ -50,6 +50,10 @@ OPERATIONS = {
         "post",
         "/api/visits/inpatient/admissions/{admission_id}/discharge",
     ): "visits_discharge_patient",
+    (
+        "post",
+        "/api/visits/inpatient/admissions/{admission_id}/cancel",
+    ): "visits_cancel_admission",
     ("post", "/api/visits/inpatient/beds/{bed_id}/status"): "visits_set_bed_status",
     ("post", "/api/visits/inpatient/charge-due"): "visits_charge_bed_nights",
 }

@@ -10,6 +10,7 @@ import type {
   AdjustmentStatus,
   CountStatus,
   DispenseIn,
+  DispenseReturnIn,
   GoodsReceiptIn,
   PackUnitIn,
   PackUnitPatch,
@@ -45,6 +46,7 @@ export const pharmacyKeys = {
   lowStock: (storeId: number | undefined) => ["pharmacy", "low-stock", storeId] as const,
   saleServices: (q: string) => ["pharmacy", "sale-services", q] as const,
   saleCustomers: (q: string) => ["pharmacy", "sale-customers", q] as const,
+  returns: (q: string, page: number) => ["pharmacy", "returns", q, page] as const,
 };
 
 /** Page size of the pharmacy lists. */
@@ -200,6 +202,35 @@ export function useTransfers(status: TransferStatus | undefined, page: number) {
         }),
       ),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useReturnableDispenses(q: string, page: number) {
+  const term = q.trim();
+  return useQuery({
+    queryKey: pharmacyKeys.returns(term, page),
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/pharmacy/returns", {
+          params: { query: { q: term || undefined, page, page_size: PAGE_SIZE } },
+        }),
+      ),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useReturnUnits() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ dispenseLineId, body }: { dispenseLineId: number; body: DispenseReturnIn }) =>
+      unwrap(
+        api.POST("/api/pharmacy/dispense-lines/{dispense_line_id}/returns", {
+          params: { path: { dispense_line_id: dispenseLineId } },
+          body,
+        }),
+      ),
+    // Stock changed: every list, item and report of the module refreshes.
+    onSettled: () => qc.invalidateQueries({ queryKey: pharmacyKeys.all }),
   });
 }
 

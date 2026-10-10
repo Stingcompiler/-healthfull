@@ -16,8 +16,16 @@
 # On failure after step 3: restart the PREVIOUS tag. The database is restored from the step-3 dump
 # only when migrations were applied AND the operator passed --restore-db-on-failure.
 #
+# Every run that passes the argument checks is recorded twice: one JSON line in
+# <BACKUP_HOST_DIR>/status/update-runs.jsonl, and one ops.UpdateRun row (from/to tag, result,
+# start/end, migration plan, migrations applied, database restored, pre-update dump, reason,
+# log tail, release notes) written by `manage.py record_update` in a one-off app container of
+# the version serving at the end (never raw SQL). A run cut short by a power cut is recorded as
+# failed by the next run. Recording never changes the outcome of an update.
+#
 # Usage: infra/update.sh --tag TAG [--image-archive FILE] [--restore-db-on-failure] [--yes]
 #                        [--dry-run] [--health-retries N] [--health-interval SECONDS]
+#                        [--release-notes FILE]
 #
 # Settings (shell environment first, then the env file): ENV_FILE [<repo>/.env],
 #   UPDATE_LOG_DIR [<repo>/infra/logs], UPDATE_STATE_DIR [<repo>/infra] (lock and state file),
@@ -45,9 +53,10 @@ ASSUME_YES=0
 DRY_RUN=0
 HEALTH_RETRIES=30
 HEALTH_INTERVAL=5
+NOTES_FILE=""
 
 usage() {
-  sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
@@ -58,6 +67,7 @@ while [[ $# -gt 0 ]]; do
     --restore-db-on-failure) RESTORE_DB=1; shift ;;
     --yes | -y) ASSUME_YES=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
+    --release-notes) NOTES_FILE="${2:-}"; shift 2 ;;
     --health-retries) HEALTH_RETRIES="${2:-}"; shift 2 ;;
     --health-interval) HEALTH_INTERVAL="${2:-}"; shift 2 ;;
     -h | --help) usage ;;
@@ -68,6 +78,7 @@ done
 [[ "$NEW_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]] || { echo "update: --tag is required (letters, digits, . _ -)" >&2; exit 2; }
 [[ "$HEALTH_RETRIES" =~ ^[1-9][0-9]*$ && "$HEALTH_INTERVAL" =~ ^[0-9]+$ ]] || { echo "update: bad health retry settings" >&2; exit 2; }
 [[ -z "$ARCHIVE" || -f "$ARCHIVE" ]] || { echo "update: image archive not found: $ARCHIVE" >&2; exit 2; }
+[[ -z "$NOTES_FILE" || -f "$NOTES_FILE" ]] || { echo "update: release notes not found: $NOTES_FILE" >&2; exit 2; }
 [[ -f "$ENV_FILE" ]] || { echo "update: $ENV_FILE not found" >&2; exit 2; }
 # Absolute and exported: docker-compose.yml passes the same file to every container.
 ENV_FILE="$(cd "$(dirname "$ENV_FILE")" && pwd -P)/$(basename "$ENV_FILE")"
@@ -164,16 +175,11 @@ check_health() {
   return 1
 }
 
-record() {
-  # Append one JSON line for the ops status page (FEATURES 13.10).
-  local result="$1" detail="$2" dir line
+append_status_line() {
+  # Append one JSON line to update-runs.jsonl for the ops status page (FEATURES 13.10).
+  local line="$1" dir
   dir="$(env_get BACKUP_HOST_DIR)"
   dir="${dir:-/srv/hospital/backups}/status"
-  line="$(printf '{"version":1,"type":"update","status":"%s","from_tag":"%s","to_tag":"%s","started_at":"%s","finished_at":"%s","migrations_applied":%s,"db_restored":%s,"backup":"%s","detail":"%s","log":"%s"}' \
-    "$result" "$PREV_TAG" "$NEW_TAG" "$STARTED_AT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    "$([[ $MIGRATED -eq 1 ]] && echo true || echo false)" \
-    "$([[ $DB_RESTORED -eq 1 ]] && echo true || echo false)" \
-    "$DUMP" "$(printf '%s' "$detail" | tr '"\\\n' "'/ ")" "$LOG_FILE")"
   if [[ -d "$dir" && -w "$dir" ]]; then
     printf '%s\n' "$line" >>"$dir/update-runs.jsonl" && return 0
   fi
@@ -183,6 +189,54 @@ record() {
     return 0
   fi
   warn "could not record the run in $dir/update-runs.jsonl"
+}
+
+json_text() { printf '%s' "$1" | tr '"\\\n' "'/ "; }
+
+record_db() {
+  # record_db IMAGE_TAG RUN_KEY TO FROM RESULT STARTED MIGRATED(0/1) RESTORED(0/1) DUMP DETAIL
+  # One ops.UpdateRun row through `manage.py record_update` in a one-off app container of
+  # IMAGE_TAG; the plan, release notes and log tail travel on stdin. Best effort: an image
+  # older than the command (a rollback from the first update to a release that has it), or a
+  # database that is down, leaves the JSON line as the only record.
+  local tag="$1" key="$2" to="$3" from="$4" result="$5" started="$6" migrated="$7"
+  local restored="$8" dump="$9" detail="${10}" args
+  if [[ -z "$tag" ]]; then
+    warn "no image to record the run in the update history with"
+    return 0
+  fi
+  args=(--run-key "$key" --to "$to" --result "$result" --started-at "$started"
+    --finished-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --stdin)
+  [[ -n "$from" ]] && args+=(--from "$from")
+  [[ "$migrated" == 1 ]] && args+=(--migrations-applied)
+  [[ "$restored" == 1 ]] && args+=(--db-restored)
+  [[ -n "$dump" ]] && args+=(--backup "$dump")
+  [[ -n "$detail" ]] && args+=(--detail "$detail")
+  if {
+    printf '@@plan\n%s\n' "${PLAN:-}"
+    printf '@@notes\n'
+    if [[ -n "$NOTES_FILE" && "$key" == "$RUN_KEY" ]]; then cat "$NOTES_FILE"; fi
+    printf '\n@@log\n'
+    if [[ "$key" == "$RUN_KEY" ]]; then tail -n 200 "$LOG_FILE"; fi
+  } | compose_tag "$tag" run --rm --no-deps -T app manage record_update "${args[@]}" >/dev/null 2>&1; then
+    log "recorded in the update history (run $key)"
+  else
+    warn "could not record run $key in the update history (ops.UpdateRun); update-runs.jsonl has it"
+  fi
+}
+
+record() {
+  # record RESULT DETAIL: this run's outcome, in the status log and in ops.UpdateRun.
+  local result="$1" detail="$2" image="$PREV_TAG"
+  append_status_line "$(printf '{"version":1,"type":"update","status":"%s","run":"%s","from_tag":"%s","to_tag":"%s","started_at":"%s","finished_at":"%s","migrations_applied":%s,"db_restored":%s,"backup":"%s","detail":"%s","log":"%s"}' \
+    "$result" "$RUN_KEY" "$PREV_TAG" "$NEW_TAG" "$STARTED_AT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    "$([[ $MIGRATED -eq 1 ]] && echo true || echo false)" \
+    "$([[ $DB_RESTORED -eq 1 ]] && echo true || echo false)" \
+    "$DUMP" "$(json_text "$detail")" "$LOG_FILE")"
+  # The version serving now: the new one after a success, the previous one otherwise.
+  if [[ "$result" == "ok" || -z "$image" ]]; then image="$NEW_TAG"; fi
+  record_db "$image" "$RUN_KEY" "$NEW_TAG" "$PREV_TAG" "$result" "$STARTED_AT" "$MIGRATED" \
+    "$DB_RESTORED" "$DUMP" "$detail"
 }
 
 # ------------------------------------------------------------------------------------ state
@@ -196,6 +250,8 @@ MIGRATED=0
 SWAPPED=0
 DB_RESTORED=0
 DUMP=""
+PLAN=""
+RUN_KEY="$STAMP-$NEW_TAG"
 LOCK_FILE="$STATE_DIR/.update.flock"
 STATE_FILE="$STATE_DIR/.update.state"
 LOCKED=0
@@ -219,12 +275,36 @@ printf 'pid=%s host=%s since=%s\n' "$$" "$(hostname)" "$STARTED_AT" >"$LOCK_FILE
 save_state() {
   # One small file, replaced atomically, describing what this run has done so far.
   local tmp="$STATE_FILE.tmp.$$"
-  printf 'target=%s\nfrom=%s\nstep=%s\nmigrated=%s\nswapped=%s\ndump=%s\nstarted=%s\nlog=%s\n' \
-    "$NEW_TAG" "$PREV_TAG" "$STEP" "$MIGRATED" "$SWAPPED" "$DUMP" "$STARTED_AT" "$LOG_FILE" >"$tmp"
+  printf 'target=%s\nfrom=%s\nstep=%s\nmigrated=%s\nswapped=%s\ndump=%s\nstarted=%s\nlog=%s\nrun=%s\n' \
+    "$NEW_TAG" "$PREV_TAG" "$STEP" "$MIGRATED" "$SWAPPED" "$DUMP" "$STARTED_AT" "$LOG_FILE" "$RUN_KEY" >"$tmp"
   mv -f "$tmp" "$STATE_FILE"
 }
 
-state_get() { grep -E "^$1=" "$2" 2>/dev/null | head -n 1 | cut -d= -f2-; }
+state_get() { grep -E "^$1=" "$2" 2>/dev/null | head -n 1 | cut -d= -f2- || true; }
+
+record_interrupted() {
+  # The interrupted run never wrote its outcome: record it as failed (status log and
+  # ops.UpdateRun, with the image .env names, which is the last committed version).
+  local file="$1" key target from step started migrated dump detail
+  target="$(state_get target "$file")"
+  from="$(state_get from "$file")"
+  step="$(state_get step "$file")"
+  started="$(state_get started "$file")"
+  migrated="$(state_get migrated "$file")"
+  dump="$(state_get dump "$file")"
+  key="$(state_get run "$file")"
+  [[ "$started" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$ ]] || started="$STARTED_AT"
+  [[ "$target" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,49}$ ]] || target="unknown"
+  [[ "$from" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,49}$ ]] || from=""
+  [[ "$key" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$ ]] || key="interrupted-${started//[^0-9TZ]/}-$target"
+  detail="interrupted during '$step' (power cut or killed); found by run $RUN_KEY"
+  append_status_line "$(printf '{"version":1,"type":"update","status":"failed","run":"%s","from_tag":"%s","to_tag":"%s","started_at":"%s","finished_at":"%s","migrations_applied":%s,"db_restored":false,"backup":"%s","detail":"%s","log":"%s"}' \
+    "$key" "$from" "$target" "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    "$([[ "$migrated" == 1 ]] && echo true || echo false)" "$(json_text "$dump")" \
+    "$(json_text "$detail")" "$(json_text "$(state_get log "$file")")")"
+  record_db "${PREV_TAG:-$target}" "$key" "$target" "$from" failed "$started" "${migrated:-0}" 0 \
+    "$dump" "$detail"
+}
 
 if [[ -f "$STATE_FILE" ]]; then
   # A previous run ended without its EXIT handler (power cut, SIGKILL). .env still names the
@@ -234,6 +314,7 @@ if [[ -f "$STATE_FILE" ]]; then
   warn "a previous update to $(state_get target "$STATE_FILE") was interrupted during '$(state_get step "$STATE_FILE")'"
   warn "  (migrations applied: $(state_get migrated "$STATE_FILE"), swapped: $(state_get swapped "$STATE_FILE"), pre-update dump: $(state_get dump "$STATE_FILE"), log: $(state_get log "$STATE_FILE"))"
   warn "  .env still says APP_IMAGE_TAG=${PREV_TAG:-<none>}; this run takes it from here"
+  record_interrupted "$STATE_FILE"
 fi
 
 rollback() {
@@ -314,7 +395,8 @@ step "2/7 preflight: system checks and migration plan (dry run)"
 # The plan is read through the `migrate` service, as the owner role: its login is proven here,
 # before anything is stopped or changed. (Step 4 re-applies both role passwords from .env.)
 compose_tag "$NEW_TAG" run --rm --no-deps -T app manage check || fail "Django system checks failed on $NEW_TAG"
-compose_tag "$NEW_TAG" run --rm --no-deps -T migrate manage migrate --plan || fail "migrate --plan failed"
+PLAN="$(compose_tag "$NEW_TAG" run --rm --no-deps -T migrate manage migrate --plan)" || fail "migrate --plan failed"
+printf '%s\n' "$PLAN"
 if compose_tag "$NEW_TAG" run --rm --no-deps -T migrate manage migrate --check >/dev/null 2>&1; then
   log "no pending migrations"
 else

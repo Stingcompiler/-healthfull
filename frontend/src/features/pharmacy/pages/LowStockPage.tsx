@@ -38,7 +38,7 @@ export function LowStockPage() {
               params={{ itemId: String(row.original.item_id) }}
               className="font-medium text-primary-strong hover:underline"
             >
-              {row.original.item_name}
+              {names.item(row.original)}
             </Link>
             <bdi className="text-xs text-muted">{row.original.service_code}</bdi>
           </span>
@@ -103,7 +103,7 @@ export function LowStockPage() {
                 params={{ itemId: String(r.item_id) }}
                 className="font-semibold text-primary-strong hover:underline"
               >
-                {r.item_name}
+                {names.item(r)}
               </Link>
               <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted">
                 <span>

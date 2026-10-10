@@ -150,6 +150,34 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   results with print, prescriptions and lab preparation, invoices and receipts), the public receipt
   check `/verify/<token>` behind the receipt QR, and a portal access code the cashier prints on the
   receipt. Web manifest and bundled icons, no service worker (ADR 0016).
+- Phase 8 follow-ups (ADRs 0018, 0019): an admission made in error is cancelled from the bed
+  board with a reason and a second person's credentials, unbilled bed nights are voided and
+  invoiced nights send the nurse to the cashier's credit note; dispense returns screen
+  (`/pharmacy/returns`) putting units back into their batch, with a second approver for paid
+  lines; the `display` role for the waiting-room kiosk (only the queue feed); portal access
+  codes issued from the patient's file with a printable slip, and an explicit revoke; a second
+  person approves claims rebills and write-offs behind the `claims_second_approver` policy
+  switch (default on); items carry an Arabic generic name, used by the Arabic stock lists and
+  the item import template.
+- Phase 8 handover, documentation and operations (ADR 0020):
+  - `README.md`: what the system is, architecture overview, developer quick start, deployment
+    summary, feature map with FEATURES numbers, screenshot names, security model.
+  - User guides in Arabic with English summaries (`docs/guides/`): one per role (the 12 roles,
+    including the waiting-room display), shared basics, and a plain-language patient portal guide.
+  - Runbooks: new `operations.md` (daily to quarterly checks, users and passwords, break-glass
+    account, internet down, power cut, dead server, integrity check, troubleshooting); the
+    restore-from-scratch drill, post-restore checks, update history and first-run steps in the
+    existing runbooks; a runbooks index.
+  - `manage.py integrity_check`: read-only check that the trial balance is zero and every entry
+    balanced, AR_PATIENT per invoice and AR_PAYER per payer match the documents, shift cash
+    matches, stock is never negative and equals its moves, and no allocation is orphaned.
+  - `infra/backup/restore-drill.sh`: rebuilds a dump into a new database with the owner/app role
+    setup, runs `migrate --check` (owner) and `integrity_check` (app role), counts key tables and
+    records the result with the restore tests; tested end to end by `make infra-test`.
+  - `infra/update.sh` records every run in `ops.UpdateRun` (from/to tag, result, start/end,
+    migration plan, migrations applied, database restored, pre-update dump, reason, log tail,
+    optional `--release-notes`) through `manage.py record_update`; an interrupted run is
+    recorded as failed by the next one.
 
 ### Security
 - Imports refuse formula cells and text starting with `=`, check the xlsx zip signature and
@@ -192,6 +220,10 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   placeholder sections left (imports, system status, data export and audit are real pages;
   `AdminSectionPage` removed). The clinic doctor-states e2e setup gets the test timeout
   instead of the 30 s hook default.
+- Phase 8 integration (`phase/8`): wave c from `main`, the phase 8 follow-ups (ADRs 0018, 0019)
+  and the docs and operations work (ADR 0020) merged together; the user guides and runbooks now
+  describe screens that exist on the same branch, and the restore drill's `integrity_check`
+  passes on data from the new returns, admission-in-error and claims second-approver flows.
 - Nurses hold `visits.admit` by default (they record the admission on the doctor's decision);
   the Nursing menu entry shows to holders of any nursing permission. A cancelled visit takes no
   nursing notes (`VISIT_CANCELLED`).

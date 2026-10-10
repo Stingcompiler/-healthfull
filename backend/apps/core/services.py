@@ -1163,6 +1163,7 @@ _POLICY_FIELDS = {
     "discount_limit_percent",
     "session_idle_minutes",
     "perform_first_roles",
+    "claims_second_approver",
 }
 
 
@@ -1177,6 +1178,9 @@ def update_policy(actor: User, **fields: Any) -> Policy:
         ValidationError: a value out of range or an unknown role code (HTTP 422 with fields).
     """
     _check_fields(fields, _POLICY_FIELDS, "policy")
+    # A client that does not send the claims switch (older screens) keeps its value.
+    if fields.get("claims_second_approver", False) is None:
+        fields.pop("claims_second_approver")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="policy"):
         Policy.load()
         current = Policy.objects.select_for_update().get(pk=Policy.SINGLETON_PK)

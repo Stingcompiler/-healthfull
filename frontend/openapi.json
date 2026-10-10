@@ -3415,6 +3415,11 @@
             "title": "Payers",
             "type": "array"
           },
+          "second_approver_required": {
+            "description": "Rebills and write-offs need a second person (Policy, ADR 0018)",
+            "title": "Second Approver Required",
+            "type": "boolean"
+          },
           "write_off_reasons": {
             "items": {
               "$ref": "#/components/schemas/ClaimReasonOut"
@@ -3427,7 +3432,8 @@
           "payers",
           "banks",
           "write_off_reasons",
-          "open_shift"
+          "open_shift",
+          "second_approver_required"
         ],
         "title": "ClaimOptionsOut",
         "type": "object"
@@ -4108,6 +4114,17 @@
       },
       "ClaimResolveIn": {
         "properties": {
+          "approver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApproverIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A second person's credentials while the policy requires one"
+          },
           "note": {
             "default": "",
             "maxLength": 500,
@@ -4239,6 +4256,17 @@
             "pattern": "^[^.٫]*(?:[.٫]\\S{0,2})?\\s*$",
             "title": "Amount",
             "type": "string"
+          },
+          "approver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApproverIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A second person's credentials while the policy requires one"
           },
           "note": {
             "default": "",
@@ -7203,6 +7231,133 @@
         "title": "DispenseQueueVisitOut",
         "type": "object"
       },
+      "DispenseReturnIn": {
+        "description": "Units a patient brought back (FEATURES 8.4): base units, an ``stock_adjust`` reason, and\nfor a billed line a second person's credentials (``pharmacy.approve_return``).",
+        "properties": {
+          "approver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApproverIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required for a billed line: someone else approves"
+          },
+          "credit_note_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An approved credit note crediting the line (links the refund)",
+            "title": "Credit Note Id"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 10000000,
+            "minimum": 1,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "reason_code": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quantity",
+          "reason_code"
+        ],
+        "title": "DispenseReturnIn",
+        "type": "object"
+      },
+      "DispenseReturnOut": {
+        "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PharmacyUserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The second person who approved (billed lines only)"
+          },
+          "credit_note_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Note Number"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "qty_base": {
+            "title": "Qty Base",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PharmacyReasonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "returned_at": {
+            "format": "date-time",
+            "title": "Returned At",
+            "type": "string"
+          },
+          "returned_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PharmacyUserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "number",
+          "qty_base",
+          "reason",
+          "note",
+          "returned_by",
+          "approved_by",
+          "returned_at",
+          "credit_note_number"
+        ],
+        "title": "DispenseReturnOut",
+        "type": "object"
+      },
       "DispenseVisitOut": {
         "properties": {
           "created_at": {
@@ -8296,6 +8451,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "on_hand": {
             "title": "On Hand",
             "type": "integer"
@@ -8321,6 +8481,7 @@
           "expired",
           "item_id",
           "item_name",
+          "item_name_ar",
           "base_unit_name_ar",
           "base_unit_name_en",
           "store",
@@ -8505,6 +8666,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "line_total": {
             "examples": [
               "150.00"
@@ -8545,6 +8711,7 @@
           "id",
           "item_id",
           "item_name",
+          "item_name_ar",
           "batch_no",
           "expiry_date",
           "unit_code",
@@ -9418,6 +9585,54 @@
             ],
             "description": "The current bed (last bed when out)"
           },
+          "cancel_approved_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpatientPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancel_note": {
+            "title": "Cancel Note",
+            "type": "string"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "admission_cancel reason code",
+            "title": "Cancel Reason"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "cancelled_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpatientPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "diagnosis": {
             "title": "Diagnosis",
             "type": "string"
@@ -9496,7 +9711,12 @@
           "discharged_at",
           "discharged_by",
           "discharge_summary",
-          "nights_charged"
+          "nights_charged",
+          "cancelled_at",
+          "cancelled_by",
+          "cancel_approved_by",
+          "cancel_reason",
+          "cancel_note"
         ],
         "title": "InpatientAdmissionOut",
         "type": "object"
@@ -9637,6 +9857,39 @@
         "title": "InpatientBoardOut",
         "type": "object"
       },
+      "InpatientCancelIn": {
+        "description": "Cancel an admission made in error (ADR 0018): an ``admission_cancel`` reason code, the\nwords, and a second person's credentials (``visits.approve_admission_cancel``).",
+        "properties": {
+          "approver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApproverIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required: someone other than the caller approves"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason_code"
+        ],
+        "title": "InpatientCancelIn",
+        "type": "object"
+      },
       "InpatientChargeOut": {
         "properties": {
           "admissions": {
@@ -9729,6 +9982,11 @@
             "title": "Nights Due",
             "type": "integer"
           },
+          "nights_invoiced": {
+            "description": "Charged nights on an approved invoice and not credited: they block cancelling the admission in error until the cashier credits them",
+            "title": "Nights Invoiced",
+            "type": "integer"
+          },
           "number": {
             "title": "Number",
             "type": "string"
@@ -9757,7 +10015,8 @@
           "diagnosis",
           "nights_charged",
           "nights_due",
-          "nights_at_discharge"
+          "nights_at_discharge",
+          "nights_invoiced"
         ],
         "title": "InpatientOccupantOut",
         "type": "object"
@@ -13077,6 +13336,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "min_stock": {
             "title": "Min Stock",
             "type": "integer"
@@ -13101,6 +13365,7 @@
         "required": [
           "item_id",
           "item_name",
+          "item_name_ar",
           "service_code",
           "base_unit_name_ar",
           "base_unit_name_en",
@@ -13149,7 +13414,8 @@
               "nurse",
               "accountant",
               "manager",
-              "admin"
+              "admin",
+              "display"
             ],
             "title": "Role",
             "type": "string"
@@ -15582,6 +15848,41 @@
           "page_size"
         ],
         "title": "Page[RefundOut]",
+        "type": "object"
+      },
+      "Page_ReturnableDispenseOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReturnableDispenseOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[ReturnableDispenseOut]",
         "type": "object"
       },
       "Page_ServiceOut_": {
@@ -18217,6 +18518,18 @@
             "title": "Allow Partial Payment",
             "type": "boolean"
           },
+          "claims_second_approver": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Omitted or null keeps the current value",
+            "title": "Claims Second Approver"
+          },
           "discount_limit_percent": {
             "additionalProperties": {
               "maximum": 100,
@@ -18235,7 +18548,8 @@
                 "nurse",
                 "accountant",
                 "manager",
-                "admin"
+                "admin",
+                "display"
               ]
             },
             "title": "Discount Limit Percent",
@@ -18288,11 +18602,12 @@
                 "nurse",
                 "accountant",
                 "manager",
-                "admin"
+                "admin",
+                "display"
               ],
               "type": "string"
             },
-            "maxItems": 11,
+            "maxItems": 12,
             "title": "Perform First Roles",
             "type": "array"
           },
@@ -18325,6 +18640,11 @@
         "properties": {
           "allow_partial_payment": {
             "title": "Allow Partial Payment",
+            "type": "boolean"
+          },
+          "claims_second_approver": {
+            "description": "Claims rebills and write-offs need a second person (ADR 0018)",
+            "title": "Claims Second Approver",
             "type": "boolean"
           },
           "default_pay_first": {
@@ -18399,9 +18719,131 @@
           "discount_limit_percent",
           "session_idle_minutes",
           "perform_first_roles",
+          "claims_second_approver",
           "updated_at"
         ],
         "title": "PolicyOut",
+        "type": "object"
+      },
+      "PortalAccessCodeRowOut": {
+        "description": "An issued code as staff see it: its state, never the code.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/PortalStaffRefOut"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "failed_attempts": {
+            "title": "Failed Attempts",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "revoke_note": {
+            "title": "Revoke Note",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "revoked_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalStaffRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "active",
+              "expired",
+              "locked",
+              "revoked"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "created_at",
+          "created_by",
+          "expires_at",
+          "last_used_at",
+          "failed_attempts",
+          "revoked_at",
+          "revoked_by",
+          "revoke_note"
+        ],
+        "title": "PortalAccessCodeRowOut",
+        "type": "object"
+      },
+      "PortalAccessCodesOut": {
+        "properties": {
+          "codes": {
+            "items": {
+              "$ref": "#/components/schemas/PortalAccessCodeRowOut"
+            },
+            "title": "Codes",
+            "type": "array"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "has_phone": {
+            "description": "A code needs a phone on the file to sign in with",
+            "title": "Has Phone",
+            "type": "boolean"
+          },
+          "patient_id": {
+            "description": "The file the codes belong to (survivor of a merge)",
+            "title": "Patient Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "patient_id",
+          "file_no",
+          "has_phone",
+          "codes"
+        ],
+        "title": "PortalAccessCodesOut",
         "type": "object"
       },
       "PortalAppointmentOut": {
@@ -18601,6 +19043,42 @@
           "phone"
         ],
         "title": "PortalCenterOut",
+        "type": "object"
+      },
+      "PortalCodeSlipOut": {
+        "description": "A code issued at reception for the printed slip (shown once).",
+        "properties": {
+          "code": {
+            "description": "Shown once; only its hash is stored",
+            "title": "Code",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "expires_at",
+          "file_no",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "PortalCodeSlipOut",
         "type": "object"
       },
       "PortalDoctorOut": {
@@ -19579,6 +20057,22 @@
         "title": "PortalResultValueOut",
         "type": "object"
       },
+      "PortalRevokeCodeIn": {
+        "properties": {
+          "note": {
+            "description": "Why the code is revoked",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "PortalRevokeCodeIn",
+        "type": "object"
+      },
       "PortalSessionOut": {
         "properties": {
           "me": {
@@ -19647,6 +20141,29 @@
           "slots"
         ],
         "title": "PortalSlotsOut",
+        "type": "object"
+      },
+      "PortalStaffRefOut": {
+        "properties": {
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "full_name_ar",
+          "full_name_en"
+        ],
+        "title": "PortalStaffRefOut",
         "type": "object"
       },
       "PortalSummaryOut": {
@@ -20980,7 +21497,8 @@
               "result_amend",
               "sample_reject",
               "patient_merge",
-              "appointment_cancel"
+              "appointment_cancel",
+              "admission_cancel"
             ],
             "title": "Category",
             "type": "string"
@@ -21055,7 +21573,8 @@
                   "result_amend",
                   "sample_reject",
                   "patient_merge",
-                  "appointment_cancel"
+                  "appointment_cancel",
+                  "admission_cancel"
                 ],
                 "type": "string"
               },
@@ -22923,6 +23442,170 @@
         "title": "ResultValueOut",
         "type": "object"
       },
+      "ReturnCreditNoteOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number"
+        ],
+        "title": "ReturnCreditNoteOut",
+        "type": "object"
+      },
+      "ReturnableDispenseOut": {
+        "properties": {
+          "dispensed_at": {
+            "format": "date-time",
+            "title": "Dispensed At",
+            "type": "string"
+          },
+          "dispensed_by": {
+            "$ref": "#/components/schemas/PharmacyUserRefOut"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ReturnableLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/DispensePatientOut"
+          },
+          "store": {
+            "$ref": "#/components/schemas/StoreOut"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "visit_id",
+          "visit_number",
+          "patient",
+          "store",
+          "dispensed_by",
+          "dispensed_at",
+          "lines"
+        ],
+        "title": "ReturnableDispenseOut",
+        "type": "object"
+      },
+      "ReturnableLineOut": {
+        "properties": {
+          "batch_no": {
+            "title": "Batch No",
+            "type": "string"
+          },
+          "billing_status": {
+            "title": "Billing Status",
+            "type": "string"
+          },
+          "credit_notes": {
+            "description": "Approved credit notes that credit the line (the cashier's refund)",
+            "items": {
+              "$ref": "#/components/schemas/ReturnCreditNoteOut"
+            },
+            "title": "Credit Notes",
+            "type": "array"
+          },
+          "expiry_date": {
+            "format": "date",
+            "title": "Expiry Date",
+            "type": "string"
+          },
+          "id": {
+            "description": "The dispense line",
+            "title": "Id",
+            "type": "integer"
+          },
+          "needs_approver": {
+            "description": "A billed line: a second person approves the return",
+            "title": "Needs Approver",
+            "type": "boolean"
+          },
+          "qty_base": {
+            "description": "Base units dispensed",
+            "title": "Qty Base",
+            "type": "integer"
+          },
+          "returnable": {
+            "description": "Base units that may still come back",
+            "title": "Returnable",
+            "type": "integer"
+          },
+          "returned": {
+            "description": "Base units already returned",
+            "title": "Returned",
+            "type": "integer"
+          },
+          "returns": {
+            "items": {
+              "$ref": "#/components/schemas/DispenseReturnOut"
+            },
+            "title": "Returns",
+            "type": "array"
+          },
+          "service": {
+            "$ref": "#/components/schemas/PharmacyNameOut"
+          },
+          "service_line_id": {
+            "title": "Service Line Id",
+            "type": "integer"
+          },
+          "unit_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Code"
+          }
+        },
+        "required": [
+          "id",
+          "service_line_id",
+          "service",
+          "batch_no",
+          "expiry_date",
+          "unit_code",
+          "qty_base",
+          "returned",
+          "returnable",
+          "billing_status",
+          "needs_approver",
+          "credit_notes",
+          "returns"
+        ],
+        "title": "ReturnableLineOut",
+        "type": "object"
+      },
       "RevokeIn": {
         "properties": {
           "note": {
@@ -24760,6 +25443,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "note": {
             "title": "Note",
             "type": "string"
@@ -24773,6 +25461,7 @@
           "id",
           "item_id",
           "item_name",
+          "item_name_ar",
           "batch_id",
           "batch_no",
           "expiry_date",
@@ -25099,6 +25788,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "note": {
             "title": "Note",
             "type": "string"
@@ -25134,6 +25828,7 @@
           "id",
           "item_id",
           "item_name",
+          "item_name_ar",
           "base_unit_name_ar",
           "base_unit_name_en",
           "batch_id",
@@ -25306,6 +26001,12 @@
             "title": "Generic Name",
             "type": "string"
           },
+          "generic_name_ar": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Generic Name Ar",
+            "type": "string"
+          },
           "is_controlled": {
             "default": false,
             "title": "Is Controlled",
@@ -25406,6 +26107,11 @@
             "title": "Generic Name",
             "type": "string"
           },
+          "generic_name_ar": {
+            "description": "Empty: the Arabic screens show the Latin name",
+            "title": "Generic Name Ar",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -25461,6 +26167,7 @@
           "id",
           "service",
           "generic_name",
+          "generic_name_ar",
           "brand_name",
           "form",
           "strength",
@@ -25536,6 +26243,11 @@
             "title": "Generic Name",
             "type": "string"
           },
+          "generic_name_ar": {
+            "description": "Empty: the Arabic screens show the Latin name",
+            "title": "Generic Name Ar",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -25591,6 +26303,7 @@
           "id",
           "service",
           "generic_name",
+          "generic_name_ar",
           "brand_name",
           "form",
           "strength",
@@ -25712,6 +26425,18 @@
               }
             ],
             "title": "Generic Name"
+          },
+          "generic_name_ar": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generic Name Ar"
           },
           "is_controlled": {
             "anyOf": [
@@ -25898,6 +26623,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "qty_base": {
             "title": "Qty Base",
             "type": "integer"
@@ -25907,6 +26637,7 @@
           "id",
           "item_id",
           "item_name",
+          "item_name_ar",
           "batch_id",
           "batch_no",
           "expiry_date",
@@ -26119,6 +26850,11 @@
             "title": "Item Name",
             "type": "string"
           },
+          "item_name_ar": {
+            "description": "The Arabic generic name, else the Latin one",
+            "title": "Item Name Ar",
+            "type": "string"
+          },
           "on_hand": {
             "title": "On Hand",
             "type": "integer"
@@ -26147,6 +26883,7 @@
           "days_left",
           "item_id",
           "item_name",
+          "item_name_ar",
           "base_unit_name_ar",
           "base_unit_name_en"
         ],
@@ -26897,11 +27634,12 @@
                 "nurse",
                 "accountant",
                 "manager",
-                "admin"
+                "admin",
+                "display"
               ],
               "type": "string"
             },
-            "maxItems": 11,
+            "maxItems": 12,
             "minItems": 1,
             "title": "Roles",
             "type": "array"
@@ -26974,7 +27712,8 @@
                   "nurse",
                   "accountant",
                   "manager",
-                  "admin"
+                  "admin",
+                  "display"
                 ],
                 "type": "string"
               },
@@ -27164,11 +27903,12 @@
                     "nurse",
                     "accountant",
                     "manager",
-                    "admin"
+                    "admin",
+                    "display"
                   ],
                   "type": "string"
                 },
-                "maxItems": 11,
+                "maxItems": 12,
                 "minItems": 1,
                 "type": "array"
               },
@@ -28505,6 +29245,14 @@
       },
       "WaitingRoomOut": {
         "properties": {
+          "departments": {
+            "description": "Active departments, for the screen's clinic picker (ADR 0019)",
+            "items": {
+              "$ref": "#/components/schemas/VisitDepartmentOut"
+            },
+            "title": "Departments",
+            "type": "array"
+          },
           "serving": {
             "items": {
               "$ref": "#/components/schemas/DisplayEntryOut"
@@ -28522,7 +29270,8 @@
         },
         "required": [
           "serving",
-          "waiting"
+          "waiting",
+          "departments"
         ],
         "title": "WaitingRoomOut",
         "type": "object"
@@ -34488,7 +35237,7 @@
     },
     "/api/claims/batches/{claim_id}/lines/{line_id}/resolve": {
       "post": {
-        "description": "409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN.",
+        "description": "409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN, SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID.",
         "operationId": "claims_resolve_rejection",
         "parameters": [
           {
@@ -34595,7 +35344,7 @@
     },
     "/api/claims/batches/{claim_id}/lines/{line_id}/write-off": {
       "post": {
-        "description": "409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT.",
+        "description": "409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT, SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID.",
         "operationId": "claims_write_off_shortfall",
         "parameters": [
           {
@@ -40931,7 +41680,8 @@
                     "result_amend",
                     "sample_reject",
                     "patient_merge",
-                    "appointment_cancel"
+                    "appointment_cancel",
+                    "admission_cancel"
                   ],
                   "type": "string"
                 },
@@ -41716,7 +42466,8 @@
                     "nurse",
                     "accountant",
                     "manager",
-                    "admin"
+                    "admin",
+                    "display"
                   ],
                   "type": "string"
                 },
@@ -52736,6 +53487,104 @@
         ]
       }
     },
+    "/api/pharmacy/dispense-lines/{dispense_line_id}/returns": {
+      "post": {
+        "description": "409 RETURN_EXCEEDS_DISPENSED, SECOND_APPROVER_REQUIRED (billed line), APPROVER_NOT_PERMITTED, APPROVER_INVALID, REFUND_SOURCE_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED.",
+        "operationId": "pharmacy_return_dispensed_units",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dispense_line_id",
+            "required": true,
+            "schema": {
+              "title": "Dispense Line Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispenseReturnIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReturnableDispenseOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Put units a patient brought back on the shelf (stock only; refunds at the cashier)",
+        "tags": [
+          "pharmacy"
+        ]
+      }
+    },
     "/api/pharmacy/dispenses": {
       "post": {
         "description": "Stock leaves at this moment (invariant 5). A line given in part keeps its rest open (`remainder: defer`) or cancels and refunds it (`refund`), which needs a billing.approve_credit_note holder: the actor, or a supervisor typing their credentials into `approver` (409 APPROVER_INVALID on wrong credentials).",
@@ -54817,6 +55666,124 @@
         ]
       }
     },
+    "/api/pharmacy/returns": {
+      "get": {
+        "operationId": "pharmacy_list_returnable_dispenses",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ReturnableDispenseOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Dispenses whose units may come back (last 30 days, or any by number, file or name)",
+        "tags": [
+          "pharmacy"
+        ]
+      }
+    },
     "/api/pharmacy/sale/customers": {
       "get": {
         "operationId": "pharmacy_list_sale_customers",
@@ -56067,6 +57034,104 @@
         ]
       }
     },
+    "/api/portal/access-codes/{code_id}/revoke": {
+      "post": {
+        "description": "409 `PORTAL_CODE_ALREADY_REVOKED`, `REASON_REQUIRED`.",
+        "operationId": "portal_revoke_access_code",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code_id",
+            "required": true,
+            "schema": {
+              "title": "Code Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalRevokeCodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalAccessCodesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Revoke a portal access code (a lost slip): it stops working, its sessions end",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
     "/api/portal/appointments": {
       "get": {
         "operationId": "portal_list_appointments",
@@ -56625,6 +57690,179 @@
           }
         ],
         "summary": "The signed-in patient's profile summary",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/patients/{patient_id}/access-codes": {
+      "get": {
+        "operationId": "portal_list_patient_access_codes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalAccessCodesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A file's portal access codes, newest first (their state, never the codes)",
+        "tags": [
+          "portal"
+        ]
+      },
+      "post": {
+        "description": "Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.",
+        "operationId": "portal_issue_patient_access_code",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "schema": {
+              "title": "Patient Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalCodeSlipOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Issue a portal access code from the patient's file for a printed slip (shown once)",
         "tags": [
           "portal"
         ]
@@ -63028,6 +64266,104 @@
         ]
       }
     },
+    "/api/visits/inpatient/admissions/{admission_id}/cancel": {
+      "post": {
+        "description": "Frees the bed and voids the nights still unbilled. 409 NOT_ADMITTED, ADMISSION_NIGHTS_INVOICED (credit them at the cashier first), SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED.",
+        "operationId": "visits_cancel_admission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "admission_id",
+            "required": true,
+            "schema": {
+              "title": "Admission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InpatientCancelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientAdmissionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Cancel an admission made in error, approved by a second person (ADR 0018)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
     "/api/visits/inpatient/admissions/{admission_id}/discharge": {
       "post": {
         "description": "409 NOT_ADMITTED.",
@@ -63861,7 +65197,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Waiting-room screen feed: paid tokens, abbreviated names",
+        "summary": "Waiting-room screen feed: paid tokens, abbreviated names, the clinics to pick",
         "tags": [
           "visits"
         ]

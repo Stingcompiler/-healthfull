@@ -37,6 +37,7 @@ All use the test password `E2E_PASSWORD` (`fixtures/users.ts`).
 | Username | Role | Notes |
 |---|---|---|
 | `reception`, `doctor`, `cashier`, `cashsup`, `pharmacist`, `labtech`, `labsup`, `nurse`, `accountant`, `manager`, `admin` | one role each (`USERS`) | `doctor` is the general practitioner (GEN) |
+| `display` | display (`USERS`) | the waiting-room kiosk account: `/display/queue` only (ADR 0019); `login()` expects the staff shell, so sign it in with `submitLogin` |
 | `pediatrician`, `gynecologist`, `dentist` | doctor (`EXTRA_DOCTORS`) | PED, GYN, DEN clinics |
 | `root` | superuser, no role | break-glass account only |
 
@@ -226,3 +227,7 @@ has no usable adapter: `E2E_FACTORY_MODE=api make e2e E2E_GREP=@cashier` proves 
   (`module-routes/portal.ts`) sign the page in to the portal there (`auth: false`, since the
   staff session plays no part). Portal data comes from the `portal_patient` fixture
   (`apps/portal/e2e_fixtures.py`); the portal specs are tagged `@portal`.
+
+Phase 8 follow-up specs live in `tests/followups/` (tag `@followups`); the pharmacy returns
+screen gets a dispensed prescription from the `pharmacy_dispensed` fixture
+(`apps/pharmacy/e2e_fixtures.py`).

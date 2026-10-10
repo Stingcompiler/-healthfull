@@ -1,6 +1,6 @@
 # 0012: Claim answers, rejection approvals and payer payment allocation on the claim screens
 
-Date: 2026-10-09. Status: accepted.
+Date: 2026-10-09. Status: accepted; rebill and write-off approval amended by ADR 0018.
 
 ## Context
 Phase 1 built the claims engine (`apps/claims/services.py`, `domain/claims.py`, ADR 0006 (b),
@@ -30,6 +30,8 @@ and what "the payer's format" of an exported claim is.
   is mandatory, a note when the reason asks for one; approver, reason and time are stored on
   the claim line (invariant 4). No second person is required, unlike refunds (ADR 0006 (e)):
   no money leaves the center, the receivable moves to the patient or to `WRITE_OFF`.
+  **Amended by ADR 0018:** a second person now approves by default
+  (`Policy.claims_second_approver`); this paragraph describes the switch turned off.
 - **Payer cash.** Cash from a payer goes into the recorder's own open shift (ADR 0006 (d)).
   The screen offers cash only when the viewer has an open shift (`/api/claims/options`
   returns it); an accountant without a till records transfers and cheques.

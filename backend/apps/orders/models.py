@@ -12,10 +12,12 @@ Database backstops (the domain and services check first, these catch bypasses):
 * ``line_guard`` trigger: a line enters ``in_progress``/``performed`` only while settled or
   under an unrevoked ``PerformAuthorization`` of its own visit (invariant 1); a line starts
   unbilled and becomes invoiced/settled only once a frozen line of an approved invoice bills
-  it; terminal fulfilment states never change; billing moves only along the arrows above; a
-  billed line keeps its quantity, service, kind, payer and visit, and is cancelled only
-  together with its credit; a line with dispensed units is never cancelled (its given units
-  are performed and only the rest is closed); lines are never deleted (cancel them).
+  it; terminal fulfilment states never change (except the unbilled bed night of an
+  admission cancelled in error, voided with it, ADR 0018); billing moves only along the
+  arrows above; a billed line keeps its quantity, service, kind, payer and visit, and is
+  cancelled only together with its credit; a line with dispensed units is never cancelled
+  (its given units are performed and only the rest is closed); lines are never deleted
+  (cancel them).
 * ``authorization_guard`` trigger: an authorization's decision fields never change, a
   revocation is final, and authorizations are never deleted (invariant 4).
 * Check constraints: every cancellation records reason, actor and time (invariant 4), every
@@ -160,7 +162,19 @@ _LINE_GUARD_SQL = """
     END IF;
     IF TG_OP = 'UPDATE' THEN
         IF OLD.fulfilment_status IN ('performed', 'cancelled')
-           AND NEW.fulfilment_status IS DISTINCT FROM OLD.fulfilment_status THEN
+           AND NEW.fulfilment_status IS DISTINCT FROM OLD.fulfilment_status
+           AND NOT (
+               -- ADR 0018: the one exception. An unbilled bed night of an admission
+               -- cancelled in error is voided (nothing was billed: invariants 2 and 3).
+               OLD.fulfilment_status = 'performed' AND NEW.fulfilment_status = 'cancelled'
+               AND OLD.billing_status = 'unbilled' AND NEW.billing_status = 'unbilled'
+               AND OLD.order_source = 'bed_charge'
+               AND EXISTS (
+                   SELECT 1 FROM visits_bedcharge bc
+                     JOIN visits_admission a ON a.id = bc.admission_id
+                    WHERE bc.service_line_id = OLD.id AND a.status = 'cancelled'
+               )
+           ) THEN
             RAISE EXCEPTION 'LINE_TERMINAL: service line % is already %',
                 OLD.id, OLD.fulfilment_status;
         END IF;

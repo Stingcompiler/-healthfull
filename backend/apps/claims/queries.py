@@ -30,7 +30,7 @@ from apps.claims.models import (
     PayerPaymentAllocation,
     PayerPaymentMethod,
 )
-from apps.core.models import CenterProfile, ReasonCode, User
+from apps.core.models import CenterProfile, Policy, ReasonCode, User
 from apps.patients.models import Patient, PatientCoverage
 from apps.payments.models import Bank, Shift, ShiftStatus
 from domain import claims as dclaims
@@ -134,6 +134,7 @@ def options(viewer: User) -> dict[str, Any]:
         ],
         "write_off_reasons": [_reason(r) for r in reasons],
         "open_shift": _shift(shift),
+        "second_approver_required": Policy.load().claims_second_approver,
     }
 
 

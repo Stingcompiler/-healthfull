@@ -4,6 +4,7 @@ import { PatientImportPage } from "./pages/PatientImportPage";
 import { PatientNewPage } from "./pages/PatientNewPage";
 import { PatientProfilePage } from "./pages/PatientProfilePage";
 import { PatientsPage } from "./pages/PatientsPage";
+import { PortalCodePage } from "./pages/PortalCodePage";
 
 export interface PatientsSearch {
   /** Search text, e.g. from the global quick search's "show all". */
@@ -36,5 +37,10 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     path: "/patients/$patientId",
     component: PatientProfilePage,
   });
-  return [index, create, importing, profile] as const;
+  const portalCode = createRoute({
+    getParentRoute: () => parent,
+    path: "/patients/$patientId/portal-code",
+    component: PortalCodePage,
+  });
+  return [index, create, importing, profile, portalCode] as const;
 }

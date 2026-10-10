@@ -10,9 +10,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merged to main (PR #4) | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merged to main (PR #4) | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merged to main (PR #5) | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
-| 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merge to main pending (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
-| 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merge to main pending (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
-| 8. Hardening and handover | not started | |
+| 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merged to main (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
+| 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merged to main (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
+| 8. Hardening and handover | in progress on `phase/8` | merged into `phase/8`: follow-ups from `feat/8-followups` (admission in error, dispense returns, `display` role, reception portal codes, claims second approver, Arabic generic names; ADRs 0018, 0019) and docs and operations from `feat/8-docs` (README, user guides, runbooks, `integrity_check`, restore drill, UpdateRun from `update.sh`, ADR 0020); `feat/8-cycle` (ADR 0017) still in progress |
 
 ## Phase 0 checklist
 
@@ -100,8 +100,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - [x] Billing, payments and shifts (Phase 4, `feat/a-cashier`): merged in the second wave a
   integration (see the log).
-- Kiosk: `/display/queue` runs in a signed-in session of a user with `visits.view_queue`; a
-  display-only role needs a core role change.
+- [x] Kiosk: `/display/queue` runs in a signed-in session of a user with `visits.view_queue`; a
+  display-only role needs a core role change. Done on `feat/8-followups`: the `display` role
+  holds only `visits.view_display` (ADR 0019).
 - Paid-visit cancellation: reception sees the `billed` flag and a supervisor
   (`cashier_supervisor`) cancels directly; there is no in-app request for supervisor approval.
 - [x] `/administration/imports` is the import wizard since wave c (ops follow-ups).
@@ -132,9 +133,12 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - [x] FEATURES 8.13 (Excel import of items, batches and opening stock) built in wave c (ops,
   ADR 0014).
-- Dispense returns (`pharmacy.services.return_dispense`) have no endpoint or screen yet.
-- Stock lists show the item's generic name and strength (Latin, as printed on packs); the item
+- [x] Dispense returns (`pharmacy.services.return_dispense`) have no endpoint or screen yet.
+  Done on `feat/8-followups`: `/pharmacy/returns`, a second approver for paid lines (ADR 0018).
+- [x] Stock lists show the item's generic name and strength (Latin, as printed on packs); the item
   has no Arabic generic name. The queue, dispense dialog and sale use the bilingual service name.
+  Done on `feat/8-followups`: `Item.generic_name_ar` (item screens, admin, import template); the
+  Arabic stock lists show it, the Latin name when it is empty.
 - A new walk-in customer gets a patient file without the duplicate check (the sale screen offers
   "existing file" search first); reception merges duplicates later (FEATURES 1.4).
 - The walk-in sale screen sits under the pharmacy nav entry (pharmacy codes); a cashier, who
@@ -149,8 +153,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - [x] Bed nights reach the cashier when a nurse posts them on the bed board, at discharge, or when
   `manage.py charge_bed_nights --as <user>` runs; since wave c the compose `maintenance` loop
   runs it hourly as `BED_CHARGE_USER` (ops follow-ups).
-- No "admission in error" action: `AdmissionStatus.CANCELLED` exists but has no reason, approver
+- [x] No "admission in error" action: `AdmissionStatus.CANCELLED` exists but has no reason, approver
   and time columns (invariant 4). Today the nurse discharges and the cashier credits the night.
+  Done on `feat/8-followups` (ADR 0018): cancel with a reason and a second person; unbilled
+  nights voided, invoiced nights credited at the cashier first.
 - The doctor's workspace shows the vitals a nurse records, but not the nursing notes (they are on
   the nursing chart, which doctors can open).
 - Consumables used per procedure (FEATURES 10.4, P2) and the medication administration record
@@ -176,9 +182,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (claims, wave b)
 
-- FEATURES 11.5 asks for approval of rebills and write-offs: today the recording user with
+- [x] FEATURES 11.5 asks for approval of rebills and write-offs: today the recording user with
   `claims.resolve_rejection` is the approver (reason and time recorded, no second person;
-  ADR 0012). Add a second-person check if centers want one.
+  ADR 0012). Add a second-person check if centers want one. Done on `feat/8-followups`: a
+  second person by default, `Policy.claims_second_approver` (ADR 0018 amends ADR 0012).
 - One export layout (Excel and A4 print, Arabic or English) for every payer; a payer that wants
   its own column order or codes needs a per-payer export template (ADR 0012).
 - A payer cash payment goes into the recorder's own open shift; an accountant has no till, so a
@@ -226,10 +233,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
   supplier per store.
 - [x] Bed nights are charged by the maintenance loop as `BED_CHARGE_USER` (empty skips it).
 - Manual backups need the backup service: in development and e2e a request stays pending.
-- `UpdateRun` rows are not written by `infra/update.sh` yet; the update history shows its JSON
-  log (`update-runs.jsonl`) and any recorded `UpdateRun` with release notes. Writing release
-  notes into `UpdateRun` from the update script is open (13.10 "update trigger" stays the
-  runbook's `infra/update.sh`).
+- [x] `UpdateRun` rows are written by `infra/update.sh` since phase 8 (`manage.py
+  record_update`, ADR 0020): every run with its plan, outcome, rollback and `--release-notes`.
+  The API (`/api/ops/updates`) and status page do not show the new columns yet (13.10 "update
+  trigger" stays the runbook's `infra/update.sh`).
 - Notifications are polled every minute (no push); the bell lists the latest 15.
 - Model names in the audit viewer are translated for the main records; the rest show Django's
   English verbose name. Field names are shown as database columns.
@@ -242,9 +249,11 @@ Source of truth for build status. Update at the end of every task. Phases from `
   only, on `/portal/results` (lab follow-up above).
 - No self-service code request: a lost receipt means asking the cashier for a new code (which
   ends the old code's sessions). SMS delivery is FEATURES 15.3 (Later).
-- Codes are issued from the cashier's receipt screen only; reception (which also holds
+- [x] Codes are issued from the cashier's receipt screen only; reception (which also holds
   `portal.issue_access_code`) has no screen for it, and `portal.revoke_access_code` has no
-  endpoint yet (a new code revokes the old ones).
+  endpoint yet (a new code revokes the old ones). Done on `feat/8-followups`: the portal card
+  on the patient's file, the slip page `/patients/$patientId/portal-code`, and
+  `POST /api/portal/access-codes/{id}/revoke`.
 - Rotating `SECRET_KEY` invalidates the QR of every printed receipt (ADR 0016); the staff check
   by receipt number keeps working.
 - The portal shows no clinical notes, referrals or allergies; instructions are the dosing
@@ -284,13 +293,53 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - 14.4: sign-in audit (`AuthEvent`), lockout and throttling (Phase 0, ADR 0004); the audit trail
   viewer since wave c.
 - 14.5: pgBackRest repositories are always encrypted (`aes-256-cbc`, `infra/backup/`).
-- 14.6: `docs/runbooks/backup-restore.md` and `install.md`; a timed replace-the-server drill
-  has not been run (no Docker on the build machine).
+- 14.6: `docs/runbooks/backup-restore.md`, `install.md` and `operations.md`; the
+  restore-from-scratch drill (`infra/backup/restore-drill.sh`: new database, owner/app roles,
+  `migrate --check`, `integrity_check`, row counts, recorded) runs end to end in
+  `make infra-test` on local PostgreSQL. A timed replace-the-server drill with the Docker images
+  on real hardware has not been run (no Docker on the build machine).
 
-## Next: merge wave c to main, then Phase 8
+## Follow-ups (docs and operations, phase 8)
 
-Wave c (reports, ops, patient portal, with `main`'s transfer rejection fix) is complete on
-`wave/c` (PR #7). Take it to `main`, then Phase 8 (hardening and handover).
+Found while writing the user guides against the code (`feat/8-docs`); none is fixed there:
+
+- Nav reach: a cashier holds `billing.pharmacy_sale` but the pharmacy nav entry needs
+  `pharmacy.dispense`/`pharmacy.view` (URL only, `/pharmacy/sale`); a receptionist holds
+  `visits.admit` and `lab.print_results` but cannot reach the bed board or a lab result from the
+  nav; a nurse holds `lab.collect_sample` (no lab work list without `lab.view_worklist`) and
+  `clinical.manage_allergies` (allergy editing lives only in the doctor's workspace); a nurse sees
+  «العيادة» with an empty "My patients" and «نداء التالي» answers `DOCTOR_PROFILE_REQUIRED`.
+- Managers get `transfer_rejected` notifications linking to `/cashier/transfers`, whose API
+  needs `payments.confirm_transfer` (PERMISSION_DENIED).
+- Registered but unused codes: `payments.manage_banks`, `ledger.view`, `ledger.manage_accounts`.
+- The accountant holds `billing.apply_discount` without `billing.create_invoice` (discount
+  actions on drafts they cannot otherwise edit) and cannot approve a desk discount
+  (`billing.override_discount_limit`).
+- The dashboard's stale-transfer alert uses a fixed 2 days; the notification uses
+  `Policy.pending_transfer_alert_days` (3).
+- Wording names fewer roles than can act: the shift review form «اعتماد المدير» and
+  `SELF_REVIEW_NOT_ALLOWED` (supervisors and accountants review too), `SELF_APPROVAL_NOT_ALLOWED`
+  (accountants approve refunds), `OVERRIDE_NOT_PERMITTED` (admin may override); `portal.login.help`
+  names only the cashier (reception and lab supervisors issue codes too).
+- Approver UI: pharmacy uses a switch «يعتمد المشرف الآن», `SecondApproverFields` shows its fields
+  always, lab cancel spells «المعتمد» without the shadda; a short transfer receipt without the
+  switch answers a bare `PERMISSION_DENIED`.
+- The dispense dialog lists expired batches and lets override mode fill them (the server refuses
+  with `BATCH_EXPIRED`).
+- On `feat/8-followups`: `claims.shortfall.description` still says the recorder is the approver;
+  the item import's `generic_name_ar` column has no `imports.field.generic_name_ar` label; the
+  `display` role can be combined with person roles on the users screen (ADR 0019 says alone).
+- No screen closes a visit (`visits.close`, «ختم الزيارة») although FLOW.md has the doctor close
+  it; the kiosk page has no sign-out; «دليل التصميم» shows in every user's menu.
+- Operations: the new `UpdateRun` columns are not in `/api/ops/updates` or on the status page;
+  no scheduled `integrity_check` with an in-app alert; the production drill runs in two parts
+  (backup container, then the app containers) because no image has both `pg_restore` and Django.
+
+## Next: finish Phase 8 on `phase/8`
+
+Wave c is on `main` (PR #7, `39dd731`) and merged into `phase/8`. `feat/8-followups` and
+`feat/8-docs` are merged into `phase/8`; merge `feat/8-cycle` (ADR 0017) when it is done, then
+run the full `make e2e` on `phase/8` and take it to `main`.
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.
@@ -544,3 +593,61 @@ Wave c (reports, ops, patient portal, with `main`'s transfer rejection fix) is c
   passed 155 and 161 in two reruns, every failure again `ERR_NETWORK_CHANGED`, and the last
   one (`claims-build` 1280 warm ar) passed alone. Every route passed at 375, 768 and 1280 in
   at least one run with the bell in the shell.
+- 2026-10-10: Phase 8 follow-ups on `feat/8-followups` (from `phase/8`, ADRs 0018, 0019): admission
+  in error (cancel with an `admission_cancel` reason and a second person's credentials; unbilled
+  bed nights voided through the one documented exception to "performed is terminal",
+  `line_guard` allows it only for a bed night of a cancelled admission; invoiced nights block
+  until the cashier credits them); dispense returns (`/pharmacy/returns`, stock back into the
+  original batch through the stock engine, reason required, second approver for billed lines,
+  refunds stay with the cashier's credit note); the `display` kiosk role (12th role, only
+  `visits.view_display`, 403 sweep over the whole contract); portal codes from the patient's
+  file with a printable slip and `POST /api/portal/access-codes/{id}/revoke`; a second person
+  for claims rebills and write-offs behind `Policy.claims_second_approver` (default on,
+  amends ADR 0012); `Item.generic_name_ar` (item screens, admin, import template, Arabic stock
+  lists). Migrations: core 0012-0015, visits 0004, orders 0004, pharmacy 0005-0006, claims
+  0004, portal 0004. Results: `make check` green (backend 2201 passed, frontend 486 passed,
+  ruff, mypy, eslint, prettier and tsc clean, no missing migrations, API contract in sync;
+  shellcheck not installed here). e2e: `@followups` 12 specs passed; with `@admin`, the
+  admin-policies, claims-detail, nursing-beds and pharmacy-returns matrices and the route
+  registry 121 of 121 passed; earlier runs on the branch: `@nursing|@pharmacy|@followups` with
+  the nursing-beds and pharmacy-returns matrices 50 passed (2 console-filter failures fixed,
+  then `@followups` 5 of 5); display role, `@patients`, `@admin`, `@auth`, queue-display 71
+  of 73 (the 2 failures were e2e_fixture processes hitting a half-edited admin file of this
+  branch, both passed in the next run); `@followups|@claims|@portal|@pharmacy` with the
+  patient-portal-code and pharmacy list matrices 121 of 121. ADR numbers: 0017 is reserved for
+  `feat/8-cycle`; the next free one is 0020.
+- 2026-10-10: Phase 8 docs and operations on `feat/8-docs` (from `phase/8`): `README.md`; Arabic
+  user guides with English summaries in `docs/guides/` (12 roles including the waiting-room
+  display, basics, patient portal; labels and routes checked against the ar locale files and
+  route files, phase 8 follow-up screens documented as they will exist); runbooks reviewed and
+  completed (new `operations.md` and index; restore drill, post-restore checks, update history
+  and first-run steps; commands checked against the scripts, Makefile and compose file);
+  `infra/update.sh` writes `ops.UpdateRun` through `manage.py record_update` (ops migration
+  0004, columns with database defaults for rollbacks); `manage.py integrity_check`
+  (`apps/ops/integrity.py`, `domain/integrity.py`); `infra/backup/restore-drill.sh` and
+  `infra/tests/test_restore_drill.sh`; the CI infra job gets the backend environment
+  (`REQUIRE_DJANGO=1`); ADR 0020. Results: `make check` green (backend 2136 passed, frontend 485
+  passed, ruff, mypy, eslint, prettier and tsc clean, no missing migrations, API contract in
+  sync; shellcheck not installed here). `make infra-test` 67 checks passed (pgbackrest conf 6,
+  update.sh 26, app entrypoint 4, db roles 14, backup/restore 11, restore drill 6). No e2e run:
+  no screen changed.
+- 2026-10-10: Phase 8 integration on `phase/8`: merged `origin/main` (wave c, PR #7, `39dd731`;
+  same tree as `phase/8`, no file changes), `feat/8-followups` and `feat/8-docs`, in that
+  order, `--no-ff`. Conflicts: followups merged without any; docs: `CHANGELOG.md` and
+  `PROGRESS.md` only (both entries kept). `docs/ARCHITECTURE.md` merged cleanly: the docs
+  branch's layout, `make infra-test`, ops app, integrity-check and infra-test rows sit beside the
+  followups' 4.4 rule 6 exception and the 12-role line in 4.10. No migration clashes (core
+  0012-0015, visits 0004, orders 0004, pharmacy 0005-0006, claims 0004, portal 0004 from
+  followups; ops 0004 from docs), so no merge migration; `errors.json` and the generated API
+  files were touched by followups only, and `make api` reproduced them byte for byte (api-check
+  in sync). ADRs 0018, 0019, 0020 present; 0017 stays reserved for `feat/8-cycle`. Results with
+  `DB_NAME=dev_hospital_merge8`, `TEST_DB_NAME=test_hospital_merge8`: `make check` green
+  (backend 2228 passed in 19 min, frontend 486 passed; ruff, ruff format, mypy, eslint,
+  prettier, tsc for frontend and e2e clean; no missing migrations; API contract in sync;
+  shellcheck not installed here); a fresh `migrate` of `dev_hospital_merge8` applied every
+  migration; `make infra-test` with `REQUIRE_DJANGO=1` 67 checks passed (pgbackrest conf 6,
+  update.sh 26, app entrypoint 4, db roles 14, backup/restore 11, restore drill 6);
+  `make e2e E2E_GREP="@followups|@nursing|@pharmacy|@claims|@portal|@patients|@admin|route
+  registry"` 76 of 76 passed (20.9 min), no flakes; `manage.py integrity_check` on the e2e
+  database afterwards (returns, cancelled admissions, claims, portal data) passed every check.
+  The full e2e runs after `feat/8-cycle` is merged.

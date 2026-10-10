@@ -323,6 +323,13 @@ class Policy(SingletonModel):
         default=_default_perform_first_roles,
         help_text="Role codes allowed to authorize perform-first exceptions.",
     )
+    claims_second_approver = models.BooleanField(
+        default=True,
+        help_text=(
+            "Rebills and write-offs of payer rejections need a second person besides the "
+            "recording user (FEATURES 11.5, ADR 0018)."
+        ),
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta(SingletonModel.Meta):
@@ -411,7 +418,8 @@ class Sequence(models.Model):
 
 
 class ReasonCategory(models.TextChoices):
-    """What a reason code explains. Seeded by migrations ``0007_seed_reason_codes`` and ``0009``."""
+    """What a reason code explains. Seeded by migrations ``0007_seed_reason_codes``, ``0009``
+    and ``0012``."""
 
     LINE_CANCEL = "line_cancel", "Service line cancellation"
     VISIT_CANCEL = "visit_cancel", "Visit cancellation"
@@ -428,6 +436,7 @@ class ReasonCategory(models.TextChoices):
     SAMPLE_REJECT = "sample_reject", "Lab sample rejection"
     PATIENT_MERGE = "patient_merge", "Patient file merge"
     APPOINTMENT_CANCEL = "appointment_cancel", "Appointment cancellation"
+    ADMISSION_CANCEL = "admission_cancel", "Admission made in error"
 
 
 @pghistory.track(*_full_history())
