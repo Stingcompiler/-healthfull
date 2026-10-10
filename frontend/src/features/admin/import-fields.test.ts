@@ -33,7 +33,10 @@ describe.skipIf(Object.keys(sources).length === 0)("import column labels", () =>
   });
 
   it("labels every column in both languages", () => {
-    const labels = { en: en.ops.imports.field as Record<string, string>, ar: ar.ops.imports.field as Record<string, string> };
+    const labels = {
+      en: en.ops.imports.field as Record<string, string>,
+      ar: ar.ops.imports.field as Record<string, string>,
+    };
     for (const [lang, field] of Object.entries(labels)) {
       const missing = [...keys].filter((key) => !field[key]);
       expect(missing, `add ops:imports.field.<key> (${lang})`).toEqual([]);

@@ -509,13 +509,41 @@ function UpdateRunItem({ run }: { run: UpdateRun }) {
         </span>
         <Badge variant={runVariant(run.result)}>{t(`system.updateResult.${run.result}`)}</Badge>
       </div>
-      {run.release_notes ? (
-        <details>
-          <summary className="cursor-pointer text-primary-strong">{t("system.releaseNotes")}</summary>
-          <p className="mt-2 break-words whitespace-pre-line text-fg">{run.release_notes}</p>
-        </details>
+      <div className="flex flex-wrap gap-1.5" data-testid="update-run-facts">
+        <Badge variant={run.migrations_applied ? "info" : "neutral"}>
+          {t(run.migrations_applied ? "system.migrationsApplied" : "system.noMigrations")}
+        </Badge>
+        {run.db_restored ? <Badge variant="warning">{t("system.dbRestored")}</Badge> : null}
+      </div>
+      {run.detail ? <p className="break-words text-fg">{run.detail}</p> : null}
+      {run.backup_file ? (
+        <p className="text-muted">
+          {t("system.backupFile")} <bdi className="break-all text-fg">{run.backup_file}</bdi>
+        </p>
       ) : null}
+      {run.release_notes ? <RunText summary={t("system.releaseNotes")} text={run.release_notes} /> : null}
+      {run.migration_plan ? <RunText summary={t("system.migrationPlan")} text={run.migration_plan} code /> : null}
+      {run.log ? <RunText summary={t("system.runLog")} text={run.log} code /> : null}
     </li>
+  );
+}
+
+/** A long text of an update run, folded: release notes, the migration plan or the script's log. */
+function RunText({ summary, text, code = false }: { summary: string; text: string; code?: boolean }) {
+  return (
+    <details>
+      <summary className="cursor-pointer text-primary-strong">{summary}</summary>
+      {code ? (
+        <pre
+          dir="ltr"
+          className="mt-2 max-h-72 overflow-auto rounded-control border border-border p-2 text-start text-xs break-words whitespace-pre-wrap text-fg"
+        >
+          {text}
+        </pre>
+      ) : (
+        <p className="mt-2 break-words whitespace-pre-line text-fg">{text}</p>
+      )}
+    </details>
   );
 }
 

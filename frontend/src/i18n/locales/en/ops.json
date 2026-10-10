@@ -250,6 +250,12 @@
       "rolled_back": "Rolled back"
     },
     "releaseNotes": "Release notes",
+    "migrationPlan": "Database changes planned",
+    "runLog": "Update log",
+    "migrationsApplied": "Database changes applied",
+    "noMigrations": "No database changes",
+    "dbRestored": "Database restored from the pre-update backup",
+    "backupFile": "Pre-update backup:",
     "updateFromTo": "{{from, bidi}} to {{to, bidi}}"
   },
   "export": {

@@ -34,7 +34,10 @@ export function CheckOption({
           onCheckedChange(value === true);
         }}
       />
-      <Label htmlFor={id} className="flex flex-1 cursor-pointer flex-col items-start justify-center self-stretch font-normal">
+      <Label
+        htmlFor={id}
+        className="flex flex-1 cursor-pointer flex-col items-start justify-center self-stretch font-normal"
+      >
         {label}
         {hint ? <span className="text-xs text-muted">{hint}</span> : null}
       </Label>

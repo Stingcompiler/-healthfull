@@ -282,6 +282,12 @@
       "rolled_back": "تم التراجع"
     },
     "releaseNotes": "ملاحظات الإصدار",
+    "migrationPlan": "تغييرات قاعدة البيانات المخططة",
+    "runLog": "سجل التحديث",
+    "migrationsApplied": "طُبّقت تغييرات على قاعدة البيانات",
+    "noMigrations": "بلا تغييرات على قاعدة البيانات",
+    "dbRestored": "استُعيدت قاعدة البيانات من نسخة ما قبل التحديث",
+    "backupFile": "نسخة ما قبل التحديث:",
     "updateFromTo": "من {{from, bidi}} إلى {{to, bidi}}"
   },
   "export": {

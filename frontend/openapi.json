@@ -27527,6 +27527,21 @@
       },
       "UpdateRunOut": {
         "properties": {
+          "backup_file": {
+            "description": "File name of the pre-update dump (no folder)",
+            "title": "Backup File",
+            "type": "string"
+          },
+          "db_restored": {
+            "description": "The rollback restored the pre-update dump",
+            "title": "Db Restored",
+            "type": "boolean"
+          },
+          "detail": {
+            "description": "Why it failed or rolled back, and in which step",
+            "title": "Detail",
+            "type": "string"
+          },
           "finished_at": {
             "anyOf": [
               {
@@ -27542,6 +27557,20 @@
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "log": {
+            "description": "The last lines of the update script's log",
+            "title": "Log",
+            "type": "string"
+          },
+          "migration_plan": {
+            "description": "`migrate --plan` of the new version",
+            "title": "Migration Plan",
+            "type": "string"
+          },
+          "migrations_applied": {
+            "title": "Migrations Applied",
+            "type": "boolean"
           },
           "previous_version": {
             "title": "Previous Version",
@@ -27560,6 +27589,18 @@
             ],
             "title": "Result",
             "type": "string"
+          },
+          "run_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The update script's run id; null when by hand",
+            "title": "Run Key"
           },
           "started_at": {
             "format": "date-time",
@@ -27589,7 +27630,14 @@
           "result",
           "started_at",
           "finished_at",
-          "started_by"
+          "started_by",
+          "run_key",
+          "migration_plan",
+          "migrations_applied",
+          "db_restored",
+          "backup_file",
+          "detail",
+          "log"
         ],
         "title": "UpdateRunOut",
         "type": "object"

@@ -16447,10 +16447,37 @@ export interface components {
         };
         /** UpdateRunOut */
         UpdateRunOut: {
+            /**
+             * Backup File
+             * @description File name of the pre-update dump (no folder)
+             */
+            backup_file: string;
+            /**
+             * Db Restored
+             * @description The rollback restored the pre-update dump
+             */
+            db_restored: boolean;
+            /**
+             * Detail
+             * @description Why it failed or rolled back, and in which step
+             */
+            detail: string;
             /** Finished At */
             finished_at: string | null;
             /** Id */
             id: number;
+            /**
+             * Log
+             * @description The last lines of the update script's log
+             */
+            log: string;
+            /**
+             * Migration Plan
+             * @description `migrate --plan` of the new version
+             */
+            migration_plan: string;
+            /** Migrations Applied */
+            migrations_applied: boolean;
             /** Previous Version */
             previous_version: string;
             /** Release Notes */
@@ -16460,6 +16487,11 @@ export interface components {
              * @enum {string}
              */
             result: "running" | "succeeded" | "failed" | "rolled_back";
+            /**
+             * Run Key
+             * @description The update script's run id; null when by hand
+             */
+            run_key: string | null;
             /**
              * Started At
              * Format: date-time

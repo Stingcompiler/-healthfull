@@ -79,6 +79,17 @@ class UpdateRunOut(Schema):
     started_at: datetime
     finished_at: datetime | None
     started_by: UserRefOut | None
+    run_key: str | None = Field(..., description="The update script's run id; null when by hand")
+    migration_plan: str = Field(..., description="`migrate --plan` of the new version")
+    migrations_applied: bool
+    db_restored: bool = Field(..., description="The rollback restored the pre-update dump")
+    backup_file: str = Field(..., description="File name of the pre-update dump (no folder)")
+    detail: str = Field(..., description="Why it failed or rolled back, and in which step")
+    log: str = Field(..., description="The last lines of the update script's log")
+
+    @staticmethod
+    def resolve_backup_file(obj: object) -> str:
+        return str(getattr(obj, "backup_file", "") or "").rsplit("/", 1)[-1]
 
 
 OpsWarningCode = Literal[
