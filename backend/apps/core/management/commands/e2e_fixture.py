@@ -15,18 +15,36 @@ command prints ``{"ok": false, "fixture": <name>, "error": {"code", "message", "
 (the API's error body) on stdout and exits with status 2. With ``--json`` the output is one
 ASCII-only line; without it, indented.
 
+Serve mode (the fast path of ``e2e/helpers/api.ts``): ``--serve`` keeps one Django process
+and reads one JSON request per line on stdin, answering one JSON line each on stdout, in
+order, until stdin closes::
+
+    {"id": 1, "name": "paid_visit", "params": {...}}
+      -> {"id": 1, "ok": true, "fixture": "paid_visit", "result": {...}}
+    {"id": 2, "batch": [{"name": "patient", "params": {}}, {"name": "visit", ...}]}
+      -> {"id": 2, "ok": true, "results": [<one answer per item, as above>]}
+
+Each fixture still runs in its own transaction, exactly as one command run would, so a spec
+sees the same data either way; only the process start-up (Python, Django, app imports) is
+paid once instead of per call. A batch runs its items in order and stops at the first
+refusal (the answers stop there). Anything printed while a fixture runs goes to stderr, so
+stdout carries only answers.
+
 Test databases only (``apps.core.e2e.guard``): DEBUG on and an ``e2e_*`` / ``test_*``
 database, or ``ALLOW_SEED_E2E=1``.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sys
-from typing import Any
+import traceback
+from typing import Any, TextIO
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import connection
 from django.utils.module_loading import autodiscover_modules
 
 from api.errors import PermissionRequired
@@ -52,6 +70,11 @@ class Command(BaseCommand):
             help="Print one compact ASCII-only JSON line (for scripts).",
         )
         parser.add_argument("--list", action="store_true", help="List the fixtures.")
+        parser.add_argument(
+            "--serve",
+            action="store_true",
+            help="Answer JSON requests from stdin, one per line, until stdin closes.",
+        )
 
     def handle(self, *args: Any, **options: Any) -> None:
         require_test_database("e2e_fixture")
@@ -60,6 +83,9 @@ class Command(BaseCommand):
             for spec in sorted(fixtures.REGISTRY.values(), key=lambda f: f.name):
                 accepted = ", ".join(sorted(spec.params))
                 self.stdout.write(f"{spec.name}: {spec.summary}\n    params: {accepted}")
+            return
+        if options["serve"]:
+            self._serve(sys.stdin)
             return
         name = options["name"]
         if not name:
@@ -82,6 +108,68 @@ class Command(BaseCommand):
             self._emit({"ok": False, "fixture": name, "error": error}, as_json)
             raise CommandError(f"e2e_fixture {name}: {error['message']}", returncode=2) from exc
         self._emit({"ok": True, "fixture": name, "result": result}, as_json)
+
+    # --- serve mode -------------------------------------------------------------------------
+
+    @staticmethod
+    def _answer(name: str, params: object) -> dict[str, Any]:
+        """One fixture run as a JSON-ready answer (the payload a single run prints)."""
+        if not isinstance(params, dict):
+            invalid = DomainError("FIXTURE_PARAMS_INVALID", "params must be a JSON object")
+            return {"ok": False, "fixture": name, "error": invalid.as_dict()}
+        try:
+            result = fixtures.run_fixture(name, params)
+        except DomainError as exc:
+            return {"ok": False, "fixture": name, "error": exc.as_dict()}
+        except PermissionRequired as exc:
+            error = {
+                "code": "PERMISSION_DENIED",
+                "message": str(exc),
+                "details": {"permission": exc.permission},
+            }
+            return {"ok": False, "fixture": name, "error": error}
+        return {"ok": True, "fixture": name, "result": result}
+
+    def _handle_request(self, request: dict[str, Any]) -> dict[str, Any]:
+        if "batch" in request:
+            items = request["batch"]
+            if not isinstance(items, list):
+                raise TypeError("batch must be a list")
+            results: list[dict[str, Any]] = []
+            for item in items:
+                answer = self._answer(str(item.get("name", "")), item.get("params", {}))
+                results.append(answer)
+                if not answer["ok"]:
+                    break
+            return {"ok": all(r["ok"] for r in results), "results": results}
+        return self._answer(str(request.get("name", "")), request.get("params", {}))
+
+    def _serve(self, source: TextIO) -> None:
+        for raw in source:
+            if not raw.strip():
+                continue
+            request_id: object = None
+            try:
+                request = json.loads(raw)
+                request_id = request.get("id")
+                # A long-lived process: drop a connection the server closed or broke (never
+                # inside an outer transaction, such as a test's).
+                if not connection.in_atomic_block:
+                    connection.close_if_unusable_or_obsolete()
+                with contextlib.redirect_stdout(sys.stderr):
+                    answer = self._handle_request(request)
+            except Exception as exc:
+                answer = {
+                    "ok": False,
+                    "crash": f"{type(exc).__name__}: {exc}",
+                    "traceback": traceback.format_exc(),
+                }
+            answer["id"] = request_id
+            # One line per answer (the command's stdout adds the newline), flushed at once.
+            self.stdout.write(
+                json.dumps(answer, cls=DjangoJSONEncoder, ensure_ascii=True, sort_keys=True)
+            )
+            self.stdout.flush()
 
     def _params(self, raw: str) -> dict[str, Any]:
         text = sys.stdin.read() if raw == "-" else raw

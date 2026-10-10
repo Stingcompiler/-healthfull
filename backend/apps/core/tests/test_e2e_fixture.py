@@ -14,6 +14,7 @@ from django.db import DatabaseError
 
 from apps.core.e2e import fixtures
 from apps.orders.models import ServiceLine
+from apps.patients.models import Patient
 from apps.payments.models import Shift, ShiftStatus
 from apps.visits.models import QueueEntry
 
@@ -439,3 +440,65 @@ def test_allergies_on_file_drive_the_prescribing_alert(seeded: None) -> None:
     # Reception cannot record allergies; the default recorder is the nurse.
     denied = fail("patient", {"allergies": ["NSAID"], "allergies_as": "reception"})
     assert denied["details"]["permission"] == "clinical.manage_allergies"
+
+
+# --- serve mode (the e2e helpers' fast path) -----------------------------------------------------
+
+
+def serve(monkeypatch: pytest.MonkeyPatch, *requests: object) -> list[dict[str, Any]]:
+    """Run ``e2e_fixture --serve`` over ``requests`` (JSON lines on stdin); parse its answers."""
+    lines = [r if isinstance(r, str) else json.dumps(r) for r in requests]
+    monkeypatch.setattr("sys.stdin", StringIO("\n".join(lines) + "\n"))
+    out = StringIO()
+    call_command("e2e_fixture", serve=True, stdout=out)
+    return [json.loads(line) for line in out.getvalue().splitlines() if line.strip()]
+
+
+def test_serve_answers_each_request_in_order_like_single_runs(
+    seeded: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    answers = serve(
+        monkeypatch,
+        {"id": 1, "name": "patient", "params": {"full_name_en": "Served One"}},
+        {"id": 2, "name": "no_such_fixture", "params": {}},
+        {"id": 3, "name": "open_shift", "params": {"opening_float": 1.5}},
+        "not json",
+        {"id": 5, "name": "catalog", "params": {}},
+    )
+    assert [a["id"] for a in answers] == [1, 2, 3, None, 5]
+    assert answers[0]["ok"] is True
+    assert answers[0]["result"]["patient"]["full_name_en"] == "Served One"
+    assert answers[1]["error"]["code"] == "FIXTURE_UNKNOWN"
+    assert answers[2]["error"]["code"] == "FIXTURE_PARAM_INVALID"
+    assert answers[3]["ok"] is False
+    assert "JSONDecodeError" in answers[3]["crash"]
+    # The server keeps serving after a refusal and a crash.
+    assert answers[4]["ok"] is True
+    assert "CONS-GEN" in answers[4]["result"]["services"]
+
+
+def test_serve_batch_runs_in_order_and_stops_at_the_first_refusal(
+    seeded: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (answer,) = serve(
+        monkeypatch,
+        {
+            "id": 7,
+            "batch": [
+                {"name": "patient", "params": {"full_name_en": "Batch One"}},
+                {"name": "open_shift", "params": {"if_open": "reuse"}},
+                {"name": "open_shift", "params": {}},
+                {"name": "patient", "params": {"full_name_en": "Never Made"}},
+            ],
+        },
+    )
+    assert answer["id"] == 7
+    assert answer["ok"] is False
+    results = answer["results"]
+    assert [r["ok"] for r in results] == [True, True, False]
+    assert results[2]["error"]["code"] == "SHIFT_ALREADY_OPEN"
+    # Each item is its own transaction: the first patient stays; the item after the refusal
+    # never ran.
+    assert Patient.objects.filter(full_name_en="Batch One").exists()
+    assert not Patient.objects.filter(full_name_en="Never Made").exists()
+    assert Shift.objects.filter(status=ShiftStatus.OPEN).count() == 1
