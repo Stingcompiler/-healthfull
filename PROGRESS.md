@@ -395,3 +395,14 @@ reports, ops and the patient portal (Phases 6-7).
   before left the doctor's queue (an empty queue; the three 1280 cases after it did not run
   because the file is serial); the patient-file 768 warm en case did not find the merge
   history, while the other 11 cases of the same route passed in the same run.
+- 2026-10-10: Ops (wave c) on `feat/c-ops` from `wave/c`: FEATURES 1.8 (wizard), 8.13, 0.13,
+  13.8, 13.9, 13.10 and the audit viewer (ADR 0014). Imports of patients, items with opening
+  stock (goods receipt from `OPENING`) and prices (future version only); notifications with the
+  bell and `manage.py notify_scan`; `/api/ops/status`, manual backup requests picked up by
+  `infra/backup/backup-requests.sh`, the CSV data export, `/api/core/audit`; the maintenance loop
+  runs `notify_scan` and `charge_bed_nights` as `BED_CHARGE_USER`. Results: `make check` green
+  (backend 1895 passed, frontend 471 passed, lint, typecheck, no missing migrations, API contract
+  in sync; shellcheck not installed here); `make infra-test` 55 checks passed; `make e2e
+  E2E_GREP=@ops` 7 passed; the 4 admin system routes x 3 viewports x 3 themes x 2 languages plus
+  the route registry 73 passed; the whole phone matrix with the bell in the top bar
+  (`@responsive 375x812|@ops|route registry|shell`) 499 passed.
