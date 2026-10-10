@@ -93,6 +93,8 @@ def test_format_groups_in_fours() -> None:
         ("PT2026000012", "PT-2026-000012"),
         ("٢٠٢٦-٠٠٠٠١٢", "PT-2026-000012"),
         ("X-99", "X-99"),
+        ("PT-2026-000000", "PT-2026-000000"),
+        ("0000-1", "0000-1"),
         ("", ""),
     ],
 )
@@ -359,3 +361,17 @@ def test_horizon_is_counted_in_local_days() -> None:
         same_day_with_doctor=False,
         rules=RULES,
     )
+
+
+# --- the staff receipt check reads the portal QR -------------------------------------------
+
+
+def test_staff_check_reads_the_number_from_the_portal_qr() -> None:
+    from domain.payments import parse_receipt_code
+
+    url = "http://192.168.1.10/verify/abcdefghijklmnopqrst?r=RCP-2026-000012"
+    code = parse_receipt_code(url)
+    assert code.number == "RCP-2026-000012"
+    assert code.amount is None
+    assert code.day is None
+    assert parse_receipt_code("RCP-2026-000012|15000.00|2026-10-10").number == "RCP-2026-000012"

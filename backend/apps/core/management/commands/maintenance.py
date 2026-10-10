@@ -1,4 +1,4 @@
-"""Daily housekeeping: expired sessions and stale login throttle rows.
+"""Daily housekeeping: expired sessions and stale login throttle rows (staff and portal).
 
 Sessions live in the database (SESSION_SAVE_EVERY_REQUEST), so expired rows pile up in
 ``django_session`` and in every backup unless something removes them; the same goes for
@@ -18,6 +18,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.models import LoginThrottle
+from apps.portal import services as portal_services
 
 
 class Command(BaseCommand):
@@ -34,4 +35,10 @@ class Command(BaseCommand):
         self.stdout.write(
             f"maintenance: removed {sessions} expired session(s) and "
             f"{throttles} stale login throttle row(s)."
+        )
+        # The patient portal's own sessions and counters (ADR 0016).
+        portal_ended, portal_throttles = portal_services.purge_stale(now)
+        self.stdout.write(
+            f"maintenance: ended {portal_ended} idle portal session(s), removed "
+            f"{portal_throttles} stale portal throttle row(s)."
         )

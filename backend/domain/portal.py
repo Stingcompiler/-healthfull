@@ -94,7 +94,10 @@ def normalize_file_no(text: str) -> str:
     found = _FILE_NO.match(compact)
     if found is None:
         return compact
-    return format_document_number("PT", int(found.group(1)), int(found.group(2)))
+    try:
+        return format_document_number("PT", int(found.group(1)), int(found.group(2)))
+    except DomainError:  # e.g. sequence 0: no file has it
+        return compact
 
 
 def phones_match(given: str, stored: Iterable[str]) -> bool:

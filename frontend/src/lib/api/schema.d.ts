@@ -4373,6 +4373,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/access-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a portal access code for the patient of a receipt (shown once)
+         * @description Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.
+         */
+        post: operations["portal_issue_access_code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's upcoming and past appointments */
+        get: operations["portal_list_appointments"];
+        put?: never;
+        /**
+         * Book a free slot of a doctor's schedule
+         * @description 409 `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, `APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule.
+         */
+        post: operations["portal_book_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/appointments/{appointment_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel one's own future appointment before the cut-off
+         * @description 409 `PORTAL_CANCEL_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`; 404 if not one's own.
+         */
+        post: operations["portal_cancel_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the patient owes and holds as credit */
+        get: operations["portal_get_balance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Doctors who take online bookings */
+        get: operations["portal_list_doctors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/doctors/{doctor_id}/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Days with free slots, from today to the booking horizon */
+        get: operations["portal_list_booking_days"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/doctors/{doctor_id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A doctor's free slots on one day that can be booked online */
+        get: operations["portal_list_slots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's approved invoices: their share, paid and outstanding */
+        get: operations["portal_list_invoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One approved invoice of the patient, with lines and receipts */
+        get: operations["portal_get_invoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in patient's profile summary */
+        get: operations["portal_get_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/ping": {
         parameters: {
             query?: never;
@@ -4382,6 +4562,165 @@ export interface paths {
         };
         /** Check that the /api/portal router is reachable */
         get: operations["portal_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/prescriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prescriptions with dosing instructions, and lab preparation instructions */
+        get: operations["portal_get_prescriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's receipts with their status */
+        get: operations["portal_list_receipts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/receipts/{payment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One receipt of the patient and the invoices it paid */
+        get: operations["portal_get_receipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's approved lab results, newest first */
+        get: operations["portal_list_results"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/results/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One approved lab result with its values (404 until approved, or if not one's own) */
+        get: operations["portal_get_result"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Patient sign-in with file number, phone and the code printed on a receipt
+         * @description Sets the portal session cookie (HttpOnly, SameSite=Strict, path /api/portal). Every refusal is 401 `PORTAL_INVALID_CREDENTIALS`; 423 `PORTAL_LOCKED` after repeated failures for a file number; 429 `RATE_LIMITED` for an address. Needs X-CSRFToken.
+         */
+        post: operations["portal_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/session/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End the portal session (idempotent) and clear its cookie */
+        post: operations["portal_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Home cards: next appointment, latest results, balance */
+        get: operations["portal_get_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public check of a printed receipt by its number and QR token
+         * @description Center, number, day, amount, status (valid, pending, void) and the payer's initials. 404 when the number is unknown or the token is not its own (not told apart); 429 after too many checks from one address.
+         */
+        get: operations["portal_verify_receipt"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11502,6 +11841,539 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /** PortalAppointmentOut */
+        PortalAppointmentOut: {
+            /** Can Cancel */
+            can_cancel: boolean;
+            /** Cancel Until */
+            cancel_until: string | null;
+            doctor: components["schemas"]["PortalDoctorOut"];
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Id */
+            id: number;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "booked" | "arrived" | "no_show" | "cancelled" | "rescheduled";
+        };
+        /** PortalAppointmentsOut */
+        PortalAppointmentsOut: {
+            /** Past */
+            past: components["schemas"]["PortalAppointmentOut"][];
+            rules: components["schemas"]["PortalBookingRulesOut"];
+            /** Upcoming */
+            upcoming: components["schemas"]["PortalAppointmentOut"][];
+        };
+        /** PortalBalanceOut */
+        PortalBalanceOut: {
+            /**
+             * Credit
+             * @example 15000.00
+             */
+            credit: string;
+            /** Open Invoices */
+            open_invoices: number;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /**
+             * Pending
+             * @description Transfers the bank has not confirmed yet
+             * @example 15000.00
+             */
+            pending: string;
+        };
+        /** PortalBookIn */
+        PortalBookIn: {
+            /** Doctor Id */
+            doctor_id: number;
+            /**
+             * Starts At
+             * Format: date-time
+             * @description Exactly a `starts_at` from the slots list
+             */
+            starts_at: string;
+        };
+        /** PortalBookingRulesOut */
+        PortalBookingRulesOut: {
+            /** Cancel Cutoff Hours */
+            cancel_cutoff_hours: number;
+            /** Horizon Days */
+            horizon_days: number;
+            /** Max Open */
+            max_open: number;
+        };
+        /** PortalCenterOut */
+        PortalCenterOut: {
+            /** Address */
+            address: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+        };
+        /** PortalDoctorOut */
+        PortalDoctorOut: {
+            /** Department Ar */
+            department_ar: string;
+            /** Department En */
+            department_en: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Specialty Ar */
+            specialty_ar: string;
+            /** Specialty En */
+            specialty_en: string;
+        };
+        /** PortalInvoiceDetailOut */
+        PortalInvoiceDetailOut: {
+            center: components["schemas"]["PortalCenterOut"];
+            /** Date */
+            date: string | null;
+            /** Id */
+            id: number;
+            /** Lines */
+            lines: components["schemas"]["PortalInvoiceLineOut"][];
+            /** Number */
+            number: string;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /**
+             * Paid
+             * @example 15000.00
+             */
+            paid: string;
+            /**
+             * Patient Due
+             * @description The patient's share after credits
+             * @example 15000.00
+             */
+            patient_due: string;
+            /** Receipts */
+            receipts: components["schemas"]["PortalInvoiceReceiptOut"][];
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalInvoiceLineOut */
+        PortalInvoiceLineOut: {
+            /** Description Ar */
+            description_ar: string;
+            /** Description En */
+            description_en: string;
+            /**
+             * Patient Share
+             * @example 15000.00
+             */
+            patient_share: string;
+            /** Quantity */
+            quantity: number;
+        };
+        /** PortalInvoiceOut */
+        PortalInvoiceOut: {
+            /** Date */
+            date: string | null;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /**
+             * Paid
+             * @example 15000.00
+             */
+            paid: string;
+            /**
+             * Patient Due
+             * @description The patient's share after credits
+             * @example 15000.00
+             */
+            patient_due: string;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalInvoiceReceiptOut */
+        PortalInvoiceReceiptOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+        };
+        /** PortalIssueCodeIn */
+        PortalIssueCodeIn: {
+            /** Payment Id */
+            payment_id: number;
+        };
+        /** PortalIssuedCodeOut */
+        PortalIssuedCodeOut: {
+            /**
+             * Code
+             * @description Shown once; only its hash is stored
+             */
+            code: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** File No */
+            file_no: string;
+        };
+        /** PortalLabInstructionOut */
+        PortalLabInstructionOut: {
+            /** Instructions Ar */
+            instructions_ar: string;
+            /** Instructions En */
+            instructions_en: string;
+            /** Line Id */
+            line_id: number;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            /** Test Name Ar */
+            test_name_ar: string;
+            /** Test Name En */
+            test_name_en: string;
+        };
+        /** PortalLoginIn */
+        PortalLoginIn: {
+            /** Code */
+            code: string;
+            /** File No */
+            file_no: string;
+            /** Phone */
+            phone: string;
+        };
+        /** PortalMeOut */
+        PortalMeOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /**
+             * Idle Seconds
+             * @description The session ends after this long without use
+             */
+            idle_seconds: number;
+            /** Phone Masked */
+            phone_masked: string;
+            /** Sex */
+            sex: string;
+        };
+        /** PortalPatientHeadOut */
+        PortalPatientHeadOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Sex */
+            sex: string;
+        };
+        /** PortalPersonNameOut */
+        PortalPersonNameOut: {
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** PortalPrescriptionItemOut */
+        PortalPrescriptionItemOut: {
+            /** As Needed */
+            as_needed: boolean;
+            /** Dose */
+            dose: string;
+            /** Duration Days */
+            duration_days: number | null;
+            /** Frequency Code */
+            frequency_code: string;
+            /** Frequency Per Day */
+            frequency_per_day: string | null;
+            /** Instructions */
+            instructions: string;
+            /** Line Id */
+            line_id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Quantity */
+            quantity: number;
+            /** Route */
+            route: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "dispensed" | "partly_dispensed" | "not_dispensed";
+        };
+        /** PortalPrescriptionVisitOut */
+        PortalPrescriptionVisitOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Items */
+            items: components["schemas"]["PortalPrescriptionItemOut"][];
+            prescriber: components["schemas"]["PortalPersonNameOut"] | null;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalPrescriptionsOut */
+        PortalPrescriptionsOut: {
+            /** Lab Instructions */
+            lab_instructions: components["schemas"]["PortalLabInstructionOut"][];
+            /** Visits */
+            visits: components["schemas"]["PortalPrescriptionVisitOut"][];
+        };
+        /** PortalReceiptDetailOut */
+        PortalReceiptDetailOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            center: components["schemas"]["PortalCenterOut"];
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Id */
+            id: number;
+            /** Invoices */
+            invoices: components["schemas"]["PortalReceiptInvoiceOut"][];
+            /** Method */
+            method: string;
+            /** Number */
+            number: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "pending" | "void";
+            /**
+             * To Credit
+             * @example 15000.00
+             */
+            to_credit: string;
+        };
+        /** PortalReceiptInvoiceOut */
+        PortalReceiptInvoiceOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+        };
+        /** PortalReceiptOut */
+        PortalReceiptOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Id */
+            id: number;
+            /** Method */
+            method: string;
+            /** Number */
+            number: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "pending" | "void";
+        };
+        /** PortalResultOut */
+        PortalResultOut: {
+            /** Abnormal */
+            abnormal: boolean;
+            /**
+             * Amended
+             * @description This approved result corrects an earlier one
+             */
+            amended: boolean;
+            /** Approved At */
+            approved_at: string | null;
+            center: components["schemas"]["PortalCenterOut"];
+            /** Comment */
+            comment: string;
+            /** Line Id */
+            line_id: number;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            ordered_by: components["schemas"]["PortalPersonNameOut"] | null;
+            patient: components["schemas"]["PortalPatientHeadOut"];
+            /** Test Name Ar */
+            test_name_ar: string;
+            /** Test Name En */
+            test_name_en: string;
+            /** Values */
+            values: components["schemas"]["PortalResultValueOut"][];
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalResultSummaryOut */
+        PortalResultSummaryOut: {
+            /** Abnormal */
+            abnormal: boolean;
+            /**
+             * Amended
+             * @description This approved result corrects an earlier one
+             */
+            amended: boolean;
+            /** Approved At */
+            approved_at: string | null;
+            /** Line Id */
+            line_id: number;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            /** Test Name Ar */
+            test_name_ar: string;
+            /** Test Name En */
+            test_name_en: string;
+        };
+        /** PortalResultValueOut */
+        PortalResultValueOut: {
+            /** Flag */
+            flag: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Parameter Code */
+            parameter_code: string;
+            /** Reference High */
+            reference_high: string | null;
+            /** Reference Low */
+            reference_low: string | null;
+            /** Reference Text */
+            reference_text: string;
+            /** Unit */
+            unit: string;
+            /** Value */
+            value: string;
+        };
+        /** PortalSlotOut */
+        PortalSlotOut: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /** PortalSlotsOut */
+        PortalSlotsOut: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            doctor: components["schemas"]["PortalDoctorOut"];
+            /** Slots */
+            slots: components["schemas"]["PortalSlotOut"][];
+        };
+        /** PortalSummaryOut */
+        PortalSummaryOut: {
+            balance: components["schemas"]["PortalBalanceOut"];
+            /** Latest Results */
+            latest_results: components["schemas"]["PortalResultSummaryOut"][];
+            next_appointment: components["schemas"]["PortalAppointmentOut"] | null;
+        };
+        /**
+         * PortalVerifyOut
+         * @description The public check of a printed receipt: nothing that identifies a patient.
+         */
+        PortalVerifyOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Center Name Ar */
+            center_name_ar: string;
+            /** Center Name En */
+            center_name_en: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Patient Initials */
+            patient_initials: string;
+            /** Receipt Number */
+            receipt_number: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "pending" | "void";
+        };
         /** PreApprovalIn */
         PreApprovalIn: {
             /** Reference */
@@ -12121,9 +12993,14 @@ export interface components {
             payment: components["schemas"]["PaymentOut"];
             /**
              * Verify Code
-             * @description Encoded in the receipt's QR (FEATURES 6.9)
+             * @description Printed under the QR; the staff check reads it (FEATURES 6.9)
              */
             verify_code: string;
+            /**
+             * Verify Token
+             * @description The receipt's public check token: the QR opens /verify/<token>?r=<number> (FEATURES 15.1, ADR 0016)
+             */
+            verify_token: string;
         };
         /** ReferralCancelIn */
         ReferralCancelIn: {
@@ -32671,6 +33548,487 @@ export interface operations {
             };
         };
     };
+    portal_issue_access_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalIssueCodeIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalIssuedCodeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_appointments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAppointmentsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_book_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalBookIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_cancel_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_balance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalBalanceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_doctors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDoctorOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_booking_days: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_slots: {
+        parameters: {
+            query: {
+                on: string;
+            };
+            header?: never;
+            path: {
+                doctor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSlotsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_invoices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalInvoiceOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_invoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalInvoiceDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalMeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     portal_get_ping: {
         parameters: {
             query?: never;
@@ -32700,6 +34058,348 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_prescriptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPrescriptionsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_receipts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReceiptOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_receipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReceiptDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_results: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalResultSummaryOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_result: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalResultOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalLoginIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalMeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Locked */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSummaryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_verify_receipt: {
+        parameters: {
+            query: {
+                receipt: string;
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalVerifyOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

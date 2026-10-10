@@ -323,7 +323,16 @@ class ReceiptOut(Schema):
     payment: PaymentOut
     invoices: list[ReceiptInvoiceOut]
     cashier: BillingUserRefOut | None
-    verify_code: str = Field(..., description="Encoded in the receipt's QR (FEATURES 6.9)")
+    verify_code: str = Field(
+        ..., description="Printed under the QR; the staff check reads it (FEATURES 6.9)"
+    )
+    verify_token: str = Field(
+        ...,
+        description=(
+            "The receipt's public check token: the QR opens /verify/<token>?r=<number> "
+            "(FEATURES 15.1, ADR 0016)"
+        ),
+    )
 
 
 # --- transfers queue -------------------------------------------------------------------------

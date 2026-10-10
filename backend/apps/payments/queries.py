@@ -7,6 +7,7 @@ recomputed, invariant 3); balances and positions from the engine services.
 
 from __future__ import annotations
 
+import importlib
 from collections.abc import Iterable
 from decimal import Decimal
 from typing import Any
@@ -524,6 +525,9 @@ def receipt(payment_id: int) -> dict[str, Any]:
         "invoices": invoices,
         "cashier": bq.user_json(p.created_by),
         "verify_code": _verify_code(p),
+        "verify_token": importlib.import_module("apps.portal.services").receipt_verify_token(
+            p.number
+        ),
     }
 
 
