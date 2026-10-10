@@ -26,7 +26,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatNumber } from "@/lib/format";
 import { useElementWidth } from "@/lib/hooks/use-element-width";
 import { useBreakpoint } from "@/lib/hooks/use-media-query";
@@ -105,7 +114,18 @@ export interface DataTableProps<TData> {
    * `onPageChange`; there is no rows-per-page choice.
    */
   serverPagination?: ServerPagination;
+  /**
+   * A totals row over every row (not only the page): cell content by column id, under the
+   * table's columns (a `<tfoot>`), or as a closing card in the card list. The first column
+   * shows `label` (default "Total") unless `totals` fills it.
+   */
+  totals?: DataTableTotals;
   className?: string;
+}
+
+export interface DataTableTotals {
+  cells: Partial<Record<string, ReactNode>>;
+  label?: string;
 }
 
 export interface ServerPagination {
@@ -171,6 +191,7 @@ export function DataTable<TData>({
   minTableWidth,
   rowLabel,
   serverPagination,
+  totals,
   className,
 }: DataTableProps<TData>) {
   const { t } = useTranslation();
@@ -265,6 +286,26 @@ export function DataTable<TData>({
               );
             })
           )}
+          {totals && !loading && !isEmpty ? (
+            <div
+              role="listitem"
+              data-slot="data-table-totals"
+              className="card-surface flex flex-col gap-3 bg-subtle p-4"
+            >
+              <div className="font-semibold text-fg">{totals.label ?? t("table.total")}</div>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+                {table
+                  .getVisibleLeafColumns()
+                  .filter((col) => totals.cells[col.id] !== undefined && !col.columnDef.meta?.hideInCard)
+                  .map((col) => (
+                    <div key={col.id} className="contents">
+                      <dt className="text-muted">{col.columnDef.meta?.label ?? col.id}</dt>
+                      <dd className="min-w-0 text-end font-semibold text-fg">{totals.cells[col.id]}</dd>
+                    </div>
+                  ))}
+              </dl>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="card-surface overflow-hidden p-0">
@@ -389,6 +430,25 @@ export function DataTable<TData>({
                 })
               )}
             </TableBody>
+            {totals && !loading && !isEmpty ? (
+              <TableFooter data-slot="data-table-totals">
+                <TableRow className="hover:bg-transparent">
+                  {table.getVisibleLeafColumns().map((col, index) => {
+                    const meta = col.columnDef.meta;
+                    const content = totals.cells[col.id] ?? (index === 0 ? (totals.label ?? t("table.total")) : null);
+                    return (
+                      <TableCell
+                        key={col.id}
+                        className={cn("font-semibold", alignClass[meta?.align ?? "start"], meta?.className)}
+                      >
+                        {content}
+                      </TableCell>
+                    );
+                  })}
+                  {hasActions ? <TableCell /> : null}
+                </TableRow>
+              </TableFooter>
+            ) : null}
           </Table>
         </div>
       )}

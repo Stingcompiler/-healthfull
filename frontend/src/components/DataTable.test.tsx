@@ -266,4 +266,30 @@ describe("DataTable", () => {
       vi.unstubAllGlobals();
     }
   });
+
+  it("shows a totals row under the columns over every page, and a totals card on phones", async () => {
+    setViewportWidth(1280);
+    const totals = { cells: { amount: "7800.00" } };
+    const view = await renderWithProviders(
+      <DataTable caption="Lines" columns={columns} data={rows} getRowId={(r) => r.id} totals={totals} />,
+    );
+    const footer = screen.getByRole("table", { name: "Lines" }).querySelector("tfoot");
+    expect(footer?.textContent).toBe("Total7800.00");
+    view.unmount();
+    setViewportWidth(375);
+    await renderWithProviders(
+      <DataTable caption="Lines" columns={columns} data={rows} getRowId={(r) => r.id} totals={totals} />,
+    );
+    const card = screen.getByRole("list", { name: "Lines" }).querySelector('[data-slot="data-table-totals"]');
+    expect(card?.textContent).toContain("7800.00");
+    expect(card?.textContent).toContain("Amount");
+  });
+
+  it("leaves the totals out while empty", async () => {
+    setViewportWidth(1280);
+    await renderWithProviders(
+      <DataTable caption="Lines" columns={columns} data={[]} totals={{ cells: { amount: "0" } }} />,
+    );
+    expect(screen.getByRole("table", { name: "Lines" }).querySelector("tfoot")).toBeNull();
+  });
 });

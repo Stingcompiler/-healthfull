@@ -10,7 +10,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
-| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); reports and ops not started |
+| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`); reports done on `feat/c-reports` (from `wave/c`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); ops not started |
 | 7. Patient portal | not started | |
 | 8. Hardening and handover | not started | |
 
@@ -196,6 +196,28 @@ Source of truth for build status. Update at the end of every task. Phases from `
   version (starting the day after the seed) takes effect mid-run. Pin the date or build per test
   if CI runs at night.
 
+## Follow-ups (reports, wave c)
+
+- PDF is the browser's print of `/reports/<key>/print` (A4 landscape); server-side PDF needs
+  WeasyPrint and system libraries (pango) that are not installed (ADR 0013).
+- The report print view imports the cashier's `features/cashier/components/print.css` like
+  the claims and lab prints do; it moves with them to `src/components/print/` (clinic
+  follow-up).
+- Collections are reported by the day a payment was taken at its current verification: a
+  transfer confirmed or rejected later changes that earlier day's split (ADR 0013). A
+  "by confirmation day" view is not built.
+- Payer receivables read per payer through `claims.queries` (query count grows with payers).
+- The dashboard's low-stock alert has no report to open (no low-stock report screen beyond the
+  pharmacy's own list); 12.12-12.14 (P2) are not built.
+- Pre-existing, outside reports: `domain/tests/test_visit_machine.py::TestVisitMachine` fails
+  with a Hypothesis example (saved in this worktree's `backend/.hypothesis`): after a bank
+  transfer with `allow_partial=False` and an opening float of 0.01, rejecting a still-pending
+  transfer plans `uncovered` 10.14 (and in a second example a recovery row of -1205.00), which
+  the model says is impossible for pending money. Needs a look in `domain/allocation.py`
+  (`plan_rejection`) or the model.
+- Detail sections stop at 2,000 rows (the screen and the workbook say so); a paged export for
+  very long periods is not built.
+
 ## Next: merge wave b to main
 
 Pharmacy, lab, nursing and claims are merged on `wave/b`; take `wave/b` to `main`. Then
@@ -377,3 +399,22 @@ reports, ops and the patient portal (Phases 6-7).
   before left the doctor's queue (an empty queue; the three 1280 cases after it did not run
   because the file is serial); the patient-file 768 warm en case did not find the merge
   history, while the other 11 cases of the same route passed in the same run.
+- 2026-10-10: Reports and the manager dashboard on `feat/c-reports` (wave c, from `wave/c`):
+  FEATURES 4.5, 12.1-12.11 (ADR 0013). `/api/reports`: 14 reports, each `GET /<key>` and
+  `GET /<key>/export` (.xlsx, formula-safe) behind one `reports.view_<area>` code, plus
+  `/dashboard`; read-only queries in `apps/reports/queries.py` reusing the orders, claims, lab
+  and pharmacy report queries; pure arithmetic in `domain/reports.py` (Hypothesis). Every money
+  report is tested against `ledger.services` balances and postings; query counts do not grow
+  with rows; reports never write. Screens `/reports`, `/reports/$reportKey`,
+  `/reports/$reportKey/print`, and the manager dashboard at `/` (recharts, theme tokens).
+  e2e fixture `reports_day`; specs `e2e/tests/reports/*.spec.ts` (@reports). Shared files
+  touched: `apps/orders/services.py` (optional department on `report_*`, row cap 5,000),
+  `apps/core/tests/test_permissions.py` (new code names), `components/DataTable.tsx` (totals
+  row) and its test, `common.json` (`table.total`), `errors.json` (`REPORT_RANGE_TOO_LONG`),
+  `frontend/package.json` (recharts 3.10.1), generated OpenAPI files. Results: lint (ruff,
+  format, migrations, eslint, prettier), mypy and tsc (frontend, e2e) clean; frontend 474
+  passed; API contract in sync; backend 1890 passed, 1 failed: `domain/tests/test_visit_machine.py`
+  (Hypothesis stateful test of the payment engine found a pending-transfer rejection with
+  `uncovered` 10.14 / a recovery row; domain code untouched by this branch, see follow-ups);
+  71 report tests passed. `make e2e E2E_GREP="@reports|@responsive.*(reports|dashboard)|route
+  registry|@auth sign in"`: 112 passed (twice, before and after the review fixes).

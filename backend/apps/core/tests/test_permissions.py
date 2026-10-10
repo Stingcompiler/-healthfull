@@ -123,12 +123,12 @@ def test_every_app_registers_permissions_and_admin_holds_all() -> None:
         ),
         (
             "accountant",
-            {"claims.manage", "payments.confirm_transfer", "reports.financial"},
+            {"claims.manage", "payments.confirm_transfer", "reports.view_finance"},
             {"pharmacy.dispense"},
         ),
         (
             "manager",
-            {"reports.dashboard", "payments.review_shift", "core.manage_settings"},
+            {"reports.view_dashboard", "payments.review_shift", "core.manage_settings"},
             {"payments.take_payment"},
         ),
         (

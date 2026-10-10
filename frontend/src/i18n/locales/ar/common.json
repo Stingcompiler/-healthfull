@@ -149,7 +149,8 @@
     "rowActions": "إجراءات الصف",
     "noResultsTitle": "لا توجد نتائج",
     "noResultsDescription": "جرّب تغيير كلمات البحث أو عوامل التصفية.",
-    "loading": "جارٍ تحميل البيانات…"
+    "loading": "جارٍ تحميل البيانات…",
+    "total": "الإجمالي"
   },
   "validation": {
     "required": "هذا الحقل مطلوب",
