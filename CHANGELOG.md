@@ -123,8 +123,19 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   payments by transfer, cheque (cleared later) or cash into the recorder's shift, allocated per
   claim or oldest first, reversal of a bounced payment, and aging by payer (0-30, 31-60, 61-90,
   over 90 days). Only `claims.*` holders reach any of it (ADR 0012).
+- Wave c, patient portal (FEATURES 15.1, 15.2): `/api/portal` and the mobile-first screens under
+  `/portal` (sign-in, home cards, appointments with online booking and cancellation, approved lab
+  results with print, prescriptions and lab preparation, invoices and receipts), the public receipt
+  check `/verify/<token>` behind the receipt QR, and a portal access code the cashier prints on the
+  receipt. Web manifest and bundled icons, no service worker (ADR 0016).
 
 ### Security
+- Patient portal (ADR 0016): its own session cookie (HttpOnly, SameSite=Strict, path `/api/portal`,
+  hashed token, 15-minute idle and 4-hour limit) that opens no staff endpoint; receipt access codes
+  stored hashed, expiring, revoked by a newer code and locked after wrong attempts; uniform refusals
+  with equal hashing work, per-file-number lockout and per-address throttle; every other patient's
+  row answers 404; the public receipt check needs an HMAC token, shows initials at most and is
+  rate-limited; portal answers are `Cache-Control: no-store`.
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
   and refuses accounts that must change their password; unlocking an account is an audited admin action
   with a reason (ADR 0005).

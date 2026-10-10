@@ -6,7 +6,6 @@ import { AlertCard } from "@/components/AlertCard";
 import { DateText } from "@/components/DateText";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { cn } from "@/lib/utils";
 
@@ -58,12 +57,7 @@ export function ResultPage() {
       {result.isPending ? (
         <Skeleton className="h-64" />
       ) : result.isError ? (
-        <AlertCard
-          variant="danger"
-          title={isApiError(result.error) && result.error.status === 404 ? t("errors:NOT_FOUND") : t("errors:title")}
-        >
-          {translateError(result.error)}
-        </AlertCard>
+        <AlertCard variant="danger" title={translateError(result.error)} live />
       ) : (
         <article
           className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5 print:border-0 print:shadow-none"

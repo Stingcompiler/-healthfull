@@ -87,7 +87,7 @@ export function InvoicePage() {
                       params={{ paymentId: String(r.id) }}
                       className="flex min-h-11 items-center justify-between gap-3 py-2 text-sm focus-ring-inset"
                     >
-                      <span className="text-primary-strong">{t("bills.receipt", { number: r.number })}</span>
+                      <bdi className="whitespace-nowrap text-primary-strong">{r.number}</bdi>
                       <MoneyText value={r.amount} />
                     </Link>
                   </li>

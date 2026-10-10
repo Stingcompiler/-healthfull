@@ -11,7 +11,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
 | 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); reports and ops not started |
-| 7. Patient portal | not started | |
+| 7. Patient portal | done on `feat/c-portal` (from `wave/c`); merge pending | FEATURES 15.1, 15.2 (ADR 0016); follow-ups below |
 | 8. Hardening and handover | not started | |
 
 ## Phase 0 checklist
@@ -195,6 +195,21 @@ Source of truth for build status. Update at the end of every task. Phases from `
   states spec) fail when a full run crosses midnight, and the seed's scheduled +10% cash price
   version (starting the day after the seed) takes effect mid-run. Pin the date or build per test
   if CI runs at night.
+
+## Follow-ups (portal, wave c)
+
+- [x] Lab results reach the patient (FEATURES 9.4 "visible to the patient"): approved versions
+  only, on `/portal/results` (lab follow-up above).
+- No self-service code request: a lost receipt means asking the cashier for a new code (which
+  ends the old code's sessions). SMS delivery is FEATURES 15.3 (Later).
+- Codes are issued from the cashier's receipt screen only; reception (which also holds
+  `portal.issue_access_code`) has no screen for it, and `portal.revoke_access_code` has no
+  endpoint yet (a new code revokes the old ones).
+- Rotating `SECRET_KEY` invalidates the QR of every printed receipt (ADR 0016); the staff check
+  by receipt number keeps working.
+- The portal shows no clinical notes, referrals or allergies; instructions are the dosing
+  instructions and the lab tests' preparation texts.
+- `/api/portal/ping` still uses the staff session (the module ping contract of `api/tests`).
 
 ## Next: merge wave b to main
 
