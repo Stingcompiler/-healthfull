@@ -147,6 +147,7 @@
     "fefo": "الأقرب انتهاءً",
     "suggestedTake": "اصرف {{qty}}",
     "pickLabel": "الكمية من التشغيلة {{batch}}",
+    "expiredNotDispensed": "منتهية الصلاحية: لا تُصرف أبداً",
     "overrideReason": "سبب اختيار تشغيلة أخرى",
     "overrideNote": "ملاحظة",
     "partialTitle": "لن تُصرف {{rest}} وحدة الآن",

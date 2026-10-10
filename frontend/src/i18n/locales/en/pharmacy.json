@@ -143,6 +143,7 @@
     "fefo": "Expires first",
     "suggestedTake": "Take {{qty}}",
     "pickLabel": "Units from batch {{batch}}",
+    "expiredNotDispensed": "Expired: never dispensed",
     "overrideReason": "Reason for another batch",
     "overrideNote": "Note",
     "partialTitle": "{{rest}} units will not be given now",

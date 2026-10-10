@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 
 import { scanBarcode, useDispense, useDispenseVisit, usePharmacyOptions } from "../api";
 import { approverPayload, NO_APPROVER, type ApproverState } from "../lib/approver";
+import { hasPickable, isPickable, overridePicks, pickedTotal } from "../lib/batches";
 import { REMAINDERS } from "../lib/constants";
 import { parseWhole } from "../lib/qty";
 import { useNames } from "../lib/use-names";
@@ -156,7 +157,7 @@ function DispenseDialogOpen({
     if (qty === null) return t("dispense.qtyInvalid");
     if (qty > line.remaining) return t("dispense.qtyTooMuch", { max: line.remaining });
     if (st.override) {
-      const total = Object.values(st.picks).reduce((sum, raw) => sum + (parseWhole(raw, 0) ?? Number.NaN), 0);
+      const total = pickedTotal(line.batches, st.picks);
       if (Number.isNaN(total)) return t("dispense.pickInvalid");
       if (total !== qty) return t("dispense.pickMismatch", { chosen: total, needed: qty });
       if (!st.reason) return t("dispense.reasonRequired");
@@ -177,9 +178,7 @@ function DispenseDialogOpen({
     const body: DispenseLineIn[] = included.map((l) => {
       const st = stateOf(l);
       const qty = baseQty(l, st) ?? 0;
-      const picks = Object.entries(st.picks)
-        .map(([batchId, raw]) => ({ batch_id: Number(batchId), quantity: parseWhole(raw, 0) ?? 0 }))
-        .filter((p) => p.quantity > 0);
+      const picks = overridePicks(l.batches, st.picks);
       return {
         service_line_id: l.id,
         quantity: parseWhole(st.qty) ?? 0,
@@ -473,7 +472,7 @@ function DispenseLineEditor({
                 <Switch
                   id={overrideId}
                   checked={state.override}
-                  disabled={line.batches.length === 0}
+                  disabled={!hasPickable(line.batches)}
                   data-testid="dispense-override"
                   onCheckedChange={(v) => {
                     onChange({
@@ -504,6 +503,7 @@ function DispenseLineEditor({
                       data-testid="dispense-batch"
                       data-batch-no={bt.batch_no}
                       data-suggested={suggested ? "true" : "false"}
+                      data-expired={bt.expired ? "true" : "false"}
                     >
                       <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
                         <bdi className="font-medium">{bt.batch_no}</bdi>
@@ -516,7 +516,11 @@ function DispenseLineEditor({
                         </span>
                         {bt.batch_id === firstUsable ? <Badge variant="soft">{t("dispense.fefo")}</Badge> : null}
                       </span>
-                      {state.override ? (
+                      {state.override && !isPickable(bt) ? (
+                        <span className="text-xs font-medium text-danger-fg" data-testid="dispense-batch-expired">
+                          {t("dispense.expiredNotDispensed")}
+                        </span>
+                      ) : state.override ? (
                         <span className="flex items-center gap-2">
                           <Label htmlFor={pickId} className="sr-only">
                             {t("dispense.pickLabel", { batch: bt.batch_no })}
