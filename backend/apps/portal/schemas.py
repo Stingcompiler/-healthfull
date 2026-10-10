@@ -28,6 +28,11 @@ class PortalMeOut(Schema):
     idle_seconds: int = Field(..., description="The session ends after this long without use")
 
 
+class PortalSessionOut(Schema):
+    signed_in: bool
+    me: PortalMeOut | None
+
+
 class PortalDoctorOut(Schema):
     id: int
     name_ar: str

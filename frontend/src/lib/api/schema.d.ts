@@ -4662,7 +4662,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Whether this browser holds a live portal session, and whose
+         * @description Always 200, so the sign-in page can ask without an error: `signed_in` false and `me` null without a live session (an idle or revoked one is ended here).
+         */
+        get: operations["portal_get_session"];
         put?: never;
         /**
          * Patient sign-in with file number, phone and the code printed on a receipt
@@ -12313,6 +12317,12 @@ export interface components {
             unit: string;
             /** Value */
             value: string;
+        };
+        /** PortalSessionOut */
+        PortalSessionOut: {
+            me: components["schemas"]["PortalMeOut"] | null;
+            /** Signed In */
+            signed_in: boolean;
         };
         /** PortalSlotOut */
         PortalSlotOut: {
@@ -34230,6 +34240,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSessionOut"];
                 };
             };
         };

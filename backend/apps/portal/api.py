@@ -41,6 +41,7 @@ from apps.portal.schemas import (
     PortalReceiptOut,
     PortalResultOut,
     PortalResultSummaryOut,
+    PortalSessionOut,
     PortalSlotsOut,
     PortalSummaryOut,
     PortalVerifyOut,
@@ -108,6 +109,22 @@ def login(request: HttpRequest, response: HttpResponse, payload: PortalLoginIn) 
     )
     _set_cookie(response, result.token)
     return queries.me(services.PortalPrincipal(result.session.pk, result.patient.pk))
+
+
+@portal_router.get(
+    "/session",
+    auth=None,
+    response={200: PortalSessionOut},
+    operation_id="portal_get_session",
+    summary="Whether this browser holds a live portal session, and whose",
+    description=(
+        "Always 200, so the sign-in page can ask without an error: `signed_in` false and `me` "
+        "null without a live session (an idle or revoked one is ended here)."
+    ),
+)
+def get_session(request: HttpRequest) -> Any:
+    who = services.authenticate(request.COOKIES.get(conf.COOKIE_NAME))
+    return {"signed_in": who is not None, "me": queries.me(who) if who is not None else None}
 
 
 @portal_router.post(

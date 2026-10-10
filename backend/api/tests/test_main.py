@@ -192,6 +192,7 @@ OPEN_OPERATIONS = frozenset(
         "core_get_center_logo",
         *(f"{module}_get_ping" for module in PING_MODULES),
         # Patient portal: public (sign-in, sign-out, receipt check).
+        "portal_get_session",
         "portal_login",
         "portal_logout",
         "portal_verify_receipt",
@@ -239,6 +240,7 @@ def test_only_whitelisted_operations_are_public(schema: dict[str, Any]) -> None:
         "auth_logout",
         "ops_get_health",
         # Patient portal sign-in and sign-out, and the public receipt check (ADR 0016).
+        "portal_get_session",
         "portal_login",
         "portal_logout",
         "portal_verify_receipt",

@@ -18714,6 +18714,30 @@
         "title": "PortalResultValueOut",
         "type": "object"
       },
+      "PortalSessionOut": {
+        "properties": {
+          "me": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalMeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signed_in": {
+            "title": "Signed In",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "signed_in",
+          "me"
+        ],
+        "title": "PortalSessionOut",
+        "type": "object"
+      },
       "PortalSlotOut": {
         "properties": {
           "ends_at": {
@@ -53525,6 +53549,27 @@
       }
     },
     "/api/portal/session": {
+      "get": {
+        "description": "Always 200, so the sign-in page can ask without an error: `signed_in` false and `me` null without a live session (an idle or revoked one is ended here).",
+        "operationId": "portal_get_session",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalSessionOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Whether this browser holds a live portal session, and whose",
+        "tags": [
+          "portal"
+        ]
+      },
       "post": {
         "description": "Sets the portal session cookie (HttpOnly, SameSite=Strict, path /api/portal). Every refusal is 401 `PORTAL_INVALID_CREDENTIALS`; 423 `PORTAL_LOCKED` after repeated failures for a file number; 429 `RATE_LIMITED` for an address. Needs X-CSRFToken.",
         "operationId": "portal_login",

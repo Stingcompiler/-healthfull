@@ -58,6 +58,19 @@ def test_sign_in_sets_only_the_portal_cookie(world: dict[str, Any], portal: Port
     assert portal.get("/api/portal/me").status_code == 200
 
 
+def test_session_probe_answers_without_an_error(
+    world: dict[str, Any], portal: PortalClient
+) -> None:
+    assert portal.get("/api/portal/session").json() == {"signed_in": False, "me": None}
+    portal.sign_in(world["a"])
+    body = portal.get("/api/portal/session").json()
+    assert body["signed_in"] is True
+    assert body["me"]["file_no"] == world["a"]["patient"]["file_no"]
+    an_hour_ago = timezone.now() - timedelta(hours=1)
+    PortalSession.objects.update(created_at=an_hour_ago, last_seen_at=an_hour_ago)
+    assert portal.get("/api/portal/session").json() == {"signed_in": False, "me": None}
+
+
 def test_sign_in_needs_csrf(world: dict[str, Any], portal: PortalClient) -> None:
     a = world["a"]
     response = portal.post(

@@ -383,5 +383,12 @@
   "CODE_REQUIRED": "Enter a code.",
   "CUSTOMER_REQUIRED": "Choose a patient file or enter a new customer, not both.",
   "PAYER_ALLOCATION_CONFLICT": "Allocate the payer payment to claims or to claim lines, not both.",
-  "CLAIM_PARTIAL_INVALID": "A partial answer accepts more than nothing and less than the claimed amount. Choose accepted or rejected for the whole amount."
+  "CLAIM_PARTIAL_INVALID": "A partial answer accepts more than nothing and less than the claimed amount. Choose accepted or rejected for the whole amount.",
+  "PORTAL_INVALID_CREDENTIALS": "The file number, phone number or code is not right. Check them and try again.",
+  "PORTAL_LOCKED": "Too many failed attempts for this file number. Please wait 15 minutes and try again.",
+  "PORTAL_SLOT_UNAVAILABLE": "This time can no longer be booked online. Please choose another time.",
+  "PORTAL_BOOKING_LIMIT": "You already have {{limit}} upcoming appointments. Cancel one to book another.",
+  "PORTAL_ALREADY_BOOKED": "You already have an appointment with this doctor on that day.",
+  "PORTAL_CANCEL_TOO_LATE": "Appointments can be cancelled online up to {{cutoff_hours}} hours before. Please call the center.",
+  "PORTAL_PHONE_REQUIRED": "Add a phone number to the patient's file before printing a portal code."
 }
