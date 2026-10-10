@@ -150,6 +150,15 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   results with print, prescriptions and lab preparation, invoices and receipts), the public receipt
   check `/verify/<token>` behind the receipt QR, and a portal access code the cashier prints on the
   receipt. Web manifest and bundled icons, no service worker (ADR 0016).
+- Phase 8 follow-ups (ADRs 0018, 0019): an admission made in error is cancelled from the bed
+  board with a reason and a second person's credentials, unbilled bed nights are voided and
+  invoiced nights send the nurse to the cashier's credit note; dispense returns screen
+  (`/pharmacy/returns`) putting units back into their batch, with a second approver for paid
+  lines; the `display` role for the waiting-room kiosk (only the queue feed); portal access
+  codes issued from the patient's file with a printable slip, and an explicit revoke; a second
+  person approves claims rebills and write-offs behind the `claims_second_approver` policy
+  switch (default on); items carry an Arabic generic name, used by the Arabic stock lists and
+  the item import template.
 
 ### Security
 - Imports refuse formula cells and text starting with `=`, check the xlsx zip signature and

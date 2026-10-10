@@ -100,8 +100,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - [x] Billing, payments and shifts (Phase 4, `feat/a-cashier`): merged in the second wave a
   integration (see the log).
-- Kiosk: `/display/queue` runs in a signed-in session of a user with `visits.view_queue`; a
-  display-only role needs a core role change.
+- [x] Kiosk: `/display/queue` runs in a signed-in session of a user with `visits.view_queue`; a
+  display-only role needs a core role change. Done on `feat/8-followups`: the `display` role
+  holds only `visits.view_display` (ADR 0019).
 - Paid-visit cancellation: reception sees the `billed` flag and a supervisor
   (`cashier_supervisor`) cancels directly; there is no in-app request for supervisor approval.
 - [x] `/administration/imports` is the import wizard since wave c (ops follow-ups).
@@ -132,9 +133,12 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - [x] FEATURES 8.13 (Excel import of items, batches and opening stock) built in wave c (ops,
   ADR 0014).
-- Dispense returns (`pharmacy.services.return_dispense`) have no endpoint or screen yet.
-- Stock lists show the item's generic name and strength (Latin, as printed on packs); the item
+- [x] Dispense returns (`pharmacy.services.return_dispense`) have no endpoint or screen yet.
+  Done on `feat/8-followups`: `/pharmacy/returns`, a second approver for paid lines (ADR 0018).
+- [x] Stock lists show the item's generic name and strength (Latin, as printed on packs); the item
   has no Arabic generic name. The queue, dispense dialog and sale use the bilingual service name.
+  Done on `feat/8-followups`: `Item.generic_name_ar` (item screens, admin, import template); the
+  Arabic stock lists show it, the Latin name when it is empty.
 - A new walk-in customer gets a patient file without the duplicate check (the sale screen offers
   "existing file" search first); reception merges duplicates later (FEATURES 1.4).
 - The walk-in sale screen sits under the pharmacy nav entry (pharmacy codes); a cashier, who
@@ -149,8 +153,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - [x] Bed nights reach the cashier when a nurse posts them on the bed board, at discharge, or when
   `manage.py charge_bed_nights --as <user>` runs; since wave c the compose `maintenance` loop
   runs it hourly as `BED_CHARGE_USER` (ops follow-ups).
-- No "admission in error" action: `AdmissionStatus.CANCELLED` exists but has no reason, approver
+- [x] No "admission in error" action: `AdmissionStatus.CANCELLED` exists but has no reason, approver
   and time columns (invariant 4). Today the nurse discharges and the cashier credits the night.
+  Done on `feat/8-followups` (ADR 0018): cancel with a reason and a second person; unbilled
+  nights voided, invoiced nights credited at the cashier first.
 - The doctor's workspace shows the vitals a nurse records, but not the nursing notes (they are on
   the nursing chart, which doctors can open).
 - Consumables used per procedure (FEATURES 10.4, P2) and the medication administration record
@@ -176,9 +182,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (claims, wave b)
 
-- FEATURES 11.5 asks for approval of rebills and write-offs: today the recording user with
+- [x] FEATURES 11.5 asks for approval of rebills and write-offs: today the recording user with
   `claims.resolve_rejection` is the approver (reason and time recorded, no second person;
-  ADR 0012). Add a second-person check if centers want one.
+  ADR 0012). Add a second-person check if centers want one. Done on `feat/8-followups`: a
+  second person by default, `Policy.claims_second_approver` (ADR 0018 amends ADR 0012).
 - One export layout (Excel and A4 print, Arabic or English) for every payer; a payer that wants
   its own column order or codes needs a per-payer export template (ADR 0012).
 - A payer cash payment goes into the recorder's own open shift; an accountant has no till, so a
@@ -242,9 +249,11 @@ Source of truth for build status. Update at the end of every task. Phases from `
   only, on `/portal/results` (lab follow-up above).
 - No self-service code request: a lost receipt means asking the cashier for a new code (which
   ends the old code's sessions). SMS delivery is FEATURES 15.3 (Later).
-- Codes are issued from the cashier's receipt screen only; reception (which also holds
+- [x] Codes are issued from the cashier's receipt screen only; reception (which also holds
   `portal.issue_access_code`) has no screen for it, and `portal.revoke_access_code` has no
-  endpoint yet (a new code revokes the old ones).
+  endpoint yet (a new code revokes the old ones). Done on `feat/8-followups`: the portal card
+  on the patient's file, the slip page `/patients/$patientId/portal-code`, and
+  `POST /api/portal/access-codes/{id}/revoke`.
 - Rotating `SECRET_KEY` invalidates the QR of every printed receipt (ADR 0016); the staff check
   by receipt number keeps working.
 - The portal shows no clinical notes, referrals or allergies; instructions are the dosing
@@ -544,3 +553,26 @@ Wave c (reports, ops, patient portal, with `main`'s transfer rejection fix) is c
   passed 155 and 161 in two reruns, every failure again `ERR_NETWORK_CHANGED`, and the last
   one (`claims-build` 1280 warm ar) passed alone. Every route passed at 375, 768 and 1280 in
   at least one run with the bell in the shell.
+- 2026-10-10: Phase 8 follow-ups on `feat/8-followups` (from `phase/8`, ADRs 0018, 0019): admission
+  in error (cancel with an `admission_cancel` reason and a second person's credentials; unbilled
+  bed nights voided through the one documented exception to "performed is terminal",
+  `line_guard` allows it only for a bed night of a cancelled admission; invoiced nights block
+  until the cashier credits them); dispense returns (`/pharmacy/returns`, stock back into the
+  original batch through the stock engine, reason required, second approver for billed lines,
+  refunds stay with the cashier's credit note); the `display` kiosk role (12th role, only
+  `visits.view_display`, 403 sweep over the whole contract); portal codes from the patient's
+  file with a printable slip and `POST /api/portal/access-codes/{id}/revoke`; a second person
+  for claims rebills and write-offs behind `Policy.claims_second_approver` (default on,
+  amends ADR 0012); `Item.generic_name_ar` (item screens, admin, import template, Arabic stock
+  lists). Migrations: core 0012-0015, visits 0004, orders 0004, pharmacy 0005-0006, claims
+  0004, portal 0004. Results: `make check` green (backend 2201 passed, frontend 486 passed,
+  ruff, mypy, eslint, prettier and tsc clean, no missing migrations, API contract in sync;
+  shellcheck not installed here). e2e: `@followups` 12 specs passed; with `@admin`, the
+  admin-policies, claims-detail, nursing-beds and pharmacy-returns matrices and the route
+  registry 121 of 121 passed; earlier runs on the branch: `@nursing|@pharmacy|@followups` with
+  the nursing-beds and pharmacy-returns matrices 50 passed (2 console-filter failures fixed,
+  then `@followups` 5 of 5); display role, `@patients`, `@admin`, `@auth`, queue-display 71
+  of 73 (the 2 failures were e2e_fixture processes hitting a half-edited admin file of this
+  branch, both passed in the next run); `@followups|@claims|@portal|@pharmacy` with the
+  patient-portal-code and pharmacy list matrices 121 of 121. ADR numbers: 0017 is reserved for
+  `feat/8-cycle`; the next free one is 0020.

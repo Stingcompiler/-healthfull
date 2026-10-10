@@ -338,7 +338,9 @@ def revoke_access_code(
         raise DomainError("REASON_REQUIRED", "Say why the code is revoked")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"revoke code: {text}"):
         code = (
-            PortalAccessCode.objects.select_for_update().select_related("patient").get(pk=code_id)
+            PortalAccessCode.objects.select_for_update(of=("self",))
+            .select_related("patient")
+            .get(pk=code_id)
         )
         if code.revoked_at is not None:
             raise DomainError("PORTAL_CODE_ALREADY_REVOKED", "The code is already revoked")
