@@ -150,6 +150,25 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   results with print, prescriptions and lab preparation, invoices and receipts), the public receipt
   check `/verify/<token>` behind the receipt QR, and a portal access code the cashier prints on the
   receipt. Web manifest and bundled icons, no service worker (ADR 0016).
+- Phase 8 handover, documentation and operations (ADR 0020):
+  - `README.md`: what the system is, architecture overview, developer quick start, deployment
+    summary, feature map with FEATURES numbers, screenshot names, security model.
+  - User guides in Arabic with English summaries (`docs/guides/`): one per role (the 12 roles,
+    including the waiting-room display), shared basics, and a plain-language patient portal guide.
+  - Runbooks: new `operations.md` (daily to quarterly checks, users and passwords, break-glass
+    account, internet down, power cut, dead server, integrity check, troubleshooting); the
+    restore-from-scratch drill, post-restore checks, update history and first-run steps in the
+    existing runbooks; a runbooks index.
+  - `manage.py integrity_check`: read-only check that the trial balance is zero and every entry
+    balanced, AR_PATIENT per invoice and AR_PAYER per payer match the documents, shift cash
+    matches, stock is never negative and equals its moves, and no allocation is orphaned.
+  - `infra/backup/restore-drill.sh`: rebuilds a dump into a new database with the owner/app role
+    setup, runs `migrate --check` (owner) and `integrity_check` (app role), counts key tables and
+    records the result with the restore tests; tested end to end by `make infra-test`.
+  - `infra/update.sh` records every run in `ops.UpdateRun` (from/to tag, result, start/end,
+    migration plan, migrations applied, database restored, pre-update dump, reason, log tail,
+    optional `--release-notes`) through `manage.py record_update`; an interrupted run is
+    recorded as failed by the next one.
 
 ### Security
 - Imports refuse formula cells and text starting with `=`, check the xlsx zip signature and

@@ -12,7 +12,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merged to main (PR #5) | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
 | 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merge to main pending (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
 | 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merge to main pending (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
-| 8. Hardening and handover | not started | |
+| 8. Hardening and handover | in progress | docs and operations on `feat/8-docs` (README, user guides, runbooks, `integrity_check`, restore drill, UpdateRun from `update.sh`, ADR 0020) |
 
 ## Phase 0 checklist
 
@@ -226,10 +226,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
   supplier per store.
 - [x] Bed nights are charged by the maintenance loop as `BED_CHARGE_USER` (empty skips it).
 - Manual backups need the backup service: in development and e2e a request stays pending.
-- `UpdateRun` rows are not written by `infra/update.sh` yet; the update history shows its JSON
-  log (`update-runs.jsonl`) and any recorded `UpdateRun` with release notes. Writing release
-  notes into `UpdateRun` from the update script is open (13.10 "update trigger" stays the
-  runbook's `infra/update.sh`).
+- [x] `UpdateRun` rows are written by `infra/update.sh` since phase 8 (`manage.py
+  record_update`, ADR 0020): every run with its plan, outcome, rollback and `--release-notes`.
+  The API (`/api/ops/updates`) and status page do not show the new columns yet (13.10 "update
+  trigger" stays the runbook's `infra/update.sh`).
 - Notifications are polled every minute (no push); the bell lists the latest 15.
 - Model names in the audit viewer are translated for the main records; the rest show Django's
   English verbose name. Field names are shown as database columns.
@@ -284,8 +284,47 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - 14.4: sign-in audit (`AuthEvent`), lockout and throttling (Phase 0, ADR 0004); the audit trail
   viewer since wave c.
 - 14.5: pgBackRest repositories are always encrypted (`aes-256-cbc`, `infra/backup/`).
-- 14.6: `docs/runbooks/backup-restore.md` and `install.md`; a timed replace-the-server drill
-  has not been run (no Docker on the build machine).
+- 14.6: `docs/runbooks/backup-restore.md`, `install.md` and `operations.md`; the
+  restore-from-scratch drill (`infra/backup/restore-drill.sh`: new database, owner/app roles,
+  `migrate --check`, `integrity_check`, row counts, recorded) runs end to end in
+  `make infra-test` on local PostgreSQL. A timed replace-the-server drill with the Docker images
+  on real hardware has not been run (no Docker on the build machine).
+
+## Follow-ups (docs and operations, phase 8)
+
+Found while writing the user guides against the code (`feat/8-docs`); none is fixed there:
+
+- Nav reach: a cashier holds `billing.pharmacy_sale` but the pharmacy nav entry needs
+  `pharmacy.dispense`/`pharmacy.view` (URL only, `/pharmacy/sale`); a receptionist holds
+  `visits.admit` and `lab.print_results` but cannot reach the bed board or a lab result from the
+  nav; a nurse holds `lab.collect_sample` (no lab work list without `lab.view_worklist`) and
+  `clinical.manage_allergies` (allergy editing lives only in the doctor's workspace); a nurse sees
+  «العيادة» with an empty "My patients" and «نداء التالي» answers `DOCTOR_PROFILE_REQUIRED`.
+- Managers get `transfer_rejected` notifications linking to `/cashier/transfers`, whose API
+  needs `payments.confirm_transfer` (PERMISSION_DENIED).
+- Registered but unused codes: `payments.manage_banks`, `ledger.view`, `ledger.manage_accounts`.
+- The accountant holds `billing.apply_discount` without `billing.create_invoice` (discount
+  actions on drafts they cannot otherwise edit) and cannot approve a desk discount
+  (`billing.override_discount_limit`).
+- The dashboard's stale-transfer alert uses a fixed 2 days; the notification uses
+  `Policy.pending_transfer_alert_days` (3).
+- Wording names fewer roles than can act: the shift review form «اعتماد المدير» and
+  `SELF_REVIEW_NOT_ALLOWED` (supervisors and accountants review too), `SELF_APPROVAL_NOT_ALLOWED`
+  (accountants approve refunds), `OVERRIDE_NOT_PERMITTED` (admin may override); `portal.login.help`
+  names only the cashier (reception and lab supervisors issue codes too).
+- Approver UI: pharmacy uses a switch «يعتمد المشرف الآن», `SecondApproverFields` shows its fields
+  always, lab cancel spells «المعتمد» without the shadda; a short transfer receipt without the
+  switch answers a bare `PERMISSION_DENIED`.
+- The dispense dialog lists expired batches and lets override mode fill them (the server refuses
+  with `BATCH_EXPIRED`).
+- On `feat/8-followups`: `claims.shortfall.description` still says the recorder is the approver;
+  the item import's `generic_name_ar` column has no `imports.field.generic_name_ar` label; the
+  `display` role can be combined with person roles on the users screen (ADR 0019 says alone).
+- No screen closes a visit (`visits.close`, «ختم الزيارة») although FLOW.md has the doctor close
+  it; the kiosk page has no sign-out; «دليل التصميم» shows in every user's menu.
+- Operations: the new `UpdateRun` columns are not in `/api/ops/updates` or on the status page;
+  no scheduled `integrity_check` with an in-app alert; the production drill runs in two parts
+  (backup container, then the app containers) because no image has both `pg_restore` and Django.
 
 ## Next: merge wave c to main, then Phase 8
 
@@ -544,3 +583,18 @@ Wave c (reports, ops, patient portal, with `main`'s transfer rejection fix) is c
   passed 155 and 161 in two reruns, every failure again `ERR_NETWORK_CHANGED`, and the last
   one (`claims-build` 1280 warm ar) passed alone. Every route passed at 375, 768 and 1280 in
   at least one run with the bell in the shell.
+- 2026-10-10: Phase 8 docs and operations on `feat/8-docs` (from `phase/8`): `README.md`; Arabic
+  user guides with English summaries in `docs/guides/` (12 roles including the waiting-room
+  display, basics, patient portal; labels and routes checked against the ar locale files and
+  route files, phase 8 follow-up screens documented as they will exist); runbooks reviewed and
+  completed (new `operations.md` and index; restore drill, post-restore checks, update history
+  and first-run steps; commands checked against the scripts, Makefile and compose file);
+  `infra/update.sh` writes `ops.UpdateRun` through `manage.py record_update` (ops migration
+  0004, columns with database defaults for rollbacks); `manage.py integrity_check`
+  (`apps/ops/integrity.py`, `domain/integrity.py`); `infra/backup/restore-drill.sh` and
+  `infra/tests/test_restore_drill.sh`; the CI infra job gets the backend environment
+  (`REQUIRE_DJANGO=1`); ADR 0020. Results: `make check` green (backend 2136 passed, frontend 485
+  passed, ruff, mypy, eslint, prettier and tsc clean, no missing migrations, API contract in
+  sync; shellcheck not installed here). `make infra-test` 67 checks passed (pgbackrest conf 6,
+  update.sh 26, app entrypoint 4, db roles 14, backup/restore 11, restore drill 6). No e2e run:
+  no screen changed.

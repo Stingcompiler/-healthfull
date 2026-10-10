@@ -22,7 +22,7 @@ frontend/                React 19 + Vite + TypeScript 5.9 strict + Tailwind v4 +
 e2e/                     Playwright tests, fixtures, responsive helpers
 agent/                   local device agent (Python, PyInstaller)
 infra/                   Dockerfiles, compose, Caddyfile, pgbackrest, update.sh, backup scripts
-docs/                    decisions, ADRs (docs/adr/NNNN-title.md), runbooks
+docs/                    decisions, ADRs (docs/adr/NNNN-title.md), runbooks/, guides/ (user guides per role)
 scripts/                 dev helper scripts
 Makefile                 the only entry point for common commands
 ```
@@ -40,6 +40,7 @@ Makefile                 the only entry point for common commands
 | `make e2e` | reset e2e DB, seed, start servers on free ports, run Playwright |
 | `make seed` | load demo dataset into dev DB |
 | `make check` | lint + typecheck + test + api drift check. Must be green before any commit to main |
+| `make infra-test` | shell lint + `infra/tests/run.sh`: update.sh (fake docker), roles, backup/restore and the restore-from-scratch drill (local Postgres 16; the drill also needs `backend/.venv`) |
 
 ## 3. Parallel-safe local environment
 
@@ -70,7 +71,7 @@ Several checkouts (git worktrees) may run at once. Never hardcode DB names or po
 | `reports` | no models; read-only query services |
 | `portal` | PortalAccessCode, portal auth |
 | `imports` | ImportJob, ImportRow (Excel preview/confirm) |
-| `ops` | BackupRun, RestoreTest, health checks |
+| `ops` | BackupRun, RestoreTest, UpdateRun (written by `infra/update.sh` through `manage.py record_update`), BackupRequest, DataExport, health checks, status page, `manage.py integrity_check` (`apps/ops/integrity.py`) |
 
 ### 4.2 Layering (strict)
 
@@ -187,6 +188,7 @@ Postings (each a balanced JournalEntry with `source_type`, `source_id` and, when
   - `truncate_guard` on the 22 money, claim, service-line, stock and lab result tables: `TRUNCATE` is refused unless the session role is a member of the table owner.
   - `pgtrigger`'s ignore switch is replaced after every `migrate` by a function that never ignores a trigger.
 - Database roles: production runs the application as a non-owner role with DML grants only; the owner runs migrations. The table owner or a superuser can still truncate or disable triggers, so the guards hold only under that split (ADR 0006 (m); roles set up by `infra/db/`).
+- Verification: `manage.py integrity_check` (read-only snapshot, runs as the app role) re-derives what the guards protect: trial balance zero and every entry balanced, AR_PATIENT per invoice = document position, AR_PAYER per payer = claims documents, shift CASH = expected cash (zero once closed), stock never negative and balances = moves, no orphan allocations. The restore drill (`infra/backup/restore-drill.sh`) runs it on every rebuilt database (ADR 0020).
 - `django-pghistory` tracks every mutable model with context (user id, request id, reason). Services set context via `pghistory.context(user=..., reason=...)`. Middleware attaches the request user.
 
 ### 4.10 Permissions
@@ -258,6 +260,7 @@ Service line state colors (`--state-*`): requested slate, invoiced blue, paid li
 | Services | pytest-django on real Postgres | Every transition, permission, and trigger protection tested, including that DB triggers reject direct UPDATE/DELETE |
 | API | ninja TestClient | Happy path + permission denied + domain error code per endpoint |
 | Frontend | vitest + Testing Library | Components with logic, i18n key parity |
+| Infra | bash + fake docker + local Postgres (`make infra-test`) | `update.sh` control flow and its UpdateRun record, roles, backup/restore, restore-from-scratch drill on a database seeded through the services |
 | E2E | Playwright (chromium) | Each feature's main flow at 3 viewports; overflow check for every route × 3 viewports × 3 themes × 2 languages; screenshots to `artifacts/screens/<route>-<viewport>-<theme>-<lang>.png` for (ar,light), (en,dark), (ar,warm) |
 
 E2E seed users (one per role, plus three more doctors) are created by `manage.py seed_e2e`; credentials live in `e2e/fixtures/users.ts` and `backend/apps/core/management/commands/seed_e2e.py` only (test values, never real). The same command seeds the base catalog (`backend/apps/core/e2e/catalog.py`: departments, doctors' schedules, services, price lists, payers and coverage rules, stock, lab tests, wards and beds). Specs build further data with the factories in `e2e/helpers/api.ts`, which call the real endpoints through registered adapters when they exist and otherwise `manage.py e2e_fixture` (builders over the services, test databases only); see `e2e/README.md`.
