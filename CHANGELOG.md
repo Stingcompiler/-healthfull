@@ -220,6 +220,10 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   placeholder sections left (imports, system status, data export and audit are real pages;
   `AdminSectionPage` removed). The clinic doctor-states e2e setup gets the test timeout
   instead of the 30 s hook default.
+- Phase 8 integration (`phase/8`): wave c from `main`, the phase 8 follow-ups (ADRs 0018, 0019)
+  and the docs and operations work (ADR 0020) merged together; the user guides and runbooks now
+  describe screens that exist on the same branch, and the restore drill's `integrity_check`
+  passes on data from the new returns, admission-in-error and claims second-approver flows.
 - Nurses hold `visits.admit` by default (they record the admission on the doctor's decision);
   the Nursing menu entry shows to holders of any nursing permission. A cancelled visit takes no
   nursing notes (`VISIT_CANCELLED`).

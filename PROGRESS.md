@@ -10,9 +10,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merged to main (PR #4) | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merged to main (PR #4) | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merged to main (PR #5) | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
-| 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merge to main pending (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
-| 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merge to main pending (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
-| 8. Hardening and handover | in progress | docs and operations on `feat/8-docs` (README, user guides, runbooks, `integrity_check`, restore drill, UpdateRun from `update.sh`, ADR 0020) |
+| 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merged to main (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
+| 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merged to main (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
+| 8. Hardening and handover | in progress on `phase/8` | merged into `phase/8`: follow-ups from `feat/8-followups` (admission in error, dispense returns, `display` role, reception portal codes, claims second approver, Arabic generic names; ADRs 0018, 0019) and docs and operations from `feat/8-docs` (README, user guides, runbooks, `integrity_check`, restore drill, UpdateRun from `update.sh`, ADR 0020); `feat/8-cycle` (ADR 0017) still in progress |
 
 ## Phase 0 checklist
 
@@ -335,10 +335,11 @@ Found while writing the user guides against the code (`feat/8-docs`); none is fi
   no scheduled `integrity_check` with an in-app alert; the production drill runs in two parts
   (backup container, then the app containers) because no image has both `pg_restore` and Django.
 
-## Next: merge wave c to main, then Phase 8
+## Next: finish Phase 8 on `phase/8`
 
-Wave c (reports, ops, patient portal, with `main`'s transfer rejection fix) is complete on
-`wave/c` (PR #7). Take it to `main`, then Phase 8 (hardening and handover).
+Wave c is on `main` (PR #7, `39dd731`) and merged into `phase/8`. `feat/8-followups` and
+`feat/8-docs` are merged into `phase/8`; merge `feat/8-cycle` (ADR 0017) when it is done, then
+run the full `make e2e` on `phase/8` and take it to `main`.
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.
@@ -630,3 +631,23 @@ Wave c (reports, ops, patient portal, with `main`'s transfer rejection fix) is c
   sync; shellcheck not installed here). `make infra-test` 67 checks passed (pgbackrest conf 6,
   update.sh 26, app entrypoint 4, db roles 14, backup/restore 11, restore drill 6). No e2e run:
   no screen changed.
+- 2026-10-10: Phase 8 integration on `phase/8`: merged `origin/main` (wave c, PR #7, `39dd731`;
+  same tree as `phase/8`, no file changes), `feat/8-followups` and `feat/8-docs`, in that
+  order, `--no-ff`. Conflicts: followups merged without any; docs: `CHANGELOG.md` and
+  `PROGRESS.md` only (both entries kept). `docs/ARCHITECTURE.md` merged cleanly: the docs
+  branch's layout, `make infra-test`, ops app, integrity-check and infra-test rows sit beside the
+  followups' 4.4 rule 6 exception and the 12-role line in 4.10. No migration clashes (core
+  0012-0015, visits 0004, orders 0004, pharmacy 0005-0006, claims 0004, portal 0004 from
+  followups; ops 0004 from docs), so no merge migration; `errors.json` and the generated API
+  files were touched by followups only, and `make api` reproduced them byte for byte (api-check
+  in sync). ADRs 0018, 0019, 0020 present; 0017 stays reserved for `feat/8-cycle`. Results with
+  `DB_NAME=dev_hospital_merge8`, `TEST_DB_NAME=test_hospital_merge8`: `make check` green
+  (backend 2228 passed in 19 min, frontend 486 passed; ruff, ruff format, mypy, eslint,
+  prettier, tsc for frontend and e2e clean; no missing migrations; API contract in sync;
+  shellcheck not installed here); a fresh `migrate` of `dev_hospital_merge8` applied every
+  migration; `make infra-test` with `REQUIRE_DJANGO=1` 67 checks passed (pgbackrest conf 6,
+  update.sh 26, app entrypoint 4, db roles 14, backup/restore 11, restore drill 6);
+  `make e2e E2E_GREP="@followups|@nursing|@pharmacy|@claims|@portal|@patients|@admin|route
+  registry"` 76 of 76 passed (20.9 min), no flakes; `manage.py integrity_check` on the e2e
+  database afterwards (returns, cancelled admissions, claims, portal data) passed every check.
+  The full e2e runs after `feat/8-cycle` is merged.
