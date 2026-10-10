@@ -12,6 +12,7 @@ from apps.core.roles import (
     DOCTOR,
     LAB_SUPERVISOR,
     LAB_TECH,
+    MANAGER,
     NURSE,
     RECEPTIONIST,
 )
@@ -77,4 +78,18 @@ register_permission(
     label_ar="إدارة دليل الفحوصات والمعايير",
     label_en="Manage tests, parameters and ranges",
     default_roles={LAB_SUPERVISOR, ADMIN},
+)
+
+register_permission(
+    "lab.cancel_test",
+    label_ar="إلغاء فحص تعذر إجراؤه",
+    label_en="Cancel a test that cannot be performed",
+    default_roles={LAB_SUPERVISOR, ADMIN},
+)
+
+register_permission(
+    "lab.view_reports",
+    label_ar="عرض تقارير المعمل (زمن الإنجاز)",
+    label_en="View lab reports (turnaround time)",
+    default_roles={LAB_SUPERVISOR, MANAGER, ADMIN},
 )

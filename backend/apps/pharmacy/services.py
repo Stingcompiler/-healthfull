@@ -58,6 +58,7 @@ from apps.pharmacy.models import (
     Dispense,
     DispenseLine,
     DispenseReturn,
+    DosageForm,
     GoodsReceipt,
     GoodsReceiptLine,
     Item,
@@ -70,6 +71,7 @@ from apps.pharmacy.models import (
     StockMove,
     StockTransfer,
     StockTransferLine,
+    Storage,
     Store,
     Supplier,
     TransferStatus,
@@ -87,6 +89,7 @@ __all__ = [
     "DispenseRequest",
     "ExpiringBatch",
     "LowStockItem",
+    "StockCardRow",
     "add_count_line",
     "add_receipt_line",
     "add_unit",
@@ -98,11 +101,13 @@ __all__ = [
     "count_variances",
     "create_item",
     "create_receipt",
+    "create_supplier",
     "create_transfer",
     "dispense",
     "dispense_worklist",
     "dispensed_quantity",
     "expiring_batches",
+    "find_by_barcode",
     "item_factors",
     "low_stock",
     "on_hand",
@@ -116,8 +121,11 @@ __all__ = [
     "returned_quantity",
     "send_transfer",
     "start_count",
+    "stock_card",
     "suggest_batches",
     "to_base_units",
+    "update_item",
+    "update_unit",
 ]
 
 DISPENSABLE_KINDS = (ServiceKind.DRUG, ServiceKind.CONSUMABLE)
@@ -227,6 +235,24 @@ def _write_moves(
         )
         for m in moves
     ]
+
+
+def _check_available(batch_id: int, store_id: int, needed: int) -> None:
+    """Early check that ``needed`` base units of a batch are on hand in a store.
+
+    Not a lock: the document's posting step checks again under ``FOR UPDATE`` (invariant 5).
+    """
+    row = StockBalance.objects.filter(batch_id=batch_id, store_id=store_id).first()
+    available = int(row.qty_base) if row is not None else 0
+    if needed > available:
+        raise DomainError(
+            "STOCK_INSUFFICIENT",
+            "Stock cannot go negative",
+            batch_id=batch_id,
+            store_id=store_id,
+            available=available,
+            shortfall=needed - available,
+        )
 
 
 def _apply(
@@ -353,6 +379,36 @@ def low_stock(*, store: Store | None = None) -> list[LowStockItem]:
     return out
 
 
+@dataclass(frozen=True, slots=True)
+class StockCardRow:
+    """One move of an item's stock card with the balances right after it."""
+
+    move: StockMove
+    balance: int
+    batch_balance: int
+
+
+def stock_card(item: Item, *, store: Store | None = None) -> list[StockCardRow]:
+    """Every move of ``item`` (one store or all), oldest first, with running balances.
+
+    ``balance`` is the item's on-hand after the move (in that store, or in every store);
+    ``batch_balance`` the moved batch's on-hand in the move's store.
+    """
+    qs = StockMove.objects.filter(item=item).select_related("batch", "store", "created_by")
+    if store is not None:
+        qs = qs.filter(store=store)
+    total = 0
+    per_batch: dict[tuple[int, int], int] = defaultdict(int)
+    rows: list[StockCardRow] = []
+    for move in qs.order_by("moved_at", "id"):
+        qty = int(move.qty_base)
+        total += qty
+        key = (move.batch_id, move.store_id)
+        per_batch[key] += qty
+        rows.append(StockCardRow(move, total, per_batch[key]))
+    return rows
+
+
 def dispensed_quantity(line: ServiceLine) -> int:
     """Base units handed out for the line (returns are counted apart)."""
     total = DispenseLine.objects.filter(service_line=line).aggregate(t=Sum("qty_base"))["t"]
@@ -418,6 +474,79 @@ def dispense_worklist(*, visit: Visit | None = None) -> QuerySet[ServiceLine]:
 # --- item master ----------------------------------------------------------------------------
 
 
+#: Item fields a pharmacist may set at creation or edit later (FEATURES 8.1). The service and
+#: the base unit code are fixed once the item exists: stock is counted in that unit.
+ITEM_FIELDS = frozenset(
+    {
+        "generic_name",
+        "brand_name",
+        "form",
+        "strength",
+        "base_unit_name_ar",
+        "base_unit_name_en",
+        "barcode",
+        "min_stock",
+        "reorder_qty",
+        "storage",
+        "is_controlled",
+        "active",
+    }
+)
+UNIT_FIELDS = frozenset({"name_ar", "name_en", "barcode", "is_dispensable", "is_purchase_unit"})
+SUPPLIER_FIELDS = frozenset({"contact_name", "phone", "address", "tax_no", "notes"})
+
+
+def _check_barcode(code: str, *, item_id: int | None = None, unit_id: int | None = None) -> str:
+    """``code`` stripped; refuses a barcode another item or pack unit already carries."""
+    clean = code.strip()
+    if not clean:
+        return ""
+    items = Item.objects.filter(barcode=clean)
+    units = UnitConversion.objects.filter(barcode=clean)
+    if item_id is not None:
+        items = items.exclude(pk=item_id)
+    if unit_id is not None:
+        units = units.exclude(pk=unit_id)
+    if items.exists() or units.exists():
+        raise DomainError("BARCODE_TAKEN", "Another item or unit has this barcode", barcode=clean)
+    return clean
+
+
+def _item_values(fields: Mapping[str, object], *, item_id: int | None) -> dict[str, object]:
+    """Validated item fields (choices, whole non-negative levels, unique barcode, names)."""
+    unknown = sorted(set(fields) - ITEM_FIELDS)
+    if unknown:
+        raise DomainError("FIELD_NOT_EDITABLE", "These item fields cannot be set", fields=unknown)
+    out: dict[str, object] = {}
+    for name, value in fields.items():
+        if name == "form":
+            if value not in DosageForm.values:
+                raise DomainError("INVALID_FORM", "Unknown dosage form", form=str(value))
+            out[name] = value
+        elif name == "storage":
+            if value not in Storage.values:
+                raise DomainError(
+                    "INVALID_STORAGE", "Unknown storage condition", storage=str(value)
+                )
+            out[name] = value
+        elif name in ("min_stock", "reorder_qty"):
+            if not isinstance(value, int | Decimal | str):
+                raise DomainError("INVALID_QUANTITY", f"{name} must be a whole number")
+            out[name] = Decimal(_whole(Decimal(value), name, minimum=0))
+        elif name == "barcode":
+            out[name] = _check_barcode(str(value), item_id=item_id)
+        elif name in ("is_controlled", "active"):
+            out[name] = bool(value)
+        elif name == "generic_name":
+            text = str(value).strip()
+            if not text:
+                raise DomainError("NAME_REQUIRED", "The generic name is required")
+            out[name] = text
+        else:
+            out[name] = str(value).strip()
+    return out
+
+
 def create_item(
     *,
     service: Service,
@@ -432,7 +561,9 @@ def create_item(
 
     Raises:
         DomainError: ``SERVICE_NOT_STOCKABLE`` (the service is not a drug or consumable),
-            ``ITEM_EXISTS``, ``NAME_REQUIRED``, ``UNIT_REQUIRED``.
+            ``ITEM_EXISTS``, ``NAME_REQUIRED``, ``UNIT_REQUIRED``, ``INVALID_FORM``,
+            ``INVALID_STORAGE``, ``INVALID_QUANTITY``, ``BARCODE_TAKEN``,
+            ``FIELD_NOT_EDITABLE``.
     """
     if service.kind not in DISPENSABLE_KINDS:
         raise DomainError(
@@ -444,6 +575,7 @@ def create_item(
         raise DomainError("UNIT_REQUIRED", "The base unit is required")
     if Item.objects.filter(service=service).exists():
         raise DomainError("ITEM_EXISTS", "The service already has a stock item")
+    values = _item_values(fields, item_id=None)
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="create item"):
         return Item.objects.create(
             service=service,
@@ -451,8 +583,39 @@ def create_item(
             base_unit_code=base_unit_code.strip(),
             base_unit_name_ar=base_unit_name_ar.strip(),
             base_unit_name_en=base_unit_name_en.strip(),
-            **fields,
+            **values,
         )
+
+
+def update_item(item: Item, *, actor: User, **fields: object) -> Item:
+    """Edit an item's master data (FEATURES 8.1); the service and base unit stay fixed.
+
+    Raises:
+        DomainError: ``FIELD_NOT_EDITABLE``, ``NAME_REQUIRED``, ``INVALID_FORM``,
+            ``INVALID_STORAGE``, ``INVALID_QUANTITY``, ``BARCODE_TAKEN``.
+    """
+    values = _item_values(fields, item_id=item.pk)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit item"):
+        locked = Item.objects.select_for_update().get(pk=item.pk)
+        for name, value in values.items():
+            setattr(locked, name, value)
+        if values:
+            locked.save(update_fields=[*values, "updated_at"])
+    return locked
+
+
+def find_by_barcode(code: str) -> tuple[Item, UnitConversion | None] | None:
+    """The item a scanned barcode names, with the pack unit when it is a unit's barcode."""
+    clean = code.strip()
+    if not clean:
+        return None
+    item = Item.objects.filter(barcode=clean).first()
+    if item is not None:
+        return item, None
+    unit = UnitConversion.objects.select_related("item").filter(barcode=clean).first()
+    if unit is not None:
+        return unit.item, unit
+    return None
 
 
 def add_unit(
@@ -465,14 +628,20 @@ def add_unit(
     actor: User,
     is_dispensable: bool = True,
     is_purchase_unit: bool = False,
+    barcode: str = "",
 ) -> UnitConversion:
-    """A pack unit holding ``factor`` base units (box -> strip -> tablet, FEATURES 8.1)."""
+    """A pack unit holding ``factor`` base units (box -> strip -> tablet, FEATURES 8.1).
+
+    Raises:
+        DomainError: ``INVALID_CONVERSION``, ``INVALID_QUANTITY``, ``BARCODE_TAKEN``.
+    """
     code = unit_code.strip()
     whole = _whole(factor, "factor", minimum=2)
     if not code or code == item.base_unit_code:
         raise DomainError("INVALID_CONVERSION", "A pack unit differs from the base unit")
     if UnitConversion.objects.filter(item=item, unit_code=code).exists():
         raise DomainError("INVALID_CONVERSION", "The unit is already defined", unit=code)
+    clean_barcode = _check_barcode(barcode)
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="add unit"):
         return UnitConversion.objects.create(
             item=item,
@@ -482,6 +651,68 @@ def add_unit(
             factor=Decimal(whole),
             is_dispensable=is_dispensable,
             is_purchase_unit=is_purchase_unit,
+            barcode=clean_barcode,
+        )
+
+
+def update_unit(unit: UnitConversion, *, actor: User, **fields: object) -> UnitConversion:
+    """Rename a pack unit, set its barcode or its dispensing and purchase flags.
+
+    The factor never changes: past moves and documents were converted with it.
+
+    Raises:
+        DomainError: ``FIELD_NOT_EDITABLE``, ``BARCODE_TAKEN``.
+    """
+    unknown = sorted(set(fields) - UNIT_FIELDS)
+    if unknown:
+        raise DomainError("FIELD_NOT_EDITABLE", "These unit fields cannot be set", fields=unknown)
+    values: dict[str, object] = {}
+    for name, value in fields.items():
+        if name == "barcode":
+            values[name] = _check_barcode(str(value), unit_id=unit.pk)
+        elif name in ("is_dispensable", "is_purchase_unit"):
+            values[name] = bool(value)
+        else:
+            values[name] = str(value).strip()
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit unit"):
+        locked = UnitConversion.objects.select_for_update().get(pk=unit.pk)
+        for name, value in values.items():
+            setattr(locked, name, value)
+        if values:
+            locked.save(update_fields=list(values))
+    return locked
+
+
+# --- suppliers ------------------------------------------------------------------------------
+
+
+def create_supplier(
+    *, code: str, name_ar: str, name_en: str, actor: User, **fields: str
+) -> Supplier:
+    """A supplier goods are received from (FEATURES 8.5).
+
+    Raises:
+        DomainError: ``CODE_REQUIRED``, ``NAME_REQUIRED``, ``SUPPLIER_EXISTS``,
+            ``FIELD_NOT_EDITABLE``.
+    """
+    clean = code.strip().upper()
+    if not clean:
+        raise DomainError("CODE_REQUIRED", "A supplier code is required")
+    if not name_ar.strip() and not name_en.strip():
+        raise DomainError("NAME_REQUIRED", "A name in Arabic or English is required")
+    unknown = sorted(set(fields) - SUPPLIER_FIELDS)
+    if unknown:
+        raise DomainError(
+            "FIELD_NOT_EDITABLE", "These supplier fields cannot be set", fields=unknown
+        )
+    if Supplier.objects.filter(code=clean).exists():
+        raise DomainError("SUPPLIER_EXISTS", "A supplier has this code", supplier=clean)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="create supplier"):
+        return Supplier.objects.create(
+            code=clean,
+            name_ar=name_ar.strip(),
+            name_en=name_en.strip(),
+            **{k: v.strip() for k, v in fields.items()},
         )
 
 
@@ -897,10 +1128,19 @@ def request_adjustment(
 ) -> StockAdjustment:
     """Request a stock correction (FEATURES 8.6): ``lines`` of (batch id, signed base qty,
     note). Nothing moves until a supervisor approves it.
+
+    A decrease larger than the batch's on-hand in the store is refused now
+    (``STOCK_INSUFFICIENT``); approval checks again under the row locks (invariant 5).
     """
     reason = resolve_reason(reason_code, "stock_adjust", note)
     if not lines:
         raise DomainError("ADJUSTMENT_EMPTY", "The adjustment has no lines")
+    if not store.active:
+        raise DomainError("STORE_INACTIVE", "The store is inactive")
+    for batch_id, qty, _note in lines:
+        _whole(qty, "qty_base", minimum=-(10**12))
+        if qty < 0:
+            _check_available(batch_id, store.pk, -qty)
     seen: set[int] = set()
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="request adjustment"):
         adj = StockAdjustment.objects.create(
@@ -1158,11 +1398,19 @@ def create_transfer(
     actor: User,
     note: str = "",
 ) -> StockTransfer:
-    """A draft transfer of ``lines`` (batch id, base qty) between stores (FEATURES 8.10)."""
+    """A draft transfer of ``lines`` (batch id, base qty) between stores (FEATURES 8.10).
+
+    A line larger than the batch's on-hand in the source store is refused now
+    (``STOCK_INSUFFICIENT``); sending checks again under the row locks (invariant 5).
+    """
     if from_store.pk == to_store.pk:
         raise DomainError("TRANSFER_SAME_STORE", "Source and destination stores must differ")
     if not lines:
         raise DomainError("TRANSFER_EMPTY", "The transfer has no lines")
+    if not from_store.active or not to_store.active:
+        raise DomainError("STORE_INACTIVE", "The store is inactive")
+    for batch_id, qty in lines:
+        _check_available(batch_id, from_store.pk, _whole(qty))
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="create transfer"):
         transfer = StockTransfer.objects.create(
             number=next_number("TRF"),

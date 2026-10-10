@@ -89,6 +89,40 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   with opening float, close with variance, frozen report and manager review, cash handovers to a
   named receiver or the safe, receipts with a QR check screen and A4/80 mm printing of receipts,
   invoices and the shift report (ADRs 0008, 0009).
+- Wave b, pharmacy (FEATURES 8.1-8.10, 5.12): `/api/pharmacy` (46 operations) and the pharmacy
+  screens: dispense queue of paid or authorized lines with a scanner-friendly search, dispense
+  dialog with FEFO batches, other batches with a reason, pack units, item barcode scan and partial
+  dispense (rest kept open, or cancelled and refunded with a supervisor at the counter); item
+  master with pack units, barcodes and stock card; goods receipts with batches and suppliers;
+  stock adjustments with approval; count sessions with variances posted by a manager; transfers
+  with send, receive, shortage approval and cancel; expiry (30/60/90 days) and low-stock reports;
+  walk-in sale draft invoice for the cashier. Adjustment requests and transfer drafts refuse more
+  than the batch holds when made. Stock batches are "التشغيلة" in Arabic.
+- Wave b, laboratory (FEATURES 9.1-9.8): `/api/lab` (25 operations) and the lab screens: the
+  work list of paid or authorized tests with collect, receive and reject (a rejected sample's
+  draft values are discarded), a 50 x 30 mm tube label, result entry per parameter with
+  high/low/critical flags from sex- and age-specific ranges, the supervisor approval queue
+  (approval names the draft revision it read, `RESULT_CHANGED`), amendments as new versions
+  with the history kept, A4 result print in Arabic or English, "test cannot be performed" with
+  a billing approver's credentials at the bench for a paid test (credit note, refund at the
+  cashier), the test catalog editor and the turnaround report (median and 90th percentile).
+  New permissions `lab.cancel_test` and `lab.view_reports` (ADR 0010).
+- Wave b, nursing (FEATURES 3.4 for nurses, 10.1-10.3, 10.5): the procedure desk at `/nursing`
+  (paid or authorized procedures as large tablet cards, one-tap done with a five-second undo
+  window or with a note, done today), `/nursing/visits` (inpatients and today's visits) leading
+  to the nursing chart (vitals, nursing notes, the visit's procedures and admission), and the
+  bed board `/nursing/beds` (wards and beds with occupants, admit on an open or a new inpatient
+  visit, transfer, discharge, bed out of service, posting the nights due as lines for the
+  cashier); `/api/orders/procedures`, `/api/clinical/nursing`, `/api/visits/inpatient`,
+  `manage.py charge_bed_nights` (ADR 0011).
+- Wave b, insurance claims (FEATURES 11.2-11.7): `/api/claims` and the claim screens. Payer
+  receivables by stage (accrued, claimed, accepted unpaid, rejected unresolved, collected), the
+  batch builder per payer and period, Excel export (Arabic or English) and A4 print in the payer
+  layout, the payer's answer per line (accepted, partial, rejected with reason), rejected parts
+  rebilled to the patient or written off with a reason, short-paid amounts written off, payer
+  payments by transfer, cheque (cleared later) or cash into the recorder's shift, allocated per
+  claim or oldest first, reversal of a bounced payment, and aging by payer (0-30, 31-60, 61-90,
+  over 90 days). Only `claims.*` holders reach any of it (ADR 0012).
 
 ### Security
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
@@ -110,6 +144,9 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   `PUBLIC` loses `CONNECT`/`TEMP` on the database and `CREATE` on schema `public`.
 
 ### Changed
+- Nurses hold `visits.admit` by default (they record the admission on the doctor's decision);
+  the Nursing menu entry shows to holders of any nursing permission. A cancelled visit takes no
+  nursing notes (`VISIT_CANCELLED`).
 - `MeOut.language` / `MeOut.theme` are `null` until the user chooses; the SPA keeps the device's choice.
 - `money()` accepts only plain positional decimals (Arabic-Indic digits normalised).
 - Phone touch targets are 44px and phone text inputs 16px; menus, selects and the command palette show a

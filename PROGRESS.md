@@ -9,8 +9,8 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merge to main pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
-| 5. Pharmacy, lab, procedures | not started | |
-| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3; claims, reports and ops not started |
+| 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
+| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); reports and ops not started |
 | 7. Patient portal | not started | |
 | 8. Hardening and handover | not started | |
 
@@ -55,7 +55,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
   `translateError` passes `details` so the 23 messages with placeholders show their values.
 - Errors: database trigger codes (`CREDIT_NOTE_FROZEN`, `APPEND_ONLY`, `LINE_TERMINAL`, ...) are
   not mapped to API error codes and reach the user as `INTERNAL_ERROR`.
-- Terminology: `الدفعة` means both a stock batch and a payment; settle on `التشغيلة` for batches
+- [x] Terminology: `الدفعة` means both a stock batch and a payment; settle on `التشغيلة` for batches
   in the pharmacy screens.
 - Errors: amounts in error placeholders are raw backend strings (`15000.00`); format them with
   the money formatter when the billing screens land.
@@ -81,11 +81,13 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Results tab screenshots show the empty state only: approved results need the lab module's
   endpoints (FEATURES 4.x lab); add a populated capture to `e2e/tests/clinic/states.spec.ts`
   then.
-- Nurses: vitals (FEATURES 3.4) are entered from the doctor's workspace; a nurse has no list
-  of visits to reach it until the nursing screens of FEATURES 10.3.
+- [x] Nurses: vitals (FEATURES 3.4) are entered from the doctor's workspace; a nurse has no list
+  of visits to reach it until the nursing screens of FEATURES 10.3. Done on `feat/b-nursing`:
+  `/nursing/visits` leads to the nursing chart.
 - Work lists and exception reports (FEATURES 4.3, 4.5) exist as tested services
-  (`orders.services.worklist_lines`, `report_*`); their endpoints and screens come with the
-  lab, pharmacy, procedures and reports modules.
+  (`orders.services.worklist_lines`, `report_*`). The lab, pharmacy and procedure work lists
+  have their endpoints and screens since wave b; the exception reports come with the reports
+  module.
 - [x] Billing access sweep for doctors (`e2e/tests/clinic/access.spec.ts`): runs against every
   billing and payments operation of the contract now that the cashier module publishes them,
   and fails (never passes empty) if the contract has none.
@@ -115,10 +117,11 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - FEATURES 0.10: invoice, receipt (QR, 6.9) and shift report print on A4 and 80 mm; the
   prescription, lab result and claim export templates come with the clinic print views (above),
-  the lab module and claims.
-- FEATURES 5.12 (walk-in pharmacy sale) exists as a tested service
+  the lab module and claims. The lab result (A4) and tube label prints landed with the lab
+  module (wave b); prescription and claim export prints are still open.
+- [x] FEATURES 5.12 (walk-in pharmacy sale) exists as a tested service
   (`billing.services` walk-in sale) with its permission; the screen comes with the pharmacy
-  module.
+  module. Done on `feat/b-pharmacy` (`/pharmacy/sale`).
 - FEATURES 7.7 (multi-till, V1?): a shift may name its till when it opens; several cashiers on
   one till per shift is not built.
 - Errors: amounts in error placeholders are still raw backend strings (see the Phase 1
@@ -126,12 +129,77 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - The Phase 1 schema follow-up on `RefundMethod.bank_transfer` is unchanged: refunds are paid in
   cash from a credit note only.
 
-## Next: wave a (Phases 2-4)
+## Follow-ups (pharmacy, wave b)
 
-Run `workflow-drafts/wave.js` with `{wave: 'a', base: 'main', prep: true}` after Phase 1 is merged:
-patients and visits (FEATURES 1, 2, Excel import), doctor and orders (3, 4), billing, payments and
-shifts (5, 6, 7, printing). Exit gates per `docs/PROMPT.md`: Playwright flows at three viewports,
-including the full money cycle with a shift variance and a transfer rejected after close.
+- FEATURES 8.13 (Excel import of items, batches and opening stock) is not built; the
+  `/administration/imports` section can link to it when it lands.
+- Dispense returns (`pharmacy.services.return_dispense`) have no endpoint or screen yet.
+- Stock lists show the item's generic name and strength (Latin, as printed on packs); the item
+  has no Arabic generic name. The queue, dispense dialog and sale use the bilingual service name.
+- A new walk-in customer gets a patient file without the duplicate check (the sale screen offers
+  "existing file" search first); reception merges duplicates later (FEATURES 1.4).
+- The walk-in sale screen sits under the pharmacy nav entry (pharmacy codes); a cashier, who
+  also holds `billing.pharmacy_sale`, reaches it by URL only.
+- An adjustment's batch picker lists batches with stock in the store; raising a batch that has
+  none there (found stock of an empty batch) needs a goods receipt or a transfer.
+- No dispense label or prescription print (FEATURES 0.10/0.11 with the device agent).
+- The Phase 1 `min_days_left` policy follow-up is unchanged (FEFO uses expiry >= today).
+
+## Follow-ups (nursing, wave b)
+
+- Bed nights reach the cashier when a nurse posts them on the bed board, at discharge, or when
+  `manage.py charge_bed_nights --as <user>` runs; the compose `maintenance` loop does not run it
+  yet (it needs a configured acting user with `visits.manage_beds`).
+- No "admission in error" action: `AdmissionStatus.CANCELLED` exists but has no reason, approver
+  and time columns (invariant 4). Today the nurse discharges and the cashier credits the night.
+- The doctor's workspace shows the vitals a nurse records, but not the nursing notes (they are on
+  the nursing chart, which doctors can open).
+- Consumables used per procedure (FEATURES 10.4, P2) and the medication administration record
+  (10.6, Later) are not built.
+
+## Follow-ups (lab, wave b)
+
+- The clinic's results tab can now show approved results; its screenshot in
+  `e2e/tests/clinic/states.spec.ts` still captures the empty state (clinic follow-up above).
+- Results reach the patient with the portal (Phase 7); FEATURES 9.4 "visible to the patient"
+  is not wired yet.
+- Lab prints (`LabPrintFrame`) import the cashier's `features/cashier/components/print.css`
+  across features; moving the print frame and stylesheet to `src/components/print/` (clinic
+  follow-up) should take the lab with it.
+- Result PDF is the browser's print to PDF of the A4 report; tube labels print 50 x 30 mm from
+  the browser, not through the device agent (FEATURES 0.11).
+- A paid test that cannot be performed needs a billing approver (cashier supervisor or
+  accountant) at the bench; the refund itself is approved by a second person at the cashier
+  (ADR 0010, ADR 0008).
+- A lab supervisor may approve a result they entered (ADR 0010); revisit if centers want a
+  second-person check.
+- Outsourced tests, analyzer integration and radiology (FEATURES 9.9-9.11, P2) are not built.
+
+## Follow-ups (claims, wave b)
+
+- FEATURES 11.5 asks for approval of rebills and write-offs: today the recording user with
+  `claims.resolve_rejection` is the approver (reason and time recorded, no second person;
+  ADR 0012). Add a second-person check if centers want one.
+- One export layout (Excel and A4 print, Arabic or English) for every payer; a payer that wants
+  its own column order or codes needs a per-payer export template (ADR 0012).
+- A payer cash payment goes into the recorder's own open shift; an accountant has no till, so a
+  supervisor with an open shift records it.
+- Electronic claim submission (FEATURES 11.8, Later) is not built; claim export templates of
+  FEATURES 0.10 are the claims print above.
+
+## Follow-ups (wave b integration)
+
+- ADR numbers: lab took 0010, nursing's ADR was renumbered 0011 at the merge and claims uses
+  0012; the next ADR is 0013.
+- E2E across midnight: specs that build "today's" data once in `beforeAll` (the clinic doctor
+  states spec) fail when a full run crosses midnight, and the seed's scheduled +10% cash price
+  version (starting the day after the seed) takes effect mid-run. Pin the date or build per test
+  if CI runs at night.
+
+## Next: merge wave b to main
+
+Pharmacy, lab, nursing and claims are merged on `wave/b`; take `wave/b` to `main`. Then
+reports, ops and the patient portal (Phases 6-7).
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.
@@ -249,3 +317,63 @@ including the full money cycle with a shift variance and a transfer rejected aft
   977 passed, 0 failed, 0 skipped (43.8 min). The first full run had 975 passed, 2 failed
   (the credit note message and the helpers payer set, both fixed above, then 7 of 7 passed in a
   rerun of `@cashier refund|@helpers factories`).
+- 2026-10-09: Pharmacy (wave b) on `feat/b-pharmacy` from `wave/b`: FEATURES 5.12, 8.1-8.10.
+  `/api/pharmacy` (46 operations: queries.py reads, desk.py commands, one `require_perm` each),
+  services extended (item edits and barcodes, suppliers, stock card, adjustment and transfer
+  requests refuse more than on hand); pharmacy screens under `src/features/pharmacy` (dispense
+  queue and dialog, items and item page, receipts, adjustments, counts and count sheet,
+  transfers, expiry, low stock, walk-in sale); batches are "التشغيلة" (also the batch-override
+  reason, core 0007 copy plus pharmacy migration 0004). Self-review fixed the item search
+  multiplying on-hand by pack units. Results: backend 1708 passed, ruff, mypy, eslint, prettier
+  and tsc clean, no missing migrations, API contract in sync; frontend 447 passed (run with
+  `--testTimeout=30000`: under a machine load of 30-45 the default 5 s timeout failed 1-6 tests
+  of the untouched shared DataTable/AppShell/KpiCard/radio-group suites, a different set each
+  run). `make e2e E2E_GREP=@pharmacy`: 7 passed; responsive matrix of the 12 pharmacy routes
+  plus the route registry: 217 passed.
+- 2026-10-09: Nursing (wave b) on `feat/b-nursing` from `wave/b`: FEATURES 3.4 for nurses,
+  10.1-10.3 and 10.5 (ADR 0011). Backend: `/api/orders/procedures` (work list of paid or
+  authorized procedures, done today, one-tap done with who, when and note), `/api/clinical/
+  nursing` (inpatients and today's visits, nursing chart, notes), `/api/visits/inpatient` (bed
+  board, admit on an open or new inpatient visit, transfer, discharge, bed status, nightly charge
+  run) and `manage.py charge_bed_nights`; nurses hold `visits.admit`; race tests for two taps,
+  two admissions and two transfers into one bed; 403 sweeps per router. Frontend: `/nursing`
+  (tablet cards, five-second undo window), `/nursing/visits`, `/nursing/visits/$visitId`,
+  `/nursing/beds` with admit, transfer and discharge dialogs. Results: `make check` green
+  (backend 1735 passed, frontend 445 passed, ruff, mypy, eslint, prettier and tsc clean, no
+  missing migrations, API contract in sync; shellcheck not installed here). `make e2e
+  E2E_GREP="@nursing|@responsive.*nursing|route registry|@helpers"`: 104 passed (4 nursing
+  flows, the 5 nursing screens x 3 viewports x 3 themes x 2 languages, route registry, helpers).
+  Shared files touched: `errors.json` (5 codes), generated OpenAPI files, the three app routers
+  (one `add_router` line each), `visits/permissions.py`, `visits/tests/test_contract.py`.
+- 2026-10-09: Insurance claims on `feat/b-claims` (wave b, from `wave/b`): FEATURES 11.2-11.7.
+  `/api/claims` (21 operations, every one behind a `claims.*` code: receivables by stage, aging,
+  accrued lines, batches, per-line answers, rebill/write-off, short-pay write-off, Excel export
+  and print data, payer payments with cheque clearing and reversal); screens `/claims`,
+  `/claims/batches`, `/claims/new`, `/claims/$claimId`, `/claims/$claimId/print`,
+  `/claims/payments`, `/claims/aging`. New domain rules `response_amount` and
+  `allocate_to_claims` (Hypothesis), `record_payer_payment(claim_amounts=...)`, error codes
+  `CLAIM_PARTIAL_INVALID` and `PAYER_ALLOCATION_CONFLICT` (ADR 0012). The export writes text
+  starting with `=` as text (formula injection). Results: `make check` green (backend 1702
+  passed, frontend 440 passed, lint, typecheck, no missing migrations, API contract in sync);
+  `make e2e E2E_GREP="@claims|@responsive.*claims|route registry"`: 165 passed, 1 failed (the
+  payment spec's amount locator, fixed), then `@claims` 3 of 3 passed.
+  Follow-ups: per-payer export templates; a payer cash payment needs the recorder's own open
+  shift (an accountant has none); rebill and write-off approval is the recording user with
+  `claims.resolve_rejection` (no second person, ADR 0012).
+- 2026-10-10: Wave b integration on `wave/b`: merged `feat/b-pharmacy` (FEATURES 5.12,
+  8.1-8.10), `feat/b-lab` (9.1-9.8, ADR 0010), `feat/b-nursing` (3.4 for nurses, 10.1-10.3,
+  10.5) and `feat/b-claims` (11.2-11.7, ADR 0012), in that order, `--no-ff`. Conflicts:
+  `CHANGELOG.md` and `PROGRESS.md` (both sides kept at each merge), `errors.json` ar/en at the
+  claims merge (pharmacy's 7 codes and claims' 2 kept; 385 codes, ar/en in parity). Pharmacy and
+  lab merged without conflicts. Nursing's ADR renumbered 0011 (lab took 0010); claims already
+  used 0012. Generated API files regenerated with `make api` after each conflicting merge (no
+  drift); no migration clashes (only pharmacy added one, `pharmacy.0004`); OpenAPI schema
+  class names stay unique. No integration fixes were needed. Results: `make check` green
+  (backend 1820 passed, frontend 460 passed, ruff, mypy, eslint, prettier and tsc clean, no
+  missing migrations, API contract in sync; shellcheck not installed here). Full `make e2e`:
+  1548 passed, 2 failed, 3 did not run of 1553 (1.2 h). Both failures were flakes and passed
+  in a rerun of `@clinic @responsive doctor states|patient-file` (27 of 27): the clinic doctor
+  states case at 768 warm ar ran at midnight, when the visits its `beforeAll` made the day
+  before left the doctor's queue (an empty queue; the three 1280 cases after it did not run
+  because the file is serial); the patient-file 768 warm en case did not find the merge
+  history, while the other 11 cases of the same route passed in the same run.
