@@ -220,3 +220,9 @@ has no usable adapter: `E2E_FACTORY_MODE=api make e2e E2E_GREP=@cashier` proves 
     }),
   ];
   ```
+
+  A screen that needs a session other than the staff one gets `prepare(page)`, run in each
+  test's fresh page before it opens the route: the patient portal screens
+  (`module-routes/portal.ts`) sign the page in to the portal there (`auth: false`, since the
+  staff session plays no part). Portal data comes from the `portal_patient` fixture
+  (`apps/portal/e2e_fixtures.py`); the portal specs are tagged `@portal`.

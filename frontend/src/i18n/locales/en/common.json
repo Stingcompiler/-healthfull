@@ -141,7 +141,8 @@
     "rowActions": "Row actions",
     "noResultsTitle": "No results",
     "noResultsDescription": "Try different search words or filters.",
-    "loading": "Loading data…"
+    "loading": "Loading data…",
+    "total": "Total"
   },
   "validation": {
     "required": "This field is required",

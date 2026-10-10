@@ -587,23 +587,33 @@ def resolve_reason(reason: ReasonCode | str | None, category: str, note: str = "
     return found
 
 
-def notify_users(users: Iterable[User], kind: str, **payload: Any) -> int:
-    """Create one in-app notification of ``kind`` per distinct active user; returns the count."""
+def notify_users(users: Iterable[User], kind: str, *, dedupe_key: str = "", **payload: Any) -> int:
+    """Create one in-app notification of ``kind`` per distinct active user; returns the count.
+
+    With ``dedupe_key`` (time-based alerts, FEATURES 0.13) a user who already has a
+    notification with that key gets no second one (also under concurrent runs: a partial
+    unique index backs it).
+    """
+    key = dedupe_key[:120]
     rows = []
     seen: set[int] = set()
+    if key:
+        seen.update(Notification.objects.filter(key=key).values_list("user_id", flat=True))
     for user in users:
         if user.pk in seen or not user.is_active:
             continue
         seen.add(user.pk)
-        rows.append(Notification(user=user, kind=kind[:60], payload=payload))
-    Notification.objects.bulk_create(rows)
+        rows.append(Notification(user=user, kind=kind[:60], payload=payload, key=key))
+    Notification.objects.bulk_create(rows, ignore_conflicts=bool(key))
     return len(rows)
 
 
-def notify_roles(role_codes: list[str], kind: str, **payload: Any) -> int:
+def notify_roles(
+    role_codes: Iterable[str], kind: str, *, dedupe_key: str = "", **payload: Any
+) -> int:
     """Notify every active user holding one of ``role_codes`` (e.g. managers, FLOW step 9)."""
-    users = User.objects.filter(is_active=True, roles__code__in=role_codes).distinct()
-    return notify_users(users, kind, **payload)
+    users = User.objects.filter(is_active=True, roles__code__in=list(role_codes)).distinct()
+    return notify_users(users, kind, dedupe_key=dedupe_key, **payload)
 
 
 # =========================================================================================

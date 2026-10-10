@@ -157,3 +157,88 @@ class UpdateRun(models.Model):
 
     def __str__(self) -> str:
         return f"{self.version} ({self.result})"
+
+
+class BackupRequestStatus(models.TextChoices):
+    PENDING = "pending", "Waiting for the backup service"
+    RUNNING = "running", "Running"
+    SUCCEEDED = "succeeded", "Succeeded"
+    PARTIAL = "partial", "Partial (some files missing)"
+    FAILED = "failed", "Failed"
+
+
+#: Requests the backup service has not finished yet.
+OPEN_BACKUP_REQUESTS = (BackupRequestStatus.PENDING, BackupRequestStatus.RUNNING)
+
+
+@track_history()
+class BackupRequest(models.Model):
+    """A manual backup asked for on the status page (FEATURES 13.8).
+
+    The app never runs a backup itself: it records the request, and the backup service
+    (``infra/backup/backup-requests.sh``, polled by the sidecar's scheduler or a host timer)
+    claims it, runs ``backup-nightly.sh --label manual-<id>`` and writes the outcome back.
+    """
+
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+    note = models.CharField(max_length=200, blank=True)
+    status = models.CharField(
+        max_length=20, choices=BackupRequestStatus.choices, default=BackupRequestStatus.PENDING
+    )
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    dump_file = models.CharField(max_length=500, blank=True)
+    message = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "backup request"
+        ordering: ClassVar[list[str]] = ["-requested_at", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            choice_check("status", BackupRequestStatus, "ops_backup_request_status_valid"),
+            models.UniqueConstraint(
+                fields=["status"],
+                condition=Q(status=BackupRequestStatus.PENDING),
+                name="ops_backup_request_one_pending",
+            ),
+            models.CheckConstraint(
+                condition=Q(status__in=OPEN_BACKUP_REQUESTS) | Q(finished_at__isnull=False),
+                name="ops_backup_request_finish_documented",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"backup request {self.pk} ({self.status})"
+
+
+@track_history()
+class DataExport(models.Model):
+    """One full data export (FEATURES 13.9): who took it, when, which tables and how many rows.
+
+    Written before the first byte is sent and completed when the archive is finished, so an
+    export that was started but not finished still shows in the audit trail.
+    """
+
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    tables = models.JSONField(default=list)
+    row_counts = models.JSONField(default=dict, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    size_bytes = models.BigIntegerField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "data export"
+        ordering: ClassVar[list[str]] = ["-created_at", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(size_bytes__isnull=True) | Q(size_bytes__gte=0),
+                name="ops_export_size_non_negative",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"data export {self.pk} by {self.requested_by_id}"

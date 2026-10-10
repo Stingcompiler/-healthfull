@@ -1078,10 +1078,13 @@ def reject_transfer(
     return Rejection(locked, reversal, tuple(rows), plan.uncovered)
 
 
-def notify_overdue_transfers(days: int | None = None, *, today: date | None = None) -> int:
+def notify_overdue_transfers(
+    days: int | None = None, *, today: date | None = None, dedupe_key: str = ""
+) -> int:
     """Alert verifiers about transfers pending more than ``days`` days (FEATURES 0.13, 6.4).
 
-    ``days`` defaults to ``Policy.pending_transfer_alert_days``.
+    ``days`` defaults to ``Policy.pending_transfer_alert_days``. ``dedupe_key`` (the daily
+    ``manage.py notify_scan``) alerts each verifier once per key.
     """
     if days is None:
         days = int(Policy.load().pending_transfer_alert_days)
@@ -1095,7 +1098,14 @@ def notify_overdue_transfers(days: int | None = None, *, today: date | None = No
             overdue.append({"payment_id": pk, "number": number, "amount": str(amount), "age": age})
     if not overdue:
         return 0
-    return notify_roles(VERIFIER_ROLES, "transfers_pending_overdue", days=days, payments=overdue)
+    return notify_roles(
+        VERIFIER_ROLES,
+        "transfers_pending_overdue",
+        dedupe_key=dedupe_key,
+        days=days,
+        count=len(overdue),
+        payments=overdue[:50],
+    )
 
 
 # --- refunds -----------------------------------------------------------------------------

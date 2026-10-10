@@ -5,13 +5,13 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | Phase | Status | Notes |
 |---|---|---|
 | 0. Foundation | done (merged PR #1); Docker run pending in CI | `make check` and `make e2e` green locally; Docker exit gate (`docker compose up` shows a working login) not run: no Docker on the build machine, first run is the CI `docker` job |
-| 1. Domain core + schema | done on `feat/1-domain-core`; merge to main pending | backend 1290 tests (396 domain), all passing; ADR 0006; follow-ups below |
-| 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merge to main pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
-| 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
-| 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
-| 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
-| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); reports and ops not started |
-| 7. Patient portal | not started | |
+| 1. Domain core + schema | done; merged to main (PR #3) | backend 1290 tests (396 domain), all passing; ADR 0006; follow-ups below |
+| 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merged to main (PR #4) | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
+| 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merged to main (PR #4) | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
+| 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merged to main (PR #4) | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
+| 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merged to main (PR #5) | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
+| 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merge to main pending (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
+| 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merge to main pending (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
 | 8. Hardening and handover | not started | |
 
 ## Phase 0 checklist
@@ -43,7 +43,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
       claims, pharmacy, lab, catalog, patients, visits, clinical; one router per module
 - [x] Adversarial review: 54 reported issues, 49 confirmed and fixed with regression tests
 - [x] ADR 0006 (Phase 1 money and stock rules); ARCHITECTURE 4.4-4.9 updated to the implementation
-- [ ] Merged to main
+- [x] Merged to main (PR #3)
 
 ## Follow-ups (from ADR 0006 "Differences found")
 
@@ -84,10 +84,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - [x] Nurses: vitals (FEATURES 3.4) are entered from the doctor's workspace; a nurse has no list
   of visits to reach it until the nursing screens of FEATURES 10.3. Done on `feat/b-nursing`:
   `/nursing/visits` leads to the nursing chart.
-- Work lists and exception reports (FEATURES 4.3, 4.5) exist as tested services
+- [x] Work lists and exception reports (FEATURES 4.3, 4.5) exist as tested services
   (`orders.services.worklist_lines`, `report_*`). The lab, pharmacy and procedure work lists
-  have their endpoints and screens since wave b; the exception reports come with the reports
-  module.
+  have their endpoints and screens since wave b; the exception reports are reports screens
+  since wave c (`/reports/requested-not-invoiced` and the two others).
 - [x] Billing access sweep for doctors (`e2e/tests/clinic/access.spec.ts`): runs against every
   billing and payments operation of the contract now that the cashier module publishes them,
   and fails (never passes empty) if the contract has none.
@@ -104,8 +104,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
   display-only role needs a core role change.
 - Paid-visit cancellation: reception sees the `billed` flag and a supervisor
   (`cashier_supervisor`) cancels directly; there is no in-app request for supervisor approval.
-- `/administration/imports` is still the placeholder section; it can link to `/patients/import`
-  when the item and price imports land.
+- [x] `/administration/imports` is the import wizard since wave c (ops follow-ups).
 - Admin: a role with `core.manage_departments` but no `catalog.view` sees an empty consultation
   fee picker in the doctor dialog (it reads `/api/catalog/services`).
 - Allergy `resolved` needs no reason (entered-in-error does); referral cancellation has no
@@ -131,8 +130,8 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (pharmacy, wave b)
 
-- FEATURES 8.13 (Excel import of items, batches and opening stock) is not built; the
-  `/administration/imports` section can link to it when it lands.
+- [x] FEATURES 8.13 (Excel import of items, batches and opening stock) built in wave c (ops,
+  ADR 0014).
 - Dispense returns (`pharmacy.services.return_dispense`) have no endpoint or screen yet.
 - Stock lists show the item's generic name and strength (Latin, as printed on packs); the item
   has no Arabic generic name. The queue, dispense dialog and sale use the bilingual service name.
@@ -147,9 +146,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (nursing, wave b)
 
-- Bed nights reach the cashier when a nurse posts them on the bed board, at discharge, or when
-  `manage.py charge_bed_nights --as <user>` runs; the compose `maintenance` loop does not run it
-  yet (it needs a configured acting user with `visits.manage_beds`).
+- [x] Bed nights reach the cashier when a nurse posts them on the bed board, at discharge, or when
+  `manage.py charge_bed_nights --as <user>` runs; since wave c the compose `maintenance` loop
+  runs it hourly as `BED_CHARGE_USER` (ops follow-ups).
 - No "admission in error" action: `AdmissionStatus.CANCELLED` exists but has no reason, approver
   and time columns (invariant 4). Today the nurse discharges and the cashier credits the night.
 - The doctor's workspace shows the vitals a nurse records, but not the nursing notes (they are on
@@ -161,8 +160,8 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - The clinic's results tab can now show approved results; its screenshot in
   `e2e/tests/clinic/states.spec.ts` still captures the empty state (clinic follow-up above).
-- Results reach the patient with the portal (Phase 7); FEATURES 9.4 "visible to the patient"
-  is not wired yet.
+- [x] Results reach the patient with the portal (Phase 7): FEATURES 9.4 "visible to the
+  patient" is wired since wave c (approved versions only, `/portal/results`).
 - Lab prints (`LabPrintFrame`) import the cashier's `features/cashier/components/print.css`
   across features; moving the print frame and stylesheet to `src/components/print/` (clinic
   follow-up) should take the lab with it.
@@ -196,10 +195,102 @@ Source of truth for build status. Update at the end of every task. Phases from `
   version (starting the day after the seed) takes effect mid-run. Pin the date or build per test
   if CI runs at night.
 
-## Next: merge wave b to main
+## Follow-ups (reports, wave c)
 
-Pharmacy, lab, nursing and claims are merged on `wave/b`; take `wave/b` to `main`. Then
-reports, ops and the patient portal (Phases 6-7).
+- PDF is the browser's print of `/reports/<key>/print` (A4 landscape); server-side PDF needs
+  WeasyPrint and system libraries (pango) that are not installed (ADR 0013).
+- The report print view imports the cashier's `features/cashier/components/print.css` like
+  the claims and lab prints do; it moves with them to `src/components/print/` (clinic
+  follow-up).
+- Collections are reported by the day a payment was taken at its current verification: a
+  transfer confirmed or rejected later changes that earlier day's split (ADR 0013). A
+  "by confirmation day" view is not built.
+- Payer receivables read per payer through `claims.queries` (query count grows with payers).
+- The dashboard's low-stock alert has no report to open (no low-stock report screen beyond the
+  pharmacy's own list); 12.12-12.14 (P2) are not built.
+- [x] Pre-existing, outside reports: `domain/tests/test_visit_machine.py::TestVisitMachine` fails
+  with a Hypothesis example (saved in this worktree's `backend/.hypothesis`): after a bank
+  transfer with `allow_partial=False` and an opening float of 0.01, rejecting a still-pending
+  transfer plans `uncovered` 10.14 (and in a second example a recovery row of -1205.00), which
+  the model says is impossible for pending money. Needs a look in `domain/allocation.py`
+  (`plan_rejection`) or the model. Fixed on `main` by PR #6 (`plan_rejection` takes the
+  pending and spendable amounts, ADR 0015), merged into `wave/c`.
+- Detail sections stop at 2,000 rows (the screen and the workbook say so); a paged export for
+  very long periods is not built.
+
+## Follow-ups (ops, wave c)
+
+- [x] `/administration/imports` is the import wizard (patients, items with opening stock,
+  prices); `/patients/import` keeps working on the same service.
+- [x] FEATURES 8.13 built (ADR 0014): opening stock is a goods receipt from the `OPENING`
+  supplier per store.
+- [x] Bed nights are charged by the maintenance loop as `BED_CHARGE_USER` (empty skips it).
+- Manual backups need the backup service: in development and e2e a request stays pending.
+- `UpdateRun` rows are not written by `infra/update.sh` yet; the update history shows its JSON
+  log (`update-runs.jsonl`) and any recorded `UpdateRun` with release notes. Writing release
+  notes into `UpdateRun` from the update script is open (13.10 "update trigger" stays the
+  runbook's `infra/update.sh`).
+- Notifications are polled every minute (no push); the bell lists the latest 15.
+- Model names in the audit viewer are translated for the main records; the rest show Django's
+  English verbose name. Field names are shown as database columns.
+- The full export reads every row of nine tables in one request (streamed); very large
+  installations may prefer a scheduled export to the backup disk.
+
+## Follow-ups (portal, wave c)
+
+- [x] Lab results reach the patient (FEATURES 9.4 "visible to the patient"): approved versions
+  only, on `/portal/results` (lab follow-up above).
+- No self-service code request: a lost receipt means asking the cashier for a new code (which
+  ends the old code's sessions). SMS delivery is FEATURES 15.3 (Later).
+- Codes are issued from the cashier's receipt screen only; reception (which also holds
+  `portal.issue_access_code`) has no screen for it, and `portal.revoke_access_code` has no
+  endpoint yet (a new code revokes the old ones).
+- Rotating `SECRET_KEY` invalidates the QR of every printed receipt (ADR 0016); the staff check
+  by receipt number keeps working.
+- The portal shows no clinical notes, referrals or allergies; instructions are the dosing
+  instructions and the lab tests' preparation texts.
+- `/api/portal/ping` still uses the staff session (the module ping contract of `api/tests`).
+
+## Follow-ups (wave c integration)
+
+- ADR numbers: reports took 0013, ops 0014, the transfer rejection fix on `main` 0015 and the
+  portal 0016; the next ADR is 0017.
+- [x] The payment-engine bug found by `test_visit_machine.py` (reports follow-ups): fixed on
+  `main` (PR #6, ADR 0015) and merged into `wave/c` with `origin/main`.
+- E2E under load: setup-heavy responsive cases (`nursing-desk` builds a paid procedure through
+  several `e2e_fixture` calls; `patient-file` waits until no region of the file is still
+  loading) exceed the 30 s test timeout when the machine is loaded (other agents' runs pushed
+  the load to 50-70) or wakes from sleep. After a timeout the worker restarts and builds its
+  data again, so failures come in runs. Building this data once in a global setup, or a
+  longer timeout for these cases, would remove it. Each `e2e_fixture` call is a `manage.py`
+  process (about 9 s for a paid visit under load); a long-running fixture server would cut
+  the full run time.
+- E2E and the host network: when the machine's network changes (Wi-Fi or VPN), Chromium
+  aborts in-flight requests even to 127.0.0.1 (`net::ERR_NETWORK_CHANGED`) and a case whose
+  module loads were cut shows a blank page. Seen on 9 claims cases across three runs, each
+  passing in another run.
+- The full e2e is now 1844 tests (1.7 h on one worker here); CI runs four shards.
+
+## FEATURES 14 (data protection and operations) status
+
+- 14.1: nightly verified `pg_dump` with media archive, optional pgBackRest WAL archiving (repo1
+  local, repo2 S3 when online), monthly `restore-test.sh`; since wave c the status page
+  (`/administration/system`) shows backups and restore tests from the status logs and takes
+  manual backup requests. Scripts tested by `make infra-test`; the containers run first in the
+  CI `docker` job.
+- 14.2: database triggers on approved invoices, closed shifts and the other frozen tables
+  (Phase 1, ARCHITECTURE 4.9).
+- 14.3: role-based permission codes on every router; doctors hold no billing codes.
+- 14.4: sign-in audit (`AuthEvent`), lockout and throttling (Phase 0, ADR 0004); the audit trail
+  viewer since wave c.
+- 14.5: pgBackRest repositories are always encrypted (`aes-256-cbc`, `infra/backup/`).
+- 14.6: `docs/runbooks/backup-restore.md` and `install.md`; a timed replace-the-server drill
+  has not been run (no Docker on the build machine).
+
+## Next: merge wave c to main, then Phase 8
+
+Wave c (reports, ops, patient portal, with `main`'s transfer rejection fix) is complete on
+`wave/c` (PR #7). Take it to `main`, then Phase 8 (hardening and handover).
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.
@@ -377,3 +468,79 @@ reports, ops and the patient portal (Phases 6-7).
   before left the doctor's queue (an empty queue; the three 1280 cases after it did not run
   because the file is serial); the patient-file 768 warm en case did not find the merge
   history, while the other 11 cases of the same route passed in the same run.
+- 2026-10-10: Reports and the manager dashboard on `feat/c-reports` (wave c, from `wave/c`):
+  FEATURES 4.5, 12.1-12.11 (ADR 0013). `/api/reports`: 14 reports, each `GET /<key>` and
+  `GET /<key>/export` (.xlsx, formula-safe) behind one `reports.view_<area>` code, plus
+  `/dashboard`; read-only queries in `apps/reports/queries.py` reusing the orders, claims, lab
+  and pharmacy report queries; pure arithmetic in `domain/reports.py` (Hypothesis). Every money
+  report is tested against `ledger.services` balances and postings; query counts do not grow
+  with rows; reports never write. Screens `/reports`, `/reports/$reportKey`,
+  `/reports/$reportKey/print`, and the manager dashboard at `/` (recharts, theme tokens).
+  e2e fixture `reports_day`; specs `e2e/tests/reports/*.spec.ts` (@reports). Shared files
+  touched: `apps/orders/services.py` (optional department on `report_*`, row cap 5,000),
+  `apps/core/tests/test_permissions.py` (new code names), `components/DataTable.tsx` (totals
+  row) and its test, `common.json` (`table.total`), `errors.json` (`REPORT_RANGE_TOO_LONG`),
+  `frontend/package.json` (recharts 3.10.1), generated OpenAPI files. Results: lint (ruff,
+  format, migrations, eslint, prettier), mypy and tsc (frontend, e2e) clean; frontend 474
+  passed; API contract in sync; backend 1890 passed, 1 failed: `domain/tests/test_visit_machine.py`
+  (Hypothesis stateful test of the payment engine found a pending-transfer rejection with
+  `uncovered` 10.14 / a recovery row; domain code untouched by this branch, see follow-ups);
+  71 report tests passed. `make e2e E2E_GREP="@reports|@responsive.*(reports|dashboard)|route
+  registry|@auth sign in"`: 112 passed (twice, before and after the review fixes).
+- 2026-10-10: Ops (wave c) on `feat/c-ops` from `wave/c`: FEATURES 1.8 (wizard), 8.13, 0.13,
+  13.8, 13.9, 13.10 and the audit viewer (ADR 0014). Imports of patients, items with opening
+  stock (goods receipt from `OPENING`) and prices (future version only); notifications with the
+  bell and `manage.py notify_scan`; `/api/ops/status`, manual backup requests picked up by
+  `infra/backup/backup-requests.sh`, the CSV data export, `/api/core/audit`; the maintenance loop
+  runs `notify_scan` and `charge_bed_nights` as `BED_CHARGE_USER`. Results: `make check` green
+  (backend 1895 passed, frontend 471 passed, lint, typecheck, no missing migrations, API contract
+  in sync; shellcheck not installed here); `make infra-test` 55 checks passed; `make e2e
+  E2E_GREP=@ops` 7 passed; the 4 admin system routes x 3 viewports x 3 themes x 2 languages plus
+  the route registry 73 passed; the whole phone matrix with the bell in the top bar
+  (`@responsive 375x812|@ops|route registry|shell`) 499 passed.
+- 2026-10-10: Patient portal (wave c) on `feat/c-portal` from `wave/c`: FEATURES 15.1, 15.2
+  (ADR 0016). Backend `/api/portal`: sign-in with file number, phone and the receipt code
+  (hashed, 30-day, newest revokes older, locked after 5 wrong codes), per-file lockout and
+  per-address throttle with uniform 401s, its own session cookie (path `/api/portal`, hashed
+  token, 15-minute idle, 4-hour limit), own-data endpoints answering 404 for anyone else's row,
+  online booking and cancellation, the public receipt check by number and HMAC token;
+  `domain/portal.py` (Hypothesis). Frontend `src/portal` (sign-in, home, appointments, booking,
+  results with print, prescriptions, bills, `/verify/$token`), manifest and icons, no service
+  worker. Other modules touched: `api/errors.py` (2 statuses), `api/tests/test_main.py` (portal
+  allowlists), `core/tests/test_schema.py` (2 untracked portal models), core `maintenance`
+  (portal housekeeping), payments receipt payload (`verify_token`) and `domain/payments.py`
+  (staff check reads the new QR URL), cashier `ReceiptPage.tsx` (QR URL and the portal code),
+  `errors.json` (7 codes), `e2e/route-kit.ts` and `responsive.spec.ts` (`prepare` hook),
+  `e2e/README.md`. Results: `make check` green (backend 1958 passed, frontend 460 passed, ruff,
+  mypy, eslint, prettier and tsc clean, no missing migrations, API contract in sync). `make e2e
+  E2E_GREP="@portal|@cashier|@responsive.*(portal|route registry|cashier-receipt)"`: 256 passed,
+  2 failed of 258; both failures were cashier specs running while the machine slept (3.7 h test
+  time) and passed on a rerun of `@cashier (money flow|review fixes)` (5 of 5). Portal matrix
+  alone earlier: 200 of 200.
+- 2026-10-10: Wave c integration on `wave/c` (PR #7): merged `feat/c-reports` (FEATURES 4.5,
+  12.1-12.11, ADR 0013), `feat/c-ops` (1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer,
+  ADR 0014), `origin/main` (transfer rejection fix, PR #6, ADR 0015) and `feat/c-portal`
+  (15.1, 15.2, 9.4 visible to the patient, ADR 0016), in that order, `--no-ff`. Conflicts:
+  reports merged without any; ops: `CHANGELOG.md` and `PROGRESS.md` only (both sides kept;
+  `resources.ts`, `nav.json` and the generated API files merged cleanly and `make api`
+  reproduced them byte for byte); `origin/main` without any; portal: `CHANGELOG.md`,
+  `PROGRESS.md`, `errors.json` ar/en (ops' 14 codes and the portal's 7 kept; 407 codes, ar/en
+  in parity) and the generated API files (regenerated with `make api`). `maintenance.py`
+  (portal housekeeping) and `api/tests/test_main.py` (portal allowlists) merged cleanly; no
+  migration clashes; OpenAPI class names stay unique. Integration fix: the clinic
+  doctor-states e2e `beforeAll` gets a 120 s timeout (it hit the 30 s hook default).
+  Results after reports and ops: `make check` green (backend 1966 passed, frontend 485
+  passed); `make infra-test` 55 checks passed; full `make e2e` 1652 passed, 5 failed of 1657
+  (5.3 h: the machine hibernated on a 1% battery from 04:47 to 08:30; the 5 failures,
+  `nursing-desk` 1280 x4 and `patient-file` 1280 light ar, ran across the sleep and wake).
+  Results after `origin/main` and the portal: `make check` green (backend 2109 passed,
+  including `test_visit_machine.py` and the new allocation tests; frontend 485 passed; ruff,
+  mypy, eslint, prettier and tsc clean, no missing migrations, API contract in sync;
+  shellcheck not installed here); `make infra-test` 55 checks passed; full `make e2e` 1834
+  passed, 2 failed, 8 did not run of 1844 (1.7 h). Failures: the clinic doctor-states
+  `beforeAll` timeout (fixed above; its 8 serial cases did not run), then
+  `make e2e E2E_GREP="doctor states"` 9 of 9 passed; `claims` 768 dark ar a blank page from
+  `net::ERR_NETWORK_CHANGED`, then the claims screens (`@responsive.*claims`, 162 cases)
+  passed 155 and 161 in two reruns, every failure again `ERR_NETWORK_CHANGED`, and the last
+  one (`claims-build` 1280 warm ar) passed alone. Every route passed at 375, 768 and 1280 in
+  at least one run with the bell in the shell.

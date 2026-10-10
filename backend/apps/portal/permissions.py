@@ -9,6 +9,8 @@ from __future__ import annotations
 from apps.core.permissions import register_permission
 from apps.core.roles import (
     ADMIN,
+    CASHIER,
+    CASHIER_SUPERVISOR,
     LAB_SUPERVISOR,
     MANAGER,
     RECEPTIONIST,
@@ -18,7 +20,8 @@ register_permission(
     "portal.issue_access_code",
     label_ar="إصدار رمز دخول البوابة",
     label_en="Issue portal access codes",
-    default_roles={RECEPTIONIST, LAB_SUPERVISOR, ADMIN},
+    # The cashier prints the code on the receipt (FEATURES 15.1, ADR 0016).
+    default_roles={RECEPTIONIST, CASHIER, CASHIER_SUPERVISOR, LAB_SUPERVISOR, ADMIN},
 )
 
 register_permission(

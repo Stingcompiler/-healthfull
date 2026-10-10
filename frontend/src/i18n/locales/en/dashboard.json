@@ -2,21 +2,42 @@
   "title": "Dashboard",
   "greeting": "Welcome, {{name}}",
   "subtitle": "Today at the center at a glance",
+  "allReports": "All reports",
   "kpi": {
-    "visitsToday": "Visits today",
-    "queueWaiting": "Waiting in queue",
+    "title": "Today's figures",
     "collectedToday": "Confirmed collections today",
+    "cash": "Cash",
+    "transfers": "Transfers",
     "pendingTransfers": "Transfers pending verification",
-    "noData": "No data yet"
+    "pendingCount": "Transfers waiting: {{n}}",
+    "queueWaiting": "Waiting in queue",
+    "withDoctor": "With the doctor: {{n}}",
+    "netRevenueToday": "Net revenue today",
+    "visitsToday": "Visits today: {{n}}"
   },
-  "setupAlert": {
-    "title": "System setup in progress",
-    "description": "Figures will appear here once the registration, billing, and payment modules are enabled."
+  "alerts": {
+    "title": "Needs attention",
+    "allClear": "Nothing needs attention right now",
+    "open": "Open",
+    "stale_transfers": "transfers pending for more than two days",
+    "unreviewed_variances": "shift variances not reviewed",
+    "paid_not_performed": "paid services not performed since yesterday or earlier",
+    "requested_not_invoiced": "orders not invoiced since yesterday or earlier",
+    "performed_by_authorization": "services performed today before payment, by authorization",
+    "expiring_stock": "batches expiring within 30 days",
+    "low_stock": "items at or below their minimum stock"
   },
-  "activity": {
-    "title": "Today's activity",
-    "emptyTitle": "No activity yet today",
-    "emptyDescription": "Once the first visit is registered, today's orders, invoices, and payments will appear here.",
-    "emptyAction": "Open patient records"
+  "charts": {
+    "collectionsTitle": "Collections, last 14 days",
+    "collected": "Confirmed",
+    "pending": "Pending verification",
+    "collectionsEmpty": "No money taken in the last 14 days",
+    "departmentsTitle": "Revenue by department today",
+    "departmentsHint": "Billed today, net of discounts and credit notes",
+    "departmentsEmpty": "Nothing billed yet today"
+  },
+  "staff": {
+    "subtitle": "Your work today",
+    "modules": "Your modules"
   }
 }

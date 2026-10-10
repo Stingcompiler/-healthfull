@@ -190,7 +190,17 @@ OPEN_OPERATIONS = frozenset(
         # printouts and the app shell.
         "core_list_reason_codes",
         "core_get_center_logo",
+        # The signed-in user's own notifications (FEATURES 0.13), scoped to request.user.
+        "core_list_notifications",
+        "core_get_unread_notification_count",
+        "core_mark_notification_read",
+        "core_mark_all_notifications_read",
         *(f"{module}_get_ping" for module in PING_MODULES),
+        # Patient portal: public (sign-in, sign-out, receipt check).
+        "portal_get_session",
+        "portal_login",
+        "portal_logout",
+        "portal_verify_receipt",
     }
 )
 
@@ -207,11 +217,15 @@ def _ninja_operations() -> list[tuple[str, Any]]:
 
 
 def test_every_operation_requires_a_permission_unless_allowlisted() -> None:
+    from apps.portal.api import PATIENT_OPERATIONS
+
     ops = _ninja_operations()
     open_ops = {
         op_id for op_id, op in ops if not getattr(op.view_func, "required_permission", None)
     }
-    assert open_ops == OPEN_OPERATIONS
+    # Patient portal operations carry no staff permission: they authenticate a patient with
+    # the portal cookie and read only that patient's rows (ADR 0016, apps/portal/tests).
+    assert open_ops - PATIENT_OPERATIONS == OPEN_OPERATIONS
     # The allowlist names only operations that exist (a renamed one is not silently kept).
     assert {op_id for op_id, _ in ops} >= OPEN_OPERATIONS
 
@@ -225,7 +239,17 @@ def test_every_operation_is_tagged_with_its_module(schema: dict[str, Any]) -> No
 
 def test_only_whitelisted_operations_are_public(schema: dict[str, Any]) -> None:
     public = {op["operationId"] for _, _, op in _operations(schema) if not op.get("security")}
-    assert public == {"auth_get_csrf", "auth_login", "auth_logout", "ops_get_health"}
+    assert public == {
+        "auth_get_csrf",
+        "auth_login",
+        "auth_logout",
+        "ops_get_health",
+        # Patient portal sign-in and sign-out, and the public receipt check (ADR 0016).
+        "portal_get_session",
+        "portal_login",
+        "portal_logout",
+        "portal_verify_receipt",
+    }
 
 
 def test_error_responses_reference_error_schema(schema: dict[str, Any]) -> None:

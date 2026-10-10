@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from enum import StrEnum
+from urllib.parse import unquote
 
 from domain.audit import Approval
 from domain.errors import DomainError
@@ -239,14 +240,19 @@ def receipt_code(number: str, amount: Decimal, day: date) -> str:
 
 
 _CODE_AMOUNT = re.compile(r"[0-9]{1,15}(?:\.[0-9]{1,2})?")
+_PORTAL_QR = re.compile(r"[?&]r=([^&#\s]+)")
 
 
 def parse_receipt_code(text: str) -> ReceiptCode:
     """Read a scanned QR (``number|amount|day``) or a typed receipt number.
 
     Parts that do not parse are dropped, so a damaged code still finds the payment and is then
-    reported as not matching.
+    reported as not matching. The QR printed since the patient portal is the public check URL
+    (``.../verify/<token>?r=<number>``, ADR 0016); a scanner typing it finds the number.
     """
+    portal = _PORTAL_QR.search(text) if "/verify/" in text else None
+    if portal is not None:
+        return ReceiptCode(unquote(portal.group(1)).strip().upper(), None, None)
     parts = [p.strip() for p in text.strip().split("|")]
     number = parts[0].upper()
     amount: Decimal | None = None

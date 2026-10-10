@@ -1,4 +1,12 @@
-"""Excel import of patients with preview, validation and duplicate detection (FEATURES 1.8).
+"""Excel imports with preview, validation and duplicate detection (FEATURES 1.8, 8.13, 5.2).
+
+Three kinds share one flow (upload, preview, confirm or cancel; ADR 0014): ``patients``
+(below), ``items`` (stock items, batches and opening stock, ``apps.imports.items``) and
+``prices`` (price list items into a version that has not started, ``apps.imports.prices``).
+:func:`preview` and :func:`confirm_job` dispatch by kind; files are read by
+``apps.imports.reader`` (size and type checks, no formula is ever evaluated).
+
+Patients:
 
 1. :func:`preview_patients` reads the uploaded sheet (``.xlsx``, or ``.csv`` saved from
    Excel), matches its header row, reads every row with ``domain.patient_import`` and looks
@@ -18,12 +26,11 @@ Row ``errors`` are ``{"code", "field"}`` and ``warnings`` are duplicate hints
 
 from __future__ import annotations
 
-import csv
 import io
-import zipfile
-from collections.abc import Iterator
+from collections.abc import Mapping, Sequence
 from datetime import date
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import pghistory
@@ -34,76 +41,51 @@ from django.utils import timezone
 
 from apps.core.models import User
 from apps.core.services import require_permission
+from apps.imports import items as item_import
+from apps.imports import prices as price_import
+from apps.imports import reader
 from apps.imports.models import ImportJob, ImportKind, ImportRow, ImportStatus, RowStatus
+from apps.imports.rows import RowDraft, row_status
 from apps.patients import services as patient_services
 from domain import patient_import as dpi
+from domain import sheet
 from domain.errors import DomainError
 
 __all__ = [
+    "KINDS",
     "MAX_FILE_BYTES",
     "MAX_ROWS",
+    "MAX_UNPACKED_BYTES",
     "cancel_job",
     "confirm_job",
     "job_rows",
+    "list_jobs",
     "patient_template",
+    "preview",
     "preview_patients",
+    "template",
 ]
 
-#: Largest accepted upload (a 2,000-row sheet is far below this).
-MAX_FILE_BYTES = 5 * 1024 * 1024
-#: Rows per import; larger lists are split into several files.
-MAX_ROWS = 2000
+MAX_FILE_BYTES = reader.MAX_FILE_BYTES
+MAX_UNPACKED_BYTES = reader.MAX_UNPACKED_BYTES
+MAX_ROWS = reader.MAX_ROWS
 
-_XLSX = (".xlsx", ".xlsm")
-_CSV = (".csv",)
-
-
-# --- reading the file -----------------------------------------------------------------------
-
-
-def _xlsx_rows(content: bytes) -> Iterator[tuple[Any, ...]]:
-    from openpyxl import load_workbook
-    from openpyxl.utils.exceptions import InvalidFileException
-
-    try:
-        book = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-    except (InvalidFileException, zipfile.BadZipFile, KeyError, OSError, ValueError) as exc:
-        raise DomainError("IMPORT_FILE_INVALID", "The file is not a readable Excel file") from exc
-    try:
-        sheet = book.worksheets[0]
-        yield from sheet.iter_rows(values_only=True)
-    finally:
-        book.close()
-
-
-def _csv_rows(content: bytes) -> Iterator[list[str]]:
-    for encoding in ("utf-8-sig", "cp1256"):
-        try:
-            text = content.decode(encoding)
-        except UnicodeDecodeError:
-            continue
-        yield from csv.reader(io.StringIO(text))
-        return
-    raise DomainError("IMPORT_FILE_INVALID", "The file is not readable text")  # pragma: no cover
-
-
-def _sheet_rows(filename: str, content: bytes) -> Iterator[tuple[int, list[Any]]]:
-    """``(sheet row number, cells)`` of the first sheet, 1-based like Excel."""
-    suffix = Path(filename).suffix.lower()
-    if suffix in _XLSX:
-        rows: Iterator[Any] = _xlsx_rows(content)
-    elif suffix in _CSV:
-        rows = _csv_rows(content)
-    else:
-        raise DomainError(
-            "IMPORT_FILE_INVALID", "Upload an Excel (.xlsx) or CSV file", filename=filename
-        )
-    for number, cells in enumerate(rows, start=1):
-        yield number, list(cells)
+#: Import kinds with a preview and confirm flow, in the order the wizard offers them.
+KINDS: tuple[str, ...] = (ImportKind.PATIENTS, ImportKind.ITEMS, ImportKind.PRICES)
+#: Permissions an import of each kind needs besides ``imports.run`` (the screens' own codes).
+KIND_PERMISSIONS: dict[str, tuple[str, ...]] = {
+    ImportKind.PATIENTS: (),
+    ImportKind.ITEMS: ("pharmacy.manage_items",),
+    ImportKind.PRICES: ("catalog.manage_prices",),
+}
+_HANDLERS: dict[str, ModuleType] = {
+    ImportKind.ITEMS: item_import,
+    ImportKind.PRICES: price_import,
+}
 
 
 def _blank(cells: list[Any]) -> bool:
-    return all(c is None or str(c).strip() == "" for c in cells)
+    return reader.is_blank(cells)
 
 
 # --- normalization in bulk ------------------------------------------------------------------
@@ -129,6 +111,12 @@ def _json_data(data: dict[str, Any]) -> dict[str, Any]:
     return {k: (v.isoformat() if isinstance(v, date) else v) for k, v in data.items()}
 
 
+def _empty_patient_data() -> dict[str, Any]:
+    data: dict[str, Any] = {c.key: "" for c in dpi.COLUMNS}
+    data.update(sex="", date_of_birth=None, age_years=None)
+    return data
+
+
 def _patient_name(patient: Any) -> str:
     return str(patient.full_name_ar or patient.full_name_en)
 
@@ -145,12 +133,9 @@ def preview_patients(
             ``IMPORT_TOO_MANY_ROWS`` (``details.limit``).
     """
     require_permission(actor, "imports.run")
-    if len(content) > MAX_FILE_BYTES:
-        raise DomainError(
-            "IMPORT_FILE_TOO_LARGE", "The file is too large", limit_mb=MAX_FILE_BYTES // 2**20
-        )
+    reader.check_size(content, MAX_FILE_BYTES)
     on = today or timezone.localdate()
-    rows = _sheet_rows(filename, content)
+    rows = reader.read_sheet(filename, content)
     header: dict[int, str] | None = None
     parsed: list[tuple[int, dpi.ParsedRow]] = []
     for number, cells in rows:
@@ -164,12 +149,18 @@ def preview_patients(
                     "IMPORT_HEADERS_MISSING", "Required columns are missing", missing=missing
                 )
             continue
-        row = dpi.parse_row(
-            {key: cells[pos] if pos < len(cells) else None for pos, key in header.items()},
-            today=on,
-        )
+        raw = {key: cells[pos] if pos < len(cells) else None for pos, key in header.items()}
+        # Formulas are refused, never evaluated (ADR 0014).
+        formulas = [key for key, value in raw.items() if sheet.is_formula(value)]
+        for key in formulas:
+            raw[key] = None
+        row = dpi.parse_row(raw, today=on)
         if row is None:
-            continue
+            if not formulas:
+                continue
+            row = dpi.ParsedRow(data=_empty_patient_data())
+        for key in formulas:
+            row.add_error("FORMULA_NOT_ALLOWED", key)
         parsed.append((number, row))
         if len(parsed) > MAX_ROWS:
             raise DomainError("IMPORT_TOO_MANY_ROWS", "Too many rows in one file", limit=MAX_ROWS)
@@ -288,49 +279,95 @@ def _patient_data(data: dict[str, Any]) -> patient_services.PatientData:
     )
 
 
-def confirm_job(job: ImportJob, *, actor: User, include_duplicates: bool = False) -> ImportJob:
-    """Register the previewed patients (FEATURES 1.8).
+def _confirm_patients(locked: ImportJob, *, actor: User, include_duplicates: bool) -> None:
+    wanted = [RowStatus.VALID, *([RowStatus.DUPLICATE] if include_duplicates else [])]
+    imported = skipped = 0
+    for row in locked.rows.select_for_update().order_by("row_no"):
+        if row.status not in wanted:
+            if row.status != RowStatus.ERROR:
+                row.status = RowStatus.SKIPPED
+                row.save(update_fields=["status"])
+                skipped += 1
+            continue
+        try:
+            patient = patient_services.register_patient(
+                _patient_data(row.data),
+                actor=actor,
+                confirm_not_duplicate=row.status == RowStatus.DUPLICATE,
+            )
+        except DomainError as exc:
+            row.status = RowStatus.SKIPPED
+            row.errors = [{"code": exc.code, "field": ""}]
+            row.save(update_fields=["status", "errors"])
+            skipped += 1
+            continue
+        row.status = RowStatus.IMPORTED
+        row.result_id = patient.pk
+        row.save(update_fields=["status", "result_id"])
+        imported += 1
+    locked.imported_rows = imported
+    locked.summary = {"skipped": skipped, "include_duplicates": include_duplicates}
 
-    Valid rows are registered with the normal duplicate check, so a matching file created
-    since the preview skips the row (``DUPLICATE_PATIENT``). Possible duplicates are
-    registered only with ``include_duplicates`` (the supervisor looked at them). Rows with
-    errors never are.
+
+def _confirm_rows(locked: ImportJob, *, actor: User, include_duplicates: bool, today: date) -> None:
+    handler = _HANDLERS[locked.kind]
+    wanted = {RowStatus.VALID, RowStatus.WARNING}
+    if include_duplicates:
+        wanted.add(RowStatus.DUPLICATE)
+    rows = list(locked.rows.select_for_update().order_by("row_no"))
+    chosen = [r for r in rows if r.status in wanted]
+    if not chosen:
+        raise DomainError(
+            "IMPORT_NOTHING_TO_IMPORT",
+            "No row of this import can be imported",
+            duplicates=sum(r.status == RowStatus.DUPLICATE for r in rows),
+        )
+    for row in rows:
+        if row.status not in wanted and row.status != RowStatus.ERROR:
+            row.status = RowStatus.SKIPPED
+            row.save(update_fields=["status"])
+    extra = handler.confirm(locked, chosen, actor=actor, today=today)
+    locked.imported_rows = sum(r.status == RowStatus.IMPORTED for r in chosen)
+    locked.summary = {
+        "skipped": sum(r.status == RowStatus.SKIPPED for r in rows),
+        "include_duplicates": include_duplicates,
+        **extra,
+    }
+
+
+def confirm_job(
+    job: ImportJob,
+    *,
+    actor: User,
+    include_duplicates: bool = False,
+    today: date | None = None,
+) -> ImportJob:
+    """Import the previewed rows (FEATURES 1.8, 8.13, 5.2) through the owning services.
+
+    Patients: valid rows are registered with the normal duplicate check, so a matching file
+    created since the preview skips the row (``DUPLICATE_PATIENT``). Items and prices: valid
+    rows and rows with informational hints are imported (``apps.imports.items``,
+    ``apps.imports.prices``). Possible duplicates are imported only with
+    ``include_duplicates`` (the supervisor looked at them). Rows with errors never are.
 
     Raises:
-        PermissionRequired: the actor lacks ``imports.run``.
-        DomainError: ``IMPORT_JOB_CLOSED``.
+        PermissionRequired: the actor lacks ``imports.run`` or the kind's permissions.
+        DomainError: ``IMPORT_JOB_CLOSED``, ``IMPORT_NOTHING_TO_IMPORT`` (items, prices), and
+            for prices the catalog's refusals (nothing is changed).
     """
     require_permission(actor, "imports.run")
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason="patient import"):
+    for code in KIND_PERMISSIONS.get(job.kind, ()):
+        require_permission(actor, code)
+    on = today or timezone.localdate()
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"{job.kind} import"):
         locked = _locked_open_job(job)
-        wanted = [RowStatus.VALID, *([RowStatus.DUPLICATE] if include_duplicates else [])]
-        imported = skipped = 0
-        for row in locked.rows.select_for_update().order_by("row_no"):
-            if row.status not in wanted:
-                if row.status != RowStatus.ERROR:
-                    row.status = RowStatus.SKIPPED
-                    row.save(update_fields=["status"])
-                    skipped += 1
-                continue
-            try:
-                patient = patient_services.register_patient(
-                    _patient_data(row.data),
-                    actor=actor,
-                    confirm_not_duplicate=row.status == RowStatus.DUPLICATE,
-                )
-            except DomainError as exc:
-                row.status = RowStatus.SKIPPED
-                row.errors = [{"code": exc.code, "field": ""}]
-                row.save(update_fields=["status", "errors"])
-                skipped += 1
-                continue
-            row.status = RowStatus.IMPORTED
-            row.result_id = patient.pk
-            row.save(update_fields=["status", "result_id"])
-            imported += 1
+        if locked.kind == ImportKind.PATIENTS:
+            _confirm_patients(locked, actor=actor, include_duplicates=include_duplicates)
+        elif locked.kind in _HANDLERS:
+            _confirm_rows(locked, actor=actor, include_duplicates=include_duplicates, today=on)
+        else:  # pragma: no cover - jobs are only created for known kinds
+            raise DomainError("IMPORT_KIND_UNKNOWN", "Unknown import kind", kind=locked.kind)
         locked.status = ImportStatus.CONFIRMED
-        locked.imported_rows = imported
-        locked.summary = {"skipped": skipped, "include_duplicates": include_duplicates}
         locked.confirmed_by = actor
         locked.confirmed_at = timezone.now()
         locked.save()
@@ -361,21 +398,149 @@ def job_rows(job: ImportJob, *, status: str | None = None) -> QuerySet[ImportRow
     return rows.order_by("row_no")
 
 
-def patient_template(language: str = "en") -> bytes:
-    """An empty ``.xlsx`` with the import header row in ``language`` (ar or en)."""
+def list_jobs(*, kind: str | None = None) -> QuerySet[ImportJob]:
+    """Import jobs, newest first (the wizard's history)."""
+    jobs = ImportJob.objects.select_related("uploaded_by", "confirmed_by")
+    if kind:
+        jobs = jobs.filter(kind=kind)
+    return jobs.order_by("-created_at", "-id")
+
+
+# --- the generic flow (items, prices; patients through preview_patients) --------------------
+
+
+def _check_kind(kind: str, actor: User) -> None:
+    require_permission(actor, "imports.run")
+    if kind not in KINDS:
+        raise DomainError("IMPORT_KIND_UNKNOWN", "Unknown import kind", kind=str(kind)[:40])
+    for code in KIND_PERMISSIONS[kind]:
+        require_permission(actor, code)
+
+
+def preview(
+    kind: str,
+    *,
+    filename: str,
+    content: bytes,
+    actor: User,
+    options: Mapping[str, Any] | None = None,
+    today: date | None = None,
+) -> ImportJob:
+    """Validate a sheet of ``kind`` and store the preview. Imports nothing.
+
+    ``options``: ``items`` takes ``store`` (default store code of batch rows); ``prices``
+    takes ``price_list`` (code) and ``effective_from`` (ISO date after today).
+
+    Raises:
+        PermissionRequired: the actor lacks ``imports.run`` or the kind's permissions.
+        DomainError: ``IMPORT_KIND_UNKNOWN``, the file errors of ``apps.imports.reader`` and
+            the option errors of the kind (``STORE_UNKNOWN``, ``IMPORT_OPTION_REQUIRED``,
+            ``IMPORT_OPTION_INVALID``, ``PRICE_LIST_UNKNOWN``, ``PRICE_LIST_INACTIVE``,
+            ``PRICE_VERSION_BACKDATED``).
+    """
+    _check_kind(kind, actor)
+    if kind == ImportKind.PATIENTS:
+        return preview_patients(filename=filename, content=content, actor=actor, today=today)
+    on = today or timezone.localdate()
+    handler = _HANDLERS[kind]
+    clean = handler.clean_options(options or {}, today=on)
+    drafts = handler.parse(
+        reader.table(filename, content, handler.COLUMNS), options=clean, today=on
+    )
+    return _save_job(
+        kind,
+        filename=filename,
+        content=content,
+        actor=actor,
+        options=clean,
+        drafts=drafts,
+        duplicate_hints=handler.DUPLICATE_HINTS,
+    )
+
+
+def _save_job(
+    kind: str,
+    *,
+    filename: str,
+    content: bytes,
+    actor: User,
+    options: dict[str, Any],
+    drafts: Sequence[RowDraft],
+    duplicate_hints: frozenset[str],
+) -> ImportJob:
+    rows: list[ImportRow] = []
+    counts = dict.fromkeys(RowStatus, 0)
+    for draft in drafts:
+        status = row_status(draft, duplicate_hints)
+        counts[status] += 1
+        rows.append(
+            ImportRow(
+                row_no=draft.row_no,
+                status=status,
+                data=_json_data(draft.data),
+                errors=draft.errors,
+                warnings=draft.warnings,
+                duplicate_of_id=draft.duplicate_of,
+            )
+        )
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"{kind} import preview"):
+        job = ImportJob(
+            kind=kind,
+            status=ImportStatus.VALIDATED,
+            original_filename=Path(filename).name[:255],
+            options=options,
+            total_rows=len(rows),
+            valid_rows=counts[RowStatus.VALID] + counts[RowStatus.WARNING],
+            error_rows=counts[RowStatus.ERROR],
+            duplicate_rows=counts[RowStatus.DUPLICATE],
+            uploaded_by=actor,
+            validated_at=timezone.now(),
+        )
+        job.file.save(Path(filename).name, ContentFile(content), save=False)
+        job.save()
+        for row in rows:
+            row.job = job
+        ImportRow.objects.bulk_create(rows)
+    return job
+
+
+# --- templates ------------------------------------------------------------------------------
+
+
+def _workbook(title: str, labels: Sequence[str], language: str) -> bytes:
     from openpyxl import Workbook
 
     book = Workbook()
-    sheet = book.active or book.create_sheet()
-    sheet.title = "patients"
-    labels = [c.label_ar if language == "ar" else c.label_en for c in dpi.COLUMNS]
-    sheet.append(labels)
+    ws = book.active or book.create_sheet()
+    ws.title = title
+    ws.append(list(labels))
     if language == "ar":
-        sheet.sheet_view.rightToLeft = True
+        ws.sheet_view.rightToLeft = True
     for index, label in enumerate(labels, start=1):
-        sheet.column_dimensions[sheet.cell(row=1, column=index).column_letter].width = max(
+        ws.column_dimensions[ws.cell(row=1, column=index).column_letter].width = max(
             14, len(label) + 4
         )
     out = io.BytesIO()
     book.save(out)
     return out.getvalue()
+
+
+def patient_template(language: str = "en") -> bytes:
+    """An empty ``.xlsx`` with the import header row in ``language`` (ar or en)."""
+    labels = [c.label_ar if language == "ar" else c.label_en for c in dpi.COLUMNS]
+    return _workbook("patients", labels, language)
+
+
+def template(kind: str, language: str = "en") -> bytes:
+    """An empty ``.xlsx`` with the header row of ``kind`` in ``language`` (ar or en).
+
+    Raises:
+        DomainError: ``IMPORT_KIND_UNKNOWN``.
+    """
+    if kind == ImportKind.PATIENTS:
+        return patient_template(language)
+    if kind not in _HANDLERS:
+        raise DomainError("IMPORT_KIND_UNKNOWN", "Unknown import kind", kind=str(kind)[:40])
+    columns = _HANDLERS[kind].COLUMNS
+    labels = [c.label_ar if language == "ar" else c.label_en for c in columns]
+    return _workbook(kind, labels, language)

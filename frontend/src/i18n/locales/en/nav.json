@@ -32,7 +32,9 @@
     "design": "Design system",
     "adminPolicies": "Policies",
     "adminDepartments": "Departments & doctors",
-    "adminReasonCodes": "Reason lists"
+    "adminReasonCodes": "Reason lists",
+    "adminExport": "Data export",
+    "adminAudit": "Audit trail"
   },
   "short": {
     "dashboard": "Home",
@@ -58,7 +60,9 @@
     "design": "Design",
     "adminPolicies": "Policies",
     "adminDepartments": "Doctors",
-    "adminReasonCodes": "Reasons"
+    "adminReasonCodes": "Reasons",
+    "adminExport": "Export",
+    "adminAudit": "Audit"
   },
   "shell": {
     "menu": "Menu",

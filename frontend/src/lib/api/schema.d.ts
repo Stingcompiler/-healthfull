@@ -1787,6 +1787,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/audit/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Audit events (who, when, what changed, why), newest first, filtered
+         * @description Filters: model (app_label.ModelName), user_id, date_from/date_to (inclusive days), object_id, action (insert, update, delete). Secret fields are shown as ***. 409 AUDIT_MODEL_UNKNOWN, AUDIT_ACTION_UNKNOWN, INVALID_DATE_RANGE.
+         */
+        get: operations["core_list_audit_events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/audit/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The models with an audit trail (the viewer's model filter) */
+        get: operations["core_list_audit_models"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/core/center": {
         parameters: {
             query?: never;
@@ -1934,6 +1971,74 @@ export interface paths {
          */
         put: operations["core_set_doctor_schedule"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's notifications, newest first */
+        get: operations["core_list_notifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark every notification of the signed-in user read */
+        post: operations["core_mark_all_notifications_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many of the signed-in user's notifications are unread (the bell badge) */
+        get: operations["core_get_unread_notification_count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one of the signed-in user's notifications read */
+        post: operations["core_mark_notification_read"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2228,6 +2333,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Import jobs, newest first (optionally one kind) */
+        get: operations["imports_list_jobs"];
+        put?: never;
+        /**
+         * Upload a sheet of a kind: validate every row and flag duplicates (nothing saved)
+         * @description Excel (.xlsx) or CSV, first sheet, header row in Arabic or English, at most 2,000 rows and 5 MB. Formulas are refused (FORMULA_NOT_ALLOWED on the row), never run. items: optional store (default store code of batch rows). prices: price_list (code) and effective_from (a date after today). 409 IMPORT_KIND_UNKNOWN, IMPORT_FILE_INVALID, IMPORT_FILE_TOO_LARGE, IMPORT_HEADERS_MISSING, IMPORT_NO_ROWS, IMPORT_TOO_MANY_ROWS, IMPORT_OPTION_REQUIRED, IMPORT_OPTION_INVALID, STORE_UNKNOWN, PRICE_LIST_UNKNOWN, PRICE_LIST_INACTIVE, PRICE_VERSION_BACKDATED.
+         */
+        post: operations["imports_preview_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/jobs/{job_id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The rows of an import of any kind in sheet order (paged, filtered by status) */
+        get: operations["imports_list_job_rows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/patients": {
         parameters: {
             query?: never;
@@ -2285,6 +2428,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/templates/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An empty import sheet (.xlsx) of a kind with its header row
+         * @description The response is the .xlsx file itself (attachment).
+         */
+        get: operations["imports_get_template"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/{job_id}": {
         parameters: {
             query?: never;
@@ -2332,8 +2495,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Register the valid rows (and, if asked, the possible duplicates)
-         * @description 409 IMPORT_JOB_CLOSED.
+         * Import the valid rows (and, if asked, the possible duplicates)
+         * @description Every kind goes through its module's services (patients registered, items created and opening stock posted as a goods receipt, prices put into the version that has not started). 409 IMPORT_JOB_CLOSED, IMPORT_NOTHING_TO_IMPORT, and for prices the catalog's refusals (PRICE_VERSION_LOCKED, ...).
          */
         post: operations["imports_confirm_job"];
         delete?: never;
@@ -2750,6 +2913,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ops/backups/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the backup service for a backup now (it picks the request up within minutes)
+         * @description 409 BACKUP_REQUEST_OPEN (one is already waiting or running).
+         */
+        post: operations["ops_request_backup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ops/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Full data export: a zip of CSV files (patients, visits, invoices, payments, ...)
+         * @description The response is the zip itself (attachment), streamed. Every export is recorded in the audit trail (who, when, which tables, row counts).
+         */
+        post: operations["ops_export_data"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ops/health": {
         parameters: {
             query?: never;
@@ -2762,6 +2965,40 @@ export interface paths {
          * @description 200 when everything is ok; 503 with status=degraded when the database fails.
          */
         get: operations["ops_get_health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ops/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** System status: database, disk, version, migrations, backups, restore tests */
+        get: operations["ops_get_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ops/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The running version and the recorded updates with their release notes */
+        get: operations["ops_list_updates"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4373,6 +4610,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/access-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a portal access code for the patient of a receipt (shown once)
+         * @description Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.
+         */
+        post: operations["portal_issue_access_code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's upcoming and past appointments */
+        get: operations["portal_list_appointments"];
+        put?: never;
+        /**
+         * Book a free slot of a doctor's schedule
+         * @description 409 `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, `APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule.
+         */
+        post: operations["portal_book_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/appointments/{appointment_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel one's own future appointment before the cut-off
+         * @description 409 `PORTAL_CANCEL_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`; 404 if not one's own.
+         */
+        post: operations["portal_cancel_appointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the patient owes and holds as credit */
+        get: operations["portal_get_balance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Doctors who take online bookings */
+        get: operations["portal_list_doctors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/doctors/{doctor_id}/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Days with free slots, from today to the booking horizon */
+        get: operations["portal_list_booking_days"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/doctors/{doctor_id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A doctor's free slots on one day that can be booked online */
+        get: operations["portal_list_slots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's approved invoices: their share, paid and outstanding */
+        get: operations["portal_list_invoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One approved invoice of the patient, with lines and receipts */
+        get: operations["portal_get_invoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in patient's profile summary */
+        get: operations["portal_get_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/ping": {
         parameters: {
             query?: never;
@@ -4390,6 +4807,390 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/prescriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prescriptions with dosing instructions, and lab preparation instructions */
+        get: operations["portal_get_prescriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's receipts with their status */
+        get: operations["portal_list_receipts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/receipts/{payment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One receipt of the patient and the invoices it paid */
+        get: operations["portal_get_receipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's approved lab results, newest first */
+        get: operations["portal_list_results"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/results/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One approved lab result with its values (404 until approved, or if not one's own) */
+        get: operations["portal_get_result"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether this browser holds a live portal session, and whose
+         * @description Always 200, so the sign-in page can ask without an error: `signed_in` false and `me` null without a live session (an idle or revoked one is ended here).
+         */
+        get: operations["portal_get_session"];
+        put?: never;
+        /**
+         * Patient sign-in with file number, phone and the code printed on a receipt
+         * @description Sets the portal session cookie (HttpOnly, SameSite=Strict, path /api/portal). Every refusal is 401 `PORTAL_INVALID_CREDENTIALS`; 423 `PORTAL_LOCKED` after repeated failures for a file number; 429 `RATE_LIMITED` for an address. Needs X-CSRFToken.
+         */
+        post: operations["portal_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/session/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End the portal session (idempotent) and clear its cookie */
+        post: operations["portal_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Home cards: next appointment, latest results, balance */
+        get: operations["portal_get_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public check of a printed receipt by its number and QR token
+         * @description Center, number, day, amount, status (valid, pending, void) and the payer's initials. 404 when the number is unknown or the token is not its own (not told apart); 429 after too many checks from one address.
+         */
+        get: operations["portal_verify_receipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discounts, cancellations, refunds */
+        get: operations["reports_get_adjustments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/adjustments/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discounts, cancellations, refunds as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_adjustments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today at a glance for the manager: collection, pending transfers, queue, alerts */
+        get: operations["reports_get_dashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/lab_turnaround": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lab turnaround and volume */
+        get: operations["reports_get_lab_turnaround"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/lab_turnaround/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lab turnaround and volume as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_lab_turnaround"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/paid_not_performed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paid, not performed */
+        get: operations["reports_get_paid_not_performed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/paid_not_performed/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paid, not performed as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_paid_not_performed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/payer_receivables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payer receivables */
+        get: operations["reports_get_payer_receivables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/payer_receivables/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payer receivables as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_payer_receivables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/pending_transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending transfers */
+        get: operations["reports_get_pending_transfers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/pending_transfers/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending transfers as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_pending_transfers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/performed_by_authorization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Performed by authorization */
+        get: operations["reports_get_performed_by_authorization"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/performed_by_authorization/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Performed by authorization as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_performed_by_authorization"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reports/ping": {
         parameters: {
             query?: never;
@@ -4399,6 +5200,278 @@ export interface paths {
         };
         /** Check that the /api/reports router is reachable */
         get: operations["reports_get_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/requested_not_invoiced": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requested, not invoiced */
+        get: operations["reports_get_requested_not_invoiced"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/requested_not_invoiced/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requested, not invoiced as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_requested_not_invoiced"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/revenue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daily revenue */
+        get: operations["reports_get_revenue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/revenue/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daily revenue as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_revenue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/shift_variances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shift variances */
+        get: operations["reports_get_shift_variances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/shift_variances/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shift variances as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_shift_variances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/stock_expiry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock expiry */
+        get: operations["reports_get_stock_expiry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/stock_expiry/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock expiry as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_stock_expiry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/stock_movement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock movement */
+        get: operations["reports_get_stock_movement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/stock_movement/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock movement as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_stock_movement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/stock_valuation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock valuation */
+        get: operations["reports_get_stock_valuation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/stock_valuation/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock valuation as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_stock_valuation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/stock_variance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock count variance */
+        get: operations["reports_get_stock_variance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/stock_variance/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock count variance as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_stock_variance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Patient visits */
+        get: operations["reports_get_visits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/visits/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Patient visits as an Excel workbook (.xlsx attachment) */
+        get: operations["reports_export_visits"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5213,6 +6286,88 @@ export interface components {
             amount: string;
             user: components["schemas"]["BillingUserRefOut"] | null;
         };
+        /** AuditChangeOut */
+        AuditChangeOut: {
+            /** After */
+            after?: unknown;
+            /** Before */
+            before?: unknown;
+            /** Field */
+            field: string;
+        };
+        /** AuditEventOut */
+        AuditEventOut: {
+            /** Action */
+            action: string;
+            /** Changes */
+            changes: components["schemas"]["AuditChangeOut"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Method */
+            method: string;
+            /** Model */
+            model: string;
+            /** Model Name */
+            model_name: string;
+            /** Object Id */
+            object_id: string | null;
+            /** Reason */
+            reason: string;
+            /** Request Id */
+            request_id: string;
+            /** Url */
+            url: string;
+            user: components["schemas"]["UserRefOut"] | null;
+            /** User Id */
+            user_id: number | null;
+        };
+        /** AuditModelOut */
+        AuditModelOut: {
+            /** App Label */
+            app_label: string;
+            /**
+             * Label
+             * @description app_label.ModelName, e.g. billing.Invoice
+             */
+            label: string;
+            /** Verbose Name */
+            verbose_name: string;
+        };
+        /** AuditParams */
+        AuditParams: {
+            /** Action */
+            action?: ("insert" | "update" | "delete") | null;
+            /** Date From */
+            date_from?: string | null;
+            /** Date To */
+            date_to?: string | null;
+            /**
+             * Model
+             * @description app_label.ModelName
+             */
+            model?: string | null;
+            /** Object Id */
+            object_id?: string | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+            /** User Id */
+            user_id?: number | null;
+        };
         /** AuthorizableLineOut */
         AuthorizableLineOut: {
             /**
@@ -5298,6 +6453,43 @@ export interface components {
              * @description The active user who asked for the exception (default: the authorizer)
              */
             requested_by_id?: number | null;
+        };
+        /** BackupRequestIn */
+        BackupRequestIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** BackupRequestOut */
+        BackupRequestOut: {
+            /**
+             * Dump File
+             * @description File name of the dump (no folder)
+             */
+            dump_file: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** Id */
+            id: number;
+            /** Message */
+            message: string;
+            /** Note */
+            note: string;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            requested_by: components["schemas"]["UserRefOut"];
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "running" | "succeeded" | "partial" | "failed";
         };
         /**
          * BalanceOut
@@ -8323,6 +9515,13 @@ export interface components {
             imported_rows: number;
             /** Kind */
             kind: string;
+            /**
+             * Options
+             * @description items: store; prices: price_list and effective_from
+             */
+            options: {
+                [key: string]: unknown;
+            };
             /** Original Filename */
             original_filename: string;
             /** Skipped Rows */
@@ -8332,11 +9531,52 @@ export interface components {
              * @enum {string}
              */
             status: "uploaded" | "validated" | "confirmed" | "failed" | "cancelled";
+            /**
+             * Summary
+             * @description After confirm: skipped, include_duplicates; items: receipts (goods receipt numbers of the opening stock); prices: version_id, price_list, effective_from
+             */
+            summary: {
+                [key: string]: unknown;
+            };
             /** Total Rows */
             total_rows: number;
             uploaded_by: components["schemas"]["UserRefOut"];
             /** Valid Rows */
             valid_rows: number;
+        };
+        /**
+         * ImportJobRowOut
+         * @description A row of any import kind: ``data`` holds the parsed columns of that kind.
+         */
+        ImportJobRowOut: {
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+            /** Errors */
+            errors: components["schemas"]["RowErrorOut"][];
+            /**
+             * Result Id
+             * @description patients: the file; items: the stock item; prices: the version
+             */
+            result_id: number | null;
+            /**
+             * Row No
+             * @description The row number in the sheet (1 = header)
+             */
+            row_no: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped";
+            /**
+             * Warnings
+             * @description Hints with a code: patients phone, national_id, name_dob, in_file; items item_exists, batch_exists, stock_exists, in_file; prices unchanged, in_file
+             */
+            warnings: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * ImportPatientDataOut
@@ -8768,6 +10008,23 @@ export interface components {
         InvoicePrintOut: {
             center: components["schemas"]["BillingCenterOut"];
             invoice: components["schemas"]["InvoiceOut"];
+        };
+        /** JobListParams */
+        JobListParams: {
+            /** Kind */
+            kind?: ("patients" | "items" | "prices") | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
         };
         /** LabAmendIn */
         LabAmendIn: {
@@ -9690,6 +10947,11 @@ export interface components {
             /** Suggested Order */
             suggested_order: number;
         };
+        /** MarkAllReadOut */
+        MarkAllReadOut: {
+            /** Updated */
+            updated: number;
+        };
         /** MatrixChangeIn */
         MatrixChangeIn: {
             /** Allowed */
@@ -9942,6 +11204,51 @@ export interface components {
             /** Plan */
             plan?: string | null;
         };
+        /** NotificationListParams */
+        NotificationListParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+            /**
+             * Unread
+             * @description Only the unread notifications
+             * @default false
+             */
+            unread: boolean;
+        };
+        /** NotificationOut */
+        NotificationOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @description lab_result_ready, lab_result_critical, stock_low, stock_low_summary, transfers_pending_overdue, transfer_rejected, patient_credit_negative, shift_variance, shift_review_pending
+             */
+            kind: string;
+            /**
+             * Payload
+             * @description Ids, numbers and amounts of the alert
+             */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Read At */
+            read_at: string | null;
+        };
         /** NursingAdmissionOut */
         NursingAdmissionOut: {
             /**
@@ -10103,6 +11410,72 @@ export interface components {
              * Format: date-time
              */
             opened_at: string;
+        };
+        /** OpsDatabaseOut */
+        OpsDatabaseOut: {
+            /** Ok */
+            ok: boolean;
+            /** Server Version */
+            server_version: string;
+            /** Size Bytes */
+            size_bytes: number | null;
+        };
+        /** OpsDiskOut */
+        OpsDiskOut: {
+            /** Free Bytes */
+            free_bytes: number;
+            /** Free Percent */
+            free_percent: number;
+            /**
+             * Label
+             * @enum {string}
+             */
+            label: "media" | "backups";
+            /** Total Bytes */
+            total_bytes: number;
+        };
+        /** OpsMigrationsOut */
+        OpsMigrationsOut: {
+            /** Applied */
+            applied: number;
+            /** Pending */
+            pending: number;
+            /** Pending Names */
+            pending_names: string[];
+        };
+        /**
+         * OpsRunOut
+         * @description A backup or restore test from the status logs (``log``) or the database (``db``).
+         */
+        OpsRunOut: {
+            /** Error */
+            error: string;
+            /**
+             * File
+             * @description File name of the dump (no folder)
+             */
+            file: string;
+            /** Finished At */
+            finished_at: string | null;
+            /**
+             * Label
+             * @description Backup label, e.g. manual-12 or pre-update-v1.4.0
+             */
+            label: string;
+            /** Size Bytes */
+            size_bytes: number | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "log" | "db";
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @description ok, partial (backups), failed or running
+             */
+            status: string;
         };
         /** OrderIn */
         OrderIn: {
@@ -10344,6 +11717,20 @@ export interface components {
             /** Q */
             q?: string | null;
         };
+        /** Page[AuditEventOut] */
+        Page_AuditEventOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["AuditEventOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[AuthorizationOut] */
         Page_AuthorizationOut_: {
             /**
@@ -10414,6 +11801,34 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /** Page[ImportJobOut] */
+        Page_ImportJobOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ImportJobOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ImportJobRowOut] */
+        Page_ImportJobRowOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ImportJobRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[ImportRowOut] */
         Page_ImportRowOut_: {
             /**
@@ -10423,6 +11838,20 @@ export interface components {
             count: number;
             /** Items */
             items: components["schemas"]["ImportRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[NotificationOut] */
+        Page_NotificationOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -11502,6 +12931,545 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /** PortalAppointmentOut */
+        PortalAppointmentOut: {
+            /** Can Cancel */
+            can_cancel: boolean;
+            /** Cancel Until */
+            cancel_until: string | null;
+            doctor: components["schemas"]["PortalDoctorOut"];
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Id */
+            id: number;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "booked" | "arrived" | "no_show" | "cancelled" | "rescheduled";
+        };
+        /** PortalAppointmentsOut */
+        PortalAppointmentsOut: {
+            /** Past */
+            past: components["schemas"]["PortalAppointmentOut"][];
+            rules: components["schemas"]["PortalBookingRulesOut"];
+            /** Upcoming */
+            upcoming: components["schemas"]["PortalAppointmentOut"][];
+        };
+        /** PortalBalanceOut */
+        PortalBalanceOut: {
+            /**
+             * Credit
+             * @example 15000.00
+             */
+            credit: string;
+            /** Open Invoices */
+            open_invoices: number;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /**
+             * Pending
+             * @description Transfers the bank has not confirmed yet
+             * @example 15000.00
+             */
+            pending: string;
+        };
+        /** PortalBookIn */
+        PortalBookIn: {
+            /** Doctor Id */
+            doctor_id: number;
+            /**
+             * Starts At
+             * Format: date-time
+             * @description Exactly a `starts_at` from the slots list
+             */
+            starts_at: string;
+        };
+        /** PortalBookingRulesOut */
+        PortalBookingRulesOut: {
+            /** Cancel Cutoff Hours */
+            cancel_cutoff_hours: number;
+            /** Horizon Days */
+            horizon_days: number;
+            /** Max Open */
+            max_open: number;
+        };
+        /** PortalCenterOut */
+        PortalCenterOut: {
+            /** Address */
+            address: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+        };
+        /** PortalDoctorOut */
+        PortalDoctorOut: {
+            /** Department Ar */
+            department_ar: string;
+            /** Department En */
+            department_en: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Specialty Ar */
+            specialty_ar: string;
+            /** Specialty En */
+            specialty_en: string;
+        };
+        /** PortalInvoiceDetailOut */
+        PortalInvoiceDetailOut: {
+            center: components["schemas"]["PortalCenterOut"];
+            /** Date */
+            date: string | null;
+            /** Id */
+            id: number;
+            /** Lines */
+            lines: components["schemas"]["PortalInvoiceLineOut"][];
+            /** Number */
+            number: string;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /**
+             * Paid
+             * @example 15000.00
+             */
+            paid: string;
+            /**
+             * Patient Due
+             * @description The patient's share after credits
+             * @example 15000.00
+             */
+            patient_due: string;
+            /** Receipts */
+            receipts: components["schemas"]["PortalInvoiceReceiptOut"][];
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalInvoiceLineOut */
+        PortalInvoiceLineOut: {
+            /** Description Ar */
+            description_ar: string;
+            /** Description En */
+            description_en: string;
+            /**
+             * Patient Share
+             * @example 15000.00
+             */
+            patient_share: string;
+            /** Quantity */
+            quantity: number;
+        };
+        /** PortalInvoiceOut */
+        PortalInvoiceOut: {
+            /** Date */
+            date: string | null;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /**
+             * Paid
+             * @example 15000.00
+             */
+            paid: string;
+            /**
+             * Patient Due
+             * @description The patient's share after credits
+             * @example 15000.00
+             */
+            patient_due: string;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalInvoiceReceiptOut */
+        PortalInvoiceReceiptOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+        };
+        /** PortalIssueCodeIn */
+        PortalIssueCodeIn: {
+            /** Payment Id */
+            payment_id: number;
+        };
+        /** PortalIssuedCodeOut */
+        PortalIssuedCodeOut: {
+            /**
+             * Code
+             * @description Shown once; only its hash is stored
+             */
+            code: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** File No */
+            file_no: string;
+        };
+        /** PortalLabInstructionOut */
+        PortalLabInstructionOut: {
+            /** Instructions Ar */
+            instructions_ar: string;
+            /** Instructions En */
+            instructions_en: string;
+            /** Line Id */
+            line_id: number;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            /** Test Name Ar */
+            test_name_ar: string;
+            /** Test Name En */
+            test_name_en: string;
+        };
+        /** PortalLoginIn */
+        PortalLoginIn: {
+            /** Code */
+            code: string;
+            /** File No */
+            file_no: string;
+            /** Phone */
+            phone: string;
+        };
+        /** PortalMeOut */
+        PortalMeOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /**
+             * Idle Seconds
+             * @description The session ends after this long without use
+             */
+            idle_seconds: number;
+            /** Phone Masked */
+            phone_masked: string;
+            /** Sex */
+            sex: string;
+        };
+        /** PortalPatientHeadOut */
+        PortalPatientHeadOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Sex */
+            sex: string;
+        };
+        /** PortalPersonNameOut */
+        PortalPersonNameOut: {
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** PortalPrescriptionItemOut */
+        PortalPrescriptionItemOut: {
+            /** As Needed */
+            as_needed: boolean;
+            /** Dose */
+            dose: string;
+            /** Duration Days */
+            duration_days: number | null;
+            /** Frequency Code */
+            frequency_code: string;
+            /** Frequency Per Day */
+            frequency_per_day: string | null;
+            /** Instructions */
+            instructions: string;
+            /** Line Id */
+            line_id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Quantity */
+            quantity: number;
+            /** Route */
+            route: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "dispensed" | "partly_dispensed" | "not_dispensed";
+        };
+        /** PortalPrescriptionVisitOut */
+        PortalPrescriptionVisitOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Items */
+            items: components["schemas"]["PortalPrescriptionItemOut"][];
+            prescriber: components["schemas"]["PortalPersonNameOut"] | null;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalPrescriptionsOut */
+        PortalPrescriptionsOut: {
+            /** Lab Instructions */
+            lab_instructions: components["schemas"]["PortalLabInstructionOut"][];
+            /** Visits */
+            visits: components["schemas"]["PortalPrescriptionVisitOut"][];
+        };
+        /** PortalReceiptDetailOut */
+        PortalReceiptDetailOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            center: components["schemas"]["PortalCenterOut"];
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Id */
+            id: number;
+            /** Invoices */
+            invoices: components["schemas"]["PortalReceiptInvoiceOut"][];
+            /** Method */
+            method: string;
+            /** Number */
+            number: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "pending" | "void";
+            /**
+             * To Credit
+             * @example 15000.00
+             */
+            to_credit: string;
+        };
+        /** PortalReceiptInvoiceOut */
+        PortalReceiptInvoiceOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+        };
+        /** PortalReceiptOut */
+        PortalReceiptOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Id */
+            id: number;
+            /** Method */
+            method: string;
+            /** Number */
+            number: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "pending" | "void";
+        };
+        /** PortalResultOut */
+        PortalResultOut: {
+            /** Abnormal */
+            abnormal: boolean;
+            /**
+             * Amended
+             * @description This approved result corrects an earlier one
+             */
+            amended: boolean;
+            /** Approved At */
+            approved_at: string | null;
+            center: components["schemas"]["PortalCenterOut"];
+            /** Comment */
+            comment: string;
+            /** Line Id */
+            line_id: number;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            ordered_by: components["schemas"]["PortalPersonNameOut"] | null;
+            patient: components["schemas"]["PortalPatientHeadOut"];
+            /** Test Name Ar */
+            test_name_ar: string;
+            /** Test Name En */
+            test_name_en: string;
+            /** Values */
+            values: components["schemas"]["PortalResultValueOut"][];
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalResultSummaryOut */
+        PortalResultSummaryOut: {
+            /** Abnormal */
+            abnormal: boolean;
+            /**
+             * Amended
+             * @description This approved result corrects an earlier one
+             */
+            amended: boolean;
+            /** Approved At */
+            approved_at: string | null;
+            /** Line Id */
+            line_id: number;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            /** Test Name Ar */
+            test_name_ar: string;
+            /** Test Name En */
+            test_name_en: string;
+        };
+        /** PortalResultValueOut */
+        PortalResultValueOut: {
+            /** Flag */
+            flag: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Parameter Code */
+            parameter_code: string;
+            /** Reference High */
+            reference_high: string | null;
+            /** Reference Low */
+            reference_low: string | null;
+            /** Reference Text */
+            reference_text: string;
+            /** Unit */
+            unit: string;
+            /** Value */
+            value: string;
+        };
+        /** PortalSessionOut */
+        PortalSessionOut: {
+            me: components["schemas"]["PortalMeOut"] | null;
+            /** Signed In */
+            signed_in: boolean;
+        };
+        /** PortalSlotOut */
+        PortalSlotOut: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /** PortalSlotsOut */
+        PortalSlotsOut: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            doctor: components["schemas"]["PortalDoctorOut"];
+            /** Slots */
+            slots: components["schemas"]["PortalSlotOut"][];
+        };
+        /** PortalSummaryOut */
+        PortalSummaryOut: {
+            balance: components["schemas"]["PortalBalanceOut"];
+            /** Latest Results */
+            latest_results: components["schemas"]["PortalResultSummaryOut"][];
+            next_appointment: components["schemas"]["PortalAppointmentOut"] | null;
+        };
+        /**
+         * PortalVerifyOut
+         * @description The public check of a printed receipt: nothing that identifies a patient.
+         */
+        PortalVerifyOut: {
+            /**
+             * Amount
+             * @example 15000.00
+             */
+            amount: string;
+            /** Center Name Ar */
+            center_name_ar: string;
+            /** Center Name En */
+            center_name_en: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Patient Initials */
+            patient_initials: string;
+            /** Receipt Number */
+            receipt_number: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "pending" | "void";
+        };
         /** PreApprovalIn */
         PreApprovalIn: {
             /** Reference */
@@ -12121,9 +14089,14 @@ export interface components {
             payment: components["schemas"]["PaymentOut"];
             /**
              * Verify Code
-             * @description Encoded in the receipt's QR (FEATURES 6.9)
+             * @description Printed under the QR; the staff check reads it (FEATURES 6.9)
              */
             verify_code: string;
+            /**
+             * Verify Token
+             * @description The receipt's public check token: the QR opens /verify/<token>?r=<number> (FEATURES 15.1, ADR 0016)
+             */
+            verify_token: string;
         };
         /** ReferralCancelIn */
         ReferralCancelIn: {
@@ -12306,6 +14279,214 @@ export interface components {
              */
             uncovered: string;
         };
+        /** ReportAlertOut */
+        ReportAlertOut: {
+            /** Amount */
+            amount: string | null;
+            /** Count */
+            count: number;
+            /** Key */
+            key: string;
+            /**
+             * Report
+             * @description Report key with the detail, if any.
+             */
+            report: string | null;
+            /**
+             * Tone
+             * @enum {string}
+             */
+            tone: "neutral" | "primary" | "success" | "warning" | "danger" | "info";
+        };
+        /** ReportColumnOut */
+        ReportColumnOut: {
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "code" | "name" | "money" | "int" | "days" | "minutes" | "percent" | "date" | "datetime";
+            label: components["schemas"]["ReportNameOut"];
+        };
+        /** ReportDashboardOut */
+        ReportDashboardOut: {
+            /** Alerts */
+            alerts: components["schemas"]["ReportAlertOut"][];
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Departments */
+            departments: components["schemas"]["ReportDepartmentRevenueOut"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Metrics */
+            metrics: components["schemas"]["ReportMetricOut"][];
+            /** Trend */
+            trend: components["schemas"]["ReportTrendDayOut"][];
+        };
+        /** ReportDepartmentRevenueOut */
+        ReportDepartmentRevenueOut: {
+            department: components["schemas"]["ReportNameOut"];
+            /** Net */
+            net: string;
+        };
+        /** ReportExportParams */
+        ReportExportParams: {
+            /**
+             * Date From
+             * @description First day (local); default per report.
+             */
+            date_from?: string | null;
+            /**
+             * Date To
+             * @description Last day, or the 'as of' day; default today.
+             */
+            date_to?: string | null;
+            /**
+             * Days
+             * @description Expiry window in days.
+             */
+            days?: number | null;
+            /** Department Id */
+            department_id?: number | null;
+            /**
+             * Language
+             * @default ar
+             * @enum {string}
+             */
+            language: "ar" | "en";
+            /** User Id */
+            user_id?: number | null;
+        };
+        /** ReportFiltersOut */
+        ReportFiltersOut: {
+            /**
+             * Date From
+             * Format: date
+             */
+            date_from: string;
+            /**
+             * Date To
+             * Format: date
+             */
+            date_to: string;
+            /** Days */
+            days: number | null;
+            /** Department Id */
+            department_id: number | null;
+            /** User Id */
+            user_id: number | null;
+        };
+        /** ReportMetricOut */
+        ReportMetricOut: {
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "code" | "name" | "money" | "int" | "days" | "minutes" | "percent" | "date" | "datetime";
+            label: components["schemas"]["ReportNameOut"];
+            /**
+             * Tone
+             * @enum {string}
+             */
+            tone: "neutral" | "primary" | "success" | "warning" | "danger" | "info";
+            /** Value */
+            value: string | number | components["schemas"]["ReportNameOut"] | null;
+        };
+        /** ReportNameOut */
+        ReportNameOut: {
+            /** Ar */
+            ar: string;
+            /** En */
+            en: string;
+        };
+        /** ReportOptionOut */
+        ReportOptionOut: {
+            /** Id */
+            id: number;
+            name: components["schemas"]["ReportNameOut"];
+        };
+        /** ReportOut */
+        ReportOut: {
+            /**
+             * Area
+             * @enum {string}
+             */
+            area: "finance" | "exceptions" | "payers" | "stock" | "visits" | "lab";
+            center: components["schemas"]["ReportNameOut"];
+            /** Departments */
+            departments: components["schemas"]["ReportOptionOut"][];
+            filters: components["schemas"]["ReportFiltersOut"];
+            /** Filters Available */
+            filters_available: ("dates" | "as_of" | "department" | "user" | "days")[];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Key */
+            key: string;
+            /** Max Rows */
+            max_rows: number;
+            /** Metrics */
+            metrics: components["schemas"]["ReportMetricOut"][];
+            /** Sections */
+            sections: components["schemas"]["ReportSectionOut"][];
+            title: components["schemas"]["ReportNameOut"];
+            /** Users */
+            users: components["schemas"]["ReportOptionOut"][];
+        };
+        /** ReportParams */
+        ReportParams: {
+            /**
+             * Date From
+             * @description First day (local); default per report.
+             */
+            date_from?: string | null;
+            /**
+             * Date To
+             * @description Last day, or the 'as of' day; default today.
+             */
+            date_to?: string | null;
+            /**
+             * Days
+             * @description Expiry window in days.
+             */
+            days?: number | null;
+            /** Department Id */
+            department_id?: number | null;
+            /** User Id */
+            user_id?: number | null;
+        };
+        /** ReportSectionOut */
+        ReportSectionOut: {
+            /** Columns */
+            columns: components["schemas"]["ReportColumnOut"][];
+            /** Key */
+            key: string;
+            label: components["schemas"]["ReportNameOut"];
+            /** Rows */
+            rows: {
+                [key: string]: string | number | components["schemas"]["ReportNameOut"] | null;
+            }[];
+            /** Totals */
+            totals: {
+                [key: string]: string | number | components["schemas"]["ReportNameOut"] | null;
+            } | null;
+            /**
+             * Truncated
+             * @description More rows exist than the section returns.
+             */
+            truncated: boolean;
+        };
         /** ReportTransferOut */
         ReportTransferOut: {
             /** Age Days */
@@ -12323,6 +14504,20 @@ export interface components {
             payment_id: number;
             /** Reference */
             reference: string;
+        };
+        /** ReportTrendDayOut */
+        ReportTrendDayOut: {
+            /** Collected */
+            collected: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Pending */
+            pending: string;
+            /** Visits */
+            visits: number;
         };
         /** RescheduleIn */
         RescheduleIn: {
@@ -12511,7 +14706,7 @@ export interface components {
              * Status
              * @description problems = errors and duplicates
              */
-            status?: ("problems" | "valid" | "error" | "duplicate" | "imported" | "skipped") | null;
+            status?: ("problems" | "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped") | null;
         };
         /**
          * SaleCustomerIn
@@ -13634,6 +15829,36 @@ export interface components {
             /** Phone */
             phone: string;
         };
+        /** SystemStatusOut */
+        SystemStatusOut: {
+            /** Backup Requests */
+            backup_requests: components["schemas"]["BackupRequestOut"][];
+            /** Backups */
+            backups: components["schemas"]["OpsRunOut"][];
+            database: components["schemas"]["OpsDatabaseOut"];
+            /** Disks */
+            disks: components["schemas"]["OpsDiskOut"][];
+            /** @description The newest ok or partial backup */
+            last_backup: components["schemas"]["OpsRunOut"] | null;
+            last_restore_test: components["schemas"]["OpsRunOut"] | null;
+            last_update: components["schemas"]["UpdateRunOut"] | null;
+            migrations: components["schemas"]["OpsMigrationsOut"];
+            /** Pending Cloud Uploads */
+            pending_cloud_uploads: number;
+            /** Restore Tests */
+            restore_tests: components["schemas"]["OpsRunOut"][];
+            /** Status Dir Configured */
+            status_dir_configured: boolean;
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+            /** Version */
+            version: string;
+            /** Warnings */
+            warnings: ("DB_UNAVAILABLE" | "BACKUP_STATUS_UNAVAILABLE" | "BACKUP_STALE" | "BACKUP_FAILED" | "RESTORE_TEST_STALE" | "RESTORE_TEST_FAILED" | "DISK_LOW" | "MIGRATIONS_PENDING")[];
+        };
         /** TemplateParams */
         TemplateParams: {
             /**
@@ -13728,10 +15953,97 @@ export interface components {
             /** Qty Base */
             qty_base: number;
         };
+        /** UnreadCountOut */
+        UnreadCountOut: {
+            /** Count */
+            count: number;
+        };
         /** UpcomingParams */
         UpcomingParams: {
             /** Patient Id */
             patient_id: number;
+        };
+        /** UpdateHistoryOut */
+        UpdateHistoryOut: {
+            /** Count */
+            count: number;
+            /** Current Version */
+            current_version: string;
+            /** Items */
+            items: components["schemas"]["UpdateRunOut"][];
+            /**
+             * Log
+             * @description The update script's log, newest first
+             */
+            log: components["schemas"]["UpdateLogOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * UpdateLogOut
+         * @description One run of ``infra/update.sh`` from its status log (update-runs.jsonl).
+         */
+        UpdateLogOut: {
+            /** Db Restored */
+            db_restored: boolean;
+            /** Detail */
+            detail: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** From Tag */
+            from_tag: string;
+            /** Migrations Applied */
+            migrations_applied: boolean;
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @description ok, failed or rolled_back
+             */
+            status: string;
+            /** To Tag */
+            to_tag: string;
+        };
+        /** UpdateParams */
+        UpdateParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+        };
+        /** UpdateRunOut */
+        UpdateRunOut: {
+            /** Finished At */
+            finished_at: string | null;
+            /** Id */
+            id: number;
+            /** Previous Version */
+            previous_version: string;
+            /** Release Notes */
+            release_notes: string;
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "running" | "succeeded" | "failed" | "rolled_back";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            started_by: components["schemas"]["UserRefOut"] | null;
+            /** Version */
+            version: string;
         };
         /** UserIn */
         UserIn: {
@@ -21378,6 +23690,138 @@ export interface operations {
             };
         };
     };
+    core_list_audit_events: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description app_label.ModelName */
+                model?: string | null;
+                user_id?: number | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                object_id?: string | null;
+                action?: ("insert" | "update" | "delete") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AuditEventOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_audit_models: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditModelOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     core_get_center_profile: {
         parameters: {
             query?: never;
@@ -22165,6 +24609,256 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DoctorOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_notifications: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description Only the unread notifications */
+                unread?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_NotificationOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_mark_all_notifications_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_get_unread_notification_count: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_mark_notification_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationOut"];
                 };
             };
             /** @description Unauthorized */
@@ -23544,6 +26238,226 @@ export interface operations {
             };
         };
     };
+    imports_list_jobs: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                kind?: ("patients" | "items" | "prices") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ImportJobOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_preview_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Effective From
+                     * @default
+                     */
+                    effective_from?: string;
+                    /**
+                     * File
+                     * Format: binary
+                     */
+                    file: string;
+                    /**
+                     * Kind
+                     * @enum {string}
+                     */
+                    kind: "patients" | "items" | "prices";
+                    /**
+                     * Price List
+                     * @default
+                     */
+                    price_list?: string;
+                    /**
+                     * Store
+                     * @default
+                     */
+                    store?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_list_job_rows: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description problems = errors and duplicates */
+                status?: ("problems" | "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped") | null;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ImportJobRowOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     imports_preview_patients: {
         parameters: {
             query?: never;
@@ -23704,6 +26618,73 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_get_template: {
+        parameters: {
+            query?: {
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path: {
+                kind: "patients" | "items" | "prices";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23916,7 +26897,7 @@ export interface operations {
                 page_size?: number;
                 q?: string | null;
                 /** @description problems = errors and duplicates */
-                status?: ("problems" | "valid" | "error" | "duplicate" | "imported" | "skipped") | null;
+                status?: ("problems" | "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped") | null;
             };
             header?: never;
             path: {
@@ -25666,6 +28647,138 @@ export interface operations {
             };
         };
     };
+    ops_request_backup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupRequestIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupRequestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    ops_export_data: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     ops_get_health: {
         parameters: {
             query?: never;
@@ -25691,6 +28804,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
+    ops_get_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemStatusOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    ops_list_updates: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateHistoryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };
@@ -32671,6 +35900,487 @@ export interface operations {
             };
         };
     };
+    portal_issue_access_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalIssueCodeIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalIssuedCodeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_appointments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAppointmentsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_book_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalBookIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_cancel_appointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAppointmentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_balance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalBalanceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_doctors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDoctorOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_booking_days: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_slots: {
+        parameters: {
+            query: {
+                on: string;
+            };
+            header?: never;
+            path: {
+                doctor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSlotsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_invoices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalInvoiceOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_invoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalInvoiceDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalMeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     portal_get_ping: {
         parameters: {
             query?: never;
@@ -32709,6 +36419,1198 @@ export interface operations {
             };
         };
     };
+    portal_get_prescriptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPrescriptionsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_receipts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReceiptOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_receipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReceiptDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_results: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalResultSummaryOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_result: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalResultOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSessionOut"];
+                };
+            };
+        };
+    };
+    portal_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalLoginIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalMeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Locked */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSummaryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_verify_receipt: {
+        parameters: {
+            query: {
+                receipt: string;
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalVerifyOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_adjustments: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_adjustments: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_dashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDashboardOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_lab_turnaround: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_lab_turnaround: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_paid_not_performed: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_paid_not_performed: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_payer_receivables: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_payer_receivables: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_pending_transfers: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_pending_transfers: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_performed_by_authorization: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_performed_by_authorization: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     reports_get_ping: {
         parameters: {
             query?: never;
@@ -32738,6 +37640,1038 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_requested_not_invoiced: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_requested_not_invoiced: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_revenue: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_revenue: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_shift_variances: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_shift_variances: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_stock_expiry: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_stock_expiry: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_stock_movement: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_stock_movement: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_stock_valuation: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_stock_valuation: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_stock_variance: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_stock_variance: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_get_visits: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    reports_export_visits: {
+        parameters: {
+            query?: {
+                /** @description First day (local); default per report. */
+                date_from?: string | null;
+                /** @description Last day, or the 'as of' day; default today. */
+                date_to?: string | null;
+                department_id?: number | null;
+                user_id?: number | null;
+                /** @description Expiry window in days. */
+                days?: number | null;
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

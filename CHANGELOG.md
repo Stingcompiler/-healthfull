@@ -123,8 +123,44 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   payments by transfer, cheque (cleared later) or cash into the recorder's shift, allocated per
   claim or oldest first, reversal of a bounced payment, and aging by payer (0-30, 31-60, 61-90,
   over 90 days). Only `claims.*` holders reach any of it (ADR 0012).
+- Wave c, reports and the manager dashboard (FEATURES 4.5, 12.1-12.11): `/api/reports` with
+  fourteen reports, each as JSON and as an Excel workbook (Arabic or English, formula-safe):
+  daily revenue by department, doctor and payment method with pending transfers apart, shift
+  variances, pending transfers by age (with uncleared payer cheques), discounts, credit notes,
+  cancellations and refunds by user and reason, payer receivables by stage and age,
+  requested-not-invoiced, paid-not-performed, performed-by-authorization, stock valuation,
+  movement, count variance and expiry, visits by day, department and doctor (new against
+  follow-up), lab turnaround and volume. Report figures are tested against the ledger. Screens:
+  `/reports` (catalog by area), `/reports/<key>` (filters, figures, sections with totals and
+  row search, cards on phones, Excel), `/reports/<key>/print` (A4, the browser saves PDF), and
+  the home page for managers: today's confirmed collection, pending transfers, queue, alerts and
+  two charts (recharts, theme colors). `DataTable` gains a totals row (ADR 0013).
+- Wave c, operations (FEATURES 1.8, 8.13, 0.13, 13.8, 13.9, 13.10, 0.4 viewer; ADR 0014):
+  Excel imports of patients, stock items with batches and opening stock (posted as a goods
+  receipt from the `OPENING` supplier) and prices (into a version that starts after today) with
+  preview, row errors, duplicate hints and templates at `/administration/imports`; in-app
+  notifications with a top-bar bell and `manage.py notify_scan` (overdue transfers, shifts
+  awaiting review, low stock, stale backup); the system status page (database, disks, version,
+  migrations, backups and restore tests from the status logs, update history) with a manual
+  backup request picked up by `infra/backup/backup-requests.sh`; the full CSV data export;
+  the audit trail viewer. The maintenance loop now also runs `notify_scan` and
+  `charge_bed_nights` as `BED_CHARGE_USER`, hourly.
+- Wave c, patient portal (FEATURES 15.1, 15.2): `/api/portal` and the mobile-first screens under
+  `/portal` (sign-in, home cards, appointments with online booking and cancellation, approved lab
+  results with print, prescriptions and lab preparation, invoices and receipts), the public receipt
+  check `/verify/<token>` behind the receipt QR, and a portal access code the cashier prints on the
+  receipt. Web manifest and bundled icons, no service worker (ADR 0016).
 
 ### Security
+- Imports refuse formula cells and text starting with `=`, check the xlsx zip signature and
+  unpacked size before parsing; the data export defuses CSV formula injection and records
+  every export; the audit viewer hides secret-looking fields.
+- Patient portal (ADR 0016): its own session cookie (HttpOnly, SameSite=Strict, path `/api/portal`,
+  hashed token, 15-minute idle and 4-hour limit) that opens no staff endpoint; receipt access codes
+  stored hashed, expiring, revoked by a newer code and locked after wrong attempts; uniform refusals
+  with equal hashing work, per-file-number lockout and per-address throttle; every other patient's
+  row answers 404; the public receipt check needs an HMAC token, shows initials at most and is
+  rate-limited; portal answers are `Cache-Control: no-store`.
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
   and refuses accounts that must change their password; unlocking an account is an audited admin action
   with a reason (ADR 0005).
@@ -144,6 +180,18 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   `PUBLIC` loses `CONNECT`/`TEMP` on the database and `CREATE` on schema `public`.
 
 ### Changed
+- Report permissions are one `reports.view_<area>` code per area (finance, exceptions, stock,
+  visits, lab, dashboard); the unused Phase 0 codes (`reports.view`, `reports.financial`,
+  `reports.operational`, `reports.stock`, `reports.lab`, `reports.dashboard`,
+  `reports.export`) are gone (ADR 0013). `orders.services.report_*` take an optional department.
+- The home page no longer shows placeholder zeros: managers get the dashboard, everyone else a
+  list of their modules.
+- Wave c integration (`wave/c`): reports, operations and the patient portal merged together
+  with `main`'s transfer rejection fix. The top bar of every signed-in screen, the manager
+  dashboard included, carries the notification bell; the administration area has no
+  placeholder sections left (imports, system status, data export and audit are real pages;
+  `AdminSectionPage` removed). The clinic doctor-states e2e setup gets the test timeout
+  instead of the 30 s hook default.
 - Nurses hold `visits.admit` by default (they record the admission on the doctor's decision);
   the Nursing menu entry shows to holders of any nursing permission. A cancelled visit takes no
   nursing notes (`VISIT_CANCELLED`).

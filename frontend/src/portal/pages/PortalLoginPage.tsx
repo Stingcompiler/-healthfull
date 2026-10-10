@@ -1,4 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { CalendarCheck, FlaskConical, ReceiptText, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -8,36 +10,63 @@ import { z } from "zod";
 import { AlertCard } from "@/components/AlertCard";
 import { Form, TextField } from "@/components/form";
 import { Button } from "@/components/ui/button";
-import { phoneSchema, vmsg } from "@/lib/validation";
+import { useTranslateError } from "@/lib/api/translate-error";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
+import { vmsg } from "@/lib/validation";
+
+import { portalKeys, portalLogin } from "../api";
+
+/** Arabic-Indic digits typed on a phone keyboard count as digits (the server folds them too). */
+const latinDigits = (value: string) =>
+  value
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
 
 const schema = z.object({
   fileNo: z.string().trim().min(1, vmsg("validation.required")),
-  phone: phoneSchema,
+  // Local (0912345678) or international (+249 912 345 678); the server folds both.
+  phone: z
+    .string()
+    .trim()
+    .transform((v) => latinDigits(v).replace(/[\s-]/g, ""))
+    .pipe(z.string().regex(/^(?:\+?249|00249|0)?\d{9}$/, vmsg("validation.phone"))),
   code: z
     .string()
     .trim()
-    .regex(/^\d{6}$/, vmsg("portal:login.codeInvalid")),
+    .transform((v) => latinDigits(v).replace(/[\s-]/g, ""))
+    .pipe(z.string().regex(/^\d{8}$/, vmsg("portal:login.codeInvalid"))),
 });
-type Values = z.infer<typeof schema>;
+type Values = z.input<typeof schema>;
+type Parsed = z.output<typeof schema>;
 
-/**
- * Placeholder portal sign-in (FEATURES 15.2, Phase 7). The form validates
- * locally; the API does not exist yet, so submitting explains that the
- * portal is being prepared.
- */
+/** Patient sign-in with file number, phone and the code printed on a receipt (FEATURES 15.2). */
 export function PortalLoginPage() {
   const { t } = useTranslation("portal");
+  const translateError = useTranslateError();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const search: { reason?: string } = useSearch({ strict: false });
   useDocumentTitle(t("login.title"));
-  const [submitted, setSubmitted] = useState(false);
-  const form = useForm<Values>({
+  const [error, setError] = useState<unknown>(null);
+  const form = useForm<Values, unknown, Parsed>({
     resolver: zodResolver(schema),
     defaultValues: { fileNo: "", phone: "", code: "" },
   });
 
-  const onSubmit = form.handleSubmit(() => {
-    setSubmitted(true);
+  const onSubmit = form.handleSubmit(async (values) => {
+    setError(null);
+    try {
+      const me = await portalLogin({ file_no: values.fileNo, phone: values.phone, code: values.code });
+      queryClient.setQueryData(portalKeys.me, me);
+      await navigate({ to: "/portal/home" });
+    } catch (caught) {
+      setError(caught);
+      form.setValue("code", "");
+    }
   });
+
+  const notice =
+    search.reason === "expired" ? t("login.expired") : search.reason === "signed-out" ? t("login.signedOut") : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,18 +79,16 @@ export function PortalLoginPage() {
       </div>
 
       <div className="card-surface grid gap-4 p-5">
-        {submitted ? (
-          <AlertCard variant="info" title={t("login.comingSoonTitle")} live>
-            {t("login.comingSoon")}
-          </AlertCard>
-        ) : null}
+        {notice && !error ? <AlertCard variant="info" title={notice} live /> : null}
+        {error ? <AlertCard variant="danger" title={translateError(error)} live /> : null}
         <Form {...form}>
-          <form onSubmit={(e) => void onSubmit(e)} noValidate className="grid gap-4">
+          <form onSubmit={(e) => void onSubmit(e)} noValidate className="grid gap-4" data-testid="portal-login">
             <TextField
               control={form.control}
               name="fileNo"
               label={t("login.fileNo")}
-              inputMode="numeric"
+              description={t("login.fileNoHint")}
+              autoComplete="username"
               dir="ltr"
               required
             />
@@ -69,6 +96,7 @@ export function PortalLoginPage() {
               control={form.control}
               name="phone"
               label={t("login.phone")}
+              description={t("login.phoneHint")}
               type="tel"
               inputMode="tel"
               autoComplete="tel"
@@ -82,15 +110,16 @@ export function PortalLoginPage() {
               description={t("login.codeHint")}
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={6}
+              maxLength={12}
               dir="ltr"
               required
             />
-            <Button type="submit" size="lg" className="w-full">
+            <Button type="submit" size="lg" className="w-full" loading={form.formState.isSubmitting}>
               {t("login.submit")}
             </Button>
           </form>
         </Form>
+        <p className="text-center text-xs text-muted">{t("login.help")}</p>
       </div>
 
       <section className="grid gap-3">

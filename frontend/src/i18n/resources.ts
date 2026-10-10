@@ -16,6 +16,7 @@ import arErrors from "./locales/ar/errors.json";
 import arLab from "./locales/ar/lab.json";
 import arNav from "./locales/ar/nav.json";
 import arNursing from "./locales/ar/nursing.json";
+import arOps from "./locales/ar/ops.json";
 import arPatients from "./locales/ar/patients.json";
 import arPharmacy from "./locales/ar/pharmacy.json";
 import arPortal from "./locales/ar/portal.json";
@@ -33,6 +34,7 @@ import enErrors from "./locales/en/errors.json";
 import enLab from "./locales/en/lab.json";
 import enNav from "./locales/en/nav.json";
 import enNursing from "./locales/en/nursing.json";
+import enOps from "./locales/en/ops.json";
 import enPatients from "./locales/en/patients.json";
 import enPharmacy from "./locales/en/pharmacy.json";
 import enPortal from "./locales/en/portal.json";
@@ -56,6 +58,7 @@ export const en = {
   claims: enClaims,
   reports: enReports,
   admin: enAdmin,
+  ops: enOps,
   portal: enPortal,
 } as const;
 
@@ -76,6 +79,7 @@ export const ar = {
   claims: arClaims,
   reports: arReports,
   admin: arAdmin,
+  ops: arOps,
   portal: arPortal,
 } as const;
 
