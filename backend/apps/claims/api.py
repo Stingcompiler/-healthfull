@@ -21,6 +21,7 @@ from api.pagination import PageParams
 from api.permissions import require_perm
 from api.ping import add_ping
 from api.schemas import ERROR_RESPONSES, ErrorOut, Page
+from apps.billing.schemas import ApproverIn
 from apps.claims import desk, export, queries
 from apps.claims.schemas import (
     ClaimAccruedOut,
@@ -42,6 +43,7 @@ from apps.claims.schemas import (
     ClaimVoidIn,
 )
 from apps.core.models import User
+from apps.payments.approvals import ApproverLogin
 from domain.money import money
 
 claims_router = Router(tags=["claims"])
@@ -56,6 +58,12 @@ def _user(request: HttpRequest) -> User:
     if not isinstance(user, User):  # pragma: no cover - the router's auth guarantees a User
         raise AuthenticationError()
     return user
+
+
+def _approver(request: HttpRequest, approver: ApproverIn | None) -> ApproverLogin | None:
+    if approver is None:
+        return None
+    return ApproverLogin(request, approver.username, approver.password)
 
 
 class ClaimAsOfParams(Schema):
@@ -283,7 +291,10 @@ def record_responses(request: HttpRequest, claim_id: int, payload: ClaimResponse
     response={200: ClaimDetailOut, **_READ},
     operation_id="claims_resolve_rejection",
     summary="Rebill a rejected amount to the patient or write it off, with a reason",
-    description="409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN.",
+    description=(
+        "409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN, "
+        "SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID."
+    ),
 )
 @require_perm("claims.resolve_rejection")
 def resolve_rejection(
@@ -296,6 +307,7 @@ def resolve_rejection(
         resolution=payload.resolution,
         reason=payload.reason,
         note=payload.note,
+        approver=_approver(request, payload.approver),
     )
 
 
@@ -304,7 +316,10 @@ def resolve_rejection(
     response={200: ClaimDetailOut, **_READ},
     operation_id="claims_write_off_shortfall",
     summary="Write off accepted money the payer will not pay, with a reason",
-    description="409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT.",
+    description=(
+        "409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT, "
+        "SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID."
+    ),
 )
 @require_perm("claims.resolve_rejection")
 def write_off_shortfall(
@@ -317,6 +332,7 @@ def write_off_shortfall(
         amount=money(payload.amount),
         reason=payload.reason,
         note=payload.note,
+        approver=_approver(request, payload.approver),
     )
 
 

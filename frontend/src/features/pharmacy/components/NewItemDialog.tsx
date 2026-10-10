@@ -61,6 +61,7 @@ function NewItemDialogOpen({
     defaultValues: {
       service_id: "",
       generic_name: "",
+      generic_name_ar: "",
       brand_name: "",
       form: "tablet",
       strength: "",

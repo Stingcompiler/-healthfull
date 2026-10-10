@@ -13,8 +13,13 @@ export const ROLES = [
   "accountant",
   "manager",
   "admin",
+  // The waiting-room kiosk account (ADR 0019): a device, not a person.
+  "display",
 ] as const;
 export type Role = (typeof ROLES)[number];
+
+/** Roles people hold: the ones a policy (discount limits, perform-first) can name. */
+export const PERSON_ROLES = ROLES.filter((r) => r !== "display");
 
 export function isKnownRole(role: string): role is Role {
   return (ROLES as readonly string[]).includes(role);

@@ -31,10 +31,11 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 
-from domain.audit import Approval, require_reason
+from domain.audit import Approval, require_reason, second_approval
 from domain.errors import DomainError
 from domain.money import ZERO, require_non_negative, require_positive
 
@@ -52,6 +53,7 @@ __all__ = [
     "record_payment",
     "reduce_for_credit",
     "require_creditable",
+    "resolution_approval",
     "resolve_rejection",
     "respond",
     "response_amount",
@@ -433,3 +435,23 @@ def aging_bucket(age_days: int) -> str:
         if upper is None or age_days <= upper:
             return name
     raise AssertionError("unreachable: the last bucket is open-ended")  # pragma: no cover
+
+
+def resolution_approval(
+    *,
+    second_person: bool,
+    actor_id: int,
+    approver_id: int | None,
+    at: datetime,
+    reason: str = "",
+    reason_code: str | None = None,
+) -> Approval:
+    """Who approves a rebill or a write-off (FEATURES 11.5, ADR 0018).
+
+    With the center's ``claims_second_approver`` switch on (the default), someone other than
+    the recording user approves (``SECOND_APPROVER_REQUIRED``); with it off, the recording
+    user approves as before (ADR 0012). Either way the reason is required.
+    """
+    if second_person:
+        return second_approval(actor_id, approver_id, at, reason, reason_code)
+    return Approval(actor_id, at, reason, reason_code)

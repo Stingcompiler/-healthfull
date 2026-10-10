@@ -11,7 +11,7 @@ import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 import { cn } from "@/lib/utils";
 
-import { DISPLAY_REFRESH_MS, useVisitOptions, useWaitingRoom } from "../api";
+import { DISPLAY_REFRESH_MS, useWaitingRoom } from "../api";
 import { ALL } from "../lib";
 import type { DisplayEntry } from "../types";
 
@@ -32,12 +32,13 @@ export function QueueDisplayPage() {
   const navigate = useNavigate();
   const search: { department?: number } = useSearch({ strict: false });
   const departmentId = typeof search.department === "number" ? search.department : null;
-  const options = useVisitOptions();
   const room = useWaitingRoom(departmentId);
   const clock = useClock();
   useDocumentTitle(t("display.title"));
 
-  const department = options.data?.departments.find((d) => d.id === departmentId);
+  // The feed carries the clinics: a kiosk account holds no other permission (ADR 0019).
+  const departments = room.data?.departments ?? [];
+  const department = departments.find((d) => d.id === departmentId);
   const stale = room.dataUpdatedAt > 0 && clock.getTime() - room.dataUpdatedAt > STALE_AFTER_MS;
   const offline = room.isError || stale;
   const serving = room.data?.serving ?? [];
@@ -71,7 +72,7 @@ export function QueueDisplayPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>{t("board.allDepartments")}</SelectItem>
-              {(options.data?.departments ?? []).map((d) => (
+              {departments.map((d) => (
                 <SelectItem key={d.id} value={String(d.id)}>
                   {pickName({ ar: d.name_ar, en: d.name_en }, language)}
                 </SelectItem>

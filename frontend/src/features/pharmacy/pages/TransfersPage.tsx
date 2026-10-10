@@ -99,7 +99,7 @@ export function TransfersPage() {
   const lines = (tr: StockTransfer) =>
     tr.lines.map((ln) => (
       <span key={ln.id} className="flex flex-wrap gap-x-2">
-        <span>{ln.item_name}</span>
+        <span>{names.item(ln)}</span>
         <bdi className="text-muted">{ln.batch_no}</bdi>
         <bdi className="tabular">{formatNumber(ln.qty_base, names.language)}</bdi>
       </span>
@@ -502,7 +502,7 @@ function ReceiveDialogOpen({ transfer, onClose }: { transfer: StockTransfer; onC
                 className="grid gap-2 rounded-control border border-border p-3 sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-end"
               >
                 <span className="grid gap-0.5 text-sm">
-                  <span className="font-medium">{line.item_name}</span>
+                  <span className="font-medium">{names.item(line)}</span>
                   <span className="text-muted">
                     <bdi>{line.batch_no}</bdi> ·{" "}
                     {t("transfers.sent", { qty: formatNumber(line.qty_base, names.language) })}

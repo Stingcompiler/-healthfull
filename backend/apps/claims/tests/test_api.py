@@ -22,6 +22,7 @@ from apps.ledger import services as ledger
 from apps.payments import services as payments
 from apps.payments.tests import api_kit as kit
 from apps.payments.tests import fin
+from conftest import TEST_PASSWORD
 
 pytestmark = pytest.mark.django_db
 
@@ -69,6 +70,10 @@ def s(make_user: Any) -> Setup:
 
 def _url(path: str) -> str:
     return f"/api/claims{path}"
+
+
+#: The manager of ``kit.desk`` approves rebills and write-offs as the second person (ADR 0018).
+SECOND = {"approver": {"username": "mgr", "password": TEST_PASSWORD}}
 
 
 def test_receivables_accrue_and_a_claim_is_built_from_chosen_lines(s: Setup) -> None:
@@ -227,7 +232,7 @@ def test_answers_rebill_write_off_and_payment_by_claim(s: Setup) -> None:
     error(
         acc.post(
             _url(f"/batches/{cid}/lines/{full}/resolve"),
-            {"resolution": "rebilled", "reason": "NOT_COVERED"},
+            {**SECOND, "resolution": "rebilled", "reason": "NOT_COVERED"},
         ),
         409,
         "CLAIM_NOTHING_REJECTED",
@@ -235,7 +240,12 @@ def test_answers_rebill_write_off_and_payment_by_claim(s: Setup) -> None:
     rebilled = ok(
         acc.post(
             _url(f"/batches/{cid}/lines/{rejected}/resolve"),
-            {"resolution": "rebilled", "reason": "NOT_COVERED", "note": "patient informed"},
+            {
+                **SECOND,
+                "resolution": "rebilled",
+                "reason": "NOT_COVERED",
+                "note": "patient informed",
+            },
         )
     )
     line = rebilled["lines"][2]
@@ -247,7 +257,7 @@ def test_answers_rebill_write_off_and_payment_by_claim(s: Setup) -> None:
     error(
         acc.post(
             _url(f"/batches/{cid}/lines/{part}/resolve"),
-            {"resolution": "written_off", "reason": "OTHER"},
+            {**SECOND, "resolution": "written_off", "reason": "OTHER"},
         ),
         409,
         "REASON_NOTE_REQUIRED",
@@ -255,7 +265,7 @@ def test_answers_rebill_write_off_and_payment_by_claim(s: Setup) -> None:
     ok(
         acc.post(
             _url(f"/batches/{cid}/lines/{part}/resolve"),
-            {"resolution": "written_off", "reason": "SMALL_BALANCE"},
+            {**SECOND, "resolution": "written_off", "reason": "SMALL_BALANCE"},
         )
     )
     # Nothing so far moved cash or bank money.
@@ -308,7 +318,7 @@ def test_answers_rebill_write_off_and_payment_by_claim(s: Setup) -> None:
     ok(
         acc.post(
             _url(f"/batches/{cid}/lines/{part}/write-off"),
-            {"amount": "1000", "reason": "SMALL_BALANCE"},
+            {**SECOND, "amount": "1000", "reason": "SMALL_BALANCE"},
         )
     )
     closed = ok(acc.post(_url(f"/batches/{cid}/close")))
@@ -394,7 +404,7 @@ def test_paths_and_references_are_checked(s: Setup) -> None:
     error(
         acc.post(
             _url(f"/batches/{claim['id'] + 1000}/lines/{line.pk}/resolve"),
-            {"resolution": "rebilled", "reason": "NOT_COVERED"},
+            {**SECOND, "resolution": "rebilled", "reason": "NOT_COVERED"},
         ),
         404,
         "NOT_FOUND",
@@ -452,3 +462,26 @@ def test_manager_reads_but_does_not_act(s: Setup) -> None:
     response = manager.post(_url(f"/batches/{claim['id']}/responses"), body)
     assert response.status_code == 403
     assert response.json()["details"]["permission"] == "claims.record_response"
+
+
+def test_rebill_needs_a_second_persons_credentials(s: Setup) -> None:
+    """ADR 0018: the options say a second person approves; the endpoint refuses the
+    recorder alone and the recorder's own credentials, and records the approver."""
+    acc = s.acc.api
+    assert ok(acc.get(_url("/options")))["second_approver_required"] is True
+    claim = _submitted(s)
+    line_id = claim["lines"][0]["id"]
+    answers = {"responses": [{"claim_line_id": line_id, "outcome": "rejected", "reason": "x"}]}
+    ok(acc.post(_url(f"/batches/{claim['id']}/responses"), answers))
+    path = _url(f"/batches/{claim['id']}/lines/{line_id}/resolve")
+    body: dict[str, Any] = {"resolution": "written_off", "reason": "NOT_COVERED"}
+    error(acc.post(path, body), 409, "SECOND_APPROVER_REQUIRED")
+    own = {"username": s.acc.user.username, "password": TEST_PASSWORD}
+    error(acc.post(path, {**body, "approver": own}), 409, "SECOND_APPROVER_REQUIRED")
+    wrong = {"username": "mgr", "password": "not-it"}
+    error(acc.post(path, {**body, "approver": wrong}), 409, "APPROVER_INVALID")
+    cashier = {"username": s.desk.cashier.user.username, "password": TEST_PASSWORD}
+    error(acc.post(path, {**body, "approver": cashier}), 409, "APPROVER_NOT_PERMITTED")
+    done = ok(acc.post(path, {**body, **SECOND}))
+    assert done["lines"][0]["resolution"] == "written_off"
+    assert ClaimLine.objects.get(pk=line_id).resolution_approved_by == s.desk.manager.user

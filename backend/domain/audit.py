@@ -5,7 +5,8 @@ records a reason, the approver and the time. Rules that need it take an :class:`
 which cannot be built without all three. The reason is either a code from the center's
 configurable reason list (``core.ReasonCode``), free text, or both.
 
-Error codes: ``REASON_REQUIRED``, ``APPROVER_REQUIRED``, ``INVALID_TIMESTAMP``.
+Error codes: ``REASON_REQUIRED``, ``APPROVER_REQUIRED``, ``INVALID_TIMESTAMP``,
+``SECOND_APPROVER_REQUIRED``.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from datetime import datetime
 
 from domain.errors import DomainError
 
-__all__ = ["Approval", "require_aware", "require_reason"]
+__all__ = ["Approval", "require_aware", "require_reason", "second_approval"]
 
 
 def require_reason(reason: str | None, reason_code: str | None = None) -> str:
@@ -68,3 +69,27 @@ class Approval:
     def reason_text(self) -> str:
         """The free-text reason without surrounding whitespace."""
         return self.reason.strip()
+
+
+def second_approval(
+    actor_id: int,
+    approver_id: int | None,
+    at: datetime,
+    reason: str = "",
+    reason_code: str | None = None,
+) -> Approval:
+    """The approval of a second person: someone other than the actor decided (ADR 0018).
+
+    Used where one person must never both do and approve an action (an admission cancelled
+    in error, a paid dispense return, a claims rebill or write-off under the policy switch).
+
+    Raises:
+        DomainError: ``SECOND_APPROVER_REQUIRED`` when there is no approver or the approver is
+            the actor; the errors of :class:`Approval` (reason, time).
+    """
+    if approver_id is None or approver_id == actor_id:
+        raise DomainError(
+            "SECOND_APPROVER_REQUIRED",
+            "Another person must approve this action",
+        )
+    return Approval(approver_id, at, reason, reason_code)

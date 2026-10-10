@@ -27,10 +27,12 @@ from api.schemas import ErrorOut
 from api.security import session_auth
 from apps.portal import conf, queries, services
 from apps.portal.schemas import (
+    PortalAccessCodesOut,
     PortalAppointmentOut,
     PortalAppointmentsOut,
     PortalBalanceOut,
     PortalBookIn,
+    PortalCodeSlipOut,
     PortalDoctorOut,
     PortalInvoiceDetailOut,
     PortalInvoiceOut,
@@ -43,6 +45,7 @@ from apps.portal.schemas import (
     PortalReceiptOut,
     PortalResultOut,
     PortalResultSummaryOut,
+    PortalRevokeCodeIn,
     PortalSessionOut,
     PortalSlotsOut,
     PortalSummaryOut,
@@ -194,6 +197,88 @@ def issue_access_code(request: HttpRequest, payload: PortalIssueCodeIn) -> Statu
     return Status(
         201, {"code": issued.code, "expires_at": issued.expires_at, "file_no": issued.file_no}
     )
+
+
+# --- staff: codes from the patient's file (reception) ------------------------------------
+
+
+def _staff(user: Any) -> dict[str, Any] | None:
+    if user is None:
+        return None
+    return {"id": user.pk, "full_name_ar": user.full_name_ar, "full_name_en": user.full_name_en}
+
+
+def _codes_out(patient_id: int) -> dict[str, Any]:
+    patient, rows = services.access_codes(patient_id)
+    return {
+        "patient_id": patient.pk,
+        "file_no": patient.file_no,
+        "has_phone": bool(patient.phone_norm or patient.phone_alt_norm),
+        "codes": [
+            {
+                "id": r.code.pk,
+                "state": r.state,
+                "created_at": r.code.created_at,
+                "created_by": _staff(r.code.created_by),
+                "expires_at": r.code.expires_at,
+                "last_used_at": r.code.last_used_at,
+                "failed_attempts": r.code.failed_attempts,
+                "revoked_at": r.code.revoked_at,
+                "revoked_by": _staff(r.code.revoked_by),
+                "revoke_note": r.code.revoke_note,
+            }
+            for r in rows
+        ],
+    }
+
+
+@portal_router.get(
+    "/patients/{patient_id}/access-codes",
+    auth=session_auth,
+    response={200: PortalAccessCodesOut, **_WRITE},
+    operation_id="portal_list_patient_access_codes",
+    summary="A file's portal access codes, newest first (their state, never the codes)",
+)
+@require_perm("portal.issue_access_code")
+def list_patient_access_codes(request: HttpRequest, patient_id: int) -> Any:
+    return _codes_out(patient_id)
+
+
+@portal_router.post(
+    "/patients/{patient_id}/access-codes",
+    auth=session_auth,
+    response={201: PortalCodeSlipOut, **_WRITE},
+    operation_id="portal_issue_patient_access_code",
+    summary="Issue a portal access code from the patient's file for a printed slip (shown once)",
+    description="Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.",
+)
+@require_perm("portal.issue_access_code")
+def issue_patient_access_code(request: HttpRequest, patient_id: int) -> Status[Any]:
+    slip = services.issue_slip_for_patient(
+        patient_id,
+        actor=request.user,  # type: ignore[arg-type]
+        request=request,
+    )
+    return Status(201, slip)
+
+
+@portal_router.post(
+    "/access-codes/{code_id}/revoke",
+    auth=session_auth,
+    response={200: PortalAccessCodesOut, **_WRITE},
+    operation_id="portal_revoke_access_code",
+    summary="Revoke a portal access code (a lost slip): it stops working, its sessions end",
+    description="409 `PORTAL_CODE_ALREADY_REVOKED`, `REASON_REQUIRED`.",
+)
+@require_perm("portal.revoke_access_code")
+def revoke_access_code(request: HttpRequest, code_id: int, payload: PortalRevokeCodeIn) -> Any:
+    code = services.revoke_access_code(
+        code_id,
+        actor=request.user,  # type: ignore[arg-type]
+        note=payload.note,
+        request=request,
+    )
+    return _codes_out(code.patient_id)
 
 
 # --- patient: own data ---------------------------------------------------------------------

@@ -19,6 +19,17 @@ interface Person {
   username?: string;
 }
 
+interface ItemNamed {
+  item_name: string;
+  item_name_ar?: string;
+}
+
+interface Generic {
+  generic_name: string;
+  generic_name_ar?: string;
+  strength?: string;
+}
+
 interface BaseUnit {
   base_unit_name_ar: string;
   base_unit_name_en: string;
@@ -46,5 +57,20 @@ export function useNames() {
       row ? pickName({ ar: row.base_unit_name_ar, en: row.base_unit_name_en }, language) : "",
     [language],
   );
-  return { name, label, person, baseUnit, language };
+  /** A stock line's item: the Arabic generic name on Arabic screens when the item has one. */
+  const item = useCallback(
+    (row: ItemNamed | null | undefined): string =>
+      row ? (language === "ar" && row.item_name_ar ? row.item_name_ar : row.item_name) : "",
+    [language],
+  );
+  /** An item's generic name and strength in the current language (Latin fallback). */
+  const generic = useCallback(
+    (row: Generic | null | undefined): string => {
+      if (!row) return "";
+      const base = language === "ar" && row.generic_name_ar ? row.generic_name_ar : row.generic_name;
+      return [base, row.strength].filter(Boolean).join(" ");
+    },
+    [language],
+  );
+  return { name, label, person, baseUnit, item, generic, language };
 }

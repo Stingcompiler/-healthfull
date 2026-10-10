@@ -191,7 +191,7 @@ export function BatchPicker({
       rowKey={(b) => `${String(b.batch_id)}-${String(b.store_id)}`}
       renderRow={(b) => (
         <span className="flex flex-col">
-          <span className="font-medium">{b.item_name}</span>
+          <span className="font-medium">{names.item(b)}</span>
           <span className="flex flex-wrap gap-x-2 text-xs text-muted">
             <bdi>{b.batch_no}</bdi>
             <DateText value={b.expiry_date} />
@@ -202,7 +202,7 @@ export function BatchPicker({
       selected={
         value ? (
           <span className="flex flex-wrap gap-x-2">
-            <span className="font-medium">{value.item_name}</span>
+            <span className="font-medium">{names.item(value)}</span>
             <bdi>{value.batch_no}</bdi>
             <QtyText value={value.on_hand} unit={names.baseUnit(value)} className="text-muted" />
           </span>

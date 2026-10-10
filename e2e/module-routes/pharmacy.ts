@@ -7,7 +7,7 @@
  */
 import type { Locator, Page } from "@playwright/test";
 
-import { apiAs, approveInvoice, createPatient, createVisit, orderLines, pay, seededCatalog } from "../helpers";
+import { apiAs, approveInvoice, createPatient, createVisit, fixture, orderLines, pay, seededCatalog } from "../helpers";
 import { appRoute, type AppRoute } from "../route-kit";
 
 /** The first loaded row of a list: a card on phones, a table row from md up. */
@@ -84,6 +84,14 @@ function documentsOnce(): Promise<{ countId: number }> {
   return documents;
 }
 
+let dispensed: Promise<void> | undefined;
+
+/** A paid prescription dispensed from PHA: the returns screen lists it (ADR 0018). */
+function dispensedOnce(): Promise<void> {
+  dispensed ??= fixture("pharmacy_dispensed", {}).then(() => undefined);
+  return dispensed;
+}
+
 export const routes: readonly AppRoute[] = [
   appRoute("pharmacy-queue", "/pharmacy", {
     resolve: async () => {
@@ -136,6 +144,13 @@ export const routes: readonly AppRoute[] = [
   }),
   appRoute("pharmacy-expiry", "/pharmacy/expiry", {
     ready: (page) => firstRow(page, "expiry-row"),
+  }),
+  appRoute("pharmacy-returns", "/pharmacy/returns", {
+    resolve: async () => {
+      await dispensedOnce();
+      return "/pharmacy/returns";
+    },
+    ready: (page) => page.getByTestId("returnable-dispense").first(),
   }),
   appRoute("pharmacy-low-stock", "/pharmacy/low-stock", {
     ready: (page) => firstRow(page, "low-stock-row"),

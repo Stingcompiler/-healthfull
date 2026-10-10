@@ -278,7 +278,9 @@
     "estimatedCostHint": "يراها فقط الأطباء الذين لديهم الصلاحية.",
     "sessionIdle": "تسجيل الخروج بعد عدم النشاط (دقائق)",
     "range": "أدخل رقماً من {{min}} إلى {{max}}.",
-    "saved": "تم حفظ السياسات"
+    "saved": "تم حفظ السياسات",
+    "claimsSecondApprover": "يعتمد شخص ثانٍ إعادة تحميل المرفوضات وشطبها",
+    "claimsSecondApproverHint": "إعادة تحميل رفض جهة التغطية على المريض أو شطبه يحتاج اسم مستخدم وكلمة مرور شخص آخر غير المحاسب الذي يسجله. أوقفه فقط إن كان محاسب واحد يعمل وحده."
   },
   "departments": {
     "departmentsTab": "الأقسام",
@@ -349,7 +351,8 @@
       "result_amend": "تعديل نتيجة معمل",
       "sample_reject": "رفض عينة معمل",
       "patient_merge": "دمج ملفات المرضى",
-      "appointment_cancel": "إلغاء موعد"
+      "appointment_cancel": "إلغاء موعد",
+      "admission_cancel": "تنويم بالخطأ"
     }
   },
   "catalog": {

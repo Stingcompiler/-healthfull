@@ -40,7 +40,8 @@ export function ItemPage() {
   const { t } = useTranslation(["pharmacy", "errors"]);
   const translateError = useTranslateError();
   const item = useItem(id);
-  const title = item.data ? [item.data.generic_name, item.data.strength].filter(Boolean).join(" ") : t("item.title");
+  const names = useNames();
+  const title = item.data ? names.generic(item.data) : t("item.title");
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -149,6 +150,7 @@ function EditItemForm({ item }: { item: StockItem }) {
   const [saved, setSaved] = useState(false);
   const defaults = (it: StockItem): ItemValues => ({
     generic_name: it.generic_name,
+    generic_name_ar: it.generic_name_ar,
     brand_name: it.brand_name,
     form: it.form,
     strength: it.strength,

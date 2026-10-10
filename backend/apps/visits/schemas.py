@@ -315,6 +315,9 @@ class DisplayEntryOut(Schema):
 class WaitingRoomOut(Schema):
     serving: list[DisplayEntryOut]
     waiting: list[DisplayEntryOut]
+    departments: list[VisitDepartmentOut] = Field(
+        ..., description="Active departments, for the screen's clinic picker (ADR 0019)"
+    )
 
 
 class CenterOut(Schema):

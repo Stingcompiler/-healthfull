@@ -191,7 +191,10 @@
     "statusError": "Could not change the bed",
     "emptyTitle": "No beds set up",
     "emptyDescription": "Beds and wards are set up in administration.",
-    "loadError": "Could not load the bed board"
+    "loadError": "Could not load the bed board",
+    "nightsInvoiced": "Nights invoiced: {{count}}",
+    "cancelAdmission": "Admitted in error",
+    "cancelAdmissionNamed": "Cancel the admission of {{name}}: admitted in error"
   },
   "admit": {
     "title": "Admit a patient",
@@ -231,5 +234,16 @@
     "confirm": "Discharge",
     "savedToast": "{{name}} discharged.",
     "error": "Could not discharge the patient"
+  },
+  "cancelAdmission": {
+    "title": "Cancel an admission made in error",
+    "description": "{{name}} leaves bed {{bed, bidi}} and the admission is recorded as made in error. Use discharge when the patient really stayed.",
+    "nightsVoided": "Nights not yet invoiced that are removed from the bill: {{count}}",
+    "invoicedTitle": "Nights of this stay already invoiced: {{count}}",
+    "invoicedBody": "An approved invoice never changes. Ask the cashier to credit those nights with a credit note, then cancel the admission here.",
+    "openCashier": "Open at the cashier",
+    "approverHint": "A manager or cashier supervisor confirms the admission was made in error by entering their own username and password.",
+    "confirm": "Cancel admission",
+    "savedToast": "The admission of {{name}} was cancelled and the bed is free."
   }
 }

@@ -1,7 +1,8 @@
 """The fixed set of roles (ARCHITECTURE 4.10, FEATURES 0.2).
 
-Rows in ``core.Role`` are created by migration ``0002_seed_roles`` from a frozen copy of
-this list; ``test_roles_match_migration`` keeps the two in sync.
+Rows in ``core.Role`` are created by migration ``0002_seed_roles`` (the first eleven) and
+``0014_display_role`` (the waiting-room display, ADR 0019) from frozen copies of this list;
+``test_roles_match_migration`` keeps them in sync.
 """
 
 from __future__ import annotations
@@ -19,6 +20,8 @@ NURSE = "nurse"
 ACCOUNTANT = "accountant"
 MANAGER = "manager"
 ADMIN = "admin"
+#: A device account for the waiting-room kiosk: the queue display feed and nothing else.
+DISPLAY = "display"
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +43,7 @@ ROLES: tuple[RoleDef, ...] = (
     RoleDef(ACCOUNTANT, "محاسب", "Accountant"),
     RoleDef(MANAGER, "مدير", "Manager"),
     RoleDef(ADMIN, "مدير النظام", "System administrator"),
+    RoleDef(DISPLAY, "شاشة الانتظار", "Waiting-room display"),
 )
 
 ROLE_CODES: frozenset[str] = frozenset(r.code for r in ROLES)

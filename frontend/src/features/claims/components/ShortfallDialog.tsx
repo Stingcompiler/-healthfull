@@ -7,6 +7,7 @@ import { z } from "zod";
 import { AlertCard } from "@/components/AlertCard";
 import { Form, SelectField, TextareaField, TextField } from "@/components/form";
 import { MoneyText } from "@/components/MoneyText";
+import { SecondApproverFields } from "@/components/SecondApproverFields";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,7 +25,8 @@ import { useWriteOffShortfall } from "../api";
 import { useClaimNames } from "../lib/names";
 import type { ClaimLine, ClaimReason } from "../types";
 
-function schemaFor(unpaid: string) {
+function schemaFor(unpaid: string, secondApprover: boolean) {
+  const credential = secondApprover ? z.string().trim().min(1, vmsg("validation.required")) : z.string();
   return z.object({
     amount: z
       .string()
@@ -35,6 +37,8 @@ function schemaFor(unpaid: string) {
       .refine((v) => compareAmounts(v, unpaid) !== 1, vmsg("claims:validation.atMostUnpaid")),
     reason: z.string().min(1, vmsg("validation.selectOption")),
     note: z.string().trim().max(500),
+    username: credential,
+    password: secondApprover ? z.string().min(1, vmsg("validation.required")) : z.string(),
   });
 }
 
@@ -44,6 +48,8 @@ interface ShortfallDialogProps {
   claimId: number;
   line: ClaimLine | null;
   reasons: readonly ClaimReason[];
+  /** The center's policy: a second person approves write-offs (ADR 0018). */
+  secondApprover: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -56,15 +62,21 @@ export function ShortfallDialog(props: ShortfallDialogProps) {
  * Write off accepted money the payer will not pay (withholding, deductions; FEATURES 11.5),
  * with a reason. The server records approver and time (invariant 4).
  */
-function ShortfallDialogOpen({ claimId, line, reasons, onOpenChange }: ShortfallDialogProps & { line: ClaimLine }) {
+function ShortfallDialogOpen({
+  claimId,
+  line,
+  reasons,
+  secondApprover,
+  onOpenChange,
+}: ShortfallDialogProps & { line: ClaimLine }) {
   const { t } = useTranslation(["claims", "common", "errors"]);
   const translateError = useTranslateError();
   const names = useClaimNames();
   const writeOff = useWriteOffShortfall();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<Values>({
-    resolver: zodResolver(schemaFor(line.unpaid)),
-    defaultValues: { amount: line.unpaid, reason: "", note: "" },
+    resolver: zodResolver(schemaFor(line.unpaid, secondApprover)),
+    defaultValues: { amount: line.unpaid, reason: "", note: "", username: "", password: "" },
   });
 
   const submit = form.handleSubmit(async (v) => {
@@ -73,7 +85,12 @@ function ShortfallDialogOpen({ claimId, line, reasons, onOpenChange }: Shortfall
       await writeOff.mutateAsync({
         claimId,
         lineId: line.id,
-        body: { amount: normalizeAmountInput(v.amount), reason: v.reason, note: v.note },
+        body: {
+          amount: normalizeAmountInput(v.amount),
+          reason: v.reason,
+          note: v.note,
+          approver: secondApprover ? { username: v.username.trim(), password: v.password } : null,
+        },
       });
       onOpenChange(false);
     } catch (e) {
@@ -110,6 +127,14 @@ function ShortfallDialogOpen({ claimId, line, reasons, onOpenChange }: Shortfall
               options={reasons.map((r) => ({ value: r.code, label: names.label(r) }))}
             />
             <TextareaField control={form.control} name="note" label={t("resolve.note")} />
+            {secondApprover ? (
+              <SecondApproverFields
+                control={form.control}
+                usernameName="username"
+                passwordName="password"
+                hint={t("resolve.approverHint")}
+              />
+            ) : null}
             {error ? (
               <AlertCard variant="danger" title={t("errors:title")} live>
                 {error}

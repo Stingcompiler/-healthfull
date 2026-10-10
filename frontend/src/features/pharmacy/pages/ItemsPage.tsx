@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Package, Plus } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
@@ -41,7 +41,7 @@ export function ItemsPage() {
     void navigate({ to: "/pharmacy/items/$itemId", params: { itemId: String(item.id) } });
   };
 
-  const itemName = (it: StockItemListItem) => [it.generic_name, it.strength].filter(Boolean).join(" ");
+  const itemName = useCallback((it: StockItemListItem) => names.generic(it), [names]);
 
   const columns = useMemo<ColumnDef<StockItemListItem>[]>(
     () => [
@@ -87,7 +87,7 @@ export function ItemsPage() {
         cell: ({ row }) => <QtyText value={row.original.min_stock} unit={names.baseUnit(row.original)} />,
       },
     ],
-    [t, names],
+    [t, names, itemName],
   );
 
   return (
