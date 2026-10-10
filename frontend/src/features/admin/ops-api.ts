@@ -74,9 +74,10 @@ export function useImportJobRows(jobId: number | null, status: ImportRowFilter |
   });
 }
 
-export function useImportJobs(kind: ImportKind | null) {
+export function useImportJobs(kind: ImportKind | null, enabled = true) {
   return useQuery({
     queryKey: opsKeys.importJobs(kind),
+    enabled,
     queryFn: () =>
       unwrap(api.GET("/api/imports/jobs", { params: { query: { kind: kind ?? undefined, page_size: 10 } } })),
   });
@@ -126,8 +127,8 @@ export function useImportPriceLists(enabled: boolean) {
 
 // --- status, backups, updates ---------------------------------------------------------------
 
-export function useSystemStatus() {
-  return useQuery({ queryKey: opsKeys.status, queryFn: () => unwrap(api.GET("/api/ops/status")) });
+export function useSystemStatus(enabled = true) {
+  return useQuery({ queryKey: opsKeys.status, queryFn: () => unwrap(api.GET("/api/ops/status")), enabled });
 }
 
 export function useRequestBackup() {
@@ -138,9 +139,10 @@ export function useRequestBackup() {
   });
 }
 
-export function useUpdateHistory(page: number) {
+export function useUpdateHistory(page: number, enabled = true) {
   return useQuery({
     queryKey: opsKeys.updates(page),
+    enabled,
     queryFn: () => unwrap(api.GET("/api/ops/updates", { params: { query: { page, page_size: 10 } } })),
     placeholderData: keepPreviousData,
   });
@@ -173,17 +175,19 @@ export interface AuditFilters {
   page: number;
 }
 
-export function useAuditModels() {
+export function useAuditModels(enabled = true) {
   return useQuery({
     queryKey: opsKeys.auditModels,
+    enabled,
     queryFn: () => unwrap(api.GET("/api/core/audit/models")),
     staleTime: 10 * 60_000,
   });
 }
 
-export function useAuditEvents(filters: AuditFilters) {
+export function useAuditEvents(filters: AuditFilters, enabled = true) {
   return useQuery({
     queryKey: opsKeys.audit(filters),
+    enabled,
     queryFn: () =>
       unwrap(
         api.GET("/api/core/audit/events", {

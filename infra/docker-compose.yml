@@ -304,6 +304,9 @@ services:
       # Username of the active account the nightly bed charge is recorded as (it needs
       # visits.manage_beds); empty skips the run (nurses still post nights on the bed board).
       BED_CHARGE_USER: ${BED_CHARGE_USER:-}
+      # notify_scan alerts when no backup succeeded lately: it reads the same status lines as
+      # the status page.
+      BACKUP_STATUS_DIR: /var/lib/hospital/backup-status
       MIGRATE_ON_START: "false"
       POSTGRES_PASSWORD: ""
       DB_OWNER_PASSWORD: ""
@@ -312,6 +315,8 @@ services:
       PGBACKREST_REPO2_S3_KEY_SECRET: ""
       PGBACKREST_REPO2_CIPHER_PASS: ""
     read_only: true
+    volumes:
+      - ${BACKUP_HOST_DIR:-/srv/hospital/backups}/status:/var/lib/hospital/backup-status:ro
     tmpfs:
       - /tmp
     security_opt:

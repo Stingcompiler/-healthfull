@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { AdminPage, QueryState } from "../components/AdminPage";
 import { useRequestBackup, useSystemStatus, useUpdateHistory } from "../ops-api";
 import { formatBytes } from "../ops-format";
+import { useCurrentUser } from "@/lib/auth/hooks";
+import { hasPermission } from "@/lib/auth/permissions";
 import type { BackupRequest, OpsRun, SystemStatus, UpdateLog, UpdateRun } from "../ops-types";
 
 type BadgeVariant = "success" | "warning" | "danger" | "outline" | "info";
@@ -46,7 +48,9 @@ function runVariant(status: string): BadgeVariant {
  */
 export function SystemPage() {
   const { t } = useTranslation(["ops", "admin"]);
-  const status = useSystemStatus();
+  const me = useCurrentUser();
+  const allowed = hasPermission(me, "ops.view_status");
+  const status = useSystemStatus(allowed);
   const request = useRequestBackup();
   const [asking, setAsking] = useState(false);
   const [note, setNote] = useState("");
@@ -86,7 +90,7 @@ export function SystemPage() {
       >
         {status.data ? <StatusBody status={status.data} openRequest={open} /> : null}
       </QueryState>
-      <UpdatesSection />
+      {allowed ? <UpdatesSection /> : null}
       <ConfirmDialog
         open={asking}
         onOpenChange={setAsking}

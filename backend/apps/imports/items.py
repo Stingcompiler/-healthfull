@@ -218,6 +218,9 @@ def confirm(
     """
     if any(r.data.get("quantity") is not None for r in rows):
         require_permission(actor, "pharmacy.receive_goods")
+    codes = {str(r.data["service_code"]) for r in rows}
+    if codes - set(Service.objects.filter(code__in=codes).values_list("code", flat=True)):
+        require_permission(actor, "catalog.manage")  # new catalog services
     groups: dict[str, list[ImportRow]] = defaultdict(list)
     for row in rows:
         groups[str(row.data["service_code"])].append(row)

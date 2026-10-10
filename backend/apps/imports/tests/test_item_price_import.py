@@ -285,6 +285,33 @@ def test_item_import_needs_the_pharmacy_permissions(make_user, pharmacy_store) -
         imp.preview("items", filename="a.xlsx", content=content, actor=clerk, options={})
 
 
+def test_new_catalog_codes_need_the_catalog_permission(make_user, pharmacy_store) -> None:
+    pharmacist = make_user("pharm-imp", roles=["pharmacist"])
+    RolePermission.objects.create(
+        role=Role.objects.get(code="pharmacist"), code="imports.run", allowed=True
+    )
+    existing = b.item(generic_name="Known")
+    new_code = imp.preview(
+        "items",
+        filename="a.xlsx",
+        content=xlsx(ITEM_HEADER, [zinc(store="PHA")]),
+        actor=pharmacist,
+        options={},
+    )
+    with pytest.raises(PermissionRequired):
+        imp.confirm_job(new_code, actor=pharmacist)
+    assert not Service.objects.filter(code="DRG-ZINC20").exists()
+    known = imp.preview(
+        "items",
+        filename="b.xlsx",
+        content=xlsx(ITEM_HEADER, [zinc(existing.service.code, batch="K-1", store="PHA")]),
+        actor=pharmacist,
+        options={},
+    )
+    assert imp.confirm_job(known, actor=pharmacist).imported_rows == 1
+    assert ps.on_hand(existing, pharmacy_store) == 300
+
+
 def test_a_barcode_already_taken_is_an_error_in_the_preview(admin, pharmacy_store) -> None:
     b.item(generic_name="Taken", barcode="111")
     content = xlsx([*ITEM_HEADER, "Barcode"], [[*zinc("DRG-A", batch="A-1"), "111"]])

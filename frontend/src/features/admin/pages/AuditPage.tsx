@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCurrentUser } from "@/lib/auth/hooks";
+import { hasPermission } from "@/lib/auth/permissions";
 import { useLanguage } from "@/lib/i18n-hooks";
 
 import { AdminPage, QueryState } from "../components/AdminPage";
@@ -47,7 +49,9 @@ interface UserChip {
 export function AuditPage() {
   const { t } = useTranslation(["ops", "admin"]);
   const language = useLanguage();
-  const models = useAuditModels();
+  const me = useCurrentUser();
+  const allowed = hasPermission(me, "core.view_audit");
+  const models = useAuditModels(allowed);
   const [model, setModel] = useState<string>(ALL);
   const [action, setAction] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState(isoDay(-6));
@@ -65,7 +69,7 @@ export function AuditPage() {
     userId: user?.id ?? null,
     page,
   };
-  const events = useAuditEvents(filters);
+  const events = useAuditEvents(filters, allowed);
   const modelName = useModelName(models.data ?? []);
 
   const reset = (apply: () => void) => {

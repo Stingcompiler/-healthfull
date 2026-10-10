@@ -98,10 +98,11 @@ export function ImportsPage() {
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  const stores = useImportStores(kind === "items" && job === null);
-  const priceLists = useImportPriceLists(kind === "prices" && job === null);
+  const canImport = hasPermission(me, "imports.run");
+  const stores = useImportStores(canImport && kind === "items" && job === null);
+  const priceLists = useImportPriceLists(canImport && kind === "prices" && job === null);
   const rows = useImportJobRows(job?.id ?? null, filter === "all" ? null : filter, page);
-  const history = useImportJobs(null);
+  const history = useImportJobs(null, canImport);
   const n = (value: number) => formatNumber(value, language);
   const jobKind = (job?.kind ?? kind) as ImportKind;
 
@@ -589,10 +590,21 @@ function RowRecord({ kind, row }: { kind: ImportKind; row: ImportJobRow }) {
   } else if (kind === "items") {
     const name =
       text(d.generic_name) || (language === "ar" ? text(d.name_ar) || text(d.name_en) : text(d.name_en)) || "—";
-    title = (
-      <span className="font-medium break-words">
+    const label = (
+      <>
         <bdi className="tabular">{text(d.service_code)}</bdi> · {name}
-      </span>
+      </>
+    );
+    title = row.result_id ? (
+      <Link
+        to="/pharmacy/items/$itemId"
+        params={{ itemId: String(row.result_id) }}
+        className="font-medium break-words text-fg underline-offset-4 hover:underline"
+      >
+        {label}
+      </Link>
+    ) : (
+      <span className="font-medium break-words">{label}</span>
     );
     if (text(d.batch_no) || d.quantity != null) {
       lines = [
