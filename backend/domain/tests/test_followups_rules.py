@@ -21,6 +21,7 @@ from domain.service_line import (
     is_consistent,
     void_in_error,
 )
+from domain.stock import return_approval
 
 B = BillingStatus
 F = FulfilmentStatus
@@ -135,3 +136,27 @@ def test_admission_cancel_plan(nights: list[NightLine]) -> None:
 def test_an_admission_without_nights_cancels_with_nothing_to_void() -> None:
     assert plan_admission_cancel([]).void == ()
 
+
+# --- dispense returns ------------------------------------------------------------------------
+
+
+@given(st.booleans(), ids, st.one_of(st.none(), ids))
+def test_return_of_billed_units_needs_a_second_person(
+    billed: bool, actor: int, approver: int | None
+) -> None:
+    if billed and (approver is None or approver == actor):
+        with pytest.raises(DomainError) as exc:
+            return_approval(billed=billed, actor_id=actor, approver_id=approver, at=AT, reason="r")
+        assert exc.value.code == "SECOND_APPROVER_REQUIRED"
+        return
+    approval = return_approval(
+        billed=billed, actor_id=actor, approver_id=approver, at=AT, reason_code="PATIENT_RETURNED"
+    )
+    # A billed line's units come back on someone else's approval; unbilled ones on the actor's.
+    assert approval.approver_id == (approver if billed else actor)
+
+
+def test_a_return_needs_a_reason() -> None:
+    with pytest.raises(DomainError) as exc:
+        return_approval(billed=False, actor_id=1, approver_id=None, at=AT)
+    assert exc.value.code == "REASON_REQUIRED"

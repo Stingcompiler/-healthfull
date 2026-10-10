@@ -510,6 +510,14 @@ class DispenseReturn(models.Model):
     returned_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="The second person who approved returning units of a billed line (ADR 0018).",
+    )
     returned_at = models.DateTimeField(auto_now_add=True)
     stock_move = models.OneToOneField(
         StockMove, on_delete=models.PROTECT, related_name="dispense_return"
@@ -521,6 +529,10 @@ class DispenseReturn(models.Model):
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.CheckConstraint(
                 condition=Q(qty_base__gt=0), name="pharmacy_dispensereturn_qty_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(approved_by__isnull=True) | ~Q(approved_by=F("returned_by")),
+                name="pharmacy_dispensereturn_second_approver",
             ),
         ]
         triggers: ClassVar[list[pgtrigger.Trigger]] = [truncate_guard(), append_only()]

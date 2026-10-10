@@ -7,7 +7,16 @@
  */
 import type { Locator, Page } from "@playwright/test";
 
-import { apiAs, approveInvoice, createPatient, createVisit, orderLines, pay, seededCatalog } from "../helpers";
+import {
+  apiAs,
+  approveInvoice,
+  createPatient,
+  createVisit,
+  fixture,
+  orderLines,
+  pay,
+  seededCatalog,
+} from "../helpers";
 import { appRoute, type AppRoute } from "../route-kit";
 
 /** The first loaded row of a list: a card on phones, a table row from md up. */
@@ -57,10 +66,12 @@ function documentsOnce(): Promise<{ countId: number }> {
     const pharmacist = await apiAs("pharmacist");
     const pha = catalog.stores.PHA;
     const main = catalog.stores.MAIN;
-    if (pha === undefined || main === undefined) throw new Error("seeded stores PHA and MAIN are missing");
+    if (pha === undefined || main === undefined)
+      throw new Error("seeded stores PHA and MAIN are missing");
     const gloves = catalog.items["CNS-GLOVES"]?.batches.at(-1);
     const gauze = catalog.items["CNS-GAUZE"]?.batches.at(-1);
-    if (!gloves || !gauze) throw new Error("seeded glove and gauze batches are missing");
+    if (!gloves || !gauze)
+      throw new Error("seeded glove and gauze batches are missing");
     await pharmacist.post("/api/pharmacy/adjustments", {
       store_id: pha,
       reason_code: "DAMAGED",
@@ -73,15 +84,26 @@ function documentsOnce(): Promise<{ countId: number }> {
       note: "",
       lines: [{ batch_id: gauze.id, qty_base: 5 }],
     });
-    const open = await pharmacist.get<Page_<{ id: number; store: { id: number } }>>(
-      "/api/pharmacy/counts?status=open&page_size=100",
-    );
+    const open = await pharmacist.get<
+      Page_<{ id: number; store: { id: number } }>
+    >("/api/pharmacy/counts?status=open&page_size=100");
     const existing = open.items.find((c) => c.store.id === pha);
     if (existing) return { countId: existing.id };
-    const count = await pharmacist.post<{ id: number }>("/api/pharmacy/counts", { store_id: pha, note: "" });
+    const count = await pharmacist.post<{ id: number }>(
+      "/api/pharmacy/counts",
+      { store_id: pha, note: "" },
+    );
     return { countId: count.id };
   })();
   return documents;
+}
+
+let dispensed: Promise<void> | undefined;
+
+/** A paid prescription dispensed from PHA: the returns screen lists it (ADR 0018). */
+function dispensedOnce(): Promise<void> {
+  dispensed ??= fixture("pharmacy_dispensed", {}).then(() => undefined);
+  return dispensed;
 }
 
 export const routes: readonly AppRoute[] = [
@@ -124,7 +146,8 @@ export const routes: readonly AppRoute[] = [
     ready: (page) => firstRow(page, "count-row"),
   }),
   appRoute("pharmacy-count", "/pharmacy/counts/$countId", {
-    resolve: async () => `/pharmacy/counts/${String((await documentsOnce()).countId)}`,
+    resolve: async () =>
+      `/pharmacy/counts/${String((await documentsOnce()).countId)}`,
     ready: (page) => page.getByTestId("count-line").first(),
   }),
   appRoute("pharmacy-transfers", "/pharmacy/transfers", {
@@ -136,6 +159,13 @@ export const routes: readonly AppRoute[] = [
   }),
   appRoute("pharmacy-expiry", "/pharmacy/expiry", {
     ready: (page) => firstRow(page, "expiry-row"),
+  }),
+  appRoute("pharmacy-returns", "/pharmacy/returns", {
+    resolve: async () => {
+      await dispensedOnce();
+      return "/pharmacy/returns";
+    },
+    ready: (page) => page.getByTestId("returnable-dispense").first(),
   }),
   appRoute("pharmacy-low-stock", "/pharmacy/low-stock", {
     ready: (page) => firstRow(page, "low-stock-row"),

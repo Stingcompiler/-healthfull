@@ -56,3 +56,6 @@ export type TransferStatus = StockTransfer["status"];
 export type MoveKind = StockCardRow["kind"];
 export type DosageForm = StockItem["form"];
 export type StorageCode = StockItem["storage"];
+export type ReturnableDispense = S["ReturnableDispenseOut"];
+export type ReturnableLine = S["ReturnableLineOut"];
+export type DispenseReturnIn = S["DispenseReturnIn"];

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -18,7 +18,7 @@ from django.db.models import Prefetch, Q, QuerySet, Sum
 from django.utils import timezone
 
 from api.pagination import paginate
-from apps.billing.models import Invoice
+from apps.billing.models import CreditNoteLine, DocumentStatus, Invoice
 from apps.catalog import services as catalog
 from apps.catalog.models import Service
 from apps.core.models import Policy, ReasonCode, User
@@ -28,6 +28,8 @@ from apps.patients.models import Patient
 from apps.pharmacy import services as ps
 from apps.pharmacy.models import (
     Dispense,
+    DispenseLine,
+    DispenseReturn,
     GoodsReceipt,
     Item,
     StockAdjustment,
@@ -58,6 +60,8 @@ __all__ = [
     "queue",
     "receipt_detail",
     "receipts",
+    "returnable_dispense",
+    "returnable_dispenses",
     "sale_customers",
     "sale_services",
     "scan",
@@ -544,6 +548,124 @@ def dispense_detail(dispense_id: int) -> dict[str, Any]:
             for ln in lines
         ],
     }
+
+
+# --- returns (ADR 0018) -----------------------------------------------------------------------
+
+#: Dispenses older than this are not offered for returns on the screen (searchable by number).
+RETURN_WINDOW_DAYS = 30
+
+
+def _returnable_qs() -> QuerySet[Dispense]:
+    return Dispense.objects.select_related("visit__patient", "store", "dispensed_by").order_by(
+        "-dispensed_at", "-id"
+    )
+
+
+def returnable_dispense(dispense_id: int) -> dict[str, Any]:
+    """One dispense for the returns screen: per line what was given, what came back, what may
+    still come back, whether a second person must approve (a billed line) and the approved
+    credit notes that credit the line (to link the return to the refund)."""
+    d = _returnable_qs().get(pk=dispense_id)
+    return _returnable_rows([d])[0]
+
+
+def returnable_dispenses(*, q: str | None, page: int, page_size: int) -> dict[str, Any]:
+    """Recent dispenses (last ``RETURN_WINDOW_DAYS`` days), newest first; ``q`` matches the
+    dispense or visit number, the patient's file number or name (any age)."""
+    qs = _returnable_qs()
+    term = (q or "").strip()
+    if term:
+        qs = qs.filter(
+            Q(number__icontains=term)
+            | Q(visit__number__icontains=term)
+            | Q(visit__patient__file_no__icontains=term)
+            | Q(visit__patient__full_name_ar__icontains=term)
+            | Q(visit__patient__full_name_en__icontains=term)
+        )
+    else:
+        since = timezone.now() - timedelta(days=RETURN_WINDOW_DAYS)
+        qs = qs.filter(dispensed_at__gte=since)
+    result = paginate(qs, page, page_size)
+    result["items"] = _returnable_rows(list(result["items"]))
+    return result
+
+
+def _returnable_rows(dispenses: Sequence[Dispense]) -> list[dict[str, Any]]:
+    ids = [d.pk for d in dispenses]
+    lines = list(
+        DispenseLine.objects.filter(dispense_id__in=ids)
+        .select_related("service_line__service", "batch", "unit")
+        .order_by("id")
+    )
+    returns: dict[int, list[DispenseReturn]] = defaultdict(list)
+    for r in (
+        DispenseReturn.objects.filter(dispense_line__in=lines)
+        .select_related("reason_code", "returned_by", "approved_by", "credit_note")
+        .order_by("returned_at", "id")
+    ):
+        returns[r.dispense_line_id].append(r)
+    notes: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    seen: set[tuple[int, int]] = set()
+    for line_id, cn_id, cn_number in (
+        CreditNoteLine.objects.filter(
+            invoice_line__service_line_id__in={ln.service_line_id for ln in lines},
+            credit_note__status=DocumentStatus.APPROVED,
+        )
+        .order_by("credit_note_id")
+        .values_list("invoice_line__service_line_id", "credit_note_id", "credit_note__number")
+    ):
+        if (line_id, cn_id) not in seen:
+            seen.add((line_id, cn_id))
+            notes[line_id].append({"id": cn_id, "number": cn_number})
+    by_dispense: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for ln in lines:
+        back = returns.get(ln.pk, [])
+        returned = sum(int(r.qty_base) for r in back)
+        sl = ln.service_line
+        by_dispense[ln.dispense_id].append(
+            {
+                "id": ln.pk,
+                "service_line_id": ln.service_line_id,
+                "service": _name(sl.service),
+                "batch_no": ln.batch.batch_no,
+                "expiry_date": ln.batch.expiry_date,
+                "unit_code": ln.unit.unit_code if ln.unit is not None else None,
+                "qty_base": int(ln.qty_base),
+                "returned": returned,
+                "returnable": max(int(ln.qty_base) - returned, 0),
+                "billing_status": sl.billing_status,
+                "needs_approver": sl.billing_status != "unbilled",
+                "credit_notes": notes.get(ln.service_line_id, []),
+                "returns": [
+                    {
+                        "number": r.number,
+                        "qty_base": int(r.qty_base),
+                        "reason": _reason(r.reason_code),
+                        "note": r.note,
+                        "returned_by": _user(r.returned_by),
+                        "approved_by": _user(r.approved_by),
+                        "returned_at": r.returned_at,
+                        "credit_note_number": r.credit_note.number if r.credit_note else None,
+                    }
+                    for r in back
+                ],
+            }
+        )
+    return [
+        {
+            "id": d.pk,
+            "number": d.number,
+            "visit_id": d.visit_id,
+            "visit_number": d.visit.number,
+            "patient": _patient(d.visit.patient),
+            "store": _store(d.store),
+            "dispensed_by": _user(d.dispensed_by),
+            "dispensed_at": d.dispensed_at,
+            "lines": by_dispense.get(d.pk, []),
+        }
+        for d in dispenses
+    ]
 
 
 # --- documents --------------------------------------------------------------------------------

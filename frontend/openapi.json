@@ -7203,6 +7203,133 @@
         "title": "DispenseQueueVisitOut",
         "type": "object"
       },
+      "DispenseReturnIn": {
+        "description": "Units a patient brought back (FEATURES 8.4): base units, an ``stock_adjust`` reason, and\nfor a billed line a second person's credentials (``pharmacy.approve_return``).",
+        "properties": {
+          "approver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApproverIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required for a billed line: someone else approves"
+          },
+          "credit_note_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An approved credit note crediting the line (links the refund)",
+            "title": "Credit Note Id"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 10000000,
+            "minimum": 1,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "reason_code": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quantity",
+          "reason_code"
+        ],
+        "title": "DispenseReturnIn",
+        "type": "object"
+      },
+      "DispenseReturnOut": {
+        "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PharmacyUserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The second person who approved (billed lines only)"
+          },
+          "credit_note_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Note Number"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "qty_base": {
+            "title": "Qty Base",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PharmacyReasonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "returned_at": {
+            "format": "date-time",
+            "title": "Returned At",
+            "type": "string"
+          },
+          "returned_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PharmacyUserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "number",
+          "qty_base",
+          "reason",
+          "note",
+          "returned_by",
+          "approved_by",
+          "returned_at",
+          "credit_note_number"
+        ],
+        "title": "DispenseReturnOut",
+        "type": "object"
+      },
       "DispenseVisitOut": {
         "properties": {
           "created_at": {
@@ -15676,6 +15803,41 @@
         "title": "Page[RefundOut]",
         "type": "object"
       },
+      "Page_ReturnableDispenseOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReturnableDispenseOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[ReturnableDispenseOut]",
+        "type": "object"
+      },
       "Page_ServiceOut_": {
         "properties": {
           "count": {
@@ -23015,6 +23177,170 @@
           "flag"
         ],
         "title": "ResultValueOut",
+        "type": "object"
+      },
+      "ReturnCreditNoteOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number"
+        ],
+        "title": "ReturnCreditNoteOut",
+        "type": "object"
+      },
+      "ReturnableDispenseOut": {
+        "properties": {
+          "dispensed_at": {
+            "format": "date-time",
+            "title": "Dispensed At",
+            "type": "string"
+          },
+          "dispensed_by": {
+            "$ref": "#/components/schemas/PharmacyUserRefOut"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ReturnableLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/DispensePatientOut"
+          },
+          "store": {
+            "$ref": "#/components/schemas/StoreOut"
+          },
+          "visit_id": {
+            "title": "Visit Id",
+            "type": "integer"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "visit_id",
+          "visit_number",
+          "patient",
+          "store",
+          "dispensed_by",
+          "dispensed_at",
+          "lines"
+        ],
+        "title": "ReturnableDispenseOut",
+        "type": "object"
+      },
+      "ReturnableLineOut": {
+        "properties": {
+          "batch_no": {
+            "title": "Batch No",
+            "type": "string"
+          },
+          "billing_status": {
+            "title": "Billing Status",
+            "type": "string"
+          },
+          "credit_notes": {
+            "description": "Approved credit notes that credit the line (the cashier's refund)",
+            "items": {
+              "$ref": "#/components/schemas/ReturnCreditNoteOut"
+            },
+            "title": "Credit Notes",
+            "type": "array"
+          },
+          "expiry_date": {
+            "format": "date",
+            "title": "Expiry Date",
+            "type": "string"
+          },
+          "id": {
+            "description": "The dispense line",
+            "title": "Id",
+            "type": "integer"
+          },
+          "needs_approver": {
+            "description": "A billed line: a second person approves the return",
+            "title": "Needs Approver",
+            "type": "boolean"
+          },
+          "qty_base": {
+            "description": "Base units dispensed",
+            "title": "Qty Base",
+            "type": "integer"
+          },
+          "returnable": {
+            "description": "Base units that may still come back",
+            "title": "Returnable",
+            "type": "integer"
+          },
+          "returned": {
+            "description": "Base units already returned",
+            "title": "Returned",
+            "type": "integer"
+          },
+          "returns": {
+            "items": {
+              "$ref": "#/components/schemas/DispenseReturnOut"
+            },
+            "title": "Returns",
+            "type": "array"
+          },
+          "service": {
+            "$ref": "#/components/schemas/PharmacyNameOut"
+          },
+          "service_line_id": {
+            "title": "Service Line Id",
+            "type": "integer"
+          },
+          "unit_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Code"
+          }
+        },
+        "required": [
+          "id",
+          "service_line_id",
+          "service",
+          "batch_no",
+          "expiry_date",
+          "unit_code",
+          "qty_base",
+          "returned",
+          "returnable",
+          "billing_status",
+          "needs_approver",
+          "credit_notes",
+          "returns"
+        ],
+        "title": "ReturnableLineOut",
         "type": "object"
       },
       "RevokeIn": {
@@ -52831,6 +53157,104 @@
         ]
       }
     },
+    "/api/pharmacy/dispense-lines/{dispense_line_id}/returns": {
+      "post": {
+        "description": "409 RETURN_EXCEEDS_DISPENSED, SECOND_APPROVER_REQUIRED (billed line), APPROVER_NOT_PERMITTED, APPROVER_INVALID, REFUND_SOURCE_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED.",
+        "operationId": "pharmacy_return_dispensed_units",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dispense_line_id",
+            "required": true,
+            "schema": {
+              "title": "Dispense Line Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispenseReturnIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReturnableDispenseOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Put units a patient brought back on the shelf (stock only; refunds at the cashier)",
+        "tags": [
+          "pharmacy"
+        ]
+      }
+    },
     "/api/pharmacy/dispenses": {
       "post": {
         "description": "Stock leaves at this moment (invariant 5). A line given in part keeps its rest open (`remainder: defer`) or cancels and refunds it (`refund`), which needs a billing.approve_credit_note holder: the actor, or a supervisor typing their credentials into `approver` (409 APPROVER_INVALID on wrong credentials).",
@@ -54907,6 +55331,124 @@
           }
         ],
         "summary": "Items at or below their minimum, with a reorder suggestion",
+        "tags": [
+          "pharmacy"
+        ]
+      }
+    },
+    "/api/pharmacy/returns": {
+      "get": {
+        "operationId": "pharmacy_list_returnable_dispenses",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ReturnableDispenseOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Dispenses whose units may come back (last 30 days, or any by number, file or name)",
         "tags": [
           "pharmacy"
         ]

@@ -59,6 +59,11 @@ OPERATIONS = {
     ("get", "/api/pharmacy/queue/visits/{visit_id}"): "pharmacy_get_dispense_visit",
     ("post", "/api/pharmacy/dispenses"): "pharmacy_create_dispense",
     ("get", "/api/pharmacy/dispenses/{dispense_id}"): "pharmacy_get_dispense",
+    ("get", "/api/pharmacy/returns"): "pharmacy_list_returnable_dispenses",
+    (
+        "post",
+        "/api/pharmacy/dispense-lines/{dispense_line_id}/returns",
+    ): "pharmacy_return_dispensed_units",
     ("get", "/api/pharmacy/receipts"): "pharmacy_list_receipts",
     ("post", "/api/pharmacy/receipts"): "pharmacy_create_receipt",
     ("get", "/api/pharmacy/receipts/{receipt_id}"): "pharmacy_get_receipt",

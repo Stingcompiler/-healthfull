@@ -11,7 +11,8 @@
     "counts": "Stock counts",
     "transfers": "Transfers",
     "expiry": "Expiry",
-    "lowStock": "Low stock"
+    "lowStock": "Low stock",
+    "returns": "Returns"
   },
   "common": {
     "all": "All",
@@ -37,10 +38,27 @@
     "password": "Supervisor password"
   },
   "status": {
-    "receipt": { "draft": "Draft", "posted": "Posted", "cancelled": "Cancelled" },
-    "adjustment": { "draft": "Awaiting approval", "approved": "Approved", "rejected": "Rejected" },
-    "count": { "open": "Counting", "posted": "Posted", "cancelled": "Cancelled" },
-    "transfer": { "draft": "Draft", "sent": "In transit", "received": "Received", "cancelled": "Cancelled" }
+    "receipt": {
+      "draft": "Draft",
+      "posted": "Posted",
+      "cancelled": "Cancelled"
+    },
+    "adjustment": {
+      "draft": "Awaiting approval",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "count": {
+      "open": "Counting",
+      "posted": "Posted",
+      "cancelled": "Cancelled"
+    },
+    "transfer": {
+      "draft": "Draft",
+      "sent": "In transit",
+      "received": "Received",
+      "cancelled": "Cancelled"
+    }
   },
   "forms": {
     "tablet": "Tablet",
@@ -452,5 +470,35 @@
     "new": "New sale",
     "noAccessTitle": "Walk-in sales need permission",
     "noAccess": "Ask an administrator for walk-in pharmacy sales."
+  },
+  "returns": {
+    "title": "Returns",
+    "description": "Units a patient brings back go on the shelf in the batch they left. Paid units are refunded at the cashier by a credit note.",
+    "search": "Find a dispense",
+    "searchPlaceholder": "File number, name, dispense or visit number",
+    "empty": "No dispenses to return",
+    "emptyHint": "Dispenses of the last 30 days show here; search by number or file for older ones.",
+    "given": "Given: {{count}}",
+    "returned": "Returned: {{count}}",
+    "returnable": "May still come back: {{count}}",
+    "paidBadge": "Paid: a second person approves",
+    "action": "Return units",
+    "nothingLeft": "All returned",
+    "pages": "Pages",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}} of {{pages}}",
+    "dialogTitle": "Return units to stock",
+    "dialogDescription": "{{service}}, batch {{batch, bidi}}. The units go back into this batch and store.",
+    "quantity": "Units returned (smallest unit)",
+    "quantityRange": "Enter a whole number from 1 to {{max}}",
+    "creditNote": "Cashier's credit note for these units",
+    "creditNoteNone": "None yet",
+    "paidTitle": "This line was paid",
+    "paidBody": "The return puts the units back on the shelf only. The patient's money is refunded at the cashier with a credit note.",
+    "openCashier": "Open the visit at the cashier",
+    "approverHint": "A cashier supervisor or manager confirms the units came back by entering their own username and password.",
+    "confirm": "Return to stock",
+    "savedToast": "Units returned to stock: {{count}}"
   }
 }

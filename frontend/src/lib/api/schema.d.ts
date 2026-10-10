@@ -4109,6 +4109,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pharmacy/dispense-lines/{dispense_line_id}/returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put units a patient brought back on the shelf (stock only; refunds at the cashier)
+         * @description 409 RETURN_EXCEEDS_DISPENSED, SECOND_APPROVER_REQUIRED (billed line), APPROVER_NOT_PERMITTED, APPROVER_INVALID, REFUND_SOURCE_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED.
+         */
+        post: operations["pharmacy_return_dispensed_units"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pharmacy/dispenses": {
         parameters: {
             query?: never;
@@ -4430,6 +4450,23 @@ export interface paths {
         };
         /** Items at or below their minimum, with a reorder suggestion */
         get: operations["pharmacy_get_low_stock"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pharmacy/returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dispenses whose units may come back (last 30 days, or any by number, file or name) */
+        get: operations["pharmacy_list_returnable_dispenses"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8827,6 +8864,49 @@ export interface components {
             /** Visit Type */
             visit_type: string;
         };
+        /**
+         * DispenseReturnIn
+         * @description Units a patient brought back (FEATURES 8.4): base units, an ``stock_adjust`` reason, and
+         *     for a billed line a second person's credentials (``pharmacy.approve_return``).
+         */
+        DispenseReturnIn: {
+            /** @description Required for a billed line: someone else approves */
+            approver?: components["schemas"]["ApproverIn"] | null;
+            /**
+             * Credit Note Id
+             * @description An approved credit note crediting the line (links the refund)
+             */
+            credit_note_id?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Quantity */
+            quantity: number;
+            /** Reason Code */
+            reason_code: string;
+        };
+        /** DispenseReturnOut */
+        DispenseReturnOut: {
+            /** @description The second person who approved (billed lines only) */
+            approved_by: components["schemas"]["PharmacyUserRefOut"] | null;
+            /** Credit Note Number */
+            credit_note_number: string | null;
+            /** Note */
+            note: string;
+            /** Number */
+            number: string;
+            /** Qty Base */
+            qty_base: number;
+            reason: components["schemas"]["PharmacyReasonOut"] | null;
+            /**
+             * Returned At
+             * Format: date-time
+             */
+            returned_at: string;
+            returned_by: components["schemas"]["PharmacyUserRefOut"] | null;
+        };
         /** DispenseVisitOut */
         DispenseVisitOut: {
             /**
@@ -11965,6 +12045,20 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /** Page[ReturnableDispenseOut] */
+        Page_ReturnableDispenseOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ReturnableDispenseOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[ServiceOut] */
         Page_ServiceOut_: {
             /**
@@ -14640,6 +14734,83 @@ export interface components {
             unit: string;
             /** Value */
             value: string;
+        };
+        /** ReturnCreditNoteOut */
+        ReturnCreditNoteOut: {
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+        };
+        /** ReturnableDispenseOut */
+        ReturnableDispenseOut: {
+            /**
+             * Dispensed At
+             * Format: date-time
+             */
+            dispensed_at: string;
+            dispensed_by: components["schemas"]["PharmacyUserRefOut"];
+            /** Id */
+            id: number;
+            /** Lines */
+            lines: components["schemas"]["ReturnableLineOut"][];
+            /** Number */
+            number: string;
+            patient: components["schemas"]["DispensePatientOut"];
+            store: components["schemas"]["StoreOut"];
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** ReturnableLineOut */
+        ReturnableLineOut: {
+            /** Batch No */
+            batch_no: string;
+            /** Billing Status */
+            billing_status: string;
+            /**
+             * Credit Notes
+             * @description Approved credit notes that credit the line (the cashier's refund)
+             */
+            credit_notes: components["schemas"]["ReturnCreditNoteOut"][];
+            /**
+             * Expiry Date
+             * Format: date
+             */
+            expiry_date: string;
+            /**
+             * Id
+             * @description The dispense line
+             */
+            id: number;
+            /**
+             * Needs Approver
+             * @description A billed line: a second person approves the return
+             */
+            needs_approver: boolean;
+            /**
+             * Qty Base
+             * @description Base units dispensed
+             */
+            qty_base: number;
+            /**
+             * Returnable
+             * @description Base units that may still come back
+             */
+            returnable: number;
+            /**
+             * Returned
+             * @description Base units already returned
+             */
+            returned: number;
+            /** Returns */
+            returns: components["schemas"]["DispenseReturnOut"][];
+            service: components["schemas"]["PharmacyNameOut"];
+            /** Service Line Id */
+            service_line_id: number;
+            /** Unit Code */
+            unit_code: string | null;
         };
         /** RevokeIn */
         RevokeIn: {
@@ -33658,6 +33829,77 @@ export interface operations {
             };
         };
     };
+    pharmacy_return_dispensed_units: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dispense_line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispenseReturnIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnableDispenseOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     pharmacy_create_dispense: {
         parameters: {
             query?: never;
@@ -35081,6 +35323,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LowStockItemOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    pharmacy_list_returnable_dispenses: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ReturnableDispenseOut_"];
                 };
             };
             /** @description Unauthorized */

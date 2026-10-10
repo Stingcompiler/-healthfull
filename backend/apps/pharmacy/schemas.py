@@ -410,6 +410,74 @@ class DispenseOut(Schema):
     lines: list[DispenseLineOut]
 
 
+# --- dispense returns (ADR 0018) --------------------------------------------------------------
+
+
+class ReturnCreditNoteOut(Schema):
+    id: int
+    number: str
+
+
+class DispenseReturnOut(Schema):
+    number: str
+    qty_base: int
+    reason: PharmacyReasonOut | None
+    note: str
+    returned_by: PharmacyUserRefOut | None
+    approved_by: PharmacyUserRefOut | None = Field(
+        ..., description="The second person who approved (billed lines only)"
+    )
+    returned_at: datetime
+    credit_note_number: str | None
+
+
+class ReturnableLineOut(Schema):
+    id: int = Field(..., description="The dispense line")
+    service_line_id: int
+    service: PharmacyNameOut
+    batch_no: str
+    expiry_date: date
+    unit_code: str | None
+    qty_base: int = Field(..., description="Base units dispensed")
+    returned: int = Field(..., description="Base units already returned")
+    returnable: int = Field(..., description="Base units that may still come back")
+    billing_status: str
+    needs_approver: bool = Field(
+        ..., description="A billed line: a second person approves the return"
+    )
+    credit_notes: list[ReturnCreditNoteOut] = Field(
+        ..., description="Approved credit notes that credit the line (the cashier's refund)"
+    )
+    returns: list[DispenseReturnOut]
+
+
+class ReturnableDispenseOut(Schema):
+    id: int
+    number: str
+    visit_id: int
+    visit_number: str
+    patient: DispensePatientOut
+    store: StoreOut
+    dispensed_by: PharmacyUserRefOut
+    dispensed_at: datetime
+    lines: list[ReturnableLineOut]
+
+
+class DispenseReturnIn(Schema):
+    """Units a patient brought back (FEATURES 8.4): base units, an ``stock_adjust`` reason, and
+    for a billed line a second person's credentials (``pharmacy.approve_return``)."""
+
+    quantity: Qty
+    reason_code: Code
+    note: Note = ""
+    credit_note_id: int | None = Field(
+        None, description="An approved credit note crediting the line (links the refund)"
+    )
+    approver: ApproverIn | None = Field(
+        None, description="Required for a billed line: someone else approves"
+    )
+
+
 # --- goods receipts -------------------------------------------------------------------------
 
 

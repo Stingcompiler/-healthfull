@@ -125,12 +125,16 @@ REASON_CODES: tuple[ReasonDef, ...] = (
     ReasonDef("admission_cancel", "NOT_ADMITTED", "المريض لم يُنوَّم", "Patient was not admitted"),
     ReasonDef("admission_cancel", "DUPLICATE_ADMISSION", "تنويم مكرر", "Admitted twice"),
     ReasonDef("admission_cancel", "OTHER", "سبب آخر", "Other", True),
+    # Dispense returns (FEATURES 8.4, ADR 0018). Seeded by migration 0013.
+    ReasonDef("stock_adjust", "PATIENT_RETURNED", "أعاده المريض", "Returned by the patient"),
+    ReasonDef("stock_adjust", "DISPENSED_IN_ERROR", "صُرف بالخطأ", "Dispensed in error"),
 )
 
 #: Codes added after ``0007_seed_reason_codes``, with the migration that seeds them.
 LATER_SEEDS: dict[str, tuple[str, ...]] = {
     "0009_reason_categories_merge_appointment": ("patient_merge", "appointment_cancel"),
     "0012_admission_cancel_reasons": ("admission_cancel",),
+    "0013_dispense_return_reasons": ("stock_adjust",),
 }
 
 
