@@ -26,6 +26,7 @@ export const ROLE_CODES = [
   "accountant",
   "manager",
   "admin",
+  "display",
 ] as const;
 export type RoleCode = (typeof ROLE_CODES)[number];
 
@@ -37,17 +38,79 @@ export interface E2EUser {
 }
 
 export const USERS = {
-  reception: { username: "reception", role: "receptionist", fullNameAr: "سارة عبدالله", fullNameEn: "Sara Abdalla" },
-  doctor: { username: "doctor", role: "doctor", fullNameAr: "د. أحمد الطيب", fullNameEn: "Dr. Ahmed Altayeb" },
-  cashier: { username: "cashier", role: "cashier", fullNameAr: "محمد عثمان", fullNameEn: "Mohamed Osman" },
-  cashsup: { username: "cashsup", role: "cashier_supervisor", fullNameAr: "هالة إبراهيم", fullNameEn: "Hala Ibrahim" },
-  pharmacist: { username: "pharmacist", role: "pharmacist", fullNameAr: "عمر الفاتح", fullNameEn: "Omer Alfatih" },
-  labtech: { username: "labtech", role: "lab_tech", fullNameAr: "منى حسن", fullNameEn: "Muna Hassan" },
-  labsup: { username: "labsup", role: "lab_supervisor", fullNameAr: "خالد بشير", fullNameEn: "Khalid Bashir" },
-  nurse: { username: "nurse", role: "nurse", fullNameAr: "آمنة يوسف", fullNameEn: "Amna Yousif" },
-  accountant: { username: "accountant", role: "accountant", fullNameAr: "طارق الأمين", fullNameEn: "Tarig Alamin" },
-  manager: { username: "manager", role: "manager", fullNameAr: "نادية محمود", fullNameEn: "Nadia Mahmoud" },
-  admin: { username: "admin", role: "admin", fullNameAr: "مدير النظام", fullNameEn: "System Admin" },
+  reception: {
+    username: "reception",
+    role: "receptionist",
+    fullNameAr: "سارة عبدالله",
+    fullNameEn: "Sara Abdalla",
+  },
+  doctor: {
+    username: "doctor",
+    role: "doctor",
+    fullNameAr: "د. أحمد الطيب",
+    fullNameEn: "Dr. Ahmed Altayeb",
+  },
+  cashier: {
+    username: "cashier",
+    role: "cashier",
+    fullNameAr: "محمد عثمان",
+    fullNameEn: "Mohamed Osman",
+  },
+  cashsup: {
+    username: "cashsup",
+    role: "cashier_supervisor",
+    fullNameAr: "هالة إبراهيم",
+    fullNameEn: "Hala Ibrahim",
+  },
+  pharmacist: {
+    username: "pharmacist",
+    role: "pharmacist",
+    fullNameAr: "عمر الفاتح",
+    fullNameEn: "Omer Alfatih",
+  },
+  labtech: {
+    username: "labtech",
+    role: "lab_tech",
+    fullNameAr: "منى حسن",
+    fullNameEn: "Muna Hassan",
+  },
+  labsup: {
+    username: "labsup",
+    role: "lab_supervisor",
+    fullNameAr: "خالد بشير",
+    fullNameEn: "Khalid Bashir",
+  },
+  nurse: {
+    username: "nurse",
+    role: "nurse",
+    fullNameAr: "آمنة يوسف",
+    fullNameEn: "Amna Yousif",
+  },
+  accountant: {
+    username: "accountant",
+    role: "accountant",
+    fullNameAr: "طارق الأمين",
+    fullNameEn: "Tarig Alamin",
+  },
+  manager: {
+    username: "manager",
+    role: "manager",
+    fullNameAr: "نادية محمود",
+    fullNameEn: "Nadia Mahmoud",
+  },
+  admin: {
+    username: "admin",
+    role: "admin",
+    fullNameAr: "مدير النظام",
+    fullNameEn: "System Admin",
+  },
+  // The waiting-room kiosk account (ADR 0019): /display/queue and nothing else.
+  display: {
+    username: "display",
+    role: "display",
+    fullNameAr: "شاشة الانتظار",
+    fullNameEn: "Waiting-room screen",
+  },
 } as const satisfies Record<string, E2EUser>;
 
 /**
@@ -63,8 +126,18 @@ export const EXTRA_DOCTORS = {
     fullNameAr: "د. فاطمة الزين",
     fullNameEn: "Dr. Fatima Alzain",
   },
-  gynecologist: { username: "gynecologist", role: "doctor", fullNameAr: "د. سلمى عوض", fullNameEn: "Dr. Salma Awad" },
-  dentist: { username: "dentist", role: "doctor", fullNameAr: "د. ياسر النور", fullNameEn: "Dr. Yasir Alnour" },
+  gynecologist: {
+    username: "gynecologist",
+    role: "doctor",
+    fullNameAr: "د. سلمى عوض",
+    fullNameEn: "Dr. Salma Awad",
+  },
+  dentist: {
+    username: "dentist",
+    role: "doctor",
+    fullNameAr: "د. ياسر النور",
+    fullNameEn: "Dr. Yasir Alnour",
+  },
 } as const satisfies Record<string, E2EUser>;
 
 /** Department code of each seeded doctor (USERS.doctor and EXTRA_DOCTORS). */
@@ -80,7 +153,11 @@ export const DOCTOR_DEPARTMENTS = {
  * permission through is_superuser). The `admin` user above is a normal user holding the admin
  * role, so specs exercise that role's real permissions. Use root only to test the superuser.
  */
-export const SUPERUSER = { username: "root", fullNameAr: "حساب الطوارئ", fullNameEn: "Break-glass superuser" } as const;
+export const SUPERUSER = {
+  username: "root",
+  fullNameAr: "حساب الطوارئ",
+  fullNameEn: "Break-glass superuser",
+} as const;
 
 /** Seed user key, e.g. "cashier". `login(page, "cashier")`. */
 export type UserKey = keyof typeof USERS;

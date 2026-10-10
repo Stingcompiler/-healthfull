@@ -13368,7 +13368,8 @@
               "nurse",
               "accountant",
               "manager",
-              "admin"
+              "admin",
+              "display"
             ],
             "title": "Role",
             "type": "string"
@@ -18489,7 +18490,8 @@
                 "nurse",
                 "accountant",
                 "manager",
-                "admin"
+                "admin",
+                "display"
               ]
             },
             "title": "Discount Limit Percent",
@@ -18542,11 +18544,12 @@
                 "nurse",
                 "accountant",
                 "manager",
-                "admin"
+                "admin",
+                "display"
               ],
               "type": "string"
             },
-            "maxItems": 11,
+            "maxItems": 12,
             "title": "Perform First Roles",
             "type": "array"
           },
@@ -27317,11 +27320,12 @@
                 "nurse",
                 "accountant",
                 "manager",
-                "admin"
+                "admin",
+                "display"
               ],
               "type": "string"
             },
-            "maxItems": 11,
+            "maxItems": 12,
             "minItems": 1,
             "title": "Roles",
             "type": "array"
@@ -27394,7 +27398,8 @@
                   "nurse",
                   "accountant",
                   "manager",
-                  "admin"
+                  "admin",
+                  "display"
                 ],
                 "type": "string"
               },
@@ -27584,11 +27589,12 @@
                     "nurse",
                     "accountant",
                     "manager",
-                    "admin"
+                    "admin",
+                    "display"
                   ],
                   "type": "string"
                 },
-                "maxItems": 11,
+                "maxItems": 12,
                 "minItems": 1,
                 "type": "array"
               },
@@ -28925,6 +28931,14 @@
       },
       "WaitingRoomOut": {
         "properties": {
+          "departments": {
+            "description": "Active departments, for the screen's clinic picker (ADR 0019)",
+            "items": {
+              "$ref": "#/components/schemas/VisitDepartmentOut"
+            },
+            "title": "Departments",
+            "type": "array"
+          },
           "serving": {
             "items": {
               "$ref": "#/components/schemas/DisplayEntryOut"
@@ -28942,7 +28956,8 @@
         },
         "required": [
           "serving",
-          "waiting"
+          "waiting",
+          "departments"
         ],
         "title": "WaitingRoomOut",
         "type": "object"
@@ -42137,7 +42152,8 @@
                     "nurse",
                     "accountant",
                     "manager",
-                    "admin"
+                    "admin",
+                    "display"
                   ],
                   "type": "string"
                 },
@@ -64596,7 +64612,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Waiting-room screen feed: paid tokens, abbreviated names",
+        "summary": "Waiting-room screen feed: paid tokens, abbreviated names, the clinics to pick",
         "tags": [
           "visits"
         ]

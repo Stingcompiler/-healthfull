@@ -18,7 +18,7 @@ Default policy throughout: **pay first, then perform.** Perform-first is an auth
 | # | Feature | Phase |
 |---|---|---|
 | 0.1 | Login with username and password, session timeout, forced password change on first login | V1 |
-| 0.2 | Roles: receptionist, doctor, cashier, cashier supervisor, pharmacist, lab technician, lab supervisor, nurse, accountant, manager, system admin | V1 |
+| 0.2 | Roles: receptionist, doctor, cashier, cashier supervisor, pharmacist, lab technician, lab supervisor, nurse, accountant, manager, system admin, and the waiting-room display (a kiosk device account that sees only the queue screen, ADR 0019) | V1 |
 | 0.3 | Permission matrix per role per action, editable by admin, with safe defaults | V1 |
 | 0.4 | Audit trail on every write: who, when, before, after, reason where required. Postgres-side, cannot be bypassed | V1 |
 | 0.5 | Arabic and English UI, per-user language, full RTL layout | V1 |

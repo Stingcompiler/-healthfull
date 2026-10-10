@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { ROLES } from "@/lib/auth/permissions";
+import { PERSON_ROLES, ROLES } from "@/lib/auth/permissions";
 import { vmsg } from "@/lib/validation";
 
 import { usePolicy, useUpdatePolicy } from "../api";
@@ -70,7 +70,7 @@ function toValues(policy: PolicyOut): Values {
     follow_up_discount_percent: policy.follow_up_discount_percent,
     session_idle_minutes: String(policy.session_idle_minutes),
     discount_limit_percent: Object.fromEntries(
-      ROLES.map((r) => [
+      PERSON_ROLES.map((r) => [
         r,
         policy.discount_limit_percent[r] === undefined ? "" : String(policy.discount_limit_percent[r]),
       ]),
@@ -190,7 +190,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
             <p className="text-sm text-muted">{t("admin:policies.discountLimitsHint")}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {ROLES.map((role) => (
+            {PERSON_ROLES.map((role) => (
               <FormField
                 key={role}
                 control={form.control}
@@ -222,7 +222,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
             render={({ field }) => (
               <FormItem>
                 <div role="group" aria-labelledby="pol-perform" className="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {ROLES.map((role) => (
+                  {PERSON_ROLES.map((role) => (
                     <CheckOption
                       key={role}
                       id={`pf-${role}`}

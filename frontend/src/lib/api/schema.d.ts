@@ -5921,7 +5921,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Waiting-room screen feed: paid tokens, abbreviated names */
+        /** Waiting-room screen feed: paid tokens, abbreviated names, the clinics to pick */
         get: operations["visits_get_display"];
         put?: never;
         post?: never;
@@ -11094,7 +11094,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin";
+            role: "receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display";
         };
         /** MatrixChangeOut */
         MatrixChangeOut: {
@@ -13038,7 +13038,7 @@ export interface components {
             /** Pending Transfer Alert Days */
             pending_transfer_alert_days: number;
             /** Perform First Roles */
-            perform_first_roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[];
+            perform_first_roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display")[];
             /** Session Idle Minutes */
             session_idle_minutes: number;
             /** Show Estimated Cost */
@@ -16291,7 +16291,7 @@ export interface components {
              */
             phone: string;
             /** Roles */
-            roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[];
+            roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display")[];
             /** Username */
             username: string;
         };
@@ -16312,7 +16312,7 @@ export interface components {
             /** Q */
             q?: string | null;
             /** Role */
-            role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin") | null;
+            role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display") | null;
         };
         /** UserOut */
         UserOut: {
@@ -16367,7 +16367,7 @@ export interface components {
             /** Phone */
             phone?: string | null;
             /** Roles */
-            roles?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[] | null;
+            roles?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display")[] | null;
         };
         /** UserRefOut */
         UserRefOut: {
@@ -16813,6 +16813,11 @@ export interface components {
         };
         /** WaitingRoomOut */
         WaitingRoomOut: {
+            /**
+             * Departments
+             * @description Active departments, for the screen's clinic picker (ADR 0019)
+             */
+            departments: components["schemas"]["VisitDepartmentOut"][];
             /** Serving */
             serving: components["schemas"]["DisplayEntryOut"][];
             /** Waiting */
@@ -26065,7 +26070,7 @@ export interface operations {
                 page?: number;
                 page_size?: number;
                 q?: string | null;
-                role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin") | null;
+                role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display") | null;
                 active?: boolean | null;
             };
             header?: never;

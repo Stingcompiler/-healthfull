@@ -192,7 +192,7 @@ Postings (each a balanced JournalEntry with `source_type`, `source_id` and, when
 ### 4.10 Permissions
 
 - Permission codes are strings `"<app>.<action>"` registered in `apps/core/permissions.py` with default roles. `RolePermission` rows override defaults (editable matrix).
-- Roles: `receptionist`, `doctor`, `cashier`, `cashier_supervisor`, `pharmacist`, `lab_tech`, `lab_supervisor`, `nurse`, `accountant`, `manager`, `admin`. A user may hold several roles.
+- Roles: `receptionist`, `doctor`, `cashier`, `cashier_supervisor`, `pharmacist`, `lab_tech`, `lab_supervisor`, `nurse`, `accountant`, `manager`, `admin`, and `display` (the waiting-room kiosk account: only `visits.view_display`, ADR 0019). A user may hold several roles.
 - Routers enforce with `@require_perm("billing.approve_invoice")` (403 `PERMISSION_DENIED`). `GET /api/auth/me` returns the user's roles and effective permission codes; the frontend uses them only to hide UI, never as security.
 - Doctors never get billing permissions by default.
 

@@ -28,8 +28,7 @@ test.use({ storageState: ANONYMOUS_STATE });
 
 test.afterAll(async () => {
   await closeShift().catch((error: unknown) => {
-    if (!(error instanceof FixtureError && error.code === "SHIFT_NOT_OPEN"))
-      throw error;
+    if (!(error instanceof FixtureError && error.code === "SHIFT_NOT_OPEN")) throw error;
   });
   await disposeApiClients();
 });
@@ -50,19 +49,13 @@ interface ReturnsPage {
   }[];
 }
 
-async function choose(
-  page: Page,
-  label: string,
-  option: string,
-): Promise<void> {
+async function choose(page: Page, label: string, option: string): Promise<void> {
   await page.getByRole("combobox", { name: label }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
 test.describe("@followups @pharmacy dispense returns", () => {
-  test("paid units come back into stock on a supervisor's approval", async ({
-    page,
-  }) => {
+  test("paid units come back into stock on a supervisor's approval", async ({ page }) => {
     const logged = trackConsoleErrors(page, { allowAnonymousMe: true });
     const made = await fixture<Dispensed>("pharmacy_dispensed", {
       patient_fields: { full_name_en: "Nafisa Abdelrahim Osman Ali" },
@@ -74,26 +67,18 @@ test.describe("@followups @pharmacy dispense returns", () => {
     await login(page, "pharmacist");
     await setPrefs(page, { theme: "light", lang: "en" });
     await page.goto("/pharmacy/returns");
-    await page
-      .getByLabel(tr("en", "pharmacy:returns.search"))
-      .fill(made.patient.file_no);
-    const row = page.locator(
-      `[data-testid="returnable-line"][data-line-id="${String(line.id)}"]`,
-    );
+    await page.getByLabel(tr("en", "pharmacy:returns.search")).fill(made.patient.file_no);
+    const row = page.locator(`[data-testid="returnable-line"][data-line-id="${String(line.id)}"]`);
     await expect(row).toContainText(tr("en", "pharmacy:returns.paidBadge"));
     await row.getByTestId("return-open").click();
     const dialog = page.getByTestId("return-dialog");
-    await expect(dialog.getByTestId("return-returnable")).toContainText(
-      String(line.qty_base),
-    );
+    await expect(dialog.getByTestId("return-returnable")).toContainText(String(line.qty_base));
     await dialog.getByLabel(tr("en", "pharmacy:returns.quantity")).fill("3");
     await choose(page, tr("en", "reason.code"), "Returned by the patient");
     await dialog.getByLabel(tr("en", "approver.username")).fill("pharmacist");
     await dialog.getByLabel(tr("en", "approver.password")).fill(E2E_PASSWORD);
     await dialog.getByTestId("return-confirm").click();
-    await expect(
-      dialog.getByText(tr("en", "errors:SECOND_APPROVER_REQUIRED")),
-    ).toBeVisible();
+    await expect(dialog.getByText(tr("en", "errors:SECOND_APPROVER_REQUIRED"))).toBeVisible();
     await expectNoHorizontalScroll(page);
     await snap(page, "followups-dispense-return");
 
@@ -103,21 +88,15 @@ test.describe("@followups @pharmacy dispense returns", () => {
     await expect(row.getByTestId("line-returned")).toContainText("3");
 
     const pharmacist = await apiAs("pharmacist");
-    const after = await pharmacist.get<ReturnsPage>(
-      `/api/pharmacy/returns?q=${made.patient.file_no}`,
-    );
-    const back = after.items
-      .flatMap((d) => d.lines)
-      .find((l) => l.id === line.id);
+    const after = await pharmacist.get<ReturnsPage>(`/api/pharmacy/returns?q=${made.patient.file_no}`);
+    const back = after.items.flatMap((d) => d.lines).find((l) => l.id === line.id);
     expect(back?.returned).toBe(3);
     expect(back?.returnable).toBe(line.qty_base - 3);
     // The refused self-approval is a documented 409, which Chrome logs as a failed load.
     expect(logged.errors().filter((e) => !e.includes("status of 409"))).toEqual([]);
   });
 
-  test("units given under a perform-first authorization need no second person", async ({
-    page,
-  }) => {
+  test("units given under a perform-first authorization need no second person", async ({ page }) => {
     const made = await fixture<Dispensed>("pharmacy_dispensed", {
       pay: false,
       patient_fields: { full_name_en: "Omer Siddig Elamin Khalid" },
@@ -128,12 +107,8 @@ test.describe("@followups @pharmacy dispense returns", () => {
     await login(page, "pharmacist");
     await setPrefs(page, { theme: "warm", lang: "ar" });
     await page.goto("/pharmacy/returns");
-    await page
-      .getByLabel(tr("ar", "pharmacy:returns.search"))
-      .fill(made.patient.file_no);
-    const row = page.locator(
-      `[data-testid="returnable-line"][data-line-id="${String(line.id)}"]`,
-    );
+    await page.getByLabel(tr("ar", "pharmacy:returns.search")).fill(made.patient.file_no);
+    const row = page.locator(`[data-testid="returnable-line"][data-line-id="${String(line.id)}"]`);
     await row.getByTestId("return-open").click();
     const dialog = page.getByTestId("return-dialog");
     await expect(dialog.getByTestId("second-approver")).toHaveCount(0);

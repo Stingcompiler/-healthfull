@@ -92,7 +92,8 @@
     "nurse": "Nurse",
     "accountant": "Accountant",
     "manager": "Manager",
-    "admin": "System administrator"
+    "admin": "System administrator",
+    "display": "Waiting-room display"
   },
   "sex": {
     "male": "Male",

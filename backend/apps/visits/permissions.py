@@ -12,6 +12,7 @@ from apps.core.roles import (
     ADMIN,
     CASHIER,
     CASHIER_SUPERVISOR,
+    DISPLAY,
     DOCTOR,
     LAB_SUPERVISOR,
     LAB_TECH,
@@ -66,6 +67,14 @@ register_permission(
     label_ar="عرض طابور العيادة",
     label_en="View the clinic queue",
     default_roles={RECEPTIONIST, DOCTOR, NURSE, MANAGER, ADMIN},
+)
+
+register_permission(
+    "visits.view_display",
+    label_ar="عرض شاشة الانتظار",
+    label_en="Waiting-room display feed",
+    # The kiosk account's only permission (ADR 0019); staff who had the queue keep the screen.
+    default_roles={DISPLAY, RECEPTIONIST, DOCTOR, NURSE, MANAGER, ADMIN},
 )
 
 register_permission(

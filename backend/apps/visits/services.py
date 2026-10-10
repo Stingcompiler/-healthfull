@@ -1842,6 +1842,8 @@ class WaitingRoom:
     serving: list[DisplayEntry]
     #: Paid tokens still waiting, in serving order.
     waiting: list[DisplayEntry]
+    #: Active departments, for the kiosk's clinic picker (it holds no other permission).
+    departments: list[Department] = field(default_factory=list)
 
 
 def _display(entry: QueueEntry) -> DisplayEntry:
@@ -1872,7 +1874,9 @@ def waiting_room(*, department: Department | None = None, on: date | None = None
         key=lambda r: (r.called_at.timestamp() if r.called_at else 0.0, r.token_no), reverse=True
     )
     return WaitingRoom(
-        serving=serving, waiting=[r for r in rows if r.status == QueueStatus.WAITING]
+        serving=serving,
+        waiting=[r for r in rows if r.status == QueueStatus.WAITING],
+        departments=list(Department.objects.filter(active=True).order_by("sort_order", "code")),
     )
 
 
