@@ -209,6 +209,12 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Payer receivables read per payer through `claims.queries` (query count grows with payers).
 - The dashboard's low-stock alert has no report to open (no low-stock report screen beyond the
   pharmacy's own list); 12.12-12.14 (P2) are not built.
+- Pre-existing, outside reports: `domain/tests/test_visit_machine.py::TestVisitMachine` fails
+  with a Hypothesis example (saved in this worktree's `backend/.hypothesis`): after a bank
+  transfer with `allow_partial=False` and an opening float of 0.01, rejecting a still-pending
+  transfer plans `uncovered` 10.14 (and in a second example a recovery row of -1205.00), which
+  the model says is impossible for pending money. Needs a look in `domain/allocation.py`
+  (`plan_rejection`) or the model.
 - Detail sections stop at 2,000 rows (the screen and the workbook say so); a paged export for
   very long periods is not built.
 
@@ -393,3 +399,22 @@ reports, ops and the patient portal (Phases 6-7).
   before left the doctor's queue (an empty queue; the three 1280 cases after it did not run
   because the file is serial); the patient-file 768 warm en case did not find the merge
   history, while the other 11 cases of the same route passed in the same run.
+- 2026-10-10: Reports and the manager dashboard on `feat/c-reports` (wave c, from `wave/c`):
+  FEATURES 4.5, 12.1-12.11 (ADR 0013). `/api/reports`: 14 reports, each `GET /<key>` and
+  `GET /<key>/export` (.xlsx, formula-safe) behind one `reports.view_<area>` code, plus
+  `/dashboard`; read-only queries in `apps/reports/queries.py` reusing the orders, claims, lab
+  and pharmacy report queries; pure arithmetic in `domain/reports.py` (Hypothesis). Every money
+  report is tested against `ledger.services` balances and postings; query counts do not grow
+  with rows; reports never write. Screens `/reports`, `/reports/$reportKey`,
+  `/reports/$reportKey/print`, and the manager dashboard at `/` (recharts, theme tokens).
+  e2e fixture `reports_day`; specs `e2e/tests/reports/*.spec.ts` (@reports). Shared files
+  touched: `apps/orders/services.py` (optional department on `report_*`, row cap 5,000),
+  `apps/core/tests/test_permissions.py` (new code names), `components/DataTable.tsx` (totals
+  row) and its test, `common.json` (`table.total`), `errors.json` (`REPORT_RANGE_TOO_LONG`),
+  `frontend/package.json` (recharts 3.10.1), generated OpenAPI files. Results: lint (ruff,
+  format, migrations, eslint, prettier), mypy and tsc (frontend, e2e) clean; frontend 474
+  passed; API contract in sync; backend 1890 passed, 1 failed: `domain/tests/test_visit_machine.py`
+  (Hypothesis stateful test of the payment engine found a pending-transfer rejection with
+  `uncovered` 10.14 / a recovery row; domain code untouched by this branch, see follow-ups);
+  71 report tests passed. `make e2e E2E_GREP="@reports|@responsive.*(reports|dashboard)|route
+  registry|@auth sign in"`: 112 passed (twice, before and after the review fixes).
