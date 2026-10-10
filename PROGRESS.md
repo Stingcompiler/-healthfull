@@ -11,7 +11,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
 | 6. Claims, reports, admin, ops | done on `wave/c`: admin on `wave/a` (from `feat/a-admin`); claims on `wave/b` (from `feat/b-claims`); reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
-| 7. Patient portal | not started | |
+| 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
 | 8. Hardening and handover | not started | |
 
 ## Phase 0 checklist
@@ -235,6 +235,21 @@ Source of truth for build status. Update at the end of every task. Phases from `
   English verbose name. Field names are shown as database columns.
 - The full export reads every row of nine tables in one request (streamed); very large
   installations may prefer a scheduled export to the backup disk.
+
+## Follow-ups (portal, wave c)
+
+- [x] Lab results reach the patient (FEATURES 9.4 "visible to the patient"): approved versions
+  only, on `/portal/results` (lab follow-up above).
+- No self-service code request: a lost receipt means asking the cashier for a new code (which
+  ends the old code's sessions). SMS delivery is FEATURES 15.3 (Later).
+- Codes are issued from the cashier's receipt screen only; reception (which also holds
+  `portal.issue_access_code`) has no screen for it, and `portal.revoke_access_code` has no
+  endpoint yet (a new code revokes the old ones).
+- Rotating `SECRET_KEY` invalidates the QR of every printed receipt (ADR 0016); the staff check
+  by receipt number keeps working.
+- The portal shows no clinical notes, referrals or allergies; instructions are the dosing
+  instructions and the lab tests' preparation texts.
+- `/api/portal/ping` still uses the staff session (the module ping contract of `api/tests`).
 
 ## Follow-ups (wave c integration)
 
@@ -476,3 +491,22 @@ portal (Phase 7) is being built on `feat/c-portal`.
   E2E_GREP=@ops` 7 passed; the 4 admin system routes x 3 viewports x 3 themes x 2 languages plus
   the route registry 73 passed; the whole phone matrix with the bell in the top bar
   (`@responsive 375x812|@ops|route registry|shell`) 499 passed.
+- 2026-10-10: Patient portal (wave c) on `feat/c-portal` from `wave/c`: FEATURES 15.1, 15.2
+  (ADR 0016). Backend `/api/portal`: sign-in with file number, phone and the receipt code
+  (hashed, 30-day, newest revokes older, locked after 5 wrong codes), per-file lockout and
+  per-address throttle with uniform 401s, its own session cookie (path `/api/portal`, hashed
+  token, 15-minute idle, 4-hour limit), own-data endpoints answering 404 for anyone else's row,
+  online booking and cancellation, the public receipt check by number and HMAC token;
+  `domain/portal.py` (Hypothesis). Frontend `src/portal` (sign-in, home, appointments, booking,
+  results with print, prescriptions, bills, `/verify/$token`), manifest and icons, no service
+  worker. Other modules touched: `api/errors.py` (2 statuses), `api/tests/test_main.py` (portal
+  allowlists), `core/tests/test_schema.py` (2 untracked portal models), core `maintenance`
+  (portal housekeeping), payments receipt payload (`verify_token`) and `domain/payments.py`
+  (staff check reads the new QR URL), cashier `ReceiptPage.tsx` (QR URL and the portal code),
+  `errors.json` (7 codes), `e2e/route-kit.ts` and `responsive.spec.ts` (`prepare` hook),
+  `e2e/README.md`. Results: `make check` green (backend 1958 passed, frontend 460 passed, ruff,
+  mypy, eslint, prettier and tsc clean, no missing migrations, API contract in sync). `make e2e
+  E2E_GREP="@portal|@cashier|@responsive.*(portal|route registry|cashier-receipt)"`: 256 passed,
+  2 failed of 258; both failures were cashier specs running while the machine slept (3.7 h test
+  time) and passed on a rerun of `@cashier (money flow|review fixes)` (5 of 5). Portal matrix
+  alone earlier: 200 of 200.

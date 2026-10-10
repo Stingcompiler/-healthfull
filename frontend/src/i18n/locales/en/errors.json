@@ -398,5 +398,12 @@
   "IMPORT_OPTION_INVALID": "An import option is not valid.",
   "BACKUP_REQUEST_OPEN": "A manual backup is already waiting or running.",
   "AUDIT_MODEL_UNKNOWN": "This record type has no audit trail.",
-  "AUDIT_ACTION_UNKNOWN": "Unknown audit action."
+  "AUDIT_ACTION_UNKNOWN": "Unknown audit action.",
+  "PORTAL_INVALID_CREDENTIALS": "The file number, phone number or code is not right. Check them and try again.",
+  "PORTAL_LOCKED": "Too many failed attempts for this file number. Please wait 15 minutes and try again.",
+  "PORTAL_SLOT_UNAVAILABLE": "This time can no longer be booked online. Please choose another time.",
+  "PORTAL_BOOKING_LIMIT": "You already have {{limit}} upcoming appointments. Cancel one to book another.",
+  "PORTAL_ALREADY_BOOKED": "You already have an appointment with this doctor on that day.",
+  "PORTAL_CANCEL_TOO_LATE": "Appointments can be cancelled online up to {{cutoff_hours}} hours before. Please call the center.",
+  "PORTAL_PHONE_REQUIRED": "Add a phone number to the patient's file before printing a portal code."
 }

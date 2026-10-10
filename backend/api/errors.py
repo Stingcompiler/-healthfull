@@ -39,6 +39,9 @@ DOMAIN_ERROR_STATUS: dict[str, int] = {
     "INVALID_CREDENTIALS": 401,
     "ACCOUNT_LOCKED": 423,
     "RATE_LIMITED": 429,
+    # Patient portal sign-in (ADR 0016).
+    "PORTAL_INVALID_CREDENTIALS": 401,
+    "PORTAL_LOCKED": 423,
 }
 
 _STATUS_CODES: dict[int, str] = {

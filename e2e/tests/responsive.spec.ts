@@ -53,6 +53,7 @@ for (const viewport of VIEWPORTS) {
               await setPrefs(page, { theme, lang });
 
               const target = await visitPath(route);
+              if (route.prepare) await route.prepare(page);
               await page.goto(target);
               await expect(route.ready(page)).toBeVisible();
               // Still on the route: no bounce to /login, no redirect elsewhere.

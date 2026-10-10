@@ -21,6 +21,11 @@ export interface AppRoute {
    * path to visit, e.g. `/patients/412`. Called once per route per worker.
    */
   resolve?: () => Promise<string>;
+  /**
+   * Runs in each test's fresh page before it opens the route, e.g. to sign in to the patient
+   * portal, whose session is not the staff one (`auth` covers staff screens only).
+   */
+  prepare?: (page: Page) => Promise<void>;
 }
 
 export const pageHeading = (page: Page): Locator => page.locator("#main h1").first();
@@ -30,10 +35,16 @@ export const loginSubmit = (page: Page): Locator => page.locator('main form butt
 export function appRoute(
   name: string,
   path: string,
-  options: { ready?: AppRoute["ready"]; resolve?: AppRoute["resolve"]; auth?: boolean } = {},
+  options: {
+    ready?: AppRoute["ready"];
+    resolve?: AppRoute["resolve"];
+    prepare?: AppRoute["prepare"];
+    auth?: boolean;
+  } = {},
 ): AppRoute {
   const route: AppRoute = { name, path, auth: options.auth ?? true, ready: options.ready ?? pageHeading };
   if (options.resolve) route.resolve = options.resolve;
+  if (options.prepare) route.prepare = options.prepare;
   return route;
 }
 

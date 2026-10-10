@@ -145,11 +145,22 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   backup request picked up by `infra/backup/backup-requests.sh`; the full CSV data export;
   the audit trail viewer. The maintenance loop now also runs `notify_scan` and
   `charge_bed_nights` as `BED_CHARGE_USER`, hourly.
+- Wave c, patient portal (FEATURES 15.1, 15.2): `/api/portal` and the mobile-first screens under
+  `/portal` (sign-in, home cards, appointments with online booking and cancellation, approved lab
+  results with print, prescriptions and lab preparation, invoices and receipts), the public receipt
+  check `/verify/<token>` behind the receipt QR, and a portal access code the cashier prints on the
+  receipt. Web manifest and bundled icons, no service worker (ADR 0016).
 
 ### Security
 - Imports refuse formula cells and text starting with `=`, check the xlsx zip signature and
   unpacked size before parsing; the data export defuses CSV formula injection and records
   every export; the audit viewer hides secret-looking fields.
+- Patient portal (ADR 0016): its own session cookie (HttpOnly, SameSite=Strict, path `/api/portal`,
+  hashed token, 15-minute idle and 4-hour limit) that opens no staff endpoint; receipt access codes
+  stored hashed, expiring, revoked by a newer code and locked after wrong attempts; uniform refusals
+  with equal hashing work, per-file-number lockout and per-address throttle; every other patient's
+  row answers 404; the public receipt check needs an HMAC token, shows initials at most and is
+  rate-limited; portal answers are `Cache-Control: no-store`.
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
   and refuses accounts that must change their password; unlocking an account is an audited admin action
   with a reason (ADR 0005).

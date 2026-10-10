@@ -18404,6 +18404,1336 @@
         "title": "PolicyOut",
         "type": "object"
       },
+      "PortalAppointmentOut": {
+        "properties": {
+          "can_cancel": {
+            "title": "Can Cancel",
+            "type": "boolean"
+          },
+          "cancel_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Until"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/PortalDoctorOut"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "booked",
+              "arrived",
+              "no_show",
+              "cancelled",
+              "rescheduled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "starts_at",
+          "ends_at",
+          "status",
+          "doctor",
+          "can_cancel",
+          "cancel_until"
+        ],
+        "title": "PortalAppointmentOut",
+        "type": "object"
+      },
+      "PortalAppointmentsOut": {
+        "properties": {
+          "past": {
+            "items": {
+              "$ref": "#/components/schemas/PortalAppointmentOut"
+            },
+            "title": "Past",
+            "type": "array"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/PortalBookingRulesOut"
+          },
+          "upcoming": {
+            "items": {
+              "$ref": "#/components/schemas/PortalAppointmentOut"
+            },
+            "title": "Upcoming",
+            "type": "array"
+          }
+        },
+        "required": [
+          "upcoming",
+          "past",
+          "rules"
+        ],
+        "title": "PortalAppointmentsOut",
+        "type": "object"
+      },
+      "PortalBalanceOut": {
+        "properties": {
+          "credit": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Credit",
+            "type": "string"
+          },
+          "open_invoices": {
+            "title": "Open Invoices",
+            "type": "integer"
+          },
+          "outstanding": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Outstanding",
+            "type": "string"
+          },
+          "pending": {
+            "description": "Transfers the bank has not confirmed yet",
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Pending",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outstanding",
+          "credit",
+          "pending",
+          "open_invoices"
+        ],
+        "title": "PortalBalanceOut",
+        "type": "object"
+      },
+      "PortalBookIn": {
+        "properties": {
+          "doctor_id": {
+            "title": "Doctor Id",
+            "type": "integer"
+          },
+          "starts_at": {
+            "description": "Exactly a `starts_at` from the slots list",
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "doctor_id",
+          "starts_at"
+        ],
+        "title": "PortalBookIn",
+        "type": "object"
+      },
+      "PortalBookingRulesOut": {
+        "properties": {
+          "cancel_cutoff_hours": {
+            "title": "Cancel Cutoff Hours",
+            "type": "integer"
+          },
+          "horizon_days": {
+            "title": "Horizon Days",
+            "type": "integer"
+          },
+          "max_open": {
+            "title": "Max Open",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_open",
+          "cancel_cutoff_hours",
+          "horizon_days"
+        ],
+        "title": "PortalBookingRulesOut",
+        "type": "object"
+      },
+      "PortalCenterOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name_ar",
+          "name_en",
+          "address",
+          "phone"
+        ],
+        "title": "PortalCenterOut",
+        "type": "object"
+      },
+      "PortalDoctorOut": {
+        "properties": {
+          "department_ar": {
+            "title": "Department Ar",
+            "type": "string"
+          },
+          "department_en": {
+            "title": "Department En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "specialty_ar": {
+            "title": "Specialty Ar",
+            "type": "string"
+          },
+          "specialty_en": {
+            "title": "Specialty En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en",
+          "specialty_ar",
+          "specialty_en",
+          "department_ar",
+          "department_en"
+        ],
+        "title": "PortalDoctorOut",
+        "type": "object"
+      },
+      "PortalInvoiceDetailOut": {
+        "properties": {
+          "center": {
+            "$ref": "#/components/schemas/PortalCenterOut"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PortalInvoiceLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "outstanding": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Outstanding",
+            "type": "string"
+          },
+          "paid": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Paid",
+            "type": "string"
+          },
+          "patient_due": {
+            "description": "The patient's share after credits",
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Patient Due",
+            "type": "string"
+          },
+          "receipts": {
+            "items": {
+              "$ref": "#/components/schemas/PortalInvoiceReceiptOut"
+            },
+            "title": "Receipts",
+            "type": "array"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "date",
+          "visit_number",
+          "patient_due",
+          "paid",
+          "outstanding",
+          "center",
+          "lines",
+          "receipts"
+        ],
+        "title": "PortalInvoiceDetailOut",
+        "type": "object"
+      },
+      "PortalInvoiceLineOut": {
+        "properties": {
+          "description_ar": {
+            "title": "Description Ar",
+            "type": "string"
+          },
+          "description_en": {
+            "title": "Description En",
+            "type": "string"
+          },
+          "patient_share": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Patient Share",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "description_ar",
+          "description_en",
+          "quantity",
+          "patient_share"
+        ],
+        "title": "PortalInvoiceLineOut",
+        "type": "object"
+      },
+      "PortalInvoiceOut": {
+        "properties": {
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "outstanding": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Outstanding",
+            "type": "string"
+          },
+          "paid": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Paid",
+            "type": "string"
+          },
+          "patient_due": {
+            "description": "The patient's share after credits",
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Patient Due",
+            "type": "string"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "date",
+          "visit_number",
+          "patient_due",
+          "paid",
+          "outstanding"
+        ],
+        "title": "PortalInvoiceOut",
+        "type": "object"
+      },
+      "PortalInvoiceReceiptOut": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "date",
+          "amount"
+        ],
+        "title": "PortalInvoiceReceiptOut",
+        "type": "object"
+      },
+      "PortalIssueCodeIn": {
+        "properties": {
+          "payment_id": {
+            "title": "Payment Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "payment_id"
+        ],
+        "title": "PortalIssueCodeIn",
+        "type": "object"
+      },
+      "PortalIssuedCodeOut": {
+        "properties": {
+          "code": {
+            "description": "Shown once; only its hash is stored",
+            "title": "Code",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "expires_at",
+          "file_no"
+        ],
+        "title": "PortalIssuedCodeOut",
+        "type": "object"
+      },
+      "PortalLabInstructionOut": {
+        "properties": {
+          "instructions_ar": {
+            "title": "Instructions Ar",
+            "type": "string"
+          },
+          "instructions_en": {
+            "title": "Instructions En",
+            "type": "string"
+          },
+          "line_id": {
+            "title": "Line Id",
+            "type": "integer"
+          },
+          "ordered_at": {
+            "format": "date-time",
+            "title": "Ordered At",
+            "type": "string"
+          },
+          "test_name_ar": {
+            "title": "Test Name Ar",
+            "type": "string"
+          },
+          "test_name_en": {
+            "title": "Test Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "test_name_ar",
+          "test_name_en",
+          "instructions_ar",
+          "instructions_en",
+          "ordered_at"
+        ],
+        "title": "PortalLabInstructionOut",
+        "type": "object"
+      },
+      "PortalLoginIn": {
+        "properties": {
+          "code": {
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "file_no": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "File No",
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_no",
+          "phone",
+          "code"
+        ],
+        "title": "PortalLoginIn",
+        "type": "object"
+      },
+      "PortalMeOut": {
+        "properties": {
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "idle_seconds": {
+            "description": "The session ends after this long without use",
+            "title": "Idle Seconds",
+            "type": "integer"
+          },
+          "phone_masked": {
+            "title": "Phone Masked",
+            "type": "string"
+          },
+          "sex": {
+            "title": "Sex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_no",
+          "full_name_ar",
+          "full_name_en",
+          "sex",
+          "date_of_birth",
+          "phone_masked",
+          "idle_seconds"
+        ],
+        "title": "PortalMeOut",
+        "type": "object"
+      },
+      "PortalPatientHeadOut": {
+        "properties": {
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "file_no": {
+            "title": "File No",
+            "type": "string"
+          },
+          "full_name_ar": {
+            "title": "Full Name Ar",
+            "type": "string"
+          },
+          "full_name_en": {
+            "title": "Full Name En",
+            "type": "string"
+          },
+          "sex": {
+            "title": "Sex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_no",
+          "full_name_ar",
+          "full_name_en",
+          "sex",
+          "date_of_birth"
+        ],
+        "title": "PortalPatientHeadOut",
+        "type": "object"
+      },
+      "PortalPersonNameOut": {
+        "properties": {
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name_ar",
+          "name_en"
+        ],
+        "title": "PortalPersonNameOut",
+        "type": "object"
+      },
+      "PortalPrescriptionItemOut": {
+        "properties": {
+          "as_needed": {
+            "title": "As Needed",
+            "type": "boolean"
+          },
+          "dose": {
+            "title": "Dose",
+            "type": "string"
+          },
+          "duration_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Days"
+          },
+          "frequency_code": {
+            "title": "Frequency Code",
+            "type": "string"
+          },
+          "frequency_per_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Per Day"
+          },
+          "instructions": {
+            "title": "Instructions",
+            "type": "string"
+          },
+          "line_id": {
+            "title": "Line Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "route": {
+            "title": "Route",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "dispensed",
+              "partly_dispensed",
+              "not_dispensed"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "name_ar",
+          "name_en",
+          "dose",
+          "route",
+          "frequency_code",
+          "frequency_per_day",
+          "duration_days",
+          "as_needed",
+          "instructions",
+          "quantity",
+          "state"
+        ],
+        "title": "PortalPrescriptionItemOut",
+        "type": "object"
+      },
+      "PortalPrescriptionVisitOut": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PortalPrescriptionItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "prescriber": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalPersonNameOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "visit_number",
+          "date",
+          "prescriber",
+          "items"
+        ],
+        "title": "PortalPrescriptionVisitOut",
+        "type": "object"
+      },
+      "PortalPrescriptionsOut": {
+        "properties": {
+          "lab_instructions": {
+            "items": {
+              "$ref": "#/components/schemas/PortalLabInstructionOut"
+            },
+            "title": "Lab Instructions",
+            "type": "array"
+          },
+          "visits": {
+            "items": {
+              "$ref": "#/components/schemas/PortalPrescriptionVisitOut"
+            },
+            "title": "Visits",
+            "type": "array"
+          }
+        },
+        "required": [
+          "visits",
+          "lab_instructions"
+        ],
+        "title": "PortalPrescriptionsOut",
+        "type": "object"
+      },
+      "PortalReceiptDetailOut": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "center": {
+            "$ref": "#/components/schemas/PortalCenterOut"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/PortalReceiptInvoiceOut"
+            },
+            "title": "Invoices",
+            "type": "array"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "valid",
+              "pending",
+              "void"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "to_credit": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "To Credit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "date",
+          "amount",
+          "method",
+          "status",
+          "center",
+          "invoices",
+          "to_credit"
+        ],
+        "title": "PortalReceiptDetailOut",
+        "type": "object"
+      },
+      "PortalReceiptInvoiceOut": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "amount"
+        ],
+        "title": "PortalReceiptInvoiceOut",
+        "type": "object"
+      },
+      "PortalReceiptOut": {
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "valid",
+              "pending",
+              "void"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "date",
+          "amount",
+          "method",
+          "status"
+        ],
+        "title": "PortalReceiptOut",
+        "type": "object"
+      },
+      "PortalResultOut": {
+        "properties": {
+          "abnormal": {
+            "title": "Abnormal",
+            "type": "boolean"
+          },
+          "amended": {
+            "description": "This approved result corrects an earlier one",
+            "title": "Amended",
+            "type": "boolean"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "center": {
+            "$ref": "#/components/schemas/PortalCenterOut"
+          },
+          "comment": {
+            "title": "Comment",
+            "type": "string"
+          },
+          "line_id": {
+            "title": "Line Id",
+            "type": "integer"
+          },
+          "ordered_at": {
+            "format": "date-time",
+            "title": "Ordered At",
+            "type": "string"
+          },
+          "ordered_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalPersonNameOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PortalPatientHeadOut"
+          },
+          "test_name_ar": {
+            "title": "Test Name Ar",
+            "type": "string"
+          },
+          "test_name_en": {
+            "title": "Test Name En",
+            "type": "string"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/PortalResultValueOut"
+            },
+            "title": "Values",
+            "type": "array"
+          },
+          "visit_number": {
+            "title": "Visit Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "test_name_ar",
+          "test_name_en",
+          "ordered_at",
+          "approved_at",
+          "amended",
+          "abnormal",
+          "center",
+          "patient",
+          "visit_number",
+          "ordered_by",
+          "comment",
+          "values"
+        ],
+        "title": "PortalResultOut",
+        "type": "object"
+      },
+      "PortalResultSummaryOut": {
+        "properties": {
+          "abnormal": {
+            "title": "Abnormal",
+            "type": "boolean"
+          },
+          "amended": {
+            "description": "This approved result corrects an earlier one",
+            "title": "Amended",
+            "type": "boolean"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "line_id": {
+            "title": "Line Id",
+            "type": "integer"
+          },
+          "ordered_at": {
+            "format": "date-time",
+            "title": "Ordered At",
+            "type": "string"
+          },
+          "test_name_ar": {
+            "title": "Test Name Ar",
+            "type": "string"
+          },
+          "test_name_en": {
+            "title": "Test Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "test_name_ar",
+          "test_name_en",
+          "ordered_at",
+          "approved_at",
+          "amended",
+          "abnormal"
+        ],
+        "title": "PortalResultSummaryOut",
+        "type": "object"
+      },
+      "PortalResultValueOut": {
+        "properties": {
+          "flag": {
+            "title": "Flag",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "parameter_code": {
+            "title": "Parameter Code",
+            "type": "string"
+          },
+          "reference_high": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference High"
+          },
+          "reference_low": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Low"
+          },
+          "reference_text": {
+            "title": "Reference Text",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parameter_code",
+          "name_ar",
+          "name_en",
+          "value",
+          "unit",
+          "reference_low",
+          "reference_high",
+          "reference_text",
+          "flag"
+        ],
+        "title": "PortalResultValueOut",
+        "type": "object"
+      },
+      "PortalSessionOut": {
+        "properties": {
+          "me": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalMeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signed_in": {
+            "title": "Signed In",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "signed_in",
+          "me"
+        ],
+        "title": "PortalSessionOut",
+        "type": "object"
+      },
+      "PortalSlotOut": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "PortalSlotOut",
+        "type": "object"
+      },
+      "PortalSlotsOut": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/PortalDoctorOut"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/PortalSlotOut"
+            },
+            "title": "Slots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "doctor",
+          "day",
+          "slots"
+        ],
+        "title": "PortalSlotsOut",
+        "type": "object"
+      },
+      "PortalSummaryOut": {
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/PortalBalanceOut"
+          },
+          "latest_results": {
+            "items": {
+              "$ref": "#/components/schemas/PortalResultSummaryOut"
+            },
+            "title": "Latest Results",
+            "type": "array"
+          },
+          "next_appointment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalAppointmentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "next_appointment",
+          "latest_results",
+          "balance"
+        ],
+        "title": "PortalSummaryOut",
+        "type": "object"
+      },
+      "PortalVerifyOut": {
+        "description": "The public check of a printed receipt: nothing that identifies a patient.",
+        "properties": {
+          "amount": {
+            "examples": [
+              "15000.00"
+            ],
+            "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "center_name_ar": {
+            "title": "Center Name Ar",
+            "type": "string"
+          },
+          "center_name_en": {
+            "title": "Center Name En",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "patient_initials": {
+            "title": "Patient Initials",
+            "type": "string"
+          },
+          "receipt_number": {
+            "title": "Receipt Number",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "valid",
+              "pending",
+              "void"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "center_name_ar",
+          "center_name_en",
+          "receipt_number",
+          "date",
+          "amount",
+          "status",
+          "patient_initials"
+        ],
+        "title": "PortalVerifyOut",
+        "type": "object"
+      },
       "PreApprovalIn": {
         "properties": {
           "reference": {
@@ -20133,8 +21463,13 @@
             "$ref": "#/components/schemas/PaymentOut"
           },
           "verify_code": {
-            "description": "Encoded in the receipt's QR (FEATURES 6.9)",
+            "description": "Printed under the QR; the staff check reads it (FEATURES 6.9)",
             "title": "Verify Code",
+            "type": "string"
+          },
+          "verify_token": {
+            "description": "The receipt's public check token: the QR opens /verify/<token>?r=<number> (FEATURES 15.1, ADR 0016)",
+            "title": "Verify Token",
             "type": "string"
           }
         },
@@ -20143,7 +21478,8 @@
           "payment",
           "invoices",
           "cashier",
-          "verify_code"
+          "verify_code",
+          "verify_token"
         ],
         "title": "ReceiptOut",
         "type": "object"
@@ -27351,6 +28687,11 @@
       }
     },
     "securitySchemes": {
+      "PortalAuth": {
+        "in": "cookie",
+        "name": "hospital_portal",
+        "type": "apiKey"
+      },
       "SessionAuth": {
         "in": "cookie",
         "name": "sessionid",
@@ -54638,6 +55979,657 @@
         ]
       }
     },
+    "/api/portal/access-codes": {
+      "post": {
+        "description": "Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.",
+        "operationId": "portal_issue_access_code",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalIssueCodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalIssuedCodeOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Issue a portal access code for the patient of a receipt (shown once)",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/appointments": {
+      "get": {
+        "operationId": "portal_list_appointments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalAppointmentsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "The patient's upcoming and past appointments",
+        "tags": [
+          "portal"
+        ]
+      },
+      "post": {
+        "description": "409 `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, `APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule.",
+        "operationId": "portal_book_appointment",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalBookIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalAppointmentOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "Book a free slot of a doctor's schedule",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/appointments/{appointment_id}/cancel": {
+      "post": {
+        "description": "409 `PORTAL_CANCEL_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`; 404 if not one's own.",
+        "operationId": "portal_cancel_appointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalAppointmentOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "Cancel one's own future appointment before the cut-off",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/balance": {
+      "get": {
+        "operationId": "portal_get_balance",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalBalanceOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "What the patient owes and holds as credit",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/doctors": {
+      "get": {
+        "operationId": "portal_list_doctors",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PortalDoctorOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "Doctors who take online bookings",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/doctors/{doctor_id}/days": {
+      "get": {
+        "operationId": "portal_list_booking_days",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doctor_id",
+            "required": true,
+            "schema": {
+              "title": "Doctor Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "Days with free slots, from today to the booking horizon",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/doctors/{doctor_id}/slots": {
+      "get": {
+        "operationId": "portal_list_slots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doctor_id",
+            "required": true,
+            "schema": {
+              "title": "Doctor Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "on",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "On",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalSlotsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "A doctor's free slots on one day that can be booked online",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/invoices": {
+      "get": {
+        "operationId": "portal_list_invoices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PortalInvoiceOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "The patient's approved invoices: their share, paid and outstanding",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/invoices/{invoice_id}": {
+      "get": {
+        "operationId": "portal_get_invoice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "title": "Invoice Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalInvoiceDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "One approved invoice of the patient, with lines and receipts",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/me": {
+      "get": {
+        "operationId": "portal_get_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalMeOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "The signed-in patient's profile summary",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
     "/api/portal/ping": {
       "get": {
         "operationId": "portal_get_ping",
@@ -54680,6 +56672,481 @@
           }
         ],
         "summary": "Check that the /api/portal router is reachable",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/prescriptions": {
+      "get": {
+        "operationId": "portal_get_prescriptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalPrescriptionsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "Prescriptions with dosing instructions, and lab preparation instructions",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/receipts": {
+      "get": {
+        "operationId": "portal_list_receipts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PortalReceiptOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "The patient's receipts with their status",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/receipts/{payment_id}": {
+      "get": {
+        "operationId": "portal_get_receipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "title": "Payment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalReceiptDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "One receipt of the patient and the invoices it paid",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/results": {
+      "get": {
+        "operationId": "portal_list_results",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PortalResultSummaryOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "The patient's approved lab results, newest first",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/results/{line_id}": {
+      "get": {
+        "operationId": "portal_get_result",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "line_id",
+            "required": true,
+            "schema": {
+              "title": "Line Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalResultOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "One approved lab result with its values (404 until approved, or if not one's own)",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/session": {
+      "get": {
+        "description": "Always 200, so the sign-in page can ask without an error: `signed_in` false and `me` null without a live session (an idle or revoked one is ended here).",
+        "operationId": "portal_get_session",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalSessionOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Whether this browser holds a live portal session, and whose",
+        "tags": [
+          "portal"
+        ]
+      },
+      "post": {
+        "description": "Sets the portal session cookie (HttpOnly, SameSite=Strict, path /api/portal). Every refusal is 401 `PORTAL_INVALID_CREDENTIALS`; 423 `PORTAL_LOCKED` after repeated failures for a file number; 429 `RATE_LIMITED` for an address. Needs X-CSRFToken.",
+        "operationId": "portal_login",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalLoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalMeOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "423": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Locked"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Patient sign-in with file number, phone and the code printed on a receipt",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/session/logout": {
+      "post": {
+        "operationId": "portal_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "summary": "End the portal session (idempotent) and clear its cookie",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/summary": {
+      "get": {
+        "operationId": "portal_get_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalSummaryOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "Home cards: next appointment, latest results, balance",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/verify": {
+      "get": {
+        "description": "Center, number, day, amount, status (valid, pending, void) and the payer's initials. 404 when the number is unknown or the token is not its own (not told apart); 429 after too many checks from one address.",
+        "operationId": "portal_verify_receipt",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "receipt",
+            "required": true,
+            "schema": {
+              "maxLength": 40,
+              "minLength": 1,
+              "title": "Receipt",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalVerifyOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Public check of a printed receipt by its number and QR token",
         "tags": [
           "portal"
         ]

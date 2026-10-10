@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { cn } from "@/lib/utils";
+import { ReceiptPortalCode } from "@/portal/components/ReceiptPortalCode";
+import { receiptVerifyUrl } from "@/portal/lib/ui";
 
 import { useReceipt } from "../api";
 import { PrintFrame, type PrintFormat } from "../components/PrintFrame";
@@ -139,8 +141,9 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
         ) : null}
       </dl>
       <div className="flex flex-col items-center gap-1 border-t border-border pt-3">
+        {/* The QR opens the public check page (FEATURES 15.1); staff scanners read it too. */}
         <QrCode
-          value={receipt.verify_code}
+          value={receiptVerifyUrl(receipt.verify_token, p.number)}
           label={t("receipt.qrLabel")}
           className={format === "thermal" ? "size-32" : "size-36"}
         />
@@ -149,6 +152,7 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
         </bdi>
         <p className="text-center text-xs text-muted">{t("receipt.verifyHint")}</p>
       </div>
+      <ReceiptPortalCode paymentId={p.id} compact={format === "thermal"} />
     </div>
   );
 }

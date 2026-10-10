@@ -53,6 +53,10 @@ UNTRACKED = {
     ("core", "LoginThrottle"),
     ("pharmacy", "StockBalance"),  # projection of StockMove, written only by its trigger
     ("imports", "ImportRow"),  # bulk staging rows of a tracked ImportJob
+    # Patient portal (ADR 0016): abuse counters like LoginThrottle; session rows are the sign-in
+    # record themselves (touched on use), with sign-in and sign-out in append-only PortalEvent.
+    ("portal", "PortalThrottle"),
+    ("portal", "PortalSession"),
 }
 
 #: (table, trigger name) that ARCHITECTURE 4.9 and invariants 1, 3, 5 rely on.
