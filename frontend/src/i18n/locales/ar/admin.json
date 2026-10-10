@@ -349,7 +349,8 @@
       "result_amend": "تعديل نتيجة معمل",
       "sample_reject": "رفض عينة معمل",
       "patient_merge": "دمج ملفات المرضى",
-      "appointment_cancel": "إلغاء موعد"
+      "appointment_cancel": "إلغاء موعد",
+      "admission_cancel": "تنويم بالخطأ"
     }
   },
   "catalog": {

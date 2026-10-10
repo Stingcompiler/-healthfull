@@ -117,3 +117,18 @@ register_permission(
     label_en="Discharge an inpatient",
     default_roles={DOCTOR, NURSE, ADMIN},
 )
+
+register_permission(
+    "visits.cancel_admission",
+    label_ar="إلغاء تنويم تم بالخطأ",
+    label_en="Cancel an admission made in error",
+    # The ward nurse who recorded it; a second person approves (ADR 0018).
+    default_roles={NURSE, MANAGER, ADMIN},
+)
+
+register_permission(
+    "visits.approve_admission_cancel",
+    label_ar="اعتماد إلغاء تنويم تم بالخطأ",
+    label_en="Approve cancelling an admission made in error",
+    default_roles={CASHIER_SUPERVISOR, MANAGER, ADMIN},
+)

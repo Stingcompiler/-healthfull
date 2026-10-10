@@ -22,6 +22,7 @@ export type BedStatus = Bed["status"];
 export type Occupant = S["InpatientOccupantOut"];
 export type Admission = S["InpatientAdmissionOut"];
 export type AdmitInput = S["InpatientAdmitIn"];
+export type CancelAdmissionInput = S["InpatientCancelIn"];
 export type PatientRow = S["PatientListOut"];
 export type VisitRow = S["VisitOut"];
 export type VisitDoctor = S["VisitDoctorOut"];

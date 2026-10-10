@@ -411,7 +411,8 @@ class Sequence(models.Model):
 
 
 class ReasonCategory(models.TextChoices):
-    """What a reason code explains. Seeded by migrations ``0007_seed_reason_codes`` and ``0009``."""
+    """What a reason code explains. Seeded by migrations ``0007_seed_reason_codes``, ``0009``
+    and ``0012``."""
 
     LINE_CANCEL = "line_cancel", "Service line cancellation"
     VISIT_CANCEL = "visit_cancel", "Visit cancellation"
@@ -428,6 +429,7 @@ class ReasonCategory(models.TextChoices):
     SAMPLE_REJECT = "sample_reject", "Lab sample rejection"
     PATIENT_MERGE = "patient_merge", "Patient file merge"
     APPOINTMENT_CANCEL = "appointment_cancel", "Appointment cancellation"
+    ADMISSION_CANCEL = "admission_cancel", "Admission made in error"
 
 
 @pghistory.track(*_full_history())

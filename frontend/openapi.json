@@ -9418,6 +9418,54 @@
             ],
             "description": "The current bed (last bed when out)"
           },
+          "cancel_approved_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpatientPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancel_note": {
+            "title": "Cancel Note",
+            "type": "string"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "admission_cancel reason code",
+            "title": "Cancel Reason"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "cancelled_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InpatientPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "diagnosis": {
             "title": "Diagnosis",
             "type": "string"
@@ -9496,7 +9544,12 @@
           "discharged_at",
           "discharged_by",
           "discharge_summary",
-          "nights_charged"
+          "nights_charged",
+          "cancelled_at",
+          "cancelled_by",
+          "cancel_approved_by",
+          "cancel_reason",
+          "cancel_note"
         ],
         "title": "InpatientAdmissionOut",
         "type": "object"
@@ -9637,6 +9690,39 @@
         "title": "InpatientBoardOut",
         "type": "object"
       },
+      "InpatientCancelIn": {
+        "description": "Cancel an admission made in error (ADR 0018): an ``admission_cancel`` reason code, the\nwords, and a second person's credentials (``visits.approve_admission_cancel``).",
+        "properties": {
+          "approver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApproverIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required: someone other than the caller approves"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason_code"
+        ],
+        "title": "InpatientCancelIn",
+        "type": "object"
+      },
       "InpatientChargeOut": {
         "properties": {
           "admissions": {
@@ -9729,6 +9815,11 @@
             "title": "Nights Due",
             "type": "integer"
           },
+          "nights_invoiced": {
+            "description": "Charged nights on an approved invoice and not credited: they block cancelling the admission in error until the cashier credits them",
+            "title": "Nights Invoiced",
+            "type": "integer"
+          },
           "number": {
             "title": "Number",
             "type": "string"
@@ -9757,7 +9848,8 @@
           "diagnosis",
           "nights_charged",
           "nights_due",
-          "nights_at_discharge"
+          "nights_at_discharge",
+          "nights_invoiced"
         ],
         "title": "InpatientOccupantOut",
         "type": "object"
@@ -20980,7 +21072,8 @@
               "result_amend",
               "sample_reject",
               "patient_merge",
-              "appointment_cancel"
+              "appointment_cancel",
+              "admission_cancel"
             ],
             "title": "Category",
             "type": "string"
@@ -21055,7 +21148,8 @@
                   "result_amend",
                   "sample_reject",
                   "patient_merge",
-                  "appointment_cancel"
+                  "appointment_cancel",
+                  "admission_cancel"
                 ],
                 "type": "string"
               },
@@ -40931,7 +41025,8 @@
                     "result_amend",
                     "sample_reject",
                     "patient_merge",
-                    "appointment_cancel"
+                    "appointment_cancel",
+                    "admission_cancel"
                   ],
                   "type": "string"
                 },
@@ -63023,6 +63118,104 @@
           }
         ],
         "summary": "One admission with its current bed and the nights charged",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/inpatient/admissions/{admission_id}/cancel": {
+      "post": {
+        "description": "Frees the bed and voids the nights still unbilled. 409 NOT_ADMITTED, ADMISSION_NIGHTS_INVOICED (credit them at the cashier first), SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED.",
+        "operationId": "visits_cancel_admission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "admission_id",
+            "required": true,
+            "schema": {
+              "title": "Admission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InpatientCancelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InpatientAdmissionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Cancel an admission made in error, approved by a second person (ADR 0018)",
         "tags": [
           "visits"
         ]

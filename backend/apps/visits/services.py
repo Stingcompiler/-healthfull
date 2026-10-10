@@ -51,10 +51,16 @@ from apps.core.models import (
     Room,
     User,
 )
-from apps.core.services import next_number, require_permission, resolve_reason
+from apps.core.services import (
+    holds_permission,
+    next_number,
+    require_permission,
+    resolve_reason,
+)
 from apps.orders.models import BillingStatus, FulfilmentStatus, OrderSource, ServiceLine
 from apps.patients import services as patient_services
 from apps.patients.models import Patient, PatientCoverage
+from apps.payments.approvals import ApproverLogin, resolve_second_approver
 from apps.visits.models import (
     ACTIVE_QUEUE_STATUSES,
     Admission,
@@ -74,7 +80,10 @@ from apps.visits.models import (
 )
 from apps.visits.schedules import SessionInput, replace_weekly_schedule, schedule_prefetch
 from domain import coverage as dc
+from domain import inpatient as dinp
 from domain import queue as dq
+from domain import service_line as dsl
+from domain.audit import second_approval
 from domain.errors import DomainError
 
 __all__ = [
@@ -105,6 +114,8 @@ __all__ = [
     "book_appointment",
     "call_next",
     "call_patient",
+    "cancel_admission",
+    "cancel_admission_at_desk",
     "cancel_appointment",
     "cancel_queue_entry",
     "cancel_visit",
@@ -992,6 +1003,7 @@ class BedView:
     nights_charged: int = 0
     nights_due: int = 0
     nights_at_discharge: int = 0
+    nights_invoiced: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -1037,10 +1049,13 @@ def bed_board(*, today: date | None = None) -> BedBoard:
         )
     }
     charged: dict[int, set[date]] = {}
-    for adm_id, day_charged in BedCharge.objects.filter(
+    invoiced: dict[int, int] = {}
+    for adm_id, day_charged, billing in BedCharge.objects.filter(
         admission__status=AdmissionStatus.ADMITTED
-    ).values_list("admission_id", "charge_date"):
+    ).values_list("admission_id", "charge_date", "service_line__billing_status"):
         charged.setdefault(adm_id, set()).add(day_charged)
+        if billing in dsl.BILLED:
+            invoiced[adm_id] = invoiced.get(adm_id, 0) + 1
     wards: dict[int | None, WardView] = {}
     counts = dict.fromkeys(BedStatus.values, 0)
     total_due = 0
@@ -1061,6 +1076,7 @@ def bed_board(*, today: date | None = None) -> BedBoard:
                 nights_charged=len(done),
                 nights_due=due,
                 nights_at_discharge=at_discharge,
+                nights_invoiced=invoiced.get(adm.pk, 0),
             )
         ward = wards.setdefault(bed.room_id, WardView(room=bed.room))
         ward.beds.append(view)
@@ -1219,6 +1235,125 @@ def discharge(
         if visit.status == VisitStatus.OPEN:
             close_visit(visit, actor=actor, now=when)
     return locked
+
+
+def cancel_admission(
+    admission: Admission,
+    *,
+    actor: User,
+    reason_code: str,
+    note: str = "",
+    approver: User | None,
+    at: datetime | None = None,
+) -> Admission:
+    """Cancel an admission made in error (FEATURES 10.5, invariant 4, ADR 0018).
+
+    The actor (``visits.cancel_admission``) gives an ``admission_cancel`` reason and a second
+    person (``approver``, holding ``visits.approve_admission_cancel``) approves; who, who
+    approved, why and when are stored on the admission. The bed is freed, the stay ends,
+    and the bed nights still unbilled are voided (they leave draft invoices). A night already
+    on an approved invoice blocks the cancellation: the invoice is frozen (invariant 2), so
+    the cashier credits it first. The stay's perform-first authorization is revoked. An
+    inpatient visit opened for the admission is cancelled when nothing else was done on it,
+    else closed; an outpatient visit the admission was made on stays as it is.
+
+    Raises:
+        PermissionRequired: the actor lacks ``visits.cancel_admission``.
+        DomainError: ``SECOND_APPROVER_REQUIRED``, ``APPROVER_NOT_PERMITTED``,
+            ``NOT_ADMITTED``, ``ADMISSION_NIGHTS_INVOICED``, reason errors.
+    """
+    require_permission(actor, "visits.cancel_admission")
+    reason = resolve_reason(reason_code, "admission_cancel", note)
+    when = _now(at)
+    text = note.strip()
+    approval = second_approval(
+        actor.pk, None if approver is None else approver.pk, when, text, reason.code
+    )
+    if approver is None or not holds_permission(approver, "visits.approve_admission_cancel"):
+        raise DomainError(
+            "APPROVER_NOT_PERMITTED",
+            "The approver may not approve this action",
+            permission="visits.approve_admission_cancel",
+        )
+    line_reason = resolve_reason("ORDER_ERROR", "line_cancel")
+    with (
+        transaction.atomic(),
+        pghistory.context(user=actor.pk, reason=f"admission in error: {reason.code} {text}"),
+    ):
+        _orders().lock_patient(admission.patient_id)
+        locked = Admission.objects.select_for_update().get(pk=admission.pk)
+        if locked.status != AdmissionStatus.ADMITTED:
+            raise DomainError("NOT_ADMITTED", "The patient is not admitted")
+        nights = _orders().lock_lines(
+            BedCharge.objects.filter(admission=locked).values_list("service_line_id", flat=True)
+        )
+        plan = dinp.plan_admission_cancel(
+            dinp.NightLine(
+                ln.pk,
+                dsl.BillingStatus(ln.billing_status),
+                dsl.FulfilmentStatus(ln.fulfilment_status),
+            )
+            for ln in nights
+        )
+        stay = BedStay.objects.select_for_update().get(admission=locked, ended_at__isnull=True)
+        stay.ended_at = max(when, stay.started_at + timedelta(seconds=1))
+        stay.save(update_fields=["ended_at"])
+        Bed.objects.filter(pk=stay.bed_id).update(status=BedStatus.AVAILABLE)
+        locked.status = AdmissionStatus.CANCELLED
+        locked.cancelled_at = when
+        locked.cancelled_by = actor
+        locked.cancel_approved_by = approver
+        locked.cancel_reason = reason
+        locked.cancel_note = text
+        locked.save(
+            update_fields=[
+                "status",
+                "cancelled_at",
+                "cancelled_by",
+                "cancel_approved_by",
+                "cancel_reason",
+                "cancel_note",
+                "updated_at",
+            ]
+        )
+        line_note = f"admission {locked.number} made in error ({reason.code}) {text}".strip()
+        for ln in nights:
+            if ln.pk in plan.void:
+                _orders().void_line_in_error(
+                    ln, line_reason, actor, approval=approval, note=line_note
+                )
+        if locked.authorization_id is not None:
+            auth = locked.authorization
+            if auth is not None and auth.revoked_at is None:
+                _orders().end_stay_authorization(auth, actor=actor, note=line_note)
+        visit = Visit.objects.get(pk=locked.visit_id)
+        if visit.status == VisitStatus.OPEN and visit.visit_type == VisitType.INPATIENT:
+            busy = ServiceLine.objects.filter(visit=visit).exclude(
+                fulfilment_status=FulfilmentStatus.CANCELLED
+            )
+            if busy.exists():
+                close_visit(visit, actor=actor, now=when)
+            else:
+                cancel_visit(visit, actor=actor, reason_code="REGISTRATION_ERROR", note=line_note)
+    return locked
+
+
+def cancel_admission_at_desk(
+    admission: Admission,
+    *,
+    actor: User,
+    reason_code: str,
+    note: str,
+    approver: ApproverLogin | None,
+) -> Admission:
+    """:func:`cancel_admission` with the approver's credentials typed into the nurse's dialog
+    (ADR 0009 desk approval, ADR 0018 second person)."""
+    chosen = resolve_second_approver(
+        approver, actor=actor, permission="visits.approve_admission_cancel"
+    )
+    return cancel_admission(
+        admission, actor=actor, reason_code=reason_code, note=note, approver=chosen
+    )
 
 
 def change_coverage(

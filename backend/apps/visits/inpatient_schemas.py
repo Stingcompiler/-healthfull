@@ -11,6 +11,7 @@ from typing import Any, Literal
 
 from ninja import Field, Schema
 
+from apps.billing.schemas import ApproverIn
 from apps.patients.schemas import PatientBriefOut
 from apps.visits.models import Admission, Bed, BedCharge, BedStay
 from apps.visits.services import BedBoard, BedView
@@ -48,6 +49,13 @@ class InpatientOccupantOut(Schema):
     nights_due: int = Field(..., description="Passed nights not charged yet (the daily run)")
     nights_at_discharge: int = Field(
         ..., description="Nights a discharge now would charge (at least one for the stay)"
+    )
+    nights_invoiced: int = Field(
+        ...,
+        description=(
+            "Charged nights on an approved invoice and not credited: they block cancelling "
+            "the admission in error until the cashier credits them"
+        ),
     )
 
 
@@ -94,6 +102,11 @@ class InpatientAdmissionOut(Schema):
     discharged_by: InpatientPersonOut | None
     discharge_summary: str
     nights_charged: int
+    cancelled_at: datetime | None
+    cancelled_by: InpatientPersonOut | None
+    cancel_approved_by: InpatientPersonOut | None
+    cancel_reason: str | None = Field(..., description="admission_cancel reason code")
+    cancel_note: str
 
 
 class InpatientAdmitIn(Schema):
@@ -112,6 +125,17 @@ class InpatientTransferIn(Schema):
 
 class InpatientDischargeIn(Schema):
     summary: str = Field("", max_length=2000)
+
+
+class InpatientCancelIn(Schema):
+    """Cancel an admission made in error (ADR 0018): an ``admission_cancel`` reason code, the
+    words, and a second person's credentials (``visits.approve_admission_cancel``)."""
+
+    reason_code: str = Field(..., min_length=1, max_length=40)
+    note: str = Field("", max_length=500)
+    approver: ApproverIn | None = Field(
+        None, description="Required: someone other than the caller approves"
+    )
 
 
 class InpatientBedStatusIn(Schema):
@@ -151,6 +175,7 @@ def _occupant(view: BedView) -> dict[str, Any] | None:
         "nights_charged": view.nights_charged,
         "nights_due": view.nights_due,
         "nights_at_discharge": view.nights_at_discharge,
+        "nights_invoiced": view.nights_invoiced,
     }
 
 
@@ -184,7 +209,14 @@ def board_out(board: BedBoard) -> dict[str, Any]:
 
 def admission_out(admission: Admission) -> dict[str, Any]:
     adm = Admission.objects.select_related(
-        "visit", "patient", "admitted_by", "admitting_doctor__user", "discharged_by"
+        "visit",
+        "patient",
+        "admitted_by",
+        "admitting_doctor__user",
+        "discharged_by",
+        "cancelled_by",
+        "cancel_approved_by",
+        "cancel_reason",
     ).get(pk=admission.pk)
     stay = (
         BedStay.objects.filter(admission=adm)
@@ -208,6 +240,13 @@ def admission_out(admission: Admission) -> dict[str, Any]:
         "discharged_by": None if adm.discharged_by is None else _person(adm.discharged_by),
         "discharge_summary": adm.discharge_summary,
         "nights_charged": BedCharge.objects.filter(admission=adm).count(),
+        "cancelled_at": adm.cancelled_at,
+        "cancelled_by": None if adm.cancelled_by is None else _person(adm.cancelled_by),
+        "cancel_approved_by": (
+            None if adm.cancel_approved_by is None else _person(adm.cancel_approved_by)
+        ),
+        "cancel_reason": None if adm.cancel_reason is None else adm.cancel_reason.code,
+        "cancel_note": adm.cancel_note,
     }
 
 

@@ -5689,6 +5689,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/inpatient/admissions/{admission_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel an admission made in error, approved by a second person (ADR 0018)
+         * @description Frees the bed and voids the nights still unbilled. 409 NOT_ADMITTED, ADMISSION_NIGHTS_INVOICED (credit them at the cashier first), SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED.
+         */
+        post: operations["visits_cancel_admission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/visits/inpatient/admissions/{admission_id}/discharge": {
         parameters: {
             query?: never;
@@ -9672,6 +9692,17 @@ export interface components {
             admitting_doctor: components["schemas"]["InpatientPersonOut"];
             /** @description The current bed (last bed when out) */
             bed: components["schemas"]["InpatientRefOut"] | null;
+            cancel_approved_by: components["schemas"]["InpatientPersonOut"] | null;
+            /** Cancel Note */
+            cancel_note: string;
+            /**
+             * Cancel Reason
+             * @description admission_cancel reason code
+             */
+            cancel_reason: string | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            cancelled_by: components["schemas"]["InpatientPersonOut"] | null;
             /** Diagnosis */
             diagnosis: string;
             /** Discharge Summary */
@@ -9749,6 +9780,22 @@ export interface components {
             /** Wards */
             wards: components["schemas"]["InpatientWardOut"][];
         };
+        /**
+         * InpatientCancelIn
+         * @description Cancel an admission made in error (ADR 0018): an ``admission_cancel`` reason code, the
+         *     words, and a second person's credentials (``visits.approve_admission_cancel``).
+         */
+        InpatientCancelIn: {
+            /** @description Required: someone other than the caller approves */
+            approver?: components["schemas"]["ApproverIn"] | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason Code */
+            reason_code: string;
+        };
         /** InpatientChargeOut */
         InpatientChargeOut: {
             /**
@@ -9808,6 +9855,11 @@ export interface components {
              * @description Passed nights not charged yet (the daily run)
              */
             nights_due: number;
+            /**
+             * Nights Invoiced
+             * @description Charged nights on an approved invoice and not credited: they block cancelling the admission in error until the cashier credits them
+             */
+            nights_invoiced: number;
             /** Number */
             number: string;
             patient: components["schemas"]["PatientBriefOut"];
@@ -13928,7 +13980,7 @@ export interface components {
              * Category
              * @enum {string}
              */
-            category: "line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel";
+            category: "line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel" | "admission_cancel";
             /** Code */
             code: string;
             /** Label Ar */
@@ -13951,7 +14003,7 @@ export interface components {
             /** Active */
             active?: boolean | null;
             /** Category */
-            category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel") | null;
+            category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel" | "admission_cancel") | null;
         };
         /** ReasonCodeOut */
         ReasonCodeOut: {
@@ -25327,7 +25379,7 @@ export interface operations {
     core_list_reason_codes: {
         parameters: {
             query?: {
-                category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel") | null;
+                category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel" | "admission_cancel") | null;
                 active?: boolean | null;
             };
             header?: never;
@@ -39463,6 +39515,77 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_cancel_admission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                admission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InpatientCancelIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientAdmissionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -224,5 +224,11 @@
     "discardTitle": "Discard unsaved changes?",
     "discardDescription": "The changes you made here are not saved yet and will be lost.",
     "discard": "Discard changes"
+  },
+  "approver": {
+    "title": "Second person's approval",
+    "hint": "Someone else who may approve this enters their own username and password. It is recorded as their approval.",
+    "username": "Approver's username",
+    "password": "Approver's password"
   }
 }

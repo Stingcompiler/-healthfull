@@ -337,7 +337,8 @@
       "result_amend": "Lab result amendment",
       "sample_reject": "Lab sample rejection",
       "patient_merge": "Patient file merge",
-      "appointment_cancel": "Appointment cancellation"
+      "appointment_cancel": "Appointment cancellation",
+      "admission_cancel": "Admission made in error"
     }
   },
   "catalog": {
