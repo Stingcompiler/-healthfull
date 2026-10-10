@@ -210,4 +210,56 @@ if sql "$TGT" "UPDATE billing_invoice SET total = 1" 2>/dev/null; then
 fi
 pass "restore-dump restores beside the live DB, swaps names, keeps the old DB and triggers"
 
+# ---------------------------------------------------------------- 7. manual backup requests
+# The status page only inserts a row (apps.ops BackupRequest); backup-requests.sh picks it up.
+sql "$SRC" "
+CREATE TABLE ops_backuprequest (
+  id bigserial PRIMARY KEY, requested_at timestamptz NOT NULL DEFAULT now(), note text NOT NULL DEFAULT '',
+  status varchar(20) NOT NULL DEFAULT 'pending', started_at timestamptz, finished_at timestamptz,
+  dump_file varchar(500) NOT NULL DEFAULT '', message text NOT NULL DEFAULT '');
+"
+dumps_before="$(find "$BACKUP_DIR/dumps" -name '*.dump' | wc -l | tr -d ' ')"
+DB_NAME="$SRC" "$BK/backup-requests.sh" 2>"$WORK/req0.err" || { cat "$WORK/req0.err" >&2; fail "no request must be a no-op"; }
+assert_eq "$(find "$BACKUP_DIR/dumps" -name '*.dump' | wc -l | tr -d ' ')" "$dumps_before" "no request, no dump"
+
+req="$(sql "$SRC" "INSERT INTO ops_backuprequest DEFAULT VALUES RETURNING id")"
+stale="$(sql "$SRC" "INSERT INTO ops_backuprequest (status, started_at) VALUES ('running', now() - interval '7 hours') RETURNING id")"
+out="$(DB_NAME="$SRC" BACKUP_KEEP_MIN=50 "$BK/backup-requests.sh" 2>"$WORK/req1.err")" || {
+  cat "$WORK/req1.err" >&2
+  fail "backup-requests failed"
+}
+assert_eq "$out" "" "nothing on stdout"
+assert_eq "$(sql "$SRC" "SELECT status FROM ops_backuprequest WHERE id = $req")" "succeeded" "request done"
+req_dump="$(sql "$SRC" "SELECT dump_file FROM ops_backuprequest WHERE id = $req")"
+assert_match "$req_dump" "-manual-$req\\.dump\$" "labelled manual dump recorded on the request"
+assert_file "$req_dump"
+assert_eq "$(sql "$SRC" "SELECT (started_at IS NOT NULL AND finished_at >= started_at)::text FROM ops_backuprequest WHERE id = $req")" "true" "times recorded"
+assert_json_field "$BACKUP_DIR/status/backup-runs.jsonl" -1 label "manual-$req"
+assert_eq "$(sql "$SRC" "SELECT status FROM ops_backuprequest WHERE id = $stale")" "failed" "interrupted request failed"
+assert_json_contains "$BACKUP_DIR/status/backup-runs.jsonl" -1 status ok
+pass "a pending manual backup request is claimed, backed up with its label and marked succeeded"
+
+# A backup that cannot run (another run holds the lock) marks the request failed with the reason.
+req2="$(sql "$SRC" "INSERT INTO ops_backuprequest DEFAULT VALUES RETURNING id")"
+hold_lock "$BACKUP_DIR/.backup.flock"
+DB_NAME="$SRC" "$BK/backup-requests.sh" 2>"$WORK/req2.err" || { cat "$WORK/req2.err" >&2; fail "a failed backup still exits 0"; }
+kill "$holder" && wait "$holder" 2>/dev/null || true
+rm -f "$WORK/held"
+assert_eq "$(sql "$SRC" "SELECT status FROM ops_backuprequest WHERE id = $req2")" "failed" "failed request"
+msg="$(sql "$SRC" "SELECT message FROM ops_backuprequest WHERE id = $req2")"
+[[ "$msg" == *"another backup run holds"* ]] || fail "failure reason on the request: '$msg'"
+# Only one request per run; the next one waits for the next poll.
+r3="$(sql "$SRC" "INSERT INTO ops_backuprequest DEFAULT VALUES RETURNING id")"
+r4="$(sql "$SRC" "INSERT INTO ops_backuprequest (status) VALUES ('succeeded') RETURNING id")"
+DB_NAME="$SRC" BACKUP_KEEP_MIN=50 "$BK/backup-requests.sh" 2>/dev/null
+assert_eq "$(sql "$SRC" "SELECT status FROM ops_backuprequest WHERE id = $r3")" "succeeded" "next request"
+assert_eq "$(sql "$SRC" "SELECT finished_at IS NULL FROM ops_backuprequest WHERE id = $r4")" "t" "finished rows untouched"
+pass "a refused backup marks its request failed with the reason; finished requests are left alone"
+
+# A database migrated before manual backups existed has no table: nothing to do.
+sql postgres "CREATE DATABASE \"infra_test_norequests_$ID\""
+DB_NAME="infra_test_norequests_$ID" "$BK/backup-requests.sh" 2>"$WORK/req3.err" || { cat "$WORK/req3.err" >&2; fail "missing table must be a no-op"; }
+if DB_NAME="infra_test_missing_$ID" "$BK/backup-requests.sh" 2>/dev/null; then fail "an unreachable database must fail"; fi
+pass "no request table is a no-op; an unreachable database is an error"
+
 summary

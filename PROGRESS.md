@@ -10,7 +10,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
 | 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
-| 6. Claims, reports, admin, ops | admin part done on `wave/a` (merged from `feat/a-admin`); claims done on `wave/b` (merged from `feat/b-claims`); reports done on `feat/c-reports` (from `wave/c`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); ops not started |
+| 6. Claims, reports, admin, ops | done on `wave/c`: admin on `wave/a` (from `feat/a-admin`); claims on `wave/b` (from `feat/b-claims`); reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
 | 7. Patient portal | not started | |
 | 8. Hardening and handover | not started | |
 
@@ -218,6 +218,24 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Detail sections stop at 2,000 rows (the screen and the workbook say so); a paged export for
   very long periods is not built.
 
+## Follow-ups (ops, wave c)
+
+- [x] `/administration/imports` is the import wizard (patients, items with opening stock,
+  prices); `/patients/import` keeps working on the same service.
+- [x] FEATURES 8.13 built (ADR 0014): opening stock is a goods receipt from the `OPENING`
+  supplier per store.
+- [x] Bed nights are charged by the maintenance loop as `BED_CHARGE_USER` (empty skips it).
+- Manual backups need the backup service: in development and e2e a request stays pending.
+- `UpdateRun` rows are not written by `infra/update.sh` yet; the update history shows its JSON
+  log (`update-runs.jsonl`) and any recorded `UpdateRun` with release notes. Writing release
+  notes into `UpdateRun` from the update script is open (13.10 "update trigger" stays the
+  runbook's `infra/update.sh`).
+- Notifications are polled every minute (no push); the bell lists the latest 15.
+- Model names in the audit viewer are translated for the main records; the rest show Django's
+  English verbose name. Field names are shown as database columns.
+- The full export reads every row of nine tables in one request (streamed); very large
+  installations may prefer a scheduled export to the backup disk.
+
 ## Next: merge wave b to main
 
 Pharmacy, lab, nursing and claims are merged on `wave/b`; take `wave/b` to `main`. Then
@@ -418,3 +436,14 @@ reports, ops and the patient portal (Phases 6-7).
   `uncovered` 10.14 / a recovery row; domain code untouched by this branch, see follow-ups);
   71 report tests passed. `make e2e E2E_GREP="@reports|@responsive.*(reports|dashboard)|route
   registry|@auth sign in"`: 112 passed (twice, before and after the review fixes).
+- 2026-10-10: Ops (wave c) on `feat/c-ops` from `wave/c`: FEATURES 1.8 (wizard), 8.13, 0.13,
+  13.8, 13.9, 13.10 and the audit viewer (ADR 0014). Imports of patients, items with opening
+  stock (goods receipt from `OPENING`) and prices (future version only); notifications with the
+  bell and `manage.py notify_scan`; `/api/ops/status`, manual backup requests picked up by
+  `infra/backup/backup-requests.sh`, the CSV data export, `/api/core/audit`; the maintenance loop
+  runs `notify_scan` and `charge_bed_nights` as `BED_CHARGE_USER`. Results: `make check` green
+  (backend 1895 passed, frontend 471 passed, lint, typecheck, no missing migrations, API contract
+  in sync; shellcheck not installed here); `make infra-test` 55 checks passed; `make e2e
+  E2E_GREP=@ops` 7 passed; the 4 admin system routes x 3 viewports x 3 themes x 2 languages plus
+  the route registry 73 passed; the whole phone matrix with the bell in the top bar
+  (`@responsive 375x812|@ops|route registry|shell`) 499 passed.

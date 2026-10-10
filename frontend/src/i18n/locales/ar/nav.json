@@ -32,7 +32,9 @@
     "design": "دليل التصميم",
     "adminPolicies": "السياسات",
     "adminDepartments": "الأقسام والأطباء",
-    "adminReasonCodes": "قوائم الأسباب"
+    "adminReasonCodes": "قوائم الأسباب",
+    "adminExport": "تصدير البيانات",
+    "adminAudit": "سجل التدقيق"
   },
   "short": {
     "dashboard": "الرئيسية",
@@ -58,7 +60,9 @@
     "design": "التصميم",
     "adminPolicies": "السياسات",
     "adminDepartments": "الأطباء",
-    "adminReasonCodes": "الأسباب"
+    "adminReasonCodes": "الأسباب",
+    "adminExport": "تصدير",
+    "adminAudit": "التدقيق"
   },
   "shell": {
     "menu": "القائمة",

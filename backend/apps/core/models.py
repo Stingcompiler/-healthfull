@@ -531,6 +531,9 @@ class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
     kind = models.CharField(max_length=60)
     payload = models.JSONField(default=dict, blank=True)
+    #: Deduplication key of time-based alerts (``notify_scan``): one notification per user
+    #: and key, e.g. ``shift_review_pending:2026-10-10``. Empty for event notifications.
+    key = models.CharField(max_length=120, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     read_at = models.DateTimeField(null=True, blank=True)
 
@@ -538,6 +541,13 @@ class Notification(models.Model):
         ordering: ClassVar[list[str]] = ["-created_at", "-id"]
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "read_at"], name="core_notif_user_read_idx"),
+        ]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=["user", "key"],
+                condition=~models.Q(key=""),
+                name="core_notification_key_once",
+            ),
         ]
 
     def __str__(self) -> str:

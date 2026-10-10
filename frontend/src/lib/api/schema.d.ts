@@ -1787,6 +1787,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/audit/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Audit events (who, when, what changed, why), newest first, filtered
+         * @description Filters: model (app_label.ModelName), user_id, date_from/date_to (inclusive days), object_id, action (insert, update, delete). Secret fields are shown as ***. 409 AUDIT_MODEL_UNKNOWN, AUDIT_ACTION_UNKNOWN, INVALID_DATE_RANGE.
+         */
+        get: operations["core_list_audit_events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/audit/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The models with an audit trail (the viewer's model filter) */
+        get: operations["core_list_audit_models"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/core/center": {
         parameters: {
             query?: never;
@@ -1934,6 +1971,74 @@ export interface paths {
          */
         put: operations["core_set_doctor_schedule"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's notifications, newest first */
+        get: operations["core_list_notifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark every notification of the signed-in user read */
+        post: operations["core_mark_all_notifications_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many of the signed-in user's notifications are unread (the bell badge) */
+        get: operations["core_get_unread_notification_count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one of the signed-in user's notifications read */
+        post: operations["core_mark_notification_read"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2228,6 +2333,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Import jobs, newest first (optionally one kind) */
+        get: operations["imports_list_jobs"];
+        put?: never;
+        /**
+         * Upload a sheet of a kind: validate every row and flag duplicates (nothing saved)
+         * @description Excel (.xlsx) or CSV, first sheet, header row in Arabic or English, at most 2,000 rows and 5 MB. Formulas are refused (FORMULA_NOT_ALLOWED on the row), never run. items: optional store (default store code of batch rows). prices: price_list (code) and effective_from (a date after today). 409 IMPORT_KIND_UNKNOWN, IMPORT_FILE_INVALID, IMPORT_FILE_TOO_LARGE, IMPORT_HEADERS_MISSING, IMPORT_NO_ROWS, IMPORT_TOO_MANY_ROWS, IMPORT_OPTION_REQUIRED, IMPORT_OPTION_INVALID, STORE_UNKNOWN, PRICE_LIST_UNKNOWN, PRICE_LIST_INACTIVE, PRICE_VERSION_BACKDATED.
+         */
+        post: operations["imports_preview_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports/jobs/{job_id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The rows of an import of any kind in sheet order (paged, filtered by status) */
+        get: operations["imports_list_job_rows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/patients": {
         parameters: {
             query?: never;
@@ -2285,6 +2428,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/imports/templates/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An empty import sheet (.xlsx) of a kind with its header row
+         * @description The response is the .xlsx file itself (attachment).
+         */
+        get: operations["imports_get_template"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/imports/{job_id}": {
         parameters: {
             query?: never;
@@ -2332,8 +2495,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Register the valid rows (and, if asked, the possible duplicates)
-         * @description 409 IMPORT_JOB_CLOSED.
+         * Import the valid rows (and, if asked, the possible duplicates)
+         * @description Every kind goes through its module's services (patients registered, items created and opening stock posted as a goods receipt, prices put into the version that has not started). 409 IMPORT_JOB_CLOSED, IMPORT_NOTHING_TO_IMPORT, and for prices the catalog's refusals (PRICE_VERSION_LOCKED, ...).
          */
         post: operations["imports_confirm_job"];
         delete?: never;
@@ -2750,6 +2913,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ops/backups/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the backup service for a backup now (it picks the request up within minutes)
+         * @description 409 BACKUP_REQUEST_OPEN (one is already waiting or running).
+         */
+        post: operations["ops_request_backup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ops/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Full data export: a zip of CSV files (patients, visits, invoices, payments, ...)
+         * @description The response is the zip itself (attachment), streamed. Every export is recorded in the audit trail (who, when, which tables, row counts).
+         */
+        post: operations["ops_export_data"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ops/health": {
         parameters: {
             query?: never;
@@ -2762,6 +2965,40 @@ export interface paths {
          * @description 200 when everything is ok; 503 with status=degraded when the database fails.
          */
         get: operations["ops_get_health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ops/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** System status: database, disk, version, migrations, backups, restore tests */
+        get: operations["ops_get_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ops/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The running version and the recorded updates with their release notes */
+        get: operations["ops_list_updates"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5706,6 +5943,88 @@ export interface components {
             amount: string;
             user: components["schemas"]["BillingUserRefOut"] | null;
         };
+        /** AuditChangeOut */
+        AuditChangeOut: {
+            /** After */
+            after?: unknown;
+            /** Before */
+            before?: unknown;
+            /** Field */
+            field: string;
+        };
+        /** AuditEventOut */
+        AuditEventOut: {
+            /** Action */
+            action: string;
+            /** Changes */
+            changes: components["schemas"]["AuditChangeOut"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Method */
+            method: string;
+            /** Model */
+            model: string;
+            /** Model Name */
+            model_name: string;
+            /** Object Id */
+            object_id: string | null;
+            /** Reason */
+            reason: string;
+            /** Request Id */
+            request_id: string;
+            /** Url */
+            url: string;
+            user: components["schemas"]["UserRefOut"] | null;
+            /** User Id */
+            user_id: number | null;
+        };
+        /** AuditModelOut */
+        AuditModelOut: {
+            /** App Label */
+            app_label: string;
+            /**
+             * Label
+             * @description app_label.ModelName, e.g. billing.Invoice
+             */
+            label: string;
+            /** Verbose Name */
+            verbose_name: string;
+        };
+        /** AuditParams */
+        AuditParams: {
+            /** Action */
+            action?: ("insert" | "update" | "delete") | null;
+            /** Date From */
+            date_from?: string | null;
+            /** Date To */
+            date_to?: string | null;
+            /**
+             * Model
+             * @description app_label.ModelName
+             */
+            model?: string | null;
+            /** Object Id */
+            object_id?: string | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+            /** User Id */
+            user_id?: number | null;
+        };
         /** AuthorizableLineOut */
         AuthorizableLineOut: {
             /**
@@ -5791,6 +6110,43 @@ export interface components {
              * @description The active user who asked for the exception (default: the authorizer)
              */
             requested_by_id?: number | null;
+        };
+        /** BackupRequestIn */
+        BackupRequestIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** BackupRequestOut */
+        BackupRequestOut: {
+            /**
+             * Dump File
+             * @description File name of the dump (no folder)
+             */
+            dump_file: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** Id */
+            id: number;
+            /** Message */
+            message: string;
+            /** Note */
+            note: string;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            requested_by: components["schemas"]["UserRefOut"];
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "running" | "succeeded" | "partial" | "failed";
         };
         /**
          * BalanceOut
@@ -8816,6 +9172,13 @@ export interface components {
             imported_rows: number;
             /** Kind */
             kind: string;
+            /**
+             * Options
+             * @description items: store; prices: price_list and effective_from
+             */
+            options: {
+                [key: string]: unknown;
+            };
             /** Original Filename */
             original_filename: string;
             /** Skipped Rows */
@@ -8825,11 +9188,52 @@ export interface components {
              * @enum {string}
              */
             status: "uploaded" | "validated" | "confirmed" | "failed" | "cancelled";
+            /**
+             * Summary
+             * @description After confirm: skipped, include_duplicates; items: receipts (goods receipt numbers of the opening stock); prices: version_id, price_list, effective_from
+             */
+            summary: {
+                [key: string]: unknown;
+            };
             /** Total Rows */
             total_rows: number;
             uploaded_by: components["schemas"]["UserRefOut"];
             /** Valid Rows */
             valid_rows: number;
+        };
+        /**
+         * ImportJobRowOut
+         * @description A row of any import kind: ``data`` holds the parsed columns of that kind.
+         */
+        ImportJobRowOut: {
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+            /** Errors */
+            errors: components["schemas"]["RowErrorOut"][];
+            /**
+             * Result Id
+             * @description patients: the file; items: the stock item; prices: the version
+             */
+            result_id: number | null;
+            /**
+             * Row No
+             * @description The row number in the sheet (1 = header)
+             */
+            row_no: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped";
+            /**
+             * Warnings
+             * @description Hints with a code: patients phone, national_id, name_dob, in_file; items item_exists, batch_exists, stock_exists, in_file; prices unchanged, in_file
+             */
+            warnings: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * ImportPatientDataOut
@@ -9261,6 +9665,23 @@ export interface components {
         InvoicePrintOut: {
             center: components["schemas"]["BillingCenterOut"];
             invoice: components["schemas"]["InvoiceOut"];
+        };
+        /** JobListParams */
+        JobListParams: {
+            /** Kind */
+            kind?: ("patients" | "items" | "prices") | null;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
         };
         /** LabAmendIn */
         LabAmendIn: {
@@ -10183,6 +10604,11 @@ export interface components {
             /** Suggested Order */
             suggested_order: number;
         };
+        /** MarkAllReadOut */
+        MarkAllReadOut: {
+            /** Updated */
+            updated: number;
+        };
         /** MatrixChangeIn */
         MatrixChangeIn: {
             /** Allowed */
@@ -10435,6 +10861,51 @@ export interface components {
             /** Plan */
             plan?: string | null;
         };
+        /** NotificationListParams */
+        NotificationListParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+            /**
+             * Unread
+             * @description Only the unread notifications
+             * @default false
+             */
+            unread: boolean;
+        };
+        /** NotificationOut */
+        NotificationOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @description lab_result_ready, lab_result_critical, stock_low, stock_low_summary, transfers_pending_overdue, transfer_rejected, patient_credit_negative, shift_variance, shift_review_pending
+             */
+            kind: string;
+            /**
+             * Payload
+             * @description Ids, numbers and amounts of the alert
+             */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Read At */
+            read_at: string | null;
+        };
         /** NursingAdmissionOut */
         NursingAdmissionOut: {
             /**
@@ -10596,6 +11067,72 @@ export interface components {
              * Format: date-time
              */
             opened_at: string;
+        };
+        /** OpsDatabaseOut */
+        OpsDatabaseOut: {
+            /** Ok */
+            ok: boolean;
+            /** Server Version */
+            server_version: string;
+            /** Size Bytes */
+            size_bytes: number | null;
+        };
+        /** OpsDiskOut */
+        OpsDiskOut: {
+            /** Free Bytes */
+            free_bytes: number;
+            /** Free Percent */
+            free_percent: number;
+            /**
+             * Label
+             * @enum {string}
+             */
+            label: "media" | "backups";
+            /** Total Bytes */
+            total_bytes: number;
+        };
+        /** OpsMigrationsOut */
+        OpsMigrationsOut: {
+            /** Applied */
+            applied: number;
+            /** Pending */
+            pending: number;
+            /** Pending Names */
+            pending_names: string[];
+        };
+        /**
+         * OpsRunOut
+         * @description A backup or restore test from the status logs (``log``) or the database (``db``).
+         */
+        OpsRunOut: {
+            /** Error */
+            error: string;
+            /**
+             * File
+             * @description File name of the dump (no folder)
+             */
+            file: string;
+            /** Finished At */
+            finished_at: string | null;
+            /**
+             * Label
+             * @description Backup label, e.g. manual-12 or pre-update-v1.4.0
+             */
+            label: string;
+            /** Size Bytes */
+            size_bytes: number | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "log" | "db";
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @description ok, partial (backups), failed or running
+             */
+            status: string;
         };
         /** OrderIn */
         OrderIn: {
@@ -10837,6 +11374,20 @@ export interface components {
             /** Q */
             q?: string | null;
         };
+        /** Page[AuditEventOut] */
+        Page_AuditEventOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["AuditEventOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[AuthorizationOut] */
         Page_AuthorizationOut_: {
             /**
@@ -10907,6 +11458,34 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /** Page[ImportJobOut] */
+        Page_ImportJobOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ImportJobOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ImportJobRowOut] */
+        Page_ImportJobRowOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ImportJobRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[ImportRowOut] */
         Page_ImportRowOut_: {
             /**
@@ -10916,6 +11495,20 @@ export interface components {
             count: number;
             /** Items */
             items: components["schemas"]["ImportRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[NotificationOut] */
+        Page_NotificationOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -13226,7 +13819,7 @@ export interface components {
              * Status
              * @description problems = errors and duplicates
              */
-            status?: ("problems" | "valid" | "error" | "duplicate" | "imported" | "skipped") | null;
+            status?: ("problems" | "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped") | null;
         };
         /**
          * SaleCustomerIn
@@ -14349,6 +14942,36 @@ export interface components {
             /** Phone */
             phone: string;
         };
+        /** SystemStatusOut */
+        SystemStatusOut: {
+            /** Backup Requests */
+            backup_requests: components["schemas"]["BackupRequestOut"][];
+            /** Backups */
+            backups: components["schemas"]["OpsRunOut"][];
+            database: components["schemas"]["OpsDatabaseOut"];
+            /** Disks */
+            disks: components["schemas"]["OpsDiskOut"][];
+            /** @description The newest ok or partial backup */
+            last_backup: components["schemas"]["OpsRunOut"] | null;
+            last_restore_test: components["schemas"]["OpsRunOut"] | null;
+            last_update: components["schemas"]["UpdateRunOut"] | null;
+            migrations: components["schemas"]["OpsMigrationsOut"];
+            /** Pending Cloud Uploads */
+            pending_cloud_uploads: number;
+            /** Restore Tests */
+            restore_tests: components["schemas"]["OpsRunOut"][];
+            /** Status Dir Configured */
+            status_dir_configured: boolean;
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+            /** Version */
+            version: string;
+            /** Warnings */
+            warnings: ("DB_UNAVAILABLE" | "BACKUP_STATUS_UNAVAILABLE" | "BACKUP_STALE" | "BACKUP_FAILED" | "RESTORE_TEST_STALE" | "RESTORE_TEST_FAILED" | "DISK_LOW" | "MIGRATIONS_PENDING")[];
+        };
         /** TemplateParams */
         TemplateParams: {
             /**
@@ -14443,10 +15066,97 @@ export interface components {
             /** Qty Base */
             qty_base: number;
         };
+        /** UnreadCountOut */
+        UnreadCountOut: {
+            /** Count */
+            count: number;
+        };
         /** UpcomingParams */
         UpcomingParams: {
             /** Patient Id */
             patient_id: number;
+        };
+        /** UpdateHistoryOut */
+        UpdateHistoryOut: {
+            /** Count */
+            count: number;
+            /** Current Version */
+            current_version: string;
+            /** Items */
+            items: components["schemas"]["UpdateRunOut"][];
+            /**
+             * Log
+             * @description The update script's log, newest first
+             */
+            log: components["schemas"]["UpdateLogOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * UpdateLogOut
+         * @description One run of ``infra/update.sh`` from its status log (update-runs.jsonl).
+         */
+        UpdateLogOut: {
+            /** Db Restored */
+            db_restored: boolean;
+            /** Detail */
+            detail: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** From Tag */
+            from_tag: string;
+            /** Migrations Applied */
+            migrations_applied: boolean;
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @description ok, failed or rolled_back
+             */
+            status: string;
+            /** To Tag */
+            to_tag: string;
+        };
+        /** UpdateParams */
+        UpdateParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
+        };
+        /** UpdateRunOut */
+        UpdateRunOut: {
+            /** Finished At */
+            finished_at: string | null;
+            /** Id */
+            id: number;
+            /** Previous Version */
+            previous_version: string;
+            /** Release Notes */
+            release_notes: string;
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "running" | "succeeded" | "failed" | "rolled_back";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            started_by: components["schemas"]["UserRefOut"] | null;
+            /** Version */
+            version: string;
         };
         /** UserIn */
         UserIn: {
@@ -22093,6 +22803,138 @@ export interface operations {
             };
         };
     };
+    core_list_audit_events: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description app_label.ModelName */
+                model?: string | null;
+                user_id?: number | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                object_id?: string | null;
+                action?: ("insert" | "update" | "delete") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AuditEventOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_audit_models: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditModelOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     core_get_center_profile: {
         parameters: {
             query?: never;
@@ -22880,6 +23722,256 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DoctorOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_notifications: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description Only the unread notifications */
+                unread?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_NotificationOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_mark_all_notifications_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_get_unread_notification_count: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_mark_notification_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationOut"];
                 };
             };
             /** @description Unauthorized */
@@ -24259,6 +25351,226 @@ export interface operations {
             };
         };
     };
+    imports_list_jobs: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                kind?: ("patients" | "items" | "prices") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ImportJobOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_preview_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Effective From
+                     * @default
+                     */
+                    effective_from?: string;
+                    /**
+                     * File
+                     * Format: binary
+                     */
+                    file: string;
+                    /**
+                     * Kind
+                     * @enum {string}
+                     */
+                    kind: "patients" | "items" | "prices";
+                    /**
+                     * Price List
+                     * @default
+                     */
+                    price_list?: string;
+                    /**
+                     * Store
+                     * @default
+                     */
+                    store?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_list_job_rows: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                /** @description problems = errors and duplicates */
+                status?: ("problems" | "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped") | null;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ImportJobRowOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     imports_preview_patients: {
         parameters: {
             query?: never;
@@ -24419,6 +25731,73 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    imports_get_template: {
+        parameters: {
+            query?: {
+                language?: "ar" | "en";
+            };
+            header?: never;
+            path: {
+                kind: "patients" | "items" | "prices";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24631,7 +26010,7 @@ export interface operations {
                 page_size?: number;
                 q?: string | null;
                 /** @description problems = errors and duplicates */
-                status?: ("problems" | "valid" | "error" | "duplicate" | "imported" | "skipped") | null;
+                status?: ("problems" | "valid" | "warning" | "error" | "duplicate" | "imported" | "skipped") | null;
             };
             header?: never;
             path: {
@@ -26381,6 +27760,138 @@ export interface operations {
             };
         };
     };
+    ops_request_backup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupRequestIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupRequestOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    ops_export_data: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     ops_get_health: {
         parameters: {
             query?: never;
@@ -26406,6 +27917,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
+    ops_get_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemStatusOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    ops_list_updates: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateHistoryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };

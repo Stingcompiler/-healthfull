@@ -20,6 +20,10 @@ OPERATIONS = {
     ("post", "/api/imports/{job_id}/confirm"): "imports_confirm_job",
     ("post", "/api/imports/{job_id}/cancel"): "imports_cancel_job",
     ("get", "/api/imports/ping"): "imports_get_ping",
+    ("get", "/api/imports/templates/{kind}"): "imports_get_template",
+    ("post", "/api/imports/jobs"): "imports_preview_job",
+    ("get", "/api/imports/jobs"): "imports_list_jobs",
+    ("get", "/api/imports/jobs/{job_id}/rows"): "imports_list_job_rows",
 }
 
 

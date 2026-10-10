@@ -135,8 +135,21 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   row search, cards on phones, Excel), `/reports/<key>/print` (A4, the browser saves PDF), and
   the home page for managers: today's confirmed collection, pending transfers, queue, alerts and
   two charts (recharts, theme colors). `DataTable` gains a totals row (ADR 0013).
+- Wave c, operations (FEATURES 1.8, 8.13, 0.13, 13.8, 13.9, 13.10, 0.4 viewer; ADR 0014):
+  Excel imports of patients, stock items with batches and opening stock (posted as a goods
+  receipt from the `OPENING` supplier) and prices (into a version that starts after today) with
+  preview, row errors, duplicate hints and templates at `/administration/imports`; in-app
+  notifications with a top-bar bell and `manage.py notify_scan` (overdue transfers, shifts
+  awaiting review, low stock, stale backup); the system status page (database, disks, version,
+  migrations, backups and restore tests from the status logs, update history) with a manual
+  backup request picked up by `infra/backup/backup-requests.sh`; the full CSV data export;
+  the audit trail viewer. The maintenance loop now also runs `notify_scan` and
+  `charge_bed_nights` as `BED_CHARGE_USER`, hourly.
 
 ### Security
+- Imports refuse formula cells and text starting with `=`, check the xlsx zip signature and
+  unpacked size before parsing; the data export defuses CSV formula injection and records
+  every export; the audit viewer hides secret-looking fields.
 - Django admin login uses the same credential check as the API (lockout, audit, session idle policy)
   and refuses accounts that must change their password; unlocking an account is an audited admin action
   with a reason (ADR 0005).

@@ -60,6 +60,8 @@ export interface AppShellProps {
   search?: ReactNode;
   /** Extra records the quick search finds (patients); without it only pages are searched. */
   quickSearch?: QuickSearchSource;
+  /** Top-bar controls before the language and theme switchers (the notifications bell). */
+  actions?: ReactNode;
   children: ReactNode;
 }
 
@@ -70,7 +72,7 @@ export interface AppShellProps {
  *          tablets have no hover); the choice is remembered on the device
  *   < md   top bar with drawer menu + bottom navigation
  */
-export function AppShell({ nav, search, quickSearch, children }: AppShellProps) {
+export function AppShell({ nav, search, quickSearch, actions, children }: AppShellProps) {
   const { t } = useTranslation(["common", "nav"]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -196,6 +198,7 @@ export function AppShell({ nav, search, quickSearch, children }: AppShellProps) 
             )}
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
+            {actions}
             <LanguageSwitcher variant="icon" className="lg:hidden" />
             <LanguageSwitcher variant="button" className="hidden lg:inline-flex" />
             <ThemeSwitcher />

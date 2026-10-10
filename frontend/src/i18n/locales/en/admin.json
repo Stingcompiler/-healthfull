@@ -51,6 +51,14 @@
     "system": {
       "title": "System status",
       "description": "Server, backups, restore tests, and updates."
+    },
+    "export": {
+      "title": "Data export",
+      "description": "A full copy of patients, visits, invoices, payments, stock and claims as CSV files."
+    },
+    "audit": {
+      "title": "Audit trail",
+      "description": "Who changed what and when, with the reason, for every record."
     }
   },
   "common": {

@@ -1,4 +1,5 @@
-"""Schemas of ``/api/imports`` (ARCHITECTURE 4.11). Patient import preview and result."""
+"""Schemas of ``/api/imports`` (ARCHITECTURE 4.11): import jobs of every kind (patients,
+items with opening stock, prices), their rows and the templates."""
 
 from __future__ import annotations
 
@@ -12,7 +13,8 @@ from apps.patients.schemas import UserRefOut
 
 JobStatusCode = Literal["uploaded", "validated", "confirmed", "failed", "cancelled"]
 RowStatusCode = Literal["valid", "warning", "error", "duplicate", "imported", "skipped"]
-RowFilter = Literal["problems", "valid", "error", "duplicate", "imported", "skipped"]
+RowFilter = Literal["problems", "valid", "warning", "error", "duplicate", "imported", "skipped"]
+ImportKindCode = Literal["patients", "items", "prices"]
 
 
 class ImportJobOut(Schema):
@@ -30,6 +32,16 @@ class ImportJobOut(Schema):
     uploaded_by: UserRefOut
     confirmed_at: datetime | None
     confirmed_by: UserRefOut | None
+    options: dict[str, Any] = Field(
+        ..., description="items: store; prices: price_list and effective_from"
+    )
+    summary: dict[str, Any] = Field(
+        ...,
+        description=(
+            "After confirm: skipped, include_duplicates; items: receipts (goods receipt "
+            "numbers of the opening stock); prices: version_id, price_list, effective_from"
+        ),
+    )
 
     @staticmethod
     def resolve_skipped_rows(obj: Any) -> int:
@@ -75,6 +87,29 @@ class ImportRowOut(Schema):
     errors: list[RowErrorOut]
     warnings: list[RowHintOut]
     result_id: int | None = Field(..., description="The patient file created from the row")
+
+
+class ImportJobRowOut(Schema):
+    """A row of any import kind: ``data`` holds the parsed columns of that kind."""
+
+    row_no: int = Field(..., description="The row number in the sheet (1 = header)")
+    status: RowStatusCode
+    data: dict[str, Any]
+    errors: list[RowErrorOut]
+    warnings: list[dict[str, Any]] = Field(
+        ...,
+        description=(
+            "Hints with a code: patients phone, national_id, name_dob, in_file; items "
+            "item_exists, batch_exists, stock_exists, in_file; prices unchanged, in_file"
+        ),
+    )
+    result_id: int | None = Field(
+        ..., description="patients: the file; items: the stock item; prices: the version"
+    )
+
+
+class JobListParams(PageParams):
+    kind: ImportKindCode | None = None
 
 
 class RowParams(PageParams):

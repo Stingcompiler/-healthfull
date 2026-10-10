@@ -5,7 +5,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 status=0
-for t in test_pgbackrest_conf.sh test_update.sh test_db_roles.sh test_backup_restore.sh; do
+for t in test_pgbackrest_conf.sh test_update.sh test_app_entrypoint.sh test_db_roles.sh test_backup_restore.sh; do
   echo "=== $t"
   if ! bash "$HERE/$t"; then
     echo "=== $t FAILED" >&2

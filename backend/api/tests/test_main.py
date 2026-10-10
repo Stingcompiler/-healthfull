@@ -190,6 +190,11 @@ OPEN_OPERATIONS = frozenset(
         # printouts and the app shell.
         "core_list_reason_codes",
         "core_get_center_logo",
+        # The signed-in user's own notifications (FEATURES 0.13), scoped to request.user.
+        "core_list_notifications",
+        "core_get_unread_notification_count",
+        "core_mark_notification_read",
+        "core_mark_all_notifications_read",
         *(f"{module}_get_ping" for module in PING_MODULES),
     }
 )

@@ -25,6 +25,7 @@ from api.schemas import ERROR_RESPONSES, ErrorOut, Page
 from api.security import session_auth_pending_ok
 from apps.core import services
 from apps.core.models import CenterProfile, DoctorProfile, Policy, ReasonCode, Room, User
+from apps.core.ops_api import audit_router, notifications_router
 from apps.core.schemas import (
     CenterProfileIn,
     CenterProfileOut,
@@ -625,3 +626,9 @@ def save_print_template(
     request: HttpRequest, document: PrintDocumentCode, paper: PaperCode, payload: PrintTemplateIn
 ) -> dict[str, Any]:
     return services.save_print_template(_current_user(request), document, paper, **payload.dict())
+
+
+# The signed-in user's notifications (FEATURES 0.13) and the audit trail viewer (0.4).
+
+core_router.add_router("/notifications", notifications_router)
+core_router.add_router("/audit", audit_router)

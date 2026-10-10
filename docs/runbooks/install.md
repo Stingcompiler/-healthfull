@@ -133,10 +133,22 @@ then do `app` and `maintenance` start (as the app role). Later schema changes on
 `infra/update.sh`. If `migrate` failed, `infra/compose.sh logs migrate` says why and the app stays
 down until it succeeds.
 
-The `maintenance` service (app image) runs `manage.py maintenance` at start and then daily: it
-deletes expired sessions and stale login-throttle rows, which would otherwise pile up in the
-database and in every backup. Run it by hand with
-`infra/compose.sh run --rm --no-deps app manage maintenance`.
+The `maintenance` service (app image) runs a cycle at start and then every
+`MAINTENANCE_INTERVAL_SECONDS` (one hour). Every job is idempotent:
+
+- `manage.py maintenance` deletes expired sessions and stale login-throttle rows, which would
+  otherwise pile up in the database and in every backup;
+- `manage.py notify_scan` raises the time-based in-app alerts (transfers pending too long,
+  closed shifts awaiting review, low stock, no successful backup in 36 hours), each at most
+  once a day per user;
+- `manage.py charge_bed_nights --as $BED_CHARGE_USER` adds the passed bed nights of open
+  admissions for the cashier. Create a dedicated account for it (Administration > Users, e.g.
+  `bedcharge` with the nurse role, which holds `visits.manage_beds`), set `BED_CHARGE_USER` in
+  `.env` and `infra/compose.sh up -d maintenance`. Left empty, nights are charged only when a
+  nurse posts them on the bed board and at discharge.
+
+Run a cycle by hand with `infra/compose.sh run --rm --no-deps maintenance maintenance-once`,
+or one job with `infra/compose.sh run --rm --no-deps app manage notify_scan`.
 
 ## 7. Prove the backups work — تأكيد النسخ الاحتياطي
 

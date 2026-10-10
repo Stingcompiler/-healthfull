@@ -1,9 +1,11 @@
 import {
   BookOpen,
   Building2,
+  FileDown,
   FileSpreadsheet,
   Hospital,
   ListChecks,
+  ScrollText,
   Server,
   ShieldCheck,
   SlidersHorizontal,
@@ -26,7 +28,9 @@ export type AdminSectionId =
   | "priceLists"
   | "payers"
   | "imports"
-  | "system";
+  | "system"
+  | "export"
+  | "audit";
 
 export interface AdminSection {
   id: AdminSectionId;
@@ -108,6 +112,8 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     navKey: "adminImports",
   },
   { id: "system", to: "/administration/system", icon: Server, permission: "ops.view_status", navKey: "adminSystem" },
+  { id: "export", to: "/administration/export", icon: FileDown, permission: "ops.export_data", navKey: "adminExport" },
+  { id: "audit", to: "/administration/audit", icon: ScrollText, permission: "core.view_audit", navKey: "adminAudit" },
 ];
 
 export const ADMIN_PERMISSIONS: readonly string[] = [...new Set(ADMIN_SECTIONS.map((s) => s.permission))];

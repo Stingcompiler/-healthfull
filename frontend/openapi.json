@@ -771,6 +771,254 @@
         "title": "ApproverTotalOut",
         "type": "object"
       },
+      "AuditChangeOut": {
+        "properties": {
+          "after": {
+            "title": "After"
+          },
+          "before": {
+            "title": "Before"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field"
+        ],
+        "title": "AuditChangeOut",
+        "type": "object"
+      },
+      "AuditEventOut": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/AuditChangeOut"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "model_name": {
+            "title": "Model Name",
+            "type": "string"
+          },
+          "object_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Id"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "id",
+          "model",
+          "model_name",
+          "object_id",
+          "action",
+          "created_at",
+          "user",
+          "user_id",
+          "reason",
+          "method",
+          "url",
+          "request_id",
+          "changes"
+        ],
+        "title": "AuditEventOut",
+        "type": "object"
+      },
+      "AuditModelOut": {
+        "properties": {
+          "app_label": {
+            "title": "App Label",
+            "type": "string"
+          },
+          "label": {
+            "description": "app_label.ModelName, e.g. billing.Invoice",
+            "title": "Label",
+            "type": "string"
+          },
+          "verbose_name": {
+            "title": "Verbose Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "app_label",
+          "verbose_name"
+        ],
+        "title": "AuditModelOut",
+        "type": "object"
+      },
+      "AuditParams": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "enum": [
+                  "insert",
+                  "update",
+                  "delete"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date To"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "app_label.ModelName",
+            "title": "Model"
+          },
+          "object_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Id"
+          },
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "title": "AuditParams",
+        "type": "object"
+      },
       "AuthorizableLineOut": {
         "properties": {
           "authorizable": {
@@ -1007,6 +1255,95 @@
           "reason"
         ],
         "title": "AuthorizeIn",
+        "type": "object"
+      },
+      "BackupRequestIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "BackupRequestIn",
+        "type": "object"
+      },
+      "BackupRequestOut": {
+        "properties": {
+          "dump_file": {
+            "description": "File name of the dump (no folder)",
+            "title": "Dump File",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "requested_by": {
+            "$ref": "#/components/schemas/UserRefOut"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "partial",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "note",
+          "requested_at",
+          "requested_by",
+          "started_at",
+          "finished_at",
+          "dump_file",
+          "message"
+        ],
+        "title": "BackupRequestOut",
         "type": "object"
       },
       "BalanceOut": {
@@ -8789,6 +9126,12 @@
             "title": "Kind",
             "type": "string"
           },
+          "options": {
+            "additionalProperties": true,
+            "description": "items: store; prices: price_list and effective_from",
+            "title": "Options",
+            "type": "object"
+          },
           "original_filename": {
             "title": "Original Filename",
             "type": "string"
@@ -8807,6 +9150,12 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "description": "After confirm: skipped, include_duplicates; items: receipts (goods receipt numbers of the opening stock); prices: version_id, price_list, effective_from",
+            "title": "Summary",
+            "type": "object"
           },
           "total_rows": {
             "title": "Total Rows",
@@ -8834,9 +9183,76 @@
           "created_at",
           "uploaded_by",
           "confirmed_at",
-          "confirmed_by"
+          "confirmed_by",
+          "options",
+          "summary"
         ],
         "title": "ImportJobOut",
+        "type": "object"
+      },
+      "ImportJobRowOut": {
+        "description": "A row of any import kind: ``data`` holds the parsed columns of that kind.",
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/RowErrorOut"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "result_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "patients: the file; items: the stock item; prices: the version",
+            "title": "Result Id"
+          },
+          "row_no": {
+            "description": "The row number in the sheet (1 = header)",
+            "title": "Row No",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "valid",
+              "warning",
+              "error",
+              "duplicate",
+              "imported",
+              "skipped"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "warnings": {
+            "description": "Hints with a code: patients phone, national_id, name_dob, in_file; items item_exists, batch_exists, stock_exists, in_file; prices unchanged, in_file",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "row_no",
+          "status",
+          "data",
+          "errors",
+          "warnings",
+          "result_id"
+        ],
+        "title": "ImportJobRowOut",
         "type": "object"
       },
       "ImportPatientDataOut": {
@@ -9900,6 +10316,53 @@
           "invoice"
         ],
         "title": "InvoicePrintOut",
+        "type": "object"
+      },
+      "JobListParams": {
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "patients",
+                  "items",
+                  "prices"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          }
+        },
+        "title": "JobListParams",
         "type": "object"
       },
       "LabAmendIn": {
@@ -12649,6 +13112,19 @@
         "title": "LowStockItemOut",
         "type": "object"
       },
+      "MarkAllReadOut": {
+        "properties": {
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "updated"
+        ],
+        "title": "MarkAllReadOut",
+        "type": "object"
+      },
       "MatrixChangeIn": {
         "properties": {
           "allowed": {
@@ -13245,6 +13721,88 @@
         "title": "NotePatch",
         "type": "object"
       },
+      "NotificationListParams": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "unread": {
+            "default": false,
+            "description": "Only the unread notifications",
+            "title": "Unread",
+            "type": "boolean"
+          }
+        },
+        "title": "NotificationListParams",
+        "type": "object"
+      },
+      "NotificationOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "description": "lab_result_ready, lab_result_critical, stock_low, stock_low_summary, transfers_pending_overdue, transfer_rejected, patient_credit_negative, shift_variance, shift_review_pending",
+            "title": "Kind",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "description": "Ids, numbers and amounts of the alert",
+            "title": "Payload",
+            "type": "object"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "payload",
+          "created_at",
+          "read_at"
+        ],
+        "title": "NotificationOut",
+        "type": "object"
+      },
       "NursingAdmissionOut": {
         "properties": {
           "admitted_at": {
@@ -13718,6 +14276,173 @@
           "opened_at"
         ],
         "title": "OpenShiftRefOut",
+        "type": "object"
+      },
+      "OpsDatabaseOut": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "server_version": {
+            "title": "Server Version",
+            "type": "string"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          }
+        },
+        "required": [
+          "ok",
+          "server_version",
+          "size_bytes"
+        ],
+        "title": "OpsDatabaseOut",
+        "type": "object"
+      },
+      "OpsDiskOut": {
+        "properties": {
+          "free_bytes": {
+            "title": "Free Bytes",
+            "type": "integer"
+          },
+          "free_percent": {
+            "title": "Free Percent",
+            "type": "number"
+          },
+          "label": {
+            "enum": [
+              "media",
+              "backups"
+            ],
+            "title": "Label",
+            "type": "string"
+          },
+          "total_bytes": {
+            "title": "Total Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "total_bytes",
+          "free_bytes",
+          "free_percent"
+        ],
+        "title": "OpsDiskOut",
+        "type": "object"
+      },
+      "OpsMigrationsOut": {
+        "properties": {
+          "applied": {
+            "title": "Applied",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "pending_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pending Names",
+            "type": "array"
+          }
+        },
+        "required": [
+          "applied",
+          "pending",
+          "pending_names"
+        ],
+        "title": "OpsMigrationsOut",
+        "type": "object"
+      },
+      "OpsRunOut": {
+        "description": "A backup or restore test from the status logs (``log``) or the database (``db``).",
+        "properties": {
+          "error": {
+            "title": "Error",
+            "type": "string"
+          },
+          "file": {
+            "description": "File name of the dump (no folder)",
+            "title": "File",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "label": {
+            "description": "Backup label, e.g. manual-12 or pre-update-v1.4.0",
+            "title": "Label",
+            "type": "string"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "source": {
+            "enum": [
+              "log",
+              "db"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "description": "ok, partial (backups), failed or running",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "status",
+          "started_at",
+          "finished_at",
+          "size_bytes",
+          "label",
+          "file",
+          "error"
+        ],
+        "title": "OpsRunOut",
         "type": "object"
       },
       "OrderIn": {
@@ -14369,6 +15094,41 @@
         "title": "PageParams",
         "type": "object"
       },
+      "Page_AuditEventOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[AuditEventOut]",
+        "type": "object"
+      },
       "Page_AuthorizationOut_": {
         "properties": {
           "count": {
@@ -14544,6 +15304,76 @@
         "title": "Page[GoodsReceiptOut]",
         "type": "object"
       },
+      "Page_ImportJobOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ImportJobOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[ImportJobOut]",
+        "type": "object"
+      },
+      "Page_ImportJobRowOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ImportJobRowOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[ImportJobRowOut]",
+        "type": "object"
+      },
       "Page_ImportRowOut_": {
         "properties": {
           "count": {
@@ -14577,6 +15407,41 @@
           "page_size"
         ],
         "title": "Page[ImportRowOut]",
+        "type": "object"
+      },
+      "Page_NotificationOut_": {
+        "properties": {
+          "count": {
+            "description": "Total number of matching items",
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[NotificationOut]",
         "type": "object"
       },
       "Page_PatientListOut_": {
@@ -21065,6 +21930,7 @@
                 "enum": [
                   "problems",
                   "valid",
+                  "warning",
                   "error",
                   "duplicate",
                   "imported",
@@ -24085,6 +24951,127 @@
         "title": "SupplierOut",
         "type": "object"
       },
+      "SystemStatusOut": {
+        "properties": {
+          "backup_requests": {
+            "items": {
+              "$ref": "#/components/schemas/BackupRequestOut"
+            },
+            "title": "Backup Requests",
+            "type": "array"
+          },
+          "backups": {
+            "items": {
+              "$ref": "#/components/schemas/OpsRunOut"
+            },
+            "title": "Backups",
+            "type": "array"
+          },
+          "database": {
+            "$ref": "#/components/schemas/OpsDatabaseOut"
+          },
+          "disks": {
+            "items": {
+              "$ref": "#/components/schemas/OpsDiskOut"
+            },
+            "title": "Disks",
+            "type": "array"
+          },
+          "last_backup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpsRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The newest ok or partial backup"
+          },
+          "last_restore_test": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpsRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_update": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpdateRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "migrations": {
+            "$ref": "#/components/schemas/OpsMigrationsOut"
+          },
+          "pending_cloud_uploads": {
+            "title": "Pending Cloud Uploads",
+            "type": "integer"
+          },
+          "restore_tests": {
+            "items": {
+              "$ref": "#/components/schemas/OpsRunOut"
+            },
+            "title": "Restore Tests",
+            "type": "array"
+          },
+          "status_dir_configured": {
+            "title": "Status Dir Configured",
+            "type": "boolean"
+          },
+          "time": {
+            "format": "date-time",
+            "title": "Time",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "enum": [
+                "DB_UNAVAILABLE",
+                "BACKUP_STATUS_UNAVAILABLE",
+                "BACKUP_STALE",
+                "BACKUP_FAILED",
+                "RESTORE_TEST_STALE",
+                "RESTORE_TEST_FAILED",
+                "DISK_LOW",
+                "MIGRATIONS_PENDING"
+              ],
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "version",
+          "time",
+          "database",
+          "disks",
+          "migrations",
+          "last_backup",
+          "last_restore_test",
+          "backups",
+          "restore_tests",
+          "pending_cloud_uploads",
+          "backup_requests",
+          "status_dir_configured",
+          "last_update",
+          "warnings"
+        ],
+        "title": "SystemStatusOut",
+        "type": "object"
+      },
       "TemplateParams": {
         "properties": {
           "language": {
@@ -24297,6 +25284,19 @@
         "title": "TransferReceivedLineIn",
         "type": "object"
       },
+      "UnreadCountOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "UnreadCountOut",
+        "type": "object"
+      },
       "UpcomingParams": {
         "properties": {
           "patient_id": {
@@ -24308,6 +25308,217 @@
           "patient_id"
         ],
         "title": "UpcomingParams",
+        "type": "object"
+      },
+      "UpdateHistoryOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "current_version": {
+            "title": "Current Version",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UpdateRunOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "log": {
+            "description": "The update script's log, newest first",
+            "items": {
+              "$ref": "#/components/schemas/UpdateLogOut"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current_version",
+          "log",
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "UpdateHistoryOut",
+        "type": "object"
+      },
+      "UpdateLogOut": {
+        "description": "One run of ``infra/update.sh`` from its status log (update-runs.jsonl).",
+        "properties": {
+          "db_restored": {
+            "title": "Db Restored",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "from_tag": {
+            "title": "From Tag",
+            "type": "string"
+          },
+          "migrations_applied": {
+            "title": "Migrations Applied",
+            "type": "boolean"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "description": "ok, failed or rolled_back",
+            "title": "Status",
+            "type": "string"
+          },
+          "to_tag": {
+            "title": "To Tag",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "from_tag",
+          "to_tag",
+          "started_at",
+          "finished_at",
+          "migrations_applied",
+          "db_restored",
+          "detail"
+        ],
+        "title": "UpdateLogOut",
+        "type": "object"
+      },
+      "UpdateParams": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          }
+        },
+        "title": "UpdateParams",
+        "type": "object"
+      },
+      "UpdateRunOut": {
+        "properties": {
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "previous_version": {
+            "title": "Previous Version",
+            "type": "string"
+          },
+          "release_notes": {
+            "title": "Release Notes",
+            "type": "string"
+          },
+          "result": {
+            "enum": [
+              "running",
+              "succeeded",
+              "failed",
+              "rolled_back"
+            ],
+            "title": "Result",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "started_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "previous_version",
+          "release_notes",
+          "result",
+          "started_at",
+          "finished_at",
+          "started_by"
+        ],
+        "title": "UpdateRunOut",
         "type": "object"
       },
       "UserIn": {
@@ -36053,6 +37264,304 @@
         ]
       }
     },
+    "/api/core/audit/events": {
+      "get": {
+        "description": "Filters: model (app_label.ModelName), user_id, date_from/date_to (inclusive days), object_id, action (insert, update, delete). Secret fields are shown as ***. 409 AUDIT_MODEL_UNKNOWN, AUDIT_ACTION_UNKNOWN, INVALID_DATE_RANGE.",
+        "operationId": "core_list_audit_events",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "description": "app_label.ModelName",
+            "in": "query",
+            "name": "model",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "app_label.ModelName",
+              "title": "Model"
+            }
+          },
+          {
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "object_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Object Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "insert",
+                    "update",
+                    "delete"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AuditEventOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Audit events (who, when, what changed, why), newest first, filtered",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/audit/models": {
+      "get": {
+        "operationId": "core_list_audit_models",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditModelOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The models with an audit trail (the viewer's model filter)",
+        "tags": [
+          "core"
+        ]
+      }
+    },
     "/api/core/center": {
       "get": {
         "operationId": "core_get_center_profile",
@@ -37157,6 +38666,357 @@
           }
         ],
         "summary": "Replace a doctor's weekly clinic hours",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/notifications": {
+      "get": {
+        "operationId": "core_list_notifications",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Only the unread notifications",
+            "in": "query",
+            "name": "unread",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only the unread notifications",
+              "title": "Unread",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_NotificationOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The signed-in user's notifications, newest first",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/notifications/read-all": {
+      "post": {
+        "operationId": "core_mark_all_notifications_read",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkAllReadOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Mark every notification of the signed-in user read",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/notifications/unread-count": {
+      "get": {
+        "operationId": "core_get_unread_notification_count",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "How many of the signed-in user's notifications are unread (the bell badge)",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/notifications/{notification_id}/read": {
+      "post": {
+        "operationId": "core_mark_notification_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "title": "Notification Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Mark one of the signed-in user's notifications read",
         "tags": [
           "core"
         ]
@@ -39061,6 +40921,401 @@
         ]
       }
     },
+    "/api/imports/jobs": {
+      "get": {
+        "operationId": "imports_list_jobs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "patients",
+                    "items",
+                    "prices"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ImportJobOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Import jobs, newest first (optionally one kind)",
+        "tags": [
+          "imports"
+        ]
+      },
+      "post": {
+        "description": "Excel (.xlsx) or CSV, first sheet, header row in Arabic or English, at most 2,000 rows and 5 MB. Formulas are refused (FORMULA_NOT_ALLOWED on the row), never run. items: optional store (default store code of batch rows). prices: price_list (code) and effective_from (a date after today). 409 IMPORT_KIND_UNKNOWN, IMPORT_FILE_INVALID, IMPORT_FILE_TOO_LARGE, IMPORT_HEADERS_MISSING, IMPORT_NO_ROWS, IMPORT_TOO_MANY_ROWS, IMPORT_OPTION_REQUIRED, IMPORT_OPTION_INVALID, STORE_UNKNOWN, PRICE_LIST_UNKNOWN, PRICE_LIST_INACTIVE, PRICE_VERSION_BACKDATED.",
+        "operationId": "imports_preview_job",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "effective_from": {
+                    "default": "",
+                    "title": "Effective From",
+                    "type": "string"
+                  },
+                  "file": {
+                    "format": "binary",
+                    "title": "File",
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "patients",
+                      "items",
+                      "prices"
+                    ],
+                    "title": "Kind",
+                    "type": "string"
+                  },
+                  "price_list": {
+                    "default": "",
+                    "title": "Price List",
+                    "type": "string"
+                  },
+                  "store": {
+                    "default": "",
+                    "title": "Store",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file",
+                  "kind"
+                ],
+                "title": "MultiPartBodyParams",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJobOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Upload a sheet of a kind: validate every row and flag duplicates (nothing saved)",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/imports/jobs/{job_id}/rows": {
+      "get": {
+        "operationId": "imports_list_job_rows",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "description": "problems = errors and duplicates",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "problems",
+                    "valid",
+                    "warning",
+                    "error",
+                    "duplicate",
+                    "imported",
+                    "skipped"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "problems = errors and duplicates",
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ImportJobRowOut_"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The rows of an import of any kind in sheet order (paged, filtered by status)",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
     "/api/imports/patients": {
       "post": {
         "description": "Excel (.xlsx) or CSV, first sheet, header row in Arabic or English. 409 IMPORT_FILE_INVALID, IMPORT_FILE_TOO_LARGE, IMPORT_HEADERS_MISSING, IMPORT_NO_ROWS, IMPORT_TOO_MANY_ROWS.",
@@ -39283,6 +41538,106 @@
         ]
       }
     },
+    "/api/imports/templates/{kind}": {
+      "get": {
+        "description": "The response is the .xlsx file itself (attachment).",
+        "operationId": "imports_get_template",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "patients",
+                "items",
+                "prices"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "default": "en",
+              "enum": [
+                "ar",
+                "en"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "An empty import sheet (.xlsx) of a kind with its header row",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
     "/api/imports/{job_id}": {
       "get": {
         "operationId": "imports_get_job",
@@ -39450,7 +41805,7 @@
     },
     "/api/imports/{job_id}/confirm": {
       "post": {
-        "description": "409 IMPORT_JOB_CLOSED.",
+        "description": "Every kind goes through its module's services (patients registered, items created and opening stock posted as a goods receipt, prices put into the version that has not started). 409 IMPORT_JOB_CLOSED, IMPORT_NOTHING_TO_IMPORT, and for prices the catalog's refusals (PRICE_VERSION_LOCKED, ...).",
         "operationId": "imports_confirm_job",
         "parameters": [
           {
@@ -39540,7 +41895,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Register the valid rows (and, if asked, the possible duplicates)",
+        "summary": "Import the valid rows (and, if asked, the possible duplicates)",
         "tags": [
           "imports"
         ]
@@ -39610,6 +41965,7 @@
                   "enum": [
                     "problems",
                     "valid",
+                    "warning",
                     "error",
                     "duplicate",
                     "imported",
@@ -42018,6 +44374,165 @@
         ]
       }
     },
+    "/api/ops/backups/request": {
+      "post": {
+        "description": "409 BACKUP_REQUEST_OPEN (one is already waiting or running).",
+        "operationId": "ops_request_backup",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupRequestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupRequestOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Ask the backup service for a backup now (it picks the request up within minutes)",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/api/ops/export": {
+      "post": {
+        "description": "The response is the zip itself (attachment), streamed. Every export is recorded in the audit trail (who, when, which tables, row counts).",
+        "operationId": "ops_export_data",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Full data export: a zip of CSV files (patients, visits, invoices, payments, ...)",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
     "/api/ops/health": {
       "get": {
         "description": "200 when everything is ok; 503 with status=degraded when the database fails.",
@@ -42046,6 +44561,181 @@
           }
         },
         "summary": "Liveness and database health (no authentication)",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/api/ops/status": {
+      "get": {
+        "operationId": "ops_get_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemStatusOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "System status: database, disk, version, migrations, backups, restore tests",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/api/ops/updates": {
+      "get": {
+        "operationId": "ops_list_updates",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateHistoryOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The running version and the recorded updates with their release notes",
         "tags": [
           "ops"
         ]

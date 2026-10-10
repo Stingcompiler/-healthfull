@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { safeRedirectTarget } from "@/app/guards";
 import { visibleNav } from "@/app/nav";
 import { AppShell } from "@/components/AppShell";
+import { NotificationBell } from "@/features/notifications/NotificationBell";
 import { usePatientQuickSearch } from "@/features/patients/quick-search";
 import { useMe } from "@/lib/auth/hooks";
 
@@ -54,7 +55,7 @@ export function AppLayout() {
   const quickSearch = usePatientQuickSearch();
   return (
     <AuthGuard>
-      <AppShell nav={nav} quickSearch={quickSearch}>
+      <AppShell nav={nav} quickSearch={quickSearch} actions={<NotificationBell />}>
         <Outlet />
       </AppShell>
     </AuthGuard>
