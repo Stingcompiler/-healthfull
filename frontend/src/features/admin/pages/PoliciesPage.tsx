@@ -45,6 +45,7 @@ const optionalPercent = z
 
 const schema = z.object({
   allow_partial_payment: z.boolean(),
+  claims_second_approver: z.boolean(),
   show_estimated_cost: z.boolean(),
   partial_dispense_remainder: z.enum(["defer", "refund"]),
   pending_transfer_alert_days: intIn(1, 90),
@@ -63,6 +64,7 @@ type Values = z.infer<typeof schema>;
 function toValues(policy: PolicyOut): Values {
   return {
     allow_partial_payment: policy.allow_partial_payment,
+    claims_second_approver: policy.claims_second_approver,
     show_estimated_cost: policy.show_estimated_cost,
     partial_dispense_remainder: policy.partial_dispense_remainder,
     pending_transfer_alert_days: String(policy.pending_transfer_alert_days),
@@ -88,6 +90,7 @@ function toBody(values: Values): PolicyIn {
   }
   return {
     allow_partial_payment: values.allow_partial_payment,
+    claims_second_approver: values.claims_second_approver,
     show_estimated_cost: values.show_estimated_cost,
     partial_dispense_remainder: values.partial_dispense_remainder,
     pending_transfer_alert_days: Number(values.pending_transfer_alert_days),
@@ -154,6 +157,12 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
             name="allow_partial_payment"
             label={t("admin:policies.partialPayment")}
             description={t("admin:policies.partialPaymentHint")}
+          />
+          <SwitchField
+            control={form.control}
+            name="claims_second_approver"
+            label={t("admin:policies.claimsSecondApprover")}
+            description={t("admin:policies.claimsSecondApproverHint")}
           />
           <div className="grid gap-4 md:grid-cols-2">
             <TextField

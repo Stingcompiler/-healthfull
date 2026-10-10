@@ -323,6 +323,13 @@ class Policy(SingletonModel):
         default=_default_perform_first_roles,
         help_text="Role codes allowed to authorize perform-first exceptions.",
     )
+    claims_second_approver = models.BooleanField(
+        default=True,
+        help_text=(
+            "Rebills and write-offs of payer rejections need a second person besides the "
+            "recording user (FEATURES 11.5, ADR 0018)."
+        ),
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta(SingletonModel.Meta):

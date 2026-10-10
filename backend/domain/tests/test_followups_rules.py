@@ -11,6 +11,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from domain.audit import Approval, second_approval
+from domain.claims import resolution_approval
 from domain.errors import DomainError
 from domain.inpatient import NightLine, plan_admission_cancel
 from domain.service_line import (
@@ -160,3 +161,20 @@ def test_a_return_needs_a_reason() -> None:
     with pytest.raises(DomainError) as exc:
         return_approval(billed=False, actor_id=1, approver_id=None, at=AT)
     assert exc.value.code == "REASON_REQUIRED"
+
+
+# --- claims rebill and write-off ---------------------------------------------------------------
+
+
+@given(st.booleans(), ids, st.one_of(st.none(), ids))
+def test_claim_resolution_approval_follows_the_policy_switch(
+    second_person: bool, actor: int, approver: int | None
+) -> None:
+    kwargs = {"actor_id": actor, "approver_id": approver, "at": AT, "reason_code": "NOT_COVERED"}
+    if second_person and (approver is None or approver == actor):
+        with pytest.raises(DomainError) as exc:
+            resolution_approval(second_person=second_person, **kwargs)  # type: ignore[arg-type]
+        assert exc.value.code == "SECOND_APPROVER_REQUIRED"
+        return
+    approval = resolution_approval(second_person=second_person, **kwargs)  # type: ignore[arg-type]
+    assert approval.approver_id == (approver if second_person else actor)

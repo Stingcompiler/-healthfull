@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import { AlertCard } from "@/components/AlertCard";
-import { Form, SelectField, TextareaField, TextField } from "@/components/form";
+import { Form, SelectField, TextareaField } from "@/components/form";
 import { MoneyText } from "@/components/MoneyText";
 import { SecondApproverFields } from "@/components/SecondApproverFields";
 import { Button } from "@/components/ui/button";
@@ -17,24 +17,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { compareAmounts, isAmount, isPositiveAmount, normalizeAmountInput } from "@/features/cashier/lib/money";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { vmsg } from "@/lib/validation";
 
-import { useWriteOffShortfall } from "../api";
+import { useResolveRejection } from "../api";
 import { useClaimNames } from "../lib/names";
 import type { ClaimLine, ClaimReason } from "../types";
 
-function schemaFor(unpaid: string, secondApprover: boolean) {
+export type Resolution = "rebilled" | "written_off";
+
+function schemaFor(secondApprover: boolean) {
   const credential = secondApprover ? z.string().trim().min(1, vmsg("validation.required")) : z.string();
   return z.object({
-    amount: z
-      .string()
-      .trim()
-      .min(1, vmsg("validation.required"))
-      .refine(isAmount, vmsg("claims:validation.amount"))
-      .refine(isPositiveAmount, vmsg("claims:validation.positive"))
-      .refine((v) => compareAmounts(v, unpaid) !== 1, vmsg("claims:validation.atMostUnpaid")),
     reason: z.string().min(1, vmsg("validation.selectOption")),
     note: z.string().trim().max(500),
     username: credential,
@@ -44,51 +38,53 @@ function schemaFor(unpaid: string, secondApprover: boolean) {
 
 type Values = z.infer<ReturnType<typeof schemaFor>>;
 
-interface ShortfallDialogProps {
+interface ResolveDialogProps {
   claimId: number;
-  line: ClaimLine | null;
+  target: { line: ClaimLine; resolution: Resolution } | null;
   reasons: readonly ClaimReason[];
-  /** The center's policy: a second person approves write-offs (ADR 0018). */
+  /** The center's policy: a second person approves rebills and write-offs (ADR 0018). */
   secondApprover: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-/** Mounted only while open, so every write-off starts from a fresh form. */
-export function ShortfallDialog(props: ShortfallDialogProps) {
-  return props.line ? <ShortfallDialogOpen {...props} line={props.line} /> : null;
+/** Mounted only while open, so every resolution starts from a fresh form. */
+export function ResolveDialog(props: ResolveDialogProps) {
+  return props.target ? <ResolveDialogOpen {...props} target={props.target} /> : null;
 }
 
 /**
- * Write off accepted money the payer will not pay (withholding, deductions; FEATURES 11.5),
- * with a reason. The server records approver and time (invariant 4).
+ * Rebill a rejected amount to the patient or write it off (FEATURES 11.5), with a reason and,
+ * while the center's policy asks for it, a second person's credentials (ADR 0018). The server
+ * records the recorder, the approver and the time (invariant 4).
  */
-function ShortfallDialogOpen({
+function ResolveDialogOpen({
   claimId,
-  line,
+  target,
   reasons,
   secondApprover,
   onOpenChange,
-}: ShortfallDialogProps & { line: ClaimLine }) {
+}: ResolveDialogProps & { target: { line: ClaimLine; resolution: Resolution } }) {
   const { t } = useTranslation(["claims", "common", "errors"]);
   const translateError = useTranslateError();
   const names = useClaimNames();
-  const writeOff = useWriteOffShortfall();
+  const resolve = useResolveRejection();
   const [error, setError] = useState<string | null>(null);
+  const rebill = target.resolution === "rebilled";
   const form = useForm<Values>({
-    resolver: zodResolver(schemaFor(line.unpaid, secondApprover)),
-    defaultValues: { amount: line.unpaid, reason: "", note: "", username: "", password: "" },
+    resolver: zodResolver(schemaFor(secondApprover)),
+    defaultValues: { reason: "", note: "", username: "", password: "" },
   });
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
     try {
-      await writeOff.mutateAsync({
+      await resolve.mutateAsync({
         claimId,
-        lineId: line.id,
+        lineId: target.line.id,
         body: {
-          amount: normalizeAmountInput(v.amount),
+          resolution: target.resolution,
           reason: v.reason,
-          note: v.note,
+          note: v.note.trim(),
           approver: secondApprover ? { username: v.username.trim(), password: v.password } : null,
         },
       });
@@ -100,25 +96,21 @@ function ShortfallDialogOpen({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent data-testid="shortfall-dialog">
+      <DialogContent data-testid="resolve-dialog">
         <DialogHeader>
-          <DialogTitle>{t("shortfall.title")}</DialogTitle>
-          <DialogDescription>{t("shortfall.description")}</DialogDescription>
+          <DialogTitle>{rebill ? t("resolve.rebillTitle") : t("resolve.writeOffTitle")}</DialogTitle>
+          <DialogDescription>
+            {rebill ? t("resolve.rebillDescription") : t("resolve.writeOffDescription")}
+          </DialogDescription>
         </DialogHeader>
         <p className="flex flex-wrap items-center justify-between gap-2 rounded-control bg-subtle px-3 py-2 text-sm">
-          <span>{t("detail.unpaid")}</span>
-          <MoneyText value={line.unpaid} />
+          <span className="min-w-0">
+            {names.text(target.line.description_ar, target.line.description_en)} · {names.person(target.line.patient)}
+          </span>
+          <MoneyText value={target.line.unresolved_rejection} />
         </p>
         <Form {...form}>
           <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4">
-            <TextField
-              control={form.control}
-              name="amount"
-              label={t("shortfall.amount")}
-              inputMode="decimal"
-              dir="ltr"
-              required
-            />
             <SelectField
               control={form.control}
               name="reason"
@@ -150,8 +142,13 @@ function ShortfallDialogOpen({
               >
                 {t("common:actions.cancel")}
               </Button>
-              <Button type="submit" variant="destructive" loading={form.formState.isSubmitting}>
-                {t("shortfall.confirm")}
+              <Button
+                type="submit"
+                variant={rebill ? "default" : "destructive"}
+                loading={form.formState.isSubmitting}
+                data-testid="resolve-confirm"
+              >
+                {rebill ? t("detail.rebill") : t("detail.writeOff")}
               </Button>
             </DialogFooter>
           </form>

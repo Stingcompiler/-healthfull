@@ -1,4 +1,4 @@
-# 0018: Second-person approvals: admissions made in error and paid dispense returns
+# 0018: Second-person approvals: admissions made in error, paid dispense returns, claims
 
 Date: 2026-10-10. Status: accepted.
 
@@ -71,6 +71,17 @@ screens use one shared field set (`components/SecondApproverFields.tsx`).
   and refund (ADR 0008, 0009); the return may name the approved credit note that credits the
   line, and the screen links to the cashier desk for the visit.
 
+**Claims rebills and write-offs** (FEATURES 11.5; amends ADR 0012).
+- `Policy.claims_second_approver` (default on; core migration 0015, on the policies screen)
+  makes a rebill, a write-off of a rejection and a write-off of a short-paid accepted amount
+  need a second person: the recording user still holds `claims.resolve_rejection`, and the
+  approver typed at the accountant's desk must hold it too and be someone else
+  (`domain.claims.resolution_approval`, `SECOND_APPROVER_REQUIRED`, `APPROVER_NOT_PERMITTED`).
+- `ClaimLine` gains `resolution_approved_by` and `written_off_approved_by`; check
+  constraints refuse the recorder as approver. With the switch off they stay empty and the
+  recorder approves alone, as ADR 0012 decided (a center with one accountant).
+- `/api/claims/options` tells the screens whether the approver fields are needed.
+
 ## Consequences
 - A nurse on a night shift needs a cashier supervisor or manager on hand (or reachable) to
   cancel an admission made in error, as the lab bench does for a billed test (ADR 0010).
@@ -78,12 +89,16 @@ screens use one shared field set (`components/SecondApproverFields.tsx`).
   (credit the nights); the cancel action covers open admissions.
 - The performed-terminal exception is narrow by construction (unbilled, bed charge, cancelled
   admission); widening it needs a new ADR.
+- A center with a single accountant switches `claims_second_approver` off on the policies
+  screen; the audit trail records who changed the switch.
 
 ## Code
 `domain/audit.py` (`second_approval`), `domain/service_line.py` (`void_in_error`),
-`domain/inpatient.py`, `domain/stock.py` (`return_approval`), `apps/payments/approvals.py`,
+`domain/inpatient.py`, `domain/stock.py` (`return_approval`), `apps/payments/approvals.py`, `domain/claims.py` (`resolution_approval`),
+`apps/claims/services.py` (`resolve_rejection`, `write_off_shortfall`), `apps/claims/desk.py`,
 `apps/visits/services.py` (`cancel_admission`, `cancel_admission_at_desk`),
 `apps/visits/inpatient_api.py`, `apps/orders/services.py` (`void_line_in_error`,
 `end_stay_authorization`), `apps/orders/models.py` (`line_guard`), `apps/pharmacy/services.py`
 (`return_dispense`), `apps/pharmacy/queries.py`, `apps/pharmacy/api.py`; frontend
-`features/nursing/components/CancelAdmissionDialog.tsx`, `features/pharmacy/pages/ReturnsPage.tsx`.
+`features/nursing/components/CancelAdmissionDialog.tsx`, `features/pharmacy/pages/ReturnsPage.tsx`,
+`features/claims/components/ResolveDialog.tsx`, `ShortfallDialog.tsx`.

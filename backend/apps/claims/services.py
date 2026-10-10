@@ -36,7 +36,7 @@ import importlib
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from types import ModuleType
 
@@ -57,8 +57,8 @@ from apps.claims.models import (
     PayerPaymentMethod,
     Resolution,
 )
-from apps.core.models import User
-from apps.core.services import next_number, require_permission, resolve_reason
+from apps.core.models import Policy, User
+from apps.core.services import holds_permission, next_number, require_permission, resolve_reason
 from apps.ledger import services as ledger
 from apps.payments.models import Bank, Shift, ShiftStatus
 from domain import claims as dclaims
@@ -464,6 +464,35 @@ def record_responses(claim: Claim, responses: Sequence[ClaimResponse], *, actor:
     return locked
 
 
+def _resolution_approval(
+    actor: User, approver: User | None, *, at: datetime, note: str, reason_code: str
+) -> tuple[Approval, User | None]:
+    """The approval of a rebill or write-off and the second person to record, if any.
+
+    ``Policy.claims_second_approver`` (default on, ADR 0018) requires someone other than the
+    recording user, holding ``claims.resolve_rejection``; off, the recorder approves alone
+    (ADR 0012).
+    """
+    second = Policy.load().claims_second_approver
+    approval = dclaims.resolution_approval(
+        second_person=second,
+        actor_id=actor.pk,
+        approver_id=None if approver is None else approver.pk,
+        at=at,
+        reason=note,
+        reason_code=reason_code,
+    )
+    if not second:
+        return approval, None
+    if approver is None or not holds_permission(approver, "claims.resolve_rejection"):
+        raise DomainError(
+            "APPROVER_NOT_PERMITTED",
+            "The approver may not approve this action",
+            permission="claims.resolve_rejection",
+        )
+    return approval, approver
+
+
 def resolve_rejection(
     claim_line: ClaimLine,
     *,
@@ -471,15 +500,18 @@ def resolve_rejection(
     actor: User,
     reason_code: str,
     note: str = "",
+    approver: User | None = None,
 ) -> ClaimLine:
     """Rebill the rejected part to the patient or write it off (FEATURES 11.5, invariant 4).
 
     Rebill: Dr AR_PATIENT / Cr AR_PAYER on the original invoice; the patient now owes it
     and the invoice's line settlement is refreshed. Write-off: Dr WRITE_OFF / Cr AR_PAYER.
+    A second person (``approver``) approves while ``Policy.claims_second_approver`` is on.
 
     Raises:
         PermissionDenied: without ``claims.resolve_rejection``.
-        DomainError: ``CLAIM_NOTHING_REJECTED``, ``INVALID_RESOLUTION``, reason errors.
+        DomainError: ``CLAIM_NOTHING_REJECTED``, ``INVALID_RESOLUTION``,
+            ``SECOND_APPROVER_REQUIRED``, ``APPROVER_NOT_PERMITTED``, reason errors.
     """
     require_permission(actor, "claims.resolve_rejection")
     if resolution not in (Resolution.REBILLED, Resolution.WRITTEN_OFF):
@@ -492,7 +524,9 @@ def resolve_rejection(
             _orders().lock_patient(invoice.patient_id)
         locked = ClaimLine.objects.select_for_update().get(pk=claim_line.pk)
         now = timezone.now()
-        approval = Approval(actor.pk, now, note, reason.code)
+        approval, second = _resolution_approval(
+            actor, approver, at=now, note=note, reason_code=reason.code
+        )
         dclaims.resolve_rejection(
             claim_line_state(locked), dclaims.Resolution(resolution), approval
         )
@@ -500,6 +534,7 @@ def resolve_rejection(
         locked.resolution_reason = reason
         locked.resolution_note = note.strip()
         locked.resolved_by = actor
+        locked.resolution_approved_by = second
         locked.resolved_at = now
         locked.save(
             update_fields=[
@@ -507,6 +542,7 @@ def resolve_rejection(
                 "resolution_reason",
                 "resolution_note",
                 "resolved_by",
+                "resolution_approved_by",
                 "resolved_at",
             ]
         )
@@ -792,14 +828,16 @@ def write_off_shortfall(
     actor: User,
     reason_code: str,
     note: str = "",
+    approver: User | None = None,
 ) -> ClaimLine:
     """Write off accepted money the payer will not pay (withholding, deductions; FEATURES
     11.5-11.7): Dr WRITE_OFF / Cr AR_PAYER, with reason, approver and time (invariant 4).
+    A second person (``approver``) approves while ``Policy.claims_second_approver`` is on.
 
     Raises:
         PermissionRequired: without ``claims.resolve_rejection``.
         DomainError: ``CLAIM_NOTHING_UNPAID``, ``CLAIM_AMOUNT_INVALID``, ``INVALID_AMOUNT``,
-            reason errors.
+            ``SECOND_APPROVER_REQUIRED``, ``APPROVER_NOT_PERMITTED``, reason errors.
     """
     require_permission(actor, "claims.resolve_rejection")
     reason = resolve_reason(reason_code, "writeoff", note)
@@ -811,13 +849,15 @@ def write_off_shortfall(
             .get(pk=claim_line.pk)
         )
         now = timezone.now()
-        after = dclaims.write_off_shortfall(
-            claim_line_state(locked), amount, Approval(actor.pk, now, note, reason.code)
+        approval, second = _resolution_approval(
+            actor, approver, at=now, note=note, reason_code=reason.code
         )
+        after = dclaims.write_off_shortfall(claim_line_state(locked), amount, approval)
         locked.written_off_amount = after.written_off
         locked.written_off_reason = reason
         locked.written_off_note = note.strip()
         locked.written_off_by = actor
+        locked.written_off_approved_by = second
         locked.written_off_at = now
         locked.save(
             update_fields=[
@@ -825,6 +865,7 @@ def write_off_shortfall(
                 "written_off_reason",
                 "written_off_note",
                 "written_off_by",
+                "written_off_approved_by",
                 "written_off_at",
             ]
         )

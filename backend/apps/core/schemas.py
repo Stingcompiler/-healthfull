@@ -258,6 +258,9 @@ class PolicyOut(Schema):
     discount_limit_percent: dict[str, float]
     session_idle_minutes: int
     perform_first_roles: list[str]
+    claims_second_approver: bool = Field(
+        ..., description="Claims rebills and write-offs need a second person (ADR 0018)"
+    )
     updated_at: datetime | None
 
 
@@ -271,6 +274,9 @@ class PolicyIn(Schema):
     discount_limit_percent: dict[RoleCode, Percent]
     session_idle_minutes: int = Field(..., ge=5, le=1440)
     perform_first_roles: list[RoleCode] = Field(..., max_length=12)
+    claims_second_approver: bool | None = Field(
+        None, description="Omitted or null keeps the current value"
+    )
 
 
 # --- Departments, rooms, doctors ---------------------------------------------------------

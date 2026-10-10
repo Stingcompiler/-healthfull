@@ -266,7 +266,9 @@
     "estimatedCostHint": "Only doctors with the permission see it.",
     "sessionIdle": "Sign out after inactivity (minutes)",
     "range": "Enter a number from {{min}} to {{max}}.",
-    "saved": "Policies saved"
+    "saved": "Policies saved",
+    "claimsSecondApprover": "A second person approves claim rebills and write-offs",
+    "claimsSecondApproverHint": "Rebilling a payer rejection to the patient or writing it off needs another person's username and password besides the accountant who records it. Turn off only when one accountant works alone."
   },
   "departments": {
     "departmentsTab": "Departments",

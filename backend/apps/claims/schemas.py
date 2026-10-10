@@ -13,6 +13,8 @@ from typing import Annotated, Literal
 
 from ninja import Field, Schema
 
+from apps.billing.schemas import ApproverIn
+
 #: A money amount as the API sends it: two decimal places, e.g. "15000.00".
 ClaimMoney = Annotated[str, Field(pattern=r"^-?[0-9]+\.[0-9]{2}$", examples=["15000.00"])]
 #: A money amount sent by the client (Arabic-Indic digits and separator accepted; a third
@@ -101,6 +103,9 @@ class ClaimOptionsOut(Schema):
     banks: list[ClaimNameOut]
     write_off_reasons: list[ClaimReasonOut]
     open_shift: ClaimShiftOut | None
+    second_approver_required: bool = Field(
+        ..., description="Rebills and write-offs need a second person (Policy, ADR 0018)"
+    )
 
 
 # --- receivables and aging (FEATURES 11.2, 11.7) ------------------------------------------
@@ -282,12 +287,18 @@ class ClaimResolveIn(Schema):
     resolution: Literal["rebilled", "written_off"]
     reason: str = Field(..., min_length=1, max_length=40, description="A write-off reason code.")
     note: str = Field("", max_length=500)
+    approver: ApproverIn | None = Field(
+        None, description="A second person's credentials while the policy requires one"
+    )
 
 
 class ClaimShortfallIn(Schema):
     amount: ClaimMoneyIn
     reason: str = Field(..., min_length=1, max_length=40)
     note: str = Field("", max_length=500)
+    approver: ApproverIn | None = Field(
+        None, description="A second person's credentials while the policy requires one"
+    )
 
 
 class ClaimPayerOutDetail(ClaimPayerOut):

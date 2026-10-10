@@ -19,6 +19,7 @@ from apps.claims import queries
 from apps.claims import services as cs
 from apps.claims.models import Claim, ClaimLine, ClaimLineStatus, PayerPayment
 from apps.core.models import User
+from apps.payments.approvals import ApproverLogin, resolve_approver
 from apps.payments.models import Bank
 from domain import claims as dclaims
 from domain.errors import DomainError
@@ -122,25 +123,47 @@ def record_responses(
 
 
 def resolve_rejection(
-    claim_id: int, line_id: int, *, actor: User, resolution: str, reason: str, note: str
+    claim_id: int,
+    line_id: int,
+    *,
+    actor: User,
+    resolution: str,
+    reason: str,
+    note: str,
+    approver: ApproverLogin | None = None,
 ) -> dict[str, Any]:
-    """Rebill the rejected part to the patient or write it off, with a reason (11.5)."""
+    """Rebill the rejected part to the patient or write it off, with a reason (11.5); a
+    second person types their credentials while the policy asks for one (ADR 0018)."""
     cs.resolve_rejection(
         _line_of(claim_id, line_id),
         resolution=resolution,
         actor=actor,
         reason_code=reason,
         note=note,
+        approver=resolve_approver(approver, actor=actor),
     )
     return queries.claim_detail(claim_id)
 
 
 def write_off_shortfall(
-    claim_id: int, line_id: int, *, actor: User, amount: Decimal, reason: str, note: str
+    claim_id: int,
+    line_id: int,
+    *,
+    actor: User,
+    amount: Decimal,
+    reason: str,
+    note: str,
+    approver: ApproverLogin | None = None,
 ) -> dict[str, Any]:
-    """Write off accepted money the payer will not pay, with a reason (11.5)."""
+    """Write off accepted money the payer will not pay, with a reason (11.5); a second person
+    approves while the policy asks for one (ADR 0018)."""
     cs.write_off_shortfall(
-        _line_of(claim_id, line_id), amount, actor=actor, reason_code=reason, note=note
+        _line_of(claim_id, line_id),
+        amount,
+        actor=actor,
+        reason_code=reason,
+        note=note,
+        approver=resolve_approver(approver, actor=actor),
     )
     return queries.claim_detail(claim_id)
 

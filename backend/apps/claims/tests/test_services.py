@@ -20,6 +20,8 @@ from apps.billing.models import Invoice, InvoiceLine
 from apps.catalog.models import CoverageRule, PriceItem, PriceList, PriceListVersion
 from apps.claims import services as cs
 from apps.claims.models import Claim, ClaimLine, PayerPaymentAllocation
+from apps.claims.tests.approvers import second
+from apps.core.models import Policy
 from apps.core.tests import builders as b
 from apps.ledger import services as ledger
 from apps.orders import services as orders
@@ -293,27 +295,47 @@ def test_write_off_and_rebill_post_to_the_ledger(answered, accountant, cashier) 
     payer, _claim, full, part, rejected = answered
     with pytest.raises(PermissionDenied):
         cs.resolve_rejection(
-            rejected, resolution="written_off", actor=cashier, reason_code="NOT_COVERED"
+            rejected,
+            resolution="written_off",
+            actor=cashier,
+            reason_code="NOT_COVERED",
+            approver=second(),
         )
     with pytest.raises(DomainError) as exc:
         cs.resolve_rejection(
-            full, resolution="written_off", actor=accountant, reason_code="NOT_COVERED"
+            full,
+            resolution="written_off",
+            actor=accountant,
+            reason_code="NOT_COVERED",
+            approver=second(),
         )
     assert exc.value.code == "CLAIM_NOTHING_REJECTED"
     with pytest.raises(DomainError) as exc:
         cs.resolve_rejection(
-            rejected, resolution="forgiven", actor=accountant, reason_code="NOT_COVERED"
+            rejected,
+            resolution="forgiven",
+            actor=accountant,
+            reason_code="NOT_COVERED",
+            approver=second(),
         )
     assert exc.value.code == "INVALID_RESOLUTION"
     with pytest.raises(DomainError) as exc:
         cs.resolve_rejection(
-            rejected, resolution="written_off", actor=accountant, reason_code="OTHER"
+            rejected,
+            resolution="written_off",
+            actor=accountant,
+            reason_code="OTHER",
+            approver=second(),
         )
     assert exc.value.code == "REASON_NOTE_REQUIRED"
 
     before = ar_payer(payer)
     off = cs.resolve_rejection(
-        part, resolution="written_off", actor=accountant, reason_code="SMALL_BALANCE"
+        part,
+        resolution="written_off",
+        actor=accountant,
+        reason_code="SMALL_BALANCE",
+        approver=second(),
     )
     assert off.resolved_by == accountant
     assert off.resolution_reason is not None
@@ -323,7 +345,11 @@ def test_write_off_and_rebill_post_to_the_ledger(answered, accountant, cashier) 
     invoice = rejected.invoice_line.invoice
     patient_before = billing.invoice_position(invoice).outstanding
     rebilled = cs.resolve_rejection(
-        rejected, resolution="rebilled", actor=accountant, reason_code="NOT_COVERED"
+        rejected,
+        resolution="rebilled",
+        actor=accountant,
+        reason_code="NOT_COVERED",
+        approver=second(),
     )
     assert rebilled.resolution == "rebilled"
     assert ar_payer(payer) == before - D("22.00")
@@ -334,7 +360,11 @@ def test_write_off_and_rebill_post_to_the_ledger(answered, accountant, cashier) 
     )
     with pytest.raises(DomainError) as exc:
         cs.resolve_rejection(
-            rejected, resolution="written_off", actor=accountant, reason_code="NOT_COVERED"
+            rejected,
+            resolution="written_off",
+            actor=accountant,
+            reason_code="NOT_COVERED",
+            approver=second(),
         )
     assert exc.value.code == "CLAIM_NOTHING_REJECTED"
     receivable = cs.payer_receivables(payer=payer)[payer.pk]
@@ -420,10 +450,18 @@ def test_payer_payment_allocation_and_close(answered, accountant) -> None:
     assert receivable.accepted_unpaid == D("0.00")
     assert cs.claim_line_state(ClaimLine.objects.get(pk=full.pk)).status == "paid"
     cs.resolve_rejection(
-        part, resolution="written_off", actor=accountant, reason_code="SMALL_BALANCE"
+        part,
+        resolution="written_off",
+        actor=accountant,
+        reason_code="SMALL_BALANCE",
+        approver=second(),
     )
     cs.resolve_rejection(
-        rejected, resolution="rebilled", actor=accountant, reason_code="NOT_COVERED"
+        rejected,
+        resolution="rebilled",
+        actor=accountant,
+        reason_code="NOT_COVERED",
+        approver=second(),
     )
     reconciles(payer)
     assert ar_payer(payer) == D("0.00")
@@ -478,7 +516,9 @@ def test_documents_always_reconcile_with_ar_payer(
     reconciles(payer)
     for cl, how in zip(_lines(claim), resolutions, strict=False):
         if how != "none" and cl.rejected_amount > 0:
-            cs.resolve_rejection(cl, resolution=how, actor=accountant, reason_code="NOT_COVERED")
+            cs.resolve_rejection(
+                cl, resolution=how, actor=accountant, reason_code="NOT_COVERED", approver=second()
+            )
     reconciles(payer)
     accepted_total = sum((cl.accepted_amount for cl in _lines(claim)), D(0))
     pay = (accepted_total * pay_ratio / 100).quantize(D("0.01"))
@@ -494,3 +534,95 @@ def test_documents_always_reconcile_with_ar_payer(
     row = cs.payer_receivables(payer=payer)[payer.pk]
     assert row.collected == pay
     assert ledger.account_balance("CASH") == D("0.00")  # payer money never reaches CASH
+
+
+# --- a second person approves rebills and write-offs (FEATURES 11.5, ADR 0018) ---------------
+
+
+def _policy(on: bool) -> None:
+    Policy.objects.filter(pk=Policy.load().pk).update(claims_second_approver=on)
+
+
+def test_the_switch_is_on_by_default() -> None:
+    assert Policy.load().claims_second_approver is True
+
+
+def test_a_rebill_needs_someone_else_who_may_resolve(answered, accountant, make_user) -> None:
+    payer, _claim, _full, _part, rejected = answered
+    before = ar_payer(payer)
+    for approver, code in (
+        (None, "SECOND_APPROVER_REQUIRED"),
+        (accountant, "SECOND_APPROVER_REQUIRED"),
+        (make_user("cashier2", roles=["cashier"]), "APPROVER_NOT_PERMITTED"),
+    ):
+        with pytest.raises(DomainError) as exc:
+            cs.resolve_rejection(
+                rejected,
+                resolution="rebilled",
+                actor=accountant,
+                reason_code="NOT_COVERED",
+                approver=approver,
+            )
+        assert exc.value.code == code
+    assert ar_payer(payer) == before  # nothing posted
+    manager = second()
+    done = cs.resolve_rejection(
+        rejected,
+        resolution="rebilled",
+        actor=accountant,
+        reason_code="NOT_COVERED",
+        approver=manager,
+    )
+    assert done.resolved_by == accountant
+    assert done.resolution_approved_by == manager
+    assert done.resolved_at is not None
+    assert ar_payer(payer) == before - D("7.00")
+
+
+def test_a_short_pay_write_off_needs_someone_else(answered, accountant) -> None:
+    payer, _claim, full, _part, _rejected = answered
+    with pytest.raises(DomainError) as exc:
+        cs.write_off_shortfall(full, D("5.00"), actor=accountant, reason_code="SMALL_BALANCE")
+    assert exc.value.code == "SECOND_APPROVER_REQUIRED"
+    manager = second()
+    line = cs.write_off_shortfall(
+        full, D("5.00"), actor=accountant, reason_code="SMALL_BALANCE", approver=manager
+    )
+    assert line.written_off_by == accountant
+    assert line.written_off_approved_by == manager
+    assert ledger.account_balance("WRITE_OFF", payer=payer) == D("5.00")
+
+
+def test_switched_off_the_recorder_approves_alone(answered, accountant) -> None:
+    _policy(False)
+    _payer, _claim, _full, part, _rejected = answered
+    done = cs.resolve_rejection(
+        part, resolution="written_off", actor=accountant, reason_code="SMALL_BALANCE"
+    )
+    assert done.resolved_by == accountant
+    assert done.resolution_approved_by is None
+
+
+def test_db_refuses_the_recorder_as_approver(answered, accountant) -> None:
+    _payer, _claim, full, _part, rejected = answered
+    reason = b.reason("writeoff")
+    b.db_rejects(
+        lambda: ClaimLine.objects.filter(pk=rejected.pk).update(
+            resolution="written_off",
+            resolution_reason=reason,
+            resolved_by=accountant,
+            resolution_approved_by=accountant,
+            resolved_at=timezone.now(),
+        ),
+        "claims_line_resolution_second_person",
+    )
+    b.db_rejects(
+        lambda: ClaimLine.objects.filter(pk=full.pk).update(
+            written_off_amount=D("1.00"),
+            written_off_reason=reason,
+            written_off_by=accountant,
+            written_off_approved_by=accountant,
+            written_off_at=timezone.now(),
+        ),
+        "claims_line_write_off_second_person",
+    )
