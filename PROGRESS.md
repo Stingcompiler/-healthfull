@@ -5,13 +5,13 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | Phase | Status | Notes |
 |---|---|---|
 | 0. Foundation | done (merged PR #1); Docker run pending in CI | `make check` and `make e2e` green locally; Docker exit gate (`docker compose up` shows a working login) not run: no Docker on the build machine, first run is the CI `docker` job |
-| 1. Domain core + schema | done on `feat/1-domain-core`; merge to main pending | backend 1290 tests (396 domain), all passing; ADR 0006; follow-ups below |
-| 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merge to main pending | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
-| 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merge to main pending | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
-| 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merge to main pending | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
-| 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merge to main pending | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
-| 6. Claims, reports, admin, ops | done on `wave/c`: admin on `wave/a` (from `feat/a-admin`); claims on `wave/b` (from `feat/b-claims`); reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
-| 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
+| 1. Domain core + schema | done; merged to main (PR #3) | backend 1290 tests (396 domain), all passing; ADR 0006; follow-ups below |
+| 2. Patients and visits | done on `wave/a` (merged from `feat/a-patients`); merged to main (PR #4) | FEATURES 0.9, 1.1-1.6, 1.8, 2.1-2.7 |
+| 3. Doctor and orders | done on `wave/a` (merged from `feat/a-clinic`); merged to main (PR #4) | FEATURES 3.1-3.9, 4.1, 4.2 (4.3, 4.5 as services); follow-ups below |
+| 4. Billing, payments, shifts | done on `wave/a` (merged from `feat/a-cashier`); merged to main (PR #4) | FEATURES 0.10 (invoice, receipt, shift report), 4.4, 5.3, 5.4, 5.6, 5.8-5.11, 6.1-6.9, 7.1-7.6; follow-ups below |
+| 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merged to main (PR #5) | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
+| 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merge to main pending (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
+| 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merge to main pending (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
 | 8. Hardening and handover | not started | |
 
 ## Phase 0 checklist
@@ -43,7 +43,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
       claims, pharmacy, lab, catalog, patients, visits, clinical; one router per module
 - [x] Adversarial review: 54 reported issues, 49 confirmed and fixed with regression tests
 - [x] ADR 0006 (Phase 1 money and stock rules); ARCHITECTURE 4.4-4.9 updated to the implementation
-- [ ] Merged to main
+- [x] Merged to main (PR #3)
 
 ## Follow-ups (from ADR 0006 "Differences found")
 
@@ -160,8 +160,8 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 - The clinic's results tab can now show approved results; its screenshot in
   `e2e/tests/clinic/states.spec.ts` still captures the empty state (clinic follow-up above).
-- Results reach the patient with the portal (Phase 7); FEATURES 9.4 "visible to the patient"
-  is not wired yet.
+- [x] Results reach the patient with the portal (Phase 7): FEATURES 9.4 "visible to the
+  patient" is wired since wave c (approved versions only, `/portal/results`).
 - Lab prints (`LabPrintFrame`) import the cashier's `features/cashier/components/print.css`
   across features; moving the print frame and stylesheet to `src/components/print/` (clinic
   follow-up) should take the lab with it.
@@ -208,13 +208,13 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - Payer receivables read per payer through `claims.queries` (query count grows with payers).
 - The dashboard's low-stock alert has no report to open (no low-stock report screen beyond the
   pharmacy's own list); 12.12-12.14 (P2) are not built.
-- Pre-existing, outside reports: `domain/tests/test_visit_machine.py::TestVisitMachine` fails
+- [x] Pre-existing, outside reports: `domain/tests/test_visit_machine.py::TestVisitMachine` fails
   with a Hypothesis example (saved in this worktree's `backend/.hypothesis`): after a bank
   transfer with `allow_partial=False` and an opening float of 0.01, rejecting a still-pending
   transfer plans `uncovered` 10.14 (and in a second example a recovery row of -1205.00), which
   the model says is impossible for pending money. Needs a look in `domain/allocation.py`
-  (`plan_rejection`) or the model. Being fixed on `fix/plan-rejection-pending`; on `wave/c`
-  (no saved example) the test passed in `make check`.
+  (`plan_rejection`) or the model. Fixed on `main` by PR #6 (`plan_rejection` takes the
+  pending and spendable amounts, ADR 0015), merged into `wave/c`.
 - Detail sections stop at 2,000 rows (the screen and the workbook say so); a paged export for
   very long periods is not built.
 
@@ -253,15 +253,23 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (wave c integration)
 
-- ADR numbers: reports took 0013 and ops 0014; the next ADR is 0015.
-- The payment-engine bug found by `test_visit_machine.py` (reports follow-ups) is fixed on its
-  own branch, `fix/plan-rejection-pending`; merge it before `wave/c` goes to `main`.
+- ADR numbers: reports took 0013, ops 0014, the transfer rejection fix on `main` 0015 and the
+  portal 0016; the next ADR is 0017.
+- [x] The payment-engine bug found by `test_visit_machine.py` (reports follow-ups): fixed on
+  `main` (PR #6, ADR 0015) and merged into `wave/c` with `origin/main`.
 - E2E under load: setup-heavy responsive cases (`nursing-desk` builds a paid procedure through
   several `e2e_fixture` calls; `patient-file` waits until no region of the file is still
-  loading) exceed the 30 s test timeout when the machine is loaded or wakes from sleep. After
-  a timeout the worker restarts and builds its data again, so failures come in runs. Building
-  this data once in a global setup, or a longer timeout for these cases, would remove it.
-- The full e2e now takes far longer on this machine (1657 tests); CI runs four shards.
+  loading) exceed the 30 s test timeout when the machine is loaded (other agents' runs pushed
+  the load to 50-70) or wakes from sleep. After a timeout the worker restarts and builds its
+  data again, so failures come in runs. Building this data once in a global setup, or a
+  longer timeout for these cases, would remove it. Each `e2e_fixture` call is a `manage.py`
+  process (about 9 s for a paid visit under load); a long-running fixture server would cut
+  the full run time.
+- E2E and the host network: when the machine's network changes (Wi-Fi or VPN), Chromium
+  aborts in-flight requests even to 127.0.0.1 (`net::ERR_NETWORK_CHANGED`) and a case whose
+  module loads were cut shows a blank page. Seen on 9 claims cases across three runs, each
+  passing in another run.
+- The full e2e is now 1844 tests (1.7 h on one worker here); CI runs four shards.
 
 ## FEATURES 14 (data protection and operations) status
 
@@ -279,11 +287,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - 14.6: `docs/runbooks/backup-restore.md` and `install.md`; a timed replace-the-server drill
   has not been run (no Docker on the build machine).
 
-## Next: merge waves b and c to main
+## Next: merge wave c to main, then Phase 8
 
-Pharmacy, lab, nursing and claims are merged on `wave/b`; reports and ops on `wave/c` (built
-from `wave/b`). Merge `fix/plan-rejection-pending`, then take `wave/c` to `main`. The patient
-portal (Phase 7) is being built on `feat/c-portal`.
+Wave c (reports, ops, patient portal, with `main`'s transfer rejection fix) is complete on
+`wave/c` (PR #7). Take it to `main`, then Phase 8 (hardening and handover).
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.
@@ -510,3 +517,30 @@ portal (Phase 7) is being built on `feat/c-portal`.
   2 failed of 258; both failures were cashier specs running while the machine slept (3.7 h test
   time) and passed on a rerun of `@cashier (money flow|review fixes)` (5 of 5). Portal matrix
   alone earlier: 200 of 200.
+- 2026-10-10: Wave c integration on `wave/c` (PR #7): merged `feat/c-reports` (FEATURES 4.5,
+  12.1-12.11, ADR 0013), `feat/c-ops` (1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer,
+  ADR 0014), `origin/main` (transfer rejection fix, PR #6, ADR 0015) and `feat/c-portal`
+  (15.1, 15.2, 9.4 visible to the patient, ADR 0016), in that order, `--no-ff`. Conflicts:
+  reports merged without any; ops: `CHANGELOG.md` and `PROGRESS.md` only (both sides kept;
+  `resources.ts`, `nav.json` and the generated API files merged cleanly and `make api`
+  reproduced them byte for byte); `origin/main` without any; portal: `CHANGELOG.md`,
+  `PROGRESS.md`, `errors.json` ar/en (ops' 14 codes and the portal's 7 kept; 407 codes, ar/en
+  in parity) and the generated API files (regenerated with `make api`). `maintenance.py`
+  (portal housekeeping) and `api/tests/test_main.py` (portal allowlists) merged cleanly; no
+  migration clashes; OpenAPI class names stay unique. Integration fix: the clinic
+  doctor-states e2e `beforeAll` gets a 120 s timeout (it hit the 30 s hook default).
+  Results after reports and ops: `make check` green (backend 1966 passed, frontend 485
+  passed); `make infra-test` 55 checks passed; full `make e2e` 1652 passed, 5 failed of 1657
+  (5.3 h: the machine hibernated on a 1% battery from 04:47 to 08:30; the 5 failures,
+  `nursing-desk` 1280 x4 and `patient-file` 1280 light ar, ran across the sleep and wake).
+  Results after `origin/main` and the portal: `make check` green (backend 2109 passed,
+  including `test_visit_machine.py` and the new allocation tests; frontend 485 passed; ruff,
+  mypy, eslint, prettier and tsc clean, no missing migrations, API contract in sync;
+  shellcheck not installed here); `make infra-test` 55 checks passed; full `make e2e` 1834
+  passed, 2 failed, 8 did not run of 1844 (1.7 h). Failures: the clinic doctor-states
+  `beforeAll` timeout (fixed above; its 8 serial cases did not run), then
+  `make e2e E2E_GREP="doctor states"` 9 of 9 passed; `claims` 768 dark ar a blank page from
+  `net::ERR_NETWORK_CHANGED`, then the claims screens (`@responsive.*claims`, 162 cases)
+  passed 155 and 161 in two reruns, every failure again `ERR_NETWORK_CHANGED`, and the last
+  one (`claims-build` 1280 warm ar) passed alone. Every route passed at 375, 768 and 1280 in
+  at least one run with the bell in the shell.
