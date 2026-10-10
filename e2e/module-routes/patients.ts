@@ -33,4 +33,9 @@ export const routes: readonly AppRoute[] = [
     resolve: richPatientFile,
     ready: (page) => loaded(page, '[data-testid="merge-history"]'),
   }),
+  appRoute("patient-portal-code", "/patients/$patientId/portal-code", {
+    // A file with a phone (the factory generates one): reception may issue a portal code.
+    resolve: async () => `/patients/${String((await createPatient()).patient.id)}/portal-code`,
+    ready: (page) => loaded(page, '[data-testid="portal-code-issue"]'),
+  }),
 ];

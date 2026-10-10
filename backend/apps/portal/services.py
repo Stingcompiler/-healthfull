@@ -68,16 +68,20 @@ __all__ = [
     "IssuedCode",
     "LoginResult",
     "PortalPrincipal",
+    "access_codes",
     "authenticate",
     "book_appointment",
     "bookable_doctor",
     "cancel_appointment",
     "issue_access_code",
+    "issue_access_code_for_patient",
+    "issue_slip_for_patient",
     "login",
     "logout",
     "portal_actor",
     "purge_stale",
     "receipt_verify_token",
+    "revoke_access_code",
     "verify_receipt",
 ]
 
@@ -212,7 +216,27 @@ def issue_access_code(
         DomainError: ``PORTAL_PHONE_REQUIRED`` (the file has no phone to sign in with).
     """
     payment = Payment.objects.select_related("patient").get(pk=payment_id)
-    patient = payment.patient
+    return _issue(payment.patient, actor=actor, request=request, payment=payment.number)
+
+
+def issue_access_code_for_patient(
+    patient_id: int, *, actor: User, request: HttpRequest | None = None
+) -> IssuedCode:
+    """A new portal access code issued from the patient's file at reception, for the printed
+    slip (portal follow-up). A merged file's code goes to the file it was merged into, where
+    the person signs in. Earlier codes are revoked as at the cashier.
+
+    Raises:
+        Patient.DoesNotExist: no such file (404).
+        DomainError: ``PORTAL_PHONE_REQUIRED``.
+    """
+    patient = patients.resolve(Patient.objects.get(pk=patient_id))
+    return _issue(patient, actor=actor, request=request, payment="")
+
+
+def _issue(
+    patient: Patient, *, actor: User, request: HttpRequest | None, payment: str
+) -> IssuedCode:
     if not (patient.phone_norm or patient.phone_alt_norm):
         raise DomainError(
             "PORTAL_PHONE_REQUIRED", "Add a phone number to the file before giving portal access"
@@ -241,12 +265,97 @@ def issue_access_code(
             patient=patient,
             file_no=patient.file_no,
             actor=actor,
-            payment=payment.number,
+            payment=payment,
             code_id=row.pk,
         )
     return IssuedCode(
         code=dportal.format_access_code(code), expires_at=row.expires_at, file_no=patient.file_no
     )
+
+
+def issue_slip_for_patient(
+    patient_id: int, *, actor: User, request: HttpRequest | None = None
+) -> dict[str, Any]:
+    """:func:`issue_access_code_for_patient` with what the printed slip shows: the code, its
+    expiry and the file's number and names."""
+    issued = issue_access_code_for_patient(patient_id, actor=actor, request=request)
+    patient = patients.resolve(Patient.objects.get(pk=patient_id))
+    return {
+        "code": issued.code,
+        "expires_at": issued.expires_at,
+        "file_no": issued.file_no,
+        "full_name_ar": patient.full_name_ar,
+        "full_name_en": patient.full_name_en,
+    }
+
+
+@dataclass(frozen=True, slots=True)
+class AccessCodeRow:
+    """One issued code as staff see it: never the code itself, only its state."""
+
+    code: PortalAccessCode
+    state: str  # active, expired, locked, revoked
+
+
+def _code_state(code: PortalAccessCode, now: datetime) -> str:
+    if code.revoked_at is not None:
+        return "revoked"
+    if code.locked_at is not None:
+        return "locked"
+    if code.expires_at <= now:
+        return "expired"
+    return "active"
+
+
+def access_codes(patient_id: int, *, limit: int = 10) -> tuple[Patient, list[AccessCodeRow]]:
+    """The file's portal codes, newest first (of the surviving file of a merged one).
+
+    Raises:
+        Patient.DoesNotExist: no such file (404).
+    """
+    patient = patients.resolve(Patient.objects.get(pk=patient_id))
+    now = timezone.now()
+    rows = (
+        PortalAccessCode.objects.filter(patient=patient)
+        .select_related("created_by", "revoked_by")
+        .order_by("-created_at", "-id")[:limit]
+    )
+    return patient, [AccessCodeRow(code=c, state=_code_state(c, now)) for c in rows]
+
+
+def revoke_access_code(
+    code_id: int, *, actor: User, note: str, request: HttpRequest | None = None
+) -> PortalAccessCode:
+    """Revoke a portal access code before it expires (a lost slip, a wrong phone): the code
+    stops working and the sessions opened with it end at their next request.
+
+    Raises:
+        PortalAccessCode.DoesNotExist: no such code (404).
+        DomainError: ``REASON_REQUIRED``, ``PORTAL_CODE_ALREADY_REVOKED``.
+    """
+    text = note.strip()
+    if not text:
+        raise DomainError("REASON_REQUIRED", "Say why the code is revoked")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"revoke code: {text}"):
+        code = (
+            PortalAccessCode.objects.select_for_update().select_related("patient").get(pk=code_id)
+        )
+        if code.revoked_at is not None:
+            raise DomainError("PORTAL_CODE_ALREADY_REVOKED", "The code is already revoked")
+        code.revoked_at = timezone.now()
+        code.revoked_by = actor
+        code.revoke_note = text[:300]
+        code.save(update_fields=["revoked_at", "revoked_by", "revoke_note"])
+        _event(
+            PortalEventKind.CODE_REVOKED,
+            request,
+            patient=code.patient,
+            file_no=code.patient.file_no,
+            actor=actor,
+            code_id=code.pk,
+            note=text[:300],
+        )
+    return code
 
 
 # --- sign-in -------------------------------------------------------------------------------

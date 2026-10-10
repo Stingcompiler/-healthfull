@@ -226,5 +226,27 @@
     "expires": "Valid until {{date}}",
     "howTo": "Open {{url, bidi}} on your phone and sign in with your file number, your phone number and this code.",
     "issued": "A new portal code was issued. Earlier codes no longer work."
+  },
+  "staff": {
+    "title": "Patient portal access",
+    "state": {
+      "active": "Active code"
+    },
+    "issuedBy": "Issued by {{name}}",
+    "validUntil": "Valid until",
+    "none": "No code is active. Print a slip so the patient can sign in to the portal.",
+    "noPhone": "Add a phone number to the file first: the patient signs in with it.",
+    "issue": "Print portal code",
+    "reissue": "Print a new code",
+    "revoke": "Revoke code",
+    "revokeTitle": "Revoke the portal code",
+    "revokeDescription": "The code stops working at once and anyone signed in with it is signed out. Say why, for example a lost slip.",
+    "revokedToast": "The portal code was revoked.",
+    "slipTitle": "Portal access slip",
+    "slipDescription": "Issue a code and print it for the patient. The code is shown only once.",
+    "backToFile": "Back to the file",
+    "issueNow": "Issue a new code",
+    "replaceTitle": "Replace the active code?",
+    "replaceWarning": "This file already has an active code. A new code ends it and signs out anyone using it."
   }
 }

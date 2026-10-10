@@ -409,5 +409,6 @@
   "SECOND_APPROVER_REQUIRED": "Another person must approve this. Enter the username and password of a colleague who may approve it.",
   "APPROVER_NOT_PERMITTED": "The approver you entered is not allowed to approve this action.",
   "ADMISSION_NIGHTS_INVOICED": "{{count}} bed night(s) of this admission are already invoiced. Ask the cashier to credit them first, then cancel the admission.",
-  "LINE_NOT_VOIDABLE": "Only a line given under a perform-first authorization and not yet invoiced can be voided."
+  "LINE_NOT_VOIDABLE": "Only a line given under a perform-first authorization and not yet invoiced can be voided.",
+  "PORTAL_CODE_ALREADY_REVOKED": "This portal code is already revoked."
 }

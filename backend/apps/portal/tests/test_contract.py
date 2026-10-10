@@ -11,7 +11,14 @@ from apps.portal.security import PortalAuth
 from conftest import router_operations
 
 PUBLIC = {"portal_get_session", "portal_login", "portal_logout", "portal_verify_receipt"}
-STAFF = {"portal_get_ping": None, "portal_issue_access_code": "portal.issue_access_code"}
+STAFF = {
+    "portal_get_ping": None,
+    "portal_issue_access_code": "portal.issue_access_code",
+    # Reception: codes from the patient's file and their explicit revoke (portal follow-up).
+    "portal_list_patient_access_codes": "portal.issue_access_code",
+    "portal_issue_patient_access_code": "portal.issue_access_code",
+    "portal_revoke_access_code": "portal.revoke_access_code",
+}
 
 
 def _security_by_operation() -> dict[str, list[str]]:

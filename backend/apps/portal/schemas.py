@@ -252,3 +252,45 @@ class PortalIssuedCodeOut(Schema):
     code: str = Field(..., description="Shown once; only its hash is stored")
     expires_at: datetime
     file_no: str
+
+
+class PortalCodeSlipOut(Schema):
+    """A code issued at reception for the printed slip (shown once)."""
+
+    code: str = Field(..., description="Shown once; only its hash is stored")
+    expires_at: datetime
+    file_no: str
+    full_name_ar: str
+    full_name_en: str
+
+
+class PortalStaffRefOut(Schema):
+    id: int
+    full_name_ar: str
+    full_name_en: str
+
+
+class PortalAccessCodeRowOut(Schema):
+    """An issued code as staff see it: its state, never the code."""
+
+    id: int
+    state: Literal["active", "expired", "locked", "revoked"]
+    created_at: datetime
+    created_by: PortalStaffRefOut
+    expires_at: datetime
+    last_used_at: datetime | None
+    failed_attempts: int
+    revoked_at: datetime | None
+    revoked_by: PortalStaffRefOut | None
+    revoke_note: str
+
+
+class PortalAccessCodesOut(Schema):
+    patient_id: int = Field(..., description="The file the codes belong to (survivor of a merge)")
+    file_no: str
+    has_phone: bool = Field(..., description="A code needs a phone on the file to sign in with")
+    codes: list[PortalAccessCodeRowOut]
+
+
+class PortalRevokeCodeIn(Schema):
+    note: str = Field(..., min_length=1, max_length=300, description="Why the code is revoked")
