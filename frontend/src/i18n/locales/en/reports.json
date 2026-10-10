@@ -99,7 +99,9 @@
     "emptyTitle": "Nothing to show",
     "emptyDescription": "Nothing matches these filters. Try other dates or a different department.",
     "unknownTitle": "Report not found",
-    "unknownDescription": "This report does not exist. Choose one from the list."
+    "unknownDescription": "This report does not exist. Choose one from the list.",
+    "search": "Search {{section}}",
+    "searchPlaceholder": "File, visit, name or number"
   },
   "units": {
     "days_one": "{{count}} day",

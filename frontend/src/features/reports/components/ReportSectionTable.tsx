@@ -1,16 +1,17 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Inbox } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
+import { SearchInput } from "@/components/SearchInput";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 
 import type { ReportRow, ReportSection } from "../types";
-import { isNumeric, sortValue } from "../lib/cells";
+import { isNumeric, matchesRow, sortValue } from "../lib/cells";
 import { ReportCell } from "./ReportCell";
 
 /** Width each report column needs before the table switches to cards. */
@@ -32,6 +33,14 @@ export function ReportSectionTable({
   const { t } = useTranslation("reports");
   const language = useLanguage();
   const title = pickName(section.label, language);
+  const [query, setQuery] = useState("");
+  // Detail lists (rows with a file, visit or document number) and long sections get a search
+  // box, so one patient's lines are found among many.
+  const searchable = section.rows.length > 10 || section.columns.some((c) => c.kind === "code");
+  const rows = useMemo(
+    () => (query ? section.rows.filter((row) => matchesRow(row, query)) : section.rows),
+    [section.rows, query],
+  );
 
   const columns = useMemo<ColumnDef<ReportRow>[]>(
     () =>
@@ -79,12 +88,23 @@ export function ReportSectionTable({
           {t("viewer.truncated", { rows: maxRows })}
         </AlertCard>
       ) : null}
+      {searchable && section.rows.length > 0 ? (
+        <SearchInput
+          label={t("viewer.search", { section: title })}
+          placeholder={t("viewer.searchPlaceholder")}
+          value={query}
+          onValueChange={setQuery}
+          className="md:max-w-sm"
+          data-testid={`search-${section.key}`}
+        />
+      ) : null}
       <DataTable
         columns={columns}
-        data={section.rows}
+        data={rows}
         caption={title}
         loading={loading}
-        totals={totals}
+        // Totals cover every row of the report: hidden while a search narrows the rows.
+        totals={query ? undefined : totals}
         pageSize={25}
         pageSizeOptions={[25, 50, 100]}
         minTableWidth={Math.max(560, section.columns.length * COLUMN_WIDTH)}

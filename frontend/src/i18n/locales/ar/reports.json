@@ -99,7 +99,9 @@
     "emptyTitle": "لا شيء لعرضه",
     "emptyDescription": "لا شيء يطابق هذه المرشحات. جرّب تواريخ أخرى أو قسماً آخر.",
     "unknownTitle": "التقرير غير موجود",
-    "unknownDescription": "هذا التقرير غير موجود. اختر تقريراً من القائمة."
+    "unknownDescription": "هذا التقرير غير موجود. اختر تقريراً من القائمة.",
+    "search": "البحث في {{section}}",
+    "searchPlaceholder": "رقم الملف أو الزيارة أو الاسم أو الرقم"
   },
   "units": {
     "days_zero": "{{count}} يوم",
