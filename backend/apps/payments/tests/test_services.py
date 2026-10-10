@@ -531,6 +531,37 @@ def test_two_rejections_take_back_one_spend_in_parts(cashier, shift, supervisor,
     fin.assert_positions_match_ledger(patient)
 
 
+def test_bounce_is_never_covered_by_pending_money(cashier, shift, supervisor, bok) -> None:
+    """Regression: pending money must not absorb a confirmed bounce (ADR 0006 (p), 0015).
+
+    The confirmed 100 was spent in full while a 10 transfer was still pending. Rejecting the
+    100 must take the whole spend back; rejecting the pending 10 afterwards touches nothing
+    but its own money.
+    """
+    manager = fin.staff("manager")
+    patient = fin.patient()
+    t = _transfer(shift, patient, "100.00", cashier, bok, ref="FT-A")
+    pay.confirm_transfer(t, actor=supervisor, note="statement")
+    inv, (line,) = _invoice(cashier, "100.00", patient=patient)
+    pending = _transfer(shift, patient, "10.00", cashier, bok, ref="FT-B")
+    assert pay.spendable_credit(patient) == D("100.00")
+    spend = pay.record_payment(shift, patient, "patient_credit", D("100.00"), actor=cashier)
+    first = pay.reject_transfer(t, actor=supervisor, reason="DUPLICATE")
+    assert [(r.payment_id, r.amount) for r in first.allocations] == [(spend.pk, D("-100.00"))]
+    assert first.uncovered == D("0.00")
+    assert pay.credit_balance(patient) == D("10.00")  # still the pending transfer's money
+    assert pay.spendable_credit(patient) == D("0.00")
+    assert billing.invoice_position(inv).outstanding == D("100.00")
+    line.refresh_from_db()
+    assert line.billing_status == "invoiced"
+    second = pay.reject_transfer(pending, actor=supervisor, reason="NOT_RECEIVED")
+    assert (second.allocations, second.uncovered) == ((), D("0.00"))
+    assert pay.credit_balance(patient) == D("0.00")
+    assert not Notification.objects.filter(user=manager, kind="patient_credit_negative").exists()
+    fin.assert_books_balance()
+    fin.assert_positions_match_ledger(patient)
+
+
 def test_rejection_after_refund_leaves_the_patient_owing(cashier, shift, supervisor, bok) -> None:
     manager = fin.staff("manager")
     accountant = fin.staff("accountant")  # approves refunds the supervisor requested
