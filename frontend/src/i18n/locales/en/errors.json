@@ -383,5 +383,19 @@
   "CODE_REQUIRED": "Enter a code.",
   "CUSTOMER_REQUIRED": "Choose a patient file or enter a new customer, not both.",
   "PAYER_ALLOCATION_CONFLICT": "Allocate the payer payment to claims or to claim lines, not both.",
-  "CLAIM_PARTIAL_INVALID": "A partial answer accepts more than nothing and less than the claimed amount. Choose accepted or rejected for the whole amount."
+  "CLAIM_PARTIAL_INVALID": "A partial answer accepts more than nothing and less than the claimed amount. Choose accepted or rejected for the whole amount.",
+  "FORMULA_NOT_ALLOWED": "Formulas are not accepted. Type the value itself in the cell.",
+  "EXPIRY_REQUIRED": "An expiry date is required for a batch.",
+  "INVALID_EXPIRY_DATE": "The expiry date is not a valid date (use YYYY-MM-DD or DD/MM/YYYY).",
+  "STORE_UNKNOWN": "Unknown or inactive store.",
+  "PRICE_LIST_UNKNOWN": "Unknown price list.",
+  "IMPORT_KIND_UNKNOWN": "This kind of import is not available.",
+  "IMPORT_ITEM_CONFLICT": "This row describes the item differently from its first row.",
+  "IMPORT_ITEM_INVALID": "The first row of this item has errors, so its other batches cannot be imported.",
+  "IMPORT_NOTHING_TO_IMPORT": "No row can be imported. Fix the errors, or include the possible duplicates.",
+  "IMPORT_OPTION_REQUIRED": "Choose the import options first (price list and start date).",
+  "IMPORT_OPTION_INVALID": "An import option is not valid.",
+  "BACKUP_REQUEST_OPEN": "A manual backup is already waiting or running.",
+  "AUDIT_MODEL_UNKNOWN": "This record type has no audit trail.",
+  "AUDIT_ACTION_UNKNOWN": "Unknown audit action."
 }

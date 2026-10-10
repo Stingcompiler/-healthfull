@@ -2,9 +2,11 @@ import { createRoute, type AnyRoute } from "@tanstack/react-router";
 
 import { AdminLayout } from "./components/AdminLayout";
 import { AdminIndexPage } from "./pages/AdminIndexPage";
-import { AdminSectionPage } from "./pages/AdminSectionPage";
+import { AuditPage } from "./pages/AuditPage";
 import { CatalogPage } from "./pages/CatalogPage";
 import { DepartmentsPage } from "./pages/DepartmentsPage";
+import { ExportPage } from "./pages/ExportPage";
+import { ImportsPage } from "./pages/ImportsPage";
 import { PayerPage } from "./pages/PayerPage";
 import { PayersPage } from "./pages/PayersPage";
 import { PoliciesPage } from "./pages/PoliciesPage";
@@ -13,15 +15,8 @@ import { PriceListsPage } from "./pages/PriceListsPage";
 import { ReasonCodesPage } from "./pages/ReasonCodesPage";
 import { RolesPage } from "./pages/RolesPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SystemPage } from "./pages/SystemPage";
 import { UsersPage } from "./pages/UsersPage";
-
-function ImportsPage() {
-  return <AdminSectionPage id="imports" />;
-}
-
-function SystemPage() {
-  return <AdminSectionPage id="system" />;
-}
 
 /**
  * Mounted at /administration, not /admin: /admin/* belongs to the Django
@@ -48,6 +43,8 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
   const payer = createRoute({ getParentRoute: () => admin, path: "/payers/$payerId", component: PayerPage });
   const imports = createRoute({ getParentRoute: () => admin, path: "/imports", component: ImportsPage });
   const system = createRoute({ getParentRoute: () => admin, path: "/system", component: SystemPage });
+  const dataExport = createRoute({ getParentRoute: () => admin, path: "/export", component: ExportPage });
+  const audit = createRoute({ getParentRoute: () => admin, path: "/audit", component: AuditPage });
   return [
     admin.addChildren([
       index,
@@ -64,6 +61,8 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
       payer,
       imports,
       system,
+      dataExport,
+      audit,
     ]),
   ] as const;
 }
