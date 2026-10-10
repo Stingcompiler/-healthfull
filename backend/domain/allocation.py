@@ -7,9 +7,11 @@
 * Allocation rows are append-only: a reversal is a new negative row. A payment's net
   allocation per invoice never goes below zero.
 * Rejecting a transfer reverses all of its net allocations. Its whole amount then leaves
-  patient credit; if that credit was already spent (possible only after the transfer had
-  been confirmed), credit-funded allocations are taken back newest first. Whatever cannot
-  be recovered (it was refunded in cash) is reported as ``uncovered``: the patient owes it.
+  patient credit. A pending transfer's remainder was never spendable, so its rejection takes
+  nothing else back. A confirmed transfer's remainder must be covered by spendable credit
+  (never by other pending money); what is missing was spent, so credit-funded allocations
+  are taken back newest first. Whatever cannot be recovered (it was refunded in cash) is
+  reported as ``uncovered``: the patient owes it.
 * When a credit note leaves an invoice over-allocated, the excess is de-allocated from
   pending payments first (so the credit created is not spendable until confirmed), then
   from the newest allocations.
@@ -391,21 +393,36 @@ def plan_rejection(
     payment_amount: Decimal,
     records: Sequence[AllocationRecord],
     *,
-    credit_balance: Decimal,
+    pending: bool,
+    spendable: Decimal,
 ) -> RejectionPlan:
     """Plan the allocation side of rejecting payment ``payment_id``.
+
+    The payment's own allocations are reversed, then its whole amount leaves patient credit,
+    so the credit it still holds (its unallocated remainder) is what the rejection takes out
+    of the pool.
+
+    * A pending transfer's remainder was never spendable (spendable credit excludes it), so
+      nothing can have been spent or refunded from it: no recovery, nothing uncovered.
+    * A confirmed transfer's remainder is covered by confirmed credit only, never by other
+      transfers still pending. What spendable credit cannot cover was spent: credit-funded
+      allocations are taken back newest first, and the rest (refunded in cash) is
+      ``uncovered``. A loss reported by an earlier rejection is not counted again.
 
     Args:
         payment_id: The transfer being rejected.
         payment_amount: Its amount.
         records: All allocation rows of the patient.
-        credit_balance: Patient credit balance before the rejection.
+        pending: The transfer is still awaiting verification.
+        spendable: Spendable credit before the rejection (:func:`spendable_credit`: the
+            pool less every pending transfer's unallocated remainder, never below zero).
     """
     amount = require_positive(payment_amount, "payment_amount")
-    balance = require_money(credit_balance, "credit_balance")
+    available = require_non_negative(spendable, "spendable")
     reversals = reverse_payment(payment_id, records)
-    after = balance - sum((d.amount for d in reversals), ZERO) - amount
-    if after >= 0:
+    remainder = unallocated(amount, [r for r in records if r.payment_id == payment_id])
+    shortfall = remainder - available
+    if pending or shortfall <= 0:
         return RejectionPlan(reversals=reversals, recovery=(), uncovered=ZERO)
     nets = _nets(r for r in records if r.from_credit and r.payment_id != payment_id)
     candidates = [
@@ -413,5 +430,5 @@ def plan_rejection(
         for key, (net, _, _, _) in sorted(nets.items(), key=lambda kv: -kv[1][1])
         if net > 0
     ]
-    recovery, left = _take(candidates, -after)
+    recovery, left = _take(candidates, shortfall)
     return RejectionPlan(reversals=reversals, recovery=tuple(recovery), uncovered=left)

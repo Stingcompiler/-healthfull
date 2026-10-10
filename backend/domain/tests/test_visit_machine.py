@@ -268,14 +268,17 @@ class VisitMachine(RuleBasedStateMachine):
         refunded = sum((r.amount for r in self.refunds), ZERO)
         return received - allocated - refunded
 
-    def spendable(self) -> Decimal:
+    def pending_unallocated(self) -> list[Decimal]:
+        """The unallocated remainder of every transfer still awaiting verification."""
         nets = al.net_by_payment(self._records())
-        pending = [
+        return [
             p.amount - nets.get(p.id, ZERO)
             for p in self.payments.values()
             if p.verification is Verification.PENDING
         ]
-        return al.spendable_credit(self.credit_balance(), pending)
+
+    def spendable(self) -> Decimal:
+        return al.spendable_credit(self.credit_balance(), self.pending_unallocated())
 
     def _open_invoices(self) -> list[al.OpenInvoice]:
         out = []
@@ -639,7 +642,7 @@ class VisitMachine(RuleBasedStateMachine):
         assert self.shifts[target].open
         was_confirmed = p.verification is Verification.CONFIRMED
         plan = al.plan_rejection(
-            p.id, p.amount, self._records(), credit_balance=self.credit_balance()
+            p.id, p.amount, self._records(), pending=not was_confirmed, spendable=self.spendable()
         )
         p.verification = reject(p.method, p.verification, self._ok())
         if not was_confirmed:
@@ -949,6 +952,9 @@ class VisitMachine(RuleBasedStateMachine):
         assert ledger == balance
         # Credit goes negative only by money that bounced after it had been paid out.
         assert balance >= -self.uncovered
+        # Pending money is never spent, refunded or used to cover a bounce: the pool always
+        # still holds it, short only by losses already reported as uncovered.
+        assert balance - sum(self.pending_unallocated(), ZERO) >= -self.uncovered
 
     @invariant()
     def payer_share_never_in_cash_or_bank(self) -> None:
@@ -1141,6 +1147,60 @@ def test_scenario_pending_money_is_neither_spent_nor_refunded() -> None:
     assert plan is not None
     assert plan.recovery == ()
     m.check_all()
+
+
+def test_scenario_bounce_never_uses_pending_money_to_cover_spent_credit() -> None:
+    """Regression: a confirmed bounce took pending money as cover, then the pending rejection
+    clawed back credit it had never funded (found by the stateful machine)."""
+    m = _machine()
+    transfer = m.act_pay(PaymentMethod.BANK_TRANSFER, Decimal("3000.00"), allocate=False)
+    m.act_confirm(transfer)
+    line = m.act_order("CBC", 1)
+    inv = m.act_invoice([line])
+    assert inv is not None
+    pending = m.act_pay(PaymentMethod.QR, Decimal("10.00"), allocate=False)
+    assert m.spendable() == Decimal("3000.00")
+    assert m.act_spend_credit(Decimal("3000.00")) is not None
+    m.check_all()
+    # The whole spend is taken back: the pending 10.00 is not confirmed money and must not
+    # absorb part of the bounce.
+    plan = m.act_reject(transfer)
+    assert plan is not None
+    assert [d.amount for d in plan.recovery] == [Decimal("-3000.00")]
+    assert plan.uncovered == 0
+    m.check_all()
+    assert m.credit_balance() == Decimal("10.00")
+    assert m.spendable() == 0
+    assert m.position(inv).outstanding == Decimal("3000.00")
+    # Rejecting the pending transfer then touches nothing but its own money.
+    plan = m.act_reject(pending)
+    assert plan is not None
+    assert (plan.reversals, plan.recovery, plan.uncovered) == ((), (), ZERO)
+    m.check_all()
+    assert m.credit_balance() == 0
+
+
+def test_scenario_pending_rejection_after_an_uncovered_loss_reports_nothing_new() -> None:
+    """A loss already reported stays as it is; rejecting pending money adds no recovery."""
+    m = _machine()
+    first = m.act_order("CONS", 1)
+    inv = m.act_invoice([first])
+    assert inv is not None
+    transfer = m.act_pay(PaymentMethod.BANK_TRANSFER, Decimal("5000.00"))
+    m.act_confirm(transfer)
+    cn = m.act_credit(inv, 1, 1)
+    assert cn is not None
+    assert m.act_refund(cn, Decimal("5000.00"))
+    pending = m.act_pay(PaymentMethod.QR, Decimal("200.00"), allocate=False)
+    plan = m.act_reject(transfer)
+    assert plan is not None
+    assert plan.uncovered == Decimal("5000.00")
+    m.check_all()
+    plan = m.act_reject(pending)
+    assert plan is not None
+    assert (plan.recovery, plan.uncovered) == ((), ZERO)
+    m.check_all()
+    assert m.credit_balance() == Decimal("-5000.00")
 
 
 def test_scenario_later_allocation_is_capped_by_the_credit_pool() -> None:
