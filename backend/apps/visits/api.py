@@ -1,9 +1,11 @@
 """``/api/visits``: visits, the reception queue board, waiting-room display and appointments.
 
-FEATURES 2.1-2.7. Routers stay thin: each operation checks its permission, reads its schema,
-looks up the rows it names and calls one function of ``apps.visits.services``. Nothing here
-returns a price (doctors and nurses read these endpoints); the timeline's financial events
-are included only for holders of ``billing.view``.
+FEATURES 2.1-2.7, and the inpatient bed board at ``/inpatient`` (10.5,
+``apps.visits.inpatient_api``). Routers stay thin: each operation checks its permission,
+reads its schema, looks up the rows it names and calls one function of
+``apps.visits.services``. Nothing here returns a price (doctors and nurses read these
+endpoints); the timeline's financial events are included only for holders of
+``billing.view``.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from api.schemas import ERROR_RESPONSES, ErrorOut, Page
 from apps.core.models import Department, DoctorProfile, User
 from apps.patients.models import Patient, PatientCoverage
 from apps.visits import services
+from apps.visits.inpatient_api import inpatient_router
 from apps.visits.models import Appointment, QueueEntry, Visit
 from apps.visits.schemas import (
     AgendaParams,
@@ -399,3 +402,7 @@ def check_in(request: HttpRequest, appointment_id: int, payload: CheckInIn) -> S
         chief_complaint=payload.chief_complaint,
     )
     return Status(201, view)
+
+
+# Minimal inpatient for the nursing screens (FEATURES 10.5).
+visits_router.add_router("/inpatient", inpatient_router)

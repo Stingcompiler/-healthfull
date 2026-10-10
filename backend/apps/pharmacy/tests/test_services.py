@@ -688,10 +688,18 @@ def test_adjustment_needs_supervisor_approval(pharmacist, manager, store, item) 
 def test_adjustment_never_below_zero_and_no_self_approval(
     pharmacist, manager, store, item, make_user
 ) -> None:
-    batch = stock(item, store, 2, date(2027, 1, 1))
+    batch = stock(item, store, 3, date(2027, 1, 1))
+    # Refused when requested: more than the batch holds.
+    with pytest.raises(DomainError) as exc:
+        ps.request_adjustment(
+            store=store, reason_code="LOST", lines=[(batch.pk, -5, "")], actor=pharmacist
+        )
+    assert exc.value.code == "STOCK_INSUFFICIENT"
     adj = ps.request_adjustment(
-        store=store, reason_code="LOST", lines=[(batch.pk, -5, "")], actor=pharmacist
+        store=store, reason_code="LOST", lines=[(batch.pk, -3, "")], actor=pharmacist
     )
+    # Stock moved between the request and the approval: approval checks again.
+    b.stock_move(batch, store, "-1", kind="adjustment")
     with pytest.raises(DomainError) as exc:
         ps.approve_adjustment(adj, actor=manager)
     assert exc.value.code == "STOCK_INSUFFICIENT"
@@ -800,13 +808,22 @@ def test_transfer_between_stores(pharmacist, store, item) -> None:
     with pytest.raises(DomainError) as exc:
         ps.create_transfer(from_store=main, to_store=main, lines=[(batch.pk, 1)], actor=pharmacist)
     assert exc.value.code == "TRANSFER_SAME_STORE"
+    # Refused when drafted: more than the source holds.
+    with pytest.raises(DomainError) as exc:
+        ps.create_transfer(
+            from_store=main, to_store=store, lines=[(batch.pk, 25)], actor=pharmacist
+        )
+    assert exc.value.code == "STOCK_INSUFFICIENT"
+    # Stock left the source between the draft and sending: sending checks again.
     too_much = ps.create_transfer(
-        from_store=main, to_store=store, lines=[(batch.pk, 25)], actor=pharmacist
+        from_store=main, to_store=store, lines=[(batch.pk, 20)], actor=pharmacist
     )
+    b.stock_move(batch, main, "-1", kind="adjustment")
     with pytest.raises(DomainError) as exc:
         ps.send_transfer(too_much, actor=pharmacist)
     assert exc.value.code == "STOCK_INSUFFICIENT"
     ps.cancel_transfer(too_much, actor=pharmacist)
+    b.stock_move(batch, main, "1", kind="adjustment")
     t = ps.create_transfer(
         from_store=main, to_store=store, lines=[(batch.pk, 12)], actor=pharmacist
     )

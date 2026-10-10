@@ -18,16 +18,24 @@ Result versions:
   a reason; the original is retained. Only one draft exists at a time.
 * The first approval performs the service line.
 
+Bench (FEATURES 9.2, 9.8):
+
+* A test's work-list stage: to collect (no usable sample), to receive (collected outside the
+  lab), to enter (sample in the lab, values missing), to approve (a complete draft, first
+  result or amendment), done (approved) or cancelled.
+* Turnaround is summarised per test with nearest-rank percentiles; the mean rounds half up.
+
 Error codes: ``INVALID_REFERENCE_RANGE``, ``INVALID_DATE_RANGE``, ``RESULT_NOT_DRAFT``,
 ``RESULT_APPROVED_IMMUTABLE``, ``RESULT_NOT_APPROVED``, ``AMENDMENT_IN_PROGRESS``.
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 
 from domain.audit import Approval
@@ -38,7 +46,10 @@ __all__ = [
     "ReferenceRange",
     "ResultStatus",
     "ResultVersion",
+    "SampleState",
     "Sex",
+    "Stage",
+    "TurnaroundStats",
     "age_in_days",
     "approve_version",
     "first_version",
@@ -47,7 +58,9 @@ __all__ = [
     "performs_line",
     "require_editable",
     "select_range",
+    "stage",
     "start_amendment",
+    "turnaround_stats",
     "visible_version",
 ]
 
@@ -216,3 +229,98 @@ def visible_version(versions: Iterable[ResultVersion]) -> ResultVersion | None:
 def performs_line(before: Iterable[ResultVersion], approved: ResultVersion) -> bool:
     """Whether approving ``approved`` is the first approval (the line becomes performed)."""
     return approved.status is ResultStatus.APPROVED and visible_version(before) is None
+
+
+# --- bench ---------------------------------------------------------------------------------
+
+
+class SampleState(StrEnum):
+    COLLECTED = "collected"
+    RECEIVED = "received"
+    REJECTED = "rejected"
+
+
+class Stage(StrEnum):
+    TO_COLLECT = "to_collect"
+    TO_RECEIVE = "to_receive"
+    TO_ENTER = "to_enter"
+    TO_APPROVE = "to_approve"
+    DONE = "done"
+    CANCELLED = "cancelled"
+
+
+def stage(
+    *,
+    sample: SampleState | None,
+    cancelled: bool = False,
+    approved: bool = False,
+    draft: bool = False,
+    entered: int = 0,
+    expected: int = 0,
+) -> Stage:
+    """Where a test stands on the bench.
+
+    ``sample`` is the state of its current sample (None before one is collected); ``draft``
+    says whether an open draft version exists, with ``entered`` of its ``expected`` values.
+    """
+    if entered < 0 or expected < 0:
+        raise ValueError("entered and expected must not be negative")
+    if entered and not draft:
+        raise ValueError("values are entered only on a draft")
+    if cancelled:
+        return Stage.CANCELLED
+    if draft:
+        return Stage.TO_APPROVE if expected > 0 and entered >= expected else Stage.TO_ENTER
+    if approved:
+        return Stage.DONE
+    if sample is None or sample is SampleState.REJECTED:
+        return Stage.TO_COLLECT
+    if sample is SampleState.COLLECTED:
+        return Stage.TO_RECEIVE
+    return Stage.TO_ENTER
+
+
+@dataclass(frozen=True, slots=True)
+class TurnaroundStats:
+    """Minutes from sample receipt to first approval, over the completed tests of a period."""
+
+    count: int
+    mean: int | None
+    median: int | None
+    p90: int | None
+    maximum: int | None
+    within_target: int
+
+    @property
+    def within_target_percent(self) -> int | None:
+        if self.count == 0:
+            return None
+        share = Decimal(self.within_target * 100) / Decimal(self.count)
+        return int(share.quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
+
+def _nearest_rank(ordered: Sequence[int], percent: int) -> int:
+    rank = max(1, math.ceil(percent * len(ordered) / 100))
+    return ordered[rank - 1]
+
+
+def turnaround_stats(minutes: Sequence[int], *, target: int) -> TurnaroundStats:
+    """Count, mean, median, 90th percentile, maximum and how many met ``target`` minutes."""
+    if target < 1:
+        raise ValueError("target must be at least one minute")
+    if any(m < 0 for m in minutes):
+        raise ValueError("turnaround minutes must not be negative")
+    if not minutes:
+        return TurnaroundStats(0, None, None, None, None, 0)
+    ordered = sorted(minutes)
+    mean = (Decimal(sum(ordered)) / Decimal(len(ordered))).quantize(
+        Decimal(1), rounding=ROUND_HALF_UP
+    )
+    return TurnaroundStats(
+        count=len(ordered),
+        mean=int(mean),
+        median=_nearest_rank(ordered, 50),
+        p90=_nearest_rank(ordered, 90),
+        maximum=ordered[-1],
+        within_target=sum(1 for m in ordered if m <= target),
+    )

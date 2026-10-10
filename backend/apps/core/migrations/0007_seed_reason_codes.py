@@ -47,7 +47,7 @@ REASON_CODES = [
     ('variance', 'UNEXPLAINED', 'غير معروف', 'Unexplained', True),
     ('variance', 'OTHER', 'سبب آخر', 'Other', True),
     ('override', 'DUPLICATE_VERIFIED', 'مرجع مكرر تم التحقق منه', 'Duplicate reference verified', False),
-    ('override', 'BATCH_CHOICE', 'اختيار دفعة أخرى', 'Different batch chosen', False),
+    ('override', 'BATCH_CHOICE', 'اختيار تشغيلة أخرى', 'Different batch chosen', False),
     ('override', 'DISCOUNT_ABOVE_LIMIT', 'خصم فوق الحد', 'Discount above the limit', False),
     ('override', 'OTHER', 'سبب آخر', 'Other', True),
     ('writeoff', 'NOT_COVERED', 'غير مشمول بالتغطية', 'Not covered', False),

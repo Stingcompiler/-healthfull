@@ -90,6 +90,9 @@ __all__ = [
     "order_performed",
     "orderable_services",
     "perform_line",
+    "perform_procedure",
+    "procedure_worklist",
+    "procedures_done",
     "report_paid_not_performed",
     "report_performed_by_authorization",
     "report_requested_not_invoiced",
@@ -1160,6 +1163,69 @@ def worklist_lines(kinds: Sequence[str], *, department: int | None = None) -> li
             "visit__patient", "department", "prescription"
         )[:500]
     )
+
+
+# --- procedures and nursing (FEATURES 10.1, 10.2) -------------------------------------------
+
+
+def _patient_matches(q: str | None) -> Q:
+    """Lines of patients matching ``q`` (name, file number or phone, like patient search)."""
+    from apps.patients import services as patient_services
+
+    if not q or not q.strip():
+        return Q()
+    return Q(visit__patient_id__in=patient_services.search(q).values("pk"))
+
+
+def procedure_worklist(
+    *, department: int | None = None, q: str | None = None, limit: int = 300
+) -> list[ServiceLine]:
+    """The procedure work list (FEATURES 10.1): open procedure lines that are settled or
+    authorized (invariant 1), oldest order first, optionally of one department or of the
+    patients matching ``q``."""
+    return list(
+        worklist([ServiceKind.PROCEDURE], department=department)
+        .filter(_patient_matches(q))
+        .select_related("visit__patient", "department", "ordered_by", "authorization")[:limit]
+    )
+
+
+def procedures_done(*, on: date | None = None, limit: int = 100) -> list[ServiceLine]:
+    """Procedures performed on ``on`` (default today), newest first: what the desk did."""
+    day = on or timezone.localdate()
+    tz = timezone.get_current_timezone()
+    start = datetime.combine(day, datetime.min.time(), tzinfo=tz)
+    return list(
+        ServiceLine.objects.filter(
+            kind=ServiceKind.PROCEDURE,
+            fulfilment_status=FulfilmentStatus.PERFORMED,
+            performed_at__gte=start,
+            performed_at__lt=start + timedelta(days=1),
+        )
+        .select_related("visit__patient", "service", "department", "ordered_by", "performed_by")
+        .order_by("-performed_at", "-id")[:limit]
+    )
+
+
+def perform_procedure(
+    line: ServiceLine | int, actor: User, *, note: str = "", at: datetime | None = None
+) -> ServiceLine:
+    """One tap "done" on a procedure line (FEATURES 10.2): records who, when and the note.
+
+    The line is locked first, so two taps at once perform it once (the second gets
+    ``LINE_ALREADY_PERFORMED``).
+
+    Raises:
+        DomainError: ``LINE_NOT_PROCEDURE``, ``LINE_NOT_ELIGIBLE`` (neither settled nor
+            authorized, invariant 1), ``LINE_ALREADY_PERFORMED``, ``LINE_CANCELLED``.
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="procedure done"):
+        locked = _lock_line(line)
+        if locked.kind != ServiceKind.PROCEDURE:
+            raise DomainError(
+                "LINE_NOT_PROCEDURE", "Only procedure lines are marked done here", line=locked.pk
+            )
+        return _perform(locked, actor, note=note, at=at)
 
 
 # --- exception reports (FEATURES 4.5, 12.2) --------------------------------------------------

@@ -10,6 +10,7 @@ export const nav: NavItem[] = [
     icon: FlaskConical,
     group: "services",
     order: 80,
-    permission: "lab.view_worklist",
+    // Technicians and supervisors work the bench; managers read the turnaround report.
+    permission: ["lab.view_worklist", "lab.view_reports"],
   },
 ];
