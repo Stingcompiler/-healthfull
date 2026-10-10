@@ -2,21 +2,42 @@
   "title": "لوحة المتابعة",
   "greeting": "مرحباً، {{name}}",
   "subtitle": "ملخص يوم العمل في المركز",
+  "allReports": "كل التقارير",
   "kpi": {
-    "visitsToday": "زيارات اليوم",
-    "queueWaiting": "في الانتظار",
+    "title": "أرقام اليوم",
     "collectedToday": "المحصّل المؤكد اليوم",
+    "cash": "نقداً",
+    "transfers": "تحويلات",
     "pendingTransfers": "تحويلات بانتظار التحقق",
-    "noData": "لا توجد بيانات بعد"
+    "pendingCount": "عدد التحويلات المعلقة: {{n}}",
+    "queueWaiting": "في الانتظار",
+    "withDoctor": "مع الطبيب: {{n}}",
+    "netRevenueToday": "صافي إيراد اليوم",
+    "visitsToday": "زيارات اليوم: {{n}}"
   },
-  "setupAlert": {
-    "title": "النظام قيد الإعداد",
-    "description": "ستظهر الأرقام هنا بعد تفعيل وحدات التسجيل والفوترة والتحصيل."
+  "alerts": {
+    "title": "يحتاج متابعة",
+    "allClear": "لا شيء يحتاج متابعة الآن",
+    "open": "فتح",
+    "stale_transfers": "تحويلات معلقة لأكثر من يومين",
+    "unreviewed_variances": "فروق ورديات لم تراجع",
+    "paid_not_performed": "خدمات مدفوعة لم تنفذ منذ الأمس أو قبله",
+    "requested_not_invoiced": "طلبات لم تفوتر منذ الأمس أو قبله",
+    "performed_by_authorization": "خدمات نفذت اليوم قبل الدفع بتصريح",
+    "expiring_stock": "تشغيلات تنتهي خلال 30 يوماً",
+    "low_stock": "أصناف عند حدها الأدنى أو دونه"
   },
-  "activity": {
-    "title": "نشاط اليوم",
-    "emptyTitle": "لا يوجد نشاط اليوم بعد",
-    "emptyDescription": "عند تسجيل أول زيارة ستظهر هنا حركة اليوم من طلبات وفواتير وتحصيل.",
-    "emptyAction": "فتح سجل المرضى"
+  "charts": {
+    "collectionsTitle": "التحصيل في آخر 14 يوماً",
+    "collected": "مؤكد",
+    "pending": "بانتظار التحقق",
+    "collectionsEmpty": "لم يُحصّل شيء في آخر 14 يوماً",
+    "departmentsTitle": "إيراد الأقسام اليوم",
+    "departmentsHint": "المفوتر اليوم بعد الخصومات والإشعارات الدائنة",
+    "departmentsEmpty": "لم يُفوتر شيء اليوم بعد"
+  },
+  "staff": {
+    "subtitle": "عملك اليوم",
+    "modules": "وحداتك"
   }
 }

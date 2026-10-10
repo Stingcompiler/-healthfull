@@ -1,4 +1,115 @@
 {
   "title": "Reports",
-  "description": "Revenue, exceptions, shifts, and stock, with export."
+  "description": "Revenue, exceptions, shifts, stock, visits and the lab, with Excel export and printing.",
+  "areas": {
+    "finance": "Money and shifts",
+    "exceptions": "Exceptions",
+    "payers": "Insurance and payers",
+    "stock": "Stock",
+    "visits": "Visits",
+    "lab": "Laboratory"
+  },
+  "catalog": {
+    "revenue": {
+      "title": "Daily revenue",
+      "description": "By department, doctor and payment method. Pending transfers are kept apart and never counted as collected."
+    },
+    "shift_variances": {
+      "title": "Shift variances",
+      "description": "Closed shifts with expected, counted and the difference, by cashier and date."
+    },
+    "pending_transfers": {
+      "title": "Pending transfers",
+      "description": "Transfers waiting for verification, by age in days, and payer cheques not yet cleared."
+    },
+    "adjustments": {
+      "title": "Discounts, cancellations, refunds",
+      "description": "Who approved what and why: discounts, credit notes, lines cancelled before billing and refunds."
+    },
+    "payer_receivables": {
+      "title": "Payer receivables",
+      "description": "What payers owe by claim stage and by age. A payer share is never cash until paid."
+    },
+    "requested_not_invoiced": {
+      "title": "Requested, not invoiced",
+      "description": "Orders that never reached the cashier, oldest first, with their age."
+    },
+    "paid_not_performed": {
+      "title": "Paid, not performed",
+      "description": "Paid services still waiting to be done, with the amount at stake."
+    },
+    "performed_by_authorization": {
+      "title": "Performed by authorization",
+      "description": "Services done before payment, with who allowed them and why."
+    },
+    "stock_valuation": {
+      "title": "Stock valuation",
+      "description": "Stock on hand at batch cost, by item and store, with expired stock."
+    },
+    "stock_movement": {
+      "title": "Stock movement",
+      "description": "Opening, received, dispensed, adjusted and closing quantities per item."
+    },
+    "stock_variance": {
+      "title": "Stock count variance",
+      "description": "Book against counted stock of the posted counts, with the value of the difference."
+    },
+    "stock_expiry": {
+      "title": "Stock expiry",
+      "description": "Batches expiring soon or already expired, with quantity and value."
+    },
+    "visits": {
+      "title": "Patient visits",
+      "description": "Visits by day, department and doctor, new against follow-up."
+    },
+    "lab_turnaround": {
+      "title": "Lab turnaround and volume",
+      "description": "Minutes from sample to approved result per test, and tests ordered and done."
+    }
+  },
+  "empty": {
+    "title": "No reports for your role",
+    "description": "Ask the administrator for access to the reports you need."
+  },
+  "actions": {
+    "back": "All reports",
+    "excel": "Excel",
+    "print": "Print"
+  },
+  "filters": {
+    "title": "Report filters",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "asOf": "As of",
+    "department": "Department",
+    "user": "User",
+    "days": "Within (days)",
+    "allDepartments": "All departments",
+    "allUsers": "All users",
+    "apply": "Show",
+    "reset": "Reset"
+  },
+  "viewer": {
+    "summary": "Summary",
+    "generatedAt": "Prepared",
+    "total": "Total",
+    "noValue": "None",
+    "truncatedTitle": "Not every row is shown",
+    "truncated": "Only the first {{rows}} rows are shown. Narrow the period or the filters to see the rest.",
+    "emptyTitle": "Nothing to show",
+    "emptyDescription": "Nothing matches these filters. Try other dates or a different department.",
+    "unknownTitle": "Report not found",
+    "unknownDescription": "This report does not exist. Choose one from the list."
+  },
+  "units": {
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "minutes_one": "{{count}} min",
+    "minutes_other": "{{count}} min"
+  },
+  "print": {
+    "pageTitle": "Print report",
+    "back": "Back to the report",
+    "period": "Period"
+  }
 }
