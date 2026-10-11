@@ -223,7 +223,12 @@ def claims_screens(p: Params) -> Json:
         rebill = ClaimLine.objects.filter(claim=answered).order_by("id")[2]
         require_permission(actor, "claims.resolve_rejection")
         cs.resolve_rejection(
-            rebill, resolution="rebilled", actor=actor, reason_code="NOT_COVERED", note=""
+            rebill,
+            resolution="rebilled",
+            actor=actor,
+            reason_code="NOT_COVERED",
+            note="",
+            approver=p.user("manager", "manager"),
         )
         require_permission(actor, "claims.record_payer_payment")
         first = ClaimLine.objects.filter(claim=answered).order_by("id")[0]

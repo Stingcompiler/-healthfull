@@ -7,7 +7,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { api, unwrap } from "@/lib/api/client";
 
-import type { AdmitInput, NursingNoteInput, VitalsInput } from "./types";
+import type { AdmitInput, CancelAdmissionInput, NursingNoteInput, VitalsInput } from "./types";
 
 export const nursingKeys = {
   all: ["nursing"] as const,
@@ -147,6 +147,17 @@ export function useDischarge() {
       api.POST("/api/visits/inpatient/admissions/{admission_id}/discharge", {
         params: { path: { admission_id: admissionId } },
         body: { summary },
+      }),
+    ),
+  );
+}
+
+export function useCancelAdmission() {
+  return useBoardMutation(({ admissionId, body }: { admissionId: number; body: CancelAdmissionInput }) =>
+    unwrap(
+      api.POST("/api/visits/inpatient/admissions/{admission_id}/cancel", {
+        params: { path: { admission_id: admissionId } },
+        body,
       }),
     ),
   );

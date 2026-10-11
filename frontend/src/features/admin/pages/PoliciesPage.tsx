@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { ROLES } from "@/lib/auth/permissions";
+import { PERSON_ROLES, ROLES } from "@/lib/auth/permissions";
 import { vmsg } from "@/lib/validation";
 
 import { usePolicy, useUpdatePolicy } from "../api";
@@ -45,6 +45,7 @@ const optionalPercent = z
 
 const schema = z.object({
   allow_partial_payment: z.boolean(),
+  claims_second_approver: z.boolean(),
   show_estimated_cost: z.boolean(),
   partial_dispense_remainder: z.enum(["defer", "refund"]),
   pending_transfer_alert_days: intIn(1, 90),
@@ -63,6 +64,7 @@ type Values = z.infer<typeof schema>;
 function toValues(policy: PolicyOut): Values {
   return {
     allow_partial_payment: policy.allow_partial_payment,
+    claims_second_approver: policy.claims_second_approver,
     show_estimated_cost: policy.show_estimated_cost,
     partial_dispense_remainder: policy.partial_dispense_remainder,
     pending_transfer_alert_days: String(policy.pending_transfer_alert_days),
@@ -70,7 +72,7 @@ function toValues(policy: PolicyOut): Values {
     follow_up_discount_percent: policy.follow_up_discount_percent,
     session_idle_minutes: String(policy.session_idle_minutes),
     discount_limit_percent: Object.fromEntries(
-      ROLES.map((r) => [
+      PERSON_ROLES.map((r) => [
         r,
         policy.discount_limit_percent[r] === undefined ? "" : String(policy.discount_limit_percent[r]),
       ]),
@@ -88,6 +90,7 @@ function toBody(values: Values): PolicyIn {
   }
   return {
     allow_partial_payment: values.allow_partial_payment,
+    claims_second_approver: values.claims_second_approver,
     show_estimated_cost: values.show_estimated_cost,
     partial_dispense_remainder: values.partial_dispense_remainder,
     pending_transfer_alert_days: Number(values.pending_transfer_alert_days),
@@ -155,6 +158,12 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
             label={t("admin:policies.partialPayment")}
             description={t("admin:policies.partialPaymentHint")}
           />
+          <SwitchField
+            control={form.control}
+            name="claims_second_approver"
+            label={t("admin:policies.claimsSecondApprover")}
+            description={t("admin:policies.claimsSecondApproverHint")}
+          />
           <div className="grid gap-4 md:grid-cols-2">
             <TextField
               control={form.control}
@@ -190,7 +199,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
             <p className="text-sm text-muted">{t("admin:policies.discountLimitsHint")}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {ROLES.map((role) => (
+            {PERSON_ROLES.map((role) => (
               <FormField
                 key={role}
                 control={form.control}
@@ -222,7 +231,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
             render={({ field }) => (
               <FormItem>
                 <div role="group" aria-labelledby="pol-perform" className="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {ROLES.map((role) => (
+                  {PERSON_ROLES.map((role) => (
                     <CheckOption
                       key={role}
                       id={`pf-${role}`}

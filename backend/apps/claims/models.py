@@ -159,6 +159,14 @@ class ClaimLine(models.Model):
     resolved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
+    resolution_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="The second person who approved the rebill or write-off (ADR 0018).",
+    )
     resolved_at = models.DateTimeField(null=True, blank=True)
     withdrawn_at = models.DateTimeField(null=True, blank=True)
     withdrawn_by = models.ForeignKey(
@@ -179,6 +187,14 @@ class ClaimLine(models.Model):
     written_off_note = models.TextField(blank=True)
     written_off_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    written_off_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="The second person who approved the short-payment write-off (ADR 0018).",
     )
     written_off_at = models.DateTimeField(null=True, blank=True)
 
@@ -224,6 +240,17 @@ class ClaimLine(models.Model):
                     )
                 ),
                 name="claims_line_resolution_documented",
+            ),
+            # ADR 0018: the approver of a rebill or write-off is never its recorder.
+            models.CheckConstraint(
+                condition=Q(resolution_approved_by__isnull=True)
+                | ~Q(resolution_approved_by=F("resolved_by")),
+                name="claims_line_resolution_second_person",
+            ),
+            models.CheckConstraint(
+                condition=Q(written_off_approved_by__isnull=True)
+                | ~Q(written_off_approved_by=F("written_off_by")),
+                name="claims_line_write_off_second_person",
             ),
             models.UniqueConstraint(
                 fields=["invoice_line"],

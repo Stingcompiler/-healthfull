@@ -33,6 +33,7 @@ import { translateKey } from "@/lib/validation";
 import { useMerges, usePatient } from "../api";
 import { BalanceCard } from "../components/BalanceCard";
 import { CoverageSection } from "../components/CoverageSection";
+import { PortalAccessCard } from "@/portal/components/PortalAccessCard";
 import { EditPatientDialog } from "../components/EditPatientDialog";
 import { MergeDialog } from "../components/MergeDialog";
 import { PatientVisits } from "../components/PatientVisits";
@@ -213,6 +214,7 @@ export function PatientProfilePage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <CoverageSection patientId={id} readOnly={!active} />
         {canSeeBalance ? <BalanceCard patientId={id} /> : null}
+        {active ? <PortalAccessCard patientId={id} /> : null}
         {hasUpcoming ? (
           <section aria-labelledby="upcoming-heading" className="card-surface flex flex-col gap-3 p-4 md:p-5">
             <h2 id="upcoming-heading" className="flex items-center gap-2 text-base font-semibold text-fg">

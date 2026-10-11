@@ -17,11 +17,13 @@ import {
   disposeApiClients,
   factoryMode,
   fixture,
+  fixtureBatch,
   FixtureError,
   newApiClient,
   openShift,
   orderLines,
   paidVisit,
+  paidVisits,
   pay,
   registerAdapter,
   seededCatalog,
@@ -30,7 +32,7 @@ import {
   type InvoiceRef,
 } from "../helpers";
 
-// Each fixture call starts a Django process (about two seconds).
+// The worker's first fixture call starts the fixture server (a few seconds).
 test.describe.configure({ timeout: 120_000 });
 
 test.afterAll(async () => {
@@ -173,6 +175,21 @@ test.describe("@helpers factories", () => {
     const transfer = await pay({ invoice: approved.invoice, method: "bank_transfer" });
     expect(transfer.payment).toMatchObject({ verification: "pending", bank: "BOK" });
     expect(transfer.payment.reference).toMatch(/^E2E/);
+  });
+
+  test("fixtureBatch runs fixtures in order in one round trip; paidVisits keeps their order", async () => {
+    const [first, second] = await fixtureBatch<[{ patient: { id: number } }, { patient: { id: number } }]>([
+      { name: "patient", params: { full_name_en: "Batch First" } },
+      { name: "patient", params: { full_name_en: "Batch Second" } },
+    ]);
+    expect(second.patient.id).toBeGreaterThan(first.patient.id);
+    await expect(
+      fixtureBatch([{ name: "patient" }, { name: "no_such_fixture" }, { name: "patient" }]),
+    ).rejects.toMatchObject({ code: "FIXTURE_UNKNOWN" });
+    const visits = await paidVisits([{ doctor: "doctor" }, { doctor: "doctor" }]);
+    expect(visits).toHaveLength(2);
+    expect(visits[1]?.visit.id).toBeGreaterThan(visits[0]?.visit.id ?? Infinity);
+    expect(visits.every((v) => v.queue_entry?.ready === true)).toBe(true);
   });
 
   test("a refused step throws FixtureError with the backend code; allergies alert", async () => {

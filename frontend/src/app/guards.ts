@@ -38,6 +38,18 @@ export async function requireAppUser(args: GuardArgs): Promise<MeOut> {
   return me;
 }
 
+/** The waiting-room kiosk's only permission (ADR 0019). */
+export const KIOSK_PERMISSION = "visits.view_display";
+
+/**
+ * A kiosk account (role `display`): it holds the waiting-room feed and nothing else, so every
+ * staff screen sends it to `/display/queue`. A UI convenience only: the server refuses it the
+ * data of every other screen.
+ */
+export function isKioskOnly(me: Pick<MeOut, "permissions">): boolean {
+  return me.permissions.length > 0 && me.permissions.every((code) => code === KIOSK_PERMISSION);
+}
+
 /** The login page bounces a logged-in user to where they were going. */
 export async function redirectIfLoggedIn({ context }: GuardArgs, target: unknown): Promise<void> {
   const me = await context.queryClient.query({ ...meQueryOptions, staleTime: "static" });

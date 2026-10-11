@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.claims import services as cs
 from apps.claims.models import Claim, ClaimLine
+from apps.claims.tests.approvers import second
 from apps.core.tests import builders as b
 from apps.ledger import services as ledger
 from apps.payments import services as pay
@@ -143,10 +144,17 @@ def test_short_paid_accepted_amount_is_written_off_and_the_claim_closes() -> Non
         cs.close_claim(claim, actor=accountant)
     assert exc.value.code == "CLAIM_NOT_SETTLED"
     with pytest.raises(DomainError) as exc:
-        cs.write_off_shortfall(cl, D("10.01"), actor=accountant, reason_code="SMALL_BALANCE")
+        cs.write_off_shortfall(
+            cl, D("10.01"), actor=accountant, reason_code="SMALL_BALANCE", approver=second()
+        )
     assert exc.value.code == "CLAIM_AMOUNT_INVALID"
     cs.write_off_shortfall(
-        cl, D("10.00"), actor=accountant, reason_code="SMALL_BALANCE", note="withholding"
+        cl,
+        D("10.00"),
+        actor=accountant,
+        reason_code="SMALL_BALANCE",
+        note="withholding",
+        approver=second(),
     )
     cl.refresh_from_db()
     assert (cl.written_off_amount, cl.written_off_by) == (D("10.00"), accountant)

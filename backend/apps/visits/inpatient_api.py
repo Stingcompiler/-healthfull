@@ -2,7 +2,8 @@
 
 The bed board (wards, beds, occupants, nights due), admit (on an open visit or a new
 inpatient visit), bed transfer, discharge, taking a free bed out of service, and the daily
-bed charge run that adds each passed night as a line for the cashier to invoice. Mounted on
+bed charge run that adds each passed night as a line for the cashier to invoice, and the
+cancellation of an admission made in error (ADR 0018). Mounted on
 the visits router; each operation checks one permission and calls one function of
 ``apps.visits.services``. No prices.
 """
@@ -20,6 +21,7 @@ from api.permissions import require_perm
 from api.schemas import ERROR_RESPONSES, ErrorOut
 from apps.core.models import DoctorProfile, User
 from apps.patients.models import Patient
+from apps.payments.approvals import ApproverLogin
 from apps.visits import inpatient_schemas as s
 from apps.visits import services
 from apps.visits.models import Admission, Bed, Visit
@@ -111,6 +113,37 @@ def discharge(request: HttpRequest, admission_id: int, payload: s.InpatientDisch
     admission = get_object_or_404(Admission, pk=admission_id)
     return s.admission_out(
         services.discharge(admission, actor=_actor(request), summary=payload.summary.strip())
+    )
+
+
+@inpatient_router.post(
+    "/admissions/{admission_id}/cancel",
+    response={200: s.InpatientAdmissionOut, **_WRITE},
+    operation_id="visits_cancel_admission",
+    summary="Cancel an admission made in error, approved by a second person (ADR 0018)",
+    description=(
+        "Frees the bed and voids the nights still unbilled. 409 NOT_ADMITTED, "
+        "ADMISSION_NIGHTS_INVOICED (credit them at the cashier first), "
+        "SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID, REASON_REQUIRED, "
+        "REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED."
+    ),
+)
+@require_perm("visits.cancel_admission")
+def cancel_admission(request: HttpRequest, admission_id: int, payload: s.InpatientCancelIn) -> Any:
+    admission = get_object_or_404(Admission, pk=admission_id)
+    login = (
+        None
+        if payload.approver is None
+        else ApproverLogin(request, payload.approver.username, payload.approver.password)
+    )
+    return s.admission_out(
+        services.cancel_admission_at_desk(
+            admission,
+            actor=_actor(request),
+            reason_code=payload.reason_code,
+            note=payload.note,
+            approver=login,
+        )
     )
 
 

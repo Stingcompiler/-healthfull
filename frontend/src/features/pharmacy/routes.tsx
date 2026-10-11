@@ -9,6 +9,7 @@ import { ItemsPage } from "./pages/ItemsPage";
 import { LowStockPage } from "./pages/LowStockPage";
 import { PharmacyPage } from "./pages/PharmacyPage";
 import { ReceiptsPage } from "./pages/ReceiptsPage";
+import { ReturnsPage } from "./pages/ReturnsPage";
 import { SalePage } from "./pages/SalePage";
 import { TransfersPage } from "./pages/TransfersPage";
 
@@ -33,5 +34,19 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
   });
   const expiry = createRoute({ getParentRoute: () => parent, path: "/pharmacy/expiry", component: ExpiryPage });
   const lowStock = createRoute({ getParentRoute: () => parent, path: "/pharmacy/low-stock", component: LowStockPage });
-  return [index, sale, items, item, receipts, adjustments, counts, count, transfers, expiry, lowStock] as const;
+  const returns = createRoute({ getParentRoute: () => parent, path: "/pharmacy/returns", component: ReturnsPage });
+  return [
+    index,
+    sale,
+    items,
+    item,
+    receipts,
+    adjustments,
+    counts,
+    count,
+    transfers,
+    expiry,
+    lowStock,
+    returns,
+  ] as const;
 }

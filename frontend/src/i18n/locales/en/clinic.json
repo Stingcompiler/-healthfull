@@ -34,6 +34,12 @@
     "calledAt": "Called",
     "arrivedAt": "Arrived"
   },
+  "visitClose": {
+    "action": "Close visit",
+    "title": "Close this visit?",
+    "description": "No new orders, notes, diagnoses or vitals can be added afterwards. Orders already placed are still billed at the cashier, and their results still arrive.",
+    "done": "The visit is closed."
+  },
   "queueStatus": {
     "waiting": "Waiting",
     "called": "Called",

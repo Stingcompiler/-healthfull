@@ -52,7 +52,13 @@ from apps.core.models import (
     User,
     UserRole,
 )
-from apps.core.permissions import PERMISSIONS, effective_permissions, role_permissions
+from apps.core.notification_kinds import kind as notification_kind
+from apps.core.permissions import (
+    PERMISSIONS,
+    effective_permissions,
+    role_permissions,
+    roles_holding,
+)
 from domain.errors import DomainError
 from domain.lockout import (
     LockState,
@@ -62,7 +68,7 @@ from domain.lockout import (
     register_success,
 )
 from domain.numbering import format_document_number
-from domain.permissions import MatrixChange, plan_matrix_update, role_grants
+from domain.permissions import MatrixChange, check_role_set, plan_matrix_update, role_grants
 from domain.throttle import hit, is_limited, retry_after_seconds
 
 logger = structlog.get_logger(__name__)
@@ -594,6 +600,7 @@ def notify_users(users: Iterable[User], kind: str, *, dedupe_key: str = "", **pa
     notification with that key gets no second one (also under concurrent runs: a partial
     unique index backs it).
     """
+    notification_kind(kind)  # an unregistered kind is a programming error (KeyError)
     key = dedupe_key[:120]
     rows = []
     seen: set[int] = set()
@@ -614,6 +621,23 @@ def notify_roles(
     """Notify every active user holding one of ``role_codes`` (e.g. managers, FLOW step 9)."""
     users = User.objects.filter(is_active=True, roles__code__in=list(role_codes)).distinct()
     return notify_users(users, kind, dedupe_key=dedupe_key, **payload)
+
+
+def notify_kind(kind: str, *, dedupe_key: str = "", **payload: Any) -> int:
+    """Send ``kind`` to the recipients ``apps.core.notification_kinds`` names for it.
+
+    Role recipients get it by role; permission recipients are every active holder of the
+    code now (defaults and matrix overrides). Kinds whose recipients are chosen per event
+    (the ordering doctor) go through ``notify_users`` instead.
+    """
+
+    spec = notification_kind(kind)
+    if spec.users_holding and not (spec.roles or spec.holders_of):
+        raise ValueError(f"{kind} goes to people chosen per event: use notify_users")
+    role_codes = set(spec.roles)
+    if spec.holders_of:
+        role_codes |= roles_holding(spec.holders_of)
+    return notify_roles(sorted(role_codes), kind, dedupe_key=dedupe_key, **payload)
 
 
 # =========================================================================================
@@ -727,7 +751,7 @@ def _check_role_codes(codes: Iterable[str]) -> list[str]:
     unknown = [c for c in wanted if c not in roles.ROLE_CODES]
     if unknown:
         raise DomainError("ROLE_UNKNOWN", "Unknown role code", role=unknown[0])
-    return wanted
+    return check_role_set(wanted, device_roles=roles.DEVICE_ROLES)
 
 
 def _password_error(password: str, user: User) -> DomainError | None:
@@ -1163,6 +1187,7 @@ _POLICY_FIELDS = {
     "discount_limit_percent",
     "session_idle_minutes",
     "perform_first_roles",
+    "claims_second_approver",
 }
 
 
@@ -1177,6 +1202,9 @@ def update_policy(actor: User, **fields: Any) -> Policy:
         ValidationError: a value out of range or an unknown role code (HTTP 422 with fields).
     """
     _check_fields(fields, _POLICY_FIELDS, "policy")
+    # A client that does not send the claims switch (older screens) keeps its value.
+    if fields.get("claims_second_approver", False) is None:
+        fields.pop("claims_second_approver")
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="policy"):
         Policy.load()
         current = Policy.objects.select_for_update().get(pk=Policy.SINGLETON_PK)

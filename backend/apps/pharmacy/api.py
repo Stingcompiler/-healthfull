@@ -30,6 +30,7 @@ from apps.pharmacy.schemas import (
     DispenseIn,
     DispenseOut,
     DispenseQueueVisitOut,
+    DispenseReturnIn,
     DispenseVisitOut,
     ExpiringBatchOut,
     GoodsReceiptIn,
@@ -40,6 +41,7 @@ from apps.pharmacy.schemas import (
     PharmacyOptionsOut,
     PharmacySaleIn,
     ReceiptStatusCode,
+    ReturnableDispenseOut,
     SaleCustomerOut,
     SaleServiceOut,
     ScanResultOut,
@@ -326,6 +328,46 @@ def create_dispense(request: HttpRequest, payload: DispenseIn) -> Any:
 @require_perm("pharmacy.dispense")
 def get_dispense(request: HttpRequest, dispense_id: int) -> Any:
     return queries.dispense_detail(dispense_id)
+
+
+# --- dispense returns (ADR 0018) --------------------------------------------------------------
+
+
+@pharmacy_router.get(
+    "/returns",
+    response={200: Page[ReturnableDispenseOut], **_READ},
+    operation_id="pharmacy_list_returnable_dispenses",
+    summary="Dispenses whose units may come back (last 30 days, or any by number, file or name)",
+)
+@require_perm("pharmacy.dispense")
+def list_returnable_dispenses(request: HttpRequest, params: Query[PageParams]) -> Any:
+    return queries.returnable_dispenses(q=params.q, page=params.page, page_size=params.page_size)
+
+
+@pharmacy_router.post(
+    "/dispense-lines/{dispense_line_id}/returns",
+    response={200: ReturnableDispenseOut, **_READ},
+    operation_id="pharmacy_return_dispensed_units",
+    summary="Put units a patient brought back on the shelf (stock only; refunds at the cashier)",
+    description=(
+        "409 RETURN_EXCEEDS_DISPENSED, SECOND_APPROVER_REQUIRED (billed line), "
+        "APPROVER_NOT_PERMITTED, APPROVER_INVALID, REFUND_SOURCE_INVALID, REASON_REQUIRED, "
+        "REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED."
+    ),
+)
+@require_perm("pharmacy.dispense")
+def return_dispensed_units(
+    request: HttpRequest, dispense_line_id: int, payload: DispenseReturnIn
+) -> Any:
+    return desk.return_units(
+        dispense_line_id,
+        actor=_user(request),
+        quantity=payload.quantity,
+        reason_code=payload.reason_code,
+        note=payload.note,
+        credit_note_id=payload.credit_note_id,
+        approver=_approver(request, payload.approver),
+    )
 
 
 # --- goods receipts -------------------------------------------------------------------------

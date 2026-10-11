@@ -21,6 +21,7 @@ OPERATIONS = {
     ("post", "/api/visits"): "visits_create_visit",
     ("get", "/api/visits/{visit_id}"): "visits_get_visit",
     ("post", "/api/visits/{visit_id}/cancel"): "visits_cancel_visit",
+    ("post", "/api/visits/{visit_id}/close"): "visits_close_visit",
     ("get", "/api/visits/{visit_id}/timeline"): "visits_get_timeline",
     ("get", "/api/visits/queue/board"): "visits_get_board",
     ("post", "/api/visits/queue/call-next"): "visits_call_next",
@@ -50,6 +51,10 @@ OPERATIONS = {
         "post",
         "/api/visits/inpatient/admissions/{admission_id}/discharge",
     ): "visits_discharge_patient",
+    (
+        "post",
+        "/api/visits/inpatient/admissions/{admission_id}/cancel",
+    ): "visits_cancel_admission",
     ("post", "/api/visits/inpatient/beds/{bed_id}/status"): "visits_set_bed_status",
     ("post", "/api/visits/inpatient/charge-due"): "visits_charge_bed_nights",
 }

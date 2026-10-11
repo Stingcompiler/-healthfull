@@ -13,6 +13,7 @@ from django.utils import timezone
 from api.errors import PermissionRequired
 from apps.billing import services as billing
 from apps.billing.models import CreditNote, Invoice, InvoiceLine
+from apps.claims.tests.approvers import second
 from apps.core.models import Policy
 from apps.core.tests import builders as b
 from apps.ledger import services as ledger
@@ -533,7 +534,12 @@ def test_rebilled_payer_rejection_adds_to_patient_due(doctor, cashier, superviso
     assert line.billing_status == "settled"
     accountant, cl = _answered_claim(insurer, D("0.00"), reason="not covered")
     claims.resolve_rejection(
-        cl, resolution="rebilled", actor=accountant, reason_code="NOT_COVERED", note="rebill"
+        cl,
+        resolution="rebilled",
+        actor=accountant,
+        reason_code="NOT_COVERED",
+        note="rebill",
+        approver=second(),
     )
     position = billing.refresh_settlement(inv)
     assert (position.patient_due, position.outstanding) == (D("100.00"), D("60.00"))

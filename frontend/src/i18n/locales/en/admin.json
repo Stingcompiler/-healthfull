@@ -44,6 +44,10 @@
       "title": "Payers",
       "description": "Insurers and companies: contracts, coverage rules, and exclusions."
     },
+    "banks": {
+      "title": "Banks",
+      "description": "Banks and wallets that transfer, QR and card payments come through."
+    },
     "imports": {
       "title": "Imports",
       "description": "Import patients, items, and prices from Excel with preview."
@@ -90,6 +94,8 @@
     "name": "Name",
     "roles": "Roles",
     "rolesRequired": "Choose at least one role.",
+    "deviceRoleAlone": "The waiting-room display role is held alone: remove the other roles or use a separate account.",
+    "deviceRoleHint": "A screen account: held alone, never with a person's roles",
     "status": "Status",
     "lastLogin": "Last login",
     "never": "Never",
@@ -266,7 +272,9 @@
     "estimatedCostHint": "Only doctors with the permission see it.",
     "sessionIdle": "Sign out after inactivity (minutes)",
     "range": "Enter a number from {{min}} to {{max}}.",
-    "saved": "Policies saved"
+    "saved": "Policies saved",
+    "claimsSecondApprover": "A second person approves claim rebills and write-offs",
+    "claimsSecondApproverHint": "Rebilling a payer rejection to the patient or writing it off needs another person's username and password besides the accountant who records it. Turn off only when one accountant works alone."
   },
   "departments": {
     "departmentsTab": "Departments",
@@ -337,7 +345,8 @@
       "result_amend": "Lab result amendment",
       "sample_reject": "Lab sample rejection",
       "patient_merge": "Patient file merge",
-      "appointment_cancel": "Appointment cancellation"
+      "appointment_cancel": "Appointment cancellation",
+      "admission_cancel": "Admission made in error"
     }
   },
   "catalog": {
@@ -514,6 +523,14 @@
     "excluded": "Excluded",
     "switchOff": "Switch off",
     "switchOn": "Switch on"
+  },
+  "banks": {
+    "add": "Add bank",
+    "edit": "Edit bank",
+    "hint": "The code never changes once saved. A transfer reference is unique per bank.",
+    "activeHint": "An inactive bank leaves the cashier's list; its earlier payments keep it.",
+    "emptyTitle": "No banks yet",
+    "emptyDescription": "Add the banks and wallets patients transfer through, such as Bankak."
   },
   "empty": {
     "rules": {

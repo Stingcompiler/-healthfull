@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QrCode } from "@/features/cashier/components/QrCode";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { formatDate } from "@/lib/format";
+import { usePermission } from "@/lib/auth/hooks";
 import { useLanguage } from "@/lib/i18n-hooks";
 
 import { useMarkLabelPrinted, useSampleLabel } from "../api";
@@ -64,6 +65,8 @@ export function LabelPage() {
   const label = useSampleLabel(id);
   const printed = useMarkLabelPrinted(id);
   const names = useLabNames();
+  // A nurse collects without the bench: the way back is the collection list.
+  const onBench = usePermission("lab.view_worklist");
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -74,7 +77,12 @@ export function LabelPage() {
         className="print:hidden"
         actions={
           <Button asChild variant="outline">
-            {search.line ? (
+            {!onBench ? (
+              <Link to="/lab/collect">
+                <ArrowBack aria-hidden="true" />
+                {t("collection.back")}
+              </Link>
+            ) : search.line ? (
               <Link to="/lab/results/$lineId" params={{ lineId: String(search.line) }}>
                 <ArrowBack aria-hidden="true" />
                 {t("label.back")}

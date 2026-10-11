@@ -48,8 +48,13 @@ from django.utils import timezone
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus
 from apps.catalog.models import Service, ServiceKind
 from apps.core.models import PartialDispenseRemainder, Policy, ReasonCode, User
-from apps.core.roles import PHARMACIST
-from apps.core.services import next_number, notify_roles, require_permission, resolve_reason
+from apps.core.services import (
+    holds_permission,
+    next_number,
+    notify_kind,
+    require_permission,
+    resolve_reason,
+)
 from apps.orders.models import BillingStatus, FulfilmentStatus, PerformAuthorization, ServiceLine
 from apps.pharmacy.models import (
     AdjustmentStatus,
@@ -479,6 +484,7 @@ def dispense_worklist(*, visit: Visit | None = None) -> QuerySet[ServiceLine]:
 ITEM_FIELDS = frozenset(
     {
         "generic_name",
+        "generic_name_ar",
         "brand_name",
         "form",
         "strength",
@@ -1087,8 +1093,7 @@ def _notify_low_stock(
         minimum = int(item.min_stock)
         was, now = before.get(item_id, 0), after.get(item_id, 0)
         if minimum > 0 and not ds.is_low_stock(was, minimum) and ds.is_low_stock(now, minimum):
-            notify_roles(
-                [PHARMACIST],
+            notify_kind(
                 "stock_low",
                 item_id=item_id,
                 store_id=store.pk,
@@ -1479,10 +1484,15 @@ def receive_transfer(
     is recorded on the transfer with a reason and an approver holding
     ``pharmacy.approve_adjustment`` (FEATURES 8.6, invariant 4).
 
+    Without ``approver`` the actor approves when they hold the permission (a manager receiving);
+    otherwise someone who does must type their credentials (ADR 0009, 0022).
+
     Raises:
         DomainError: ``TRANSFER_NOT_SENT``, ``RECEIPT_EXCEEDS_SENT``, ``REASON_REQUIRED``,
-            ``TRANSFER_LINE_UNKNOWN``, reason errors.
-        PermissionDenied: a shortage approver without ``pharmacy.approve_adjustment``.
+            ``TRANSFER_LINE_UNKNOWN``, reason errors; ``SECOND_APPROVER_REQUIRED`` (a shortage,
+            no approver, and the actor may not approve it; ``permission`` names the code),
+            ``APPROVER_NOT_PERMITTED`` (the typed approver may not), both 409, never a 403 that
+            would read as the actor's own lack of access.
     """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="receive transfer"):
         locked = StockTransfer.objects.select_for_update().get(pk=transfer.pk)
@@ -1499,7 +1509,19 @@ def receive_transfer(
         chosen = approver or actor
         if any(got.get(ln.pk, _whole(ln.qty_base)) < _whole(ln.qty_base) for ln in lines):
             reason = resolve_reason(shortage_reason_code, "stock_adjust", shortage_note)
-            require_permission(chosen, "pharmacy.approve_adjustment")
+            if approver is not None:
+                if not holds_permission(approver, "pharmacy.approve_adjustment"):
+                    raise DomainError(
+                        "APPROVER_NOT_PERMITTED",
+                        "The approver may not approve stock adjustments",
+                        permission="pharmacy.approve_adjustment",
+                    )
+            elif not holds_permission(actor, "pharmacy.approve_adjustment"):
+                raise DomainError(
+                    "SECOND_APPROVER_REQUIRED",
+                    "A shortage needs the approval of someone who may approve adjustments",
+                    permission="pharmacy.approve_adjustment",
+                )
             approval = Approval(chosen.pk, now, shortage_note.strip(), reason.code)
         moves = []
         for ln in lines:
@@ -1573,9 +1595,15 @@ def return_dispense(
     reason_code: str,
     note: str = "",
     credit_note: CreditNote | None = None,
+    approver: User | None = None,
 ) -> DispenseReturn:
     """Put units a patient brought back on the shelf: a ``return`` move into the batch and
     store they left (FEATURES 8.4; invariants 4 and 5).
+
+    Units of a billed line (invoiced, paid or credited) come back only with a second
+    person's approval (``approver``, holding ``pharmacy.approve_return``; ADR 0018): their
+    money goes back through the cashier's credit note and refund, never here. Units given
+    under a perform-first authorization and never billed need the actor's reason only.
 
     ``credit_note`` is the approved credit note that took the units off the bill when they
     are refunded; it must credit this line. The return itself never moves money.
@@ -1584,13 +1612,31 @@ def return_dispense(
         PermissionDenied: without ``pharmacy.dispense``.
         DomainError: ``RETURN_EXCEEDS_DISPENSED``, ``INVALID_QUANTITY``,
             ``REFUND_SOURCE_INVALID`` (the credit note is not approved or credits another
-            line), reason errors.
+            line), ``SECOND_APPROVER_REQUIRED``, ``APPROVER_NOT_PERMITTED``, reason errors.
     """
     require_permission(actor, "pharmacy.dispense")
     reason = resolve_reason(reason_code, "stock_adjust", note)
     with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"return: {note}"):
         dl_row = DispenseLine.objects.select_related("dispense").get(pk=dispense_line.pk)
         (line,) = _orders().lock_lines([dl_row.service_line_id])
+        billed = line.billing_status != BillingStatus.UNBILLED
+        now = timezone.now()
+        approval = ds.return_approval(
+            billed=billed,
+            actor_id=actor.pk,
+            approver_id=None if approver is None else approver.pk,
+            at=now,
+            reason=note.strip(),
+            reason_code=reason.code,
+        )
+        if billed and (
+            approver is None or not holds_permission(approver, "pharmacy.approve_return")
+        ):
+            raise DomainError(
+                "APPROVER_NOT_PERMITTED",
+                "The approver may not approve this action",
+                permission="pharmacy.approve_return",
+            )
         if (
             credit_note is not None
             and not CreditNoteLine.objects.filter(
@@ -1604,7 +1650,6 @@ def return_dispense(
             DispenseReturn.objects.filter(dispense_line=dl_row).aggregate(t=Sum("qty_base"))["t"]
             or 0
         )
-        now = timezone.now()
         move = ds.return_move(
             dl_row.item_id,
             dl_row.batch_id,
@@ -1612,7 +1657,7 @@ def return_dispense(
             _whole(quantity),
             dispensed=_whole(dl_row.qty_base),
             returned=returned,
-            approval=Approval(actor.pk, now, note.strip(), reason.code),
+            approval=approval,
         )
         (stock_move,) = _apply(
             [move], actor=actor, source_type="dispense_return", source_id=dl_row.pk, note=note
@@ -1625,5 +1670,6 @@ def return_dispense(
             reason_code=reason,
             note=note.strip()[:300],
             returned_by=actor,
+            approved_by=approver if billed else None,
             stock_move=stock_move,
         )

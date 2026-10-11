@@ -20,11 +20,14 @@ from api.ping import add_ping
 from api.schemas import ERROR_RESPONSES, ErrorOut, Page
 from apps.billing.schemas import BillingUserRefOut, NameOut
 from apps.core.models import User
-from apps.payments import desk, queries
+from apps.payments import banks, desk, queries
 from apps.payments.approvals import ApproverLogin
 from apps.payments.schemas import (
     AllocateIn,
     AllocationIn,
+    BankIn,
+    BankOut,
+    BankPatch,
     CurrentShiftOut,
     DecisionIn,
     HandoverCancelIn,
@@ -84,6 +87,41 @@ def _allocations(rows: list[AllocationIn] | None) -> list[tuple[int, Decimal]] |
 @require_perm("payments.view")
 def list_banks(request: HttpRequest) -> Any:
     return queries.banks()
+
+
+@payments_router.get(
+    "/banks/all",
+    response={200: list[BankOut], **_READ},
+    operation_id="payments_list_all_banks",
+    summary="Every bank, active or not, for the administration list",
+)
+@require_perm("payments.manage_banks")
+def list_all_banks(request: HttpRequest) -> Any:
+    return list(banks.list_banks())
+
+
+@payments_router.post(
+    "/banks",
+    response={201: BankOut, **_READ},
+    operation_id="payments_create_bank",
+    summary="Add a bank or wallet for transfer, QR and card payments",
+    description="409 INVALID_CODE, BANK_CODE_TAKEN.",
+)
+@require_perm("payments.manage_banks")
+def create_bank(request: HttpRequest, payload: BankIn) -> Status[Any]:
+    return Status(201, banks.create_bank(_user(request), **payload.dict()))
+
+
+@payments_router.patch(
+    "/banks/{bank_id}",
+    response={200: BankOut, **_READ},
+    operation_id="payments_update_bank",
+    summary="Rename, reorder or (de)activate a bank (the code never changes)",
+    description="An inactive bank leaves the cashier's list; its payments keep it.",
+)
+@require_perm("payments.manage_banks")
+def update_bank(request: HttpRequest, bank_id: int, payload: BankPatch) -> Any:
+    return banks.update_bank(_user(request), bank_id, **payload.changes())
 
 
 @payments_router.get(

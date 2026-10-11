@@ -21,6 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApproverFieldset } from "@/components/SecondApproverFields";
+import { approverPayload, NO_APPROVER, type ApproverState } from "@/lib/approver";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { formatNumber } from "@/lib/format";
@@ -34,11 +36,10 @@ import {
   useSendTransfer,
   useTransfers,
 } from "../api";
-import { ApproverInputs, DocStatusBadge, ErrorAlert, LabeledField, StoreSelect } from "../components/common";
+import { DocStatusBadge, ErrorAlert, LabeledField, StoreSelect } from "../components/common";
 import { NoteDialog } from "../components/NoteDialog";
 import { BatchPicker } from "../components/pickers";
 import { PharmacyNav } from "../components/PharmacyNav";
-import { approverPayload, NO_APPROVER, type ApproverState } from "../lib/approver";
 import { parseWhole } from "../lib/qty";
 import { useNames } from "../lib/use-names";
 import type { StockTransfer, StoreBatch, TransferStatus } from "../types";
@@ -99,7 +100,7 @@ export function TransfersPage() {
   const lines = (tr: StockTransfer) =>
     tr.lines.map((ln) => (
       <span key={ln.id} className="flex flex-wrap gap-x-2">
-        <span>{ln.item_name}</span>
+        <span>{names.item(ln)}</span>
         <bdi className="text-muted">{ln.batch_no}</bdi>
         <bdi className="tabular">{formatNumber(ln.qty_base, names.language)}</bdi>
       </span>
@@ -502,7 +503,7 @@ function ReceiveDialogOpen({ transfer, onClose }: { transfer: StockTransfer; onC
                 className="grid gap-2 rounded-control border border-border p-3 sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-end"
               >
                 <span className="grid gap-0.5 text-sm">
-                  <span className="font-medium">{line.item_name}</span>
+                  <span className="font-medium">{names.item(line)}</span>
                   <span className="text-muted">
                     <bdi>{line.batch_no}</bdi> ·{" "}
                     {t("transfers.sent", { qty: formatNumber(line.qty_base, names.language) })}
@@ -569,11 +570,7 @@ function ReceiveDialogOpen({ transfer, onClose }: { transfer: StockTransfer; onC
                   )}
                 </LabeledField>
               </div>
-              <ApproverInputs
-                value={approver}
-                onChange={setApprover}
-                description={t("transfers.approverDescription")}
-              />
+              <ApproverFieldset value={approver} onChange={setApprover} hint={t("transfers.approverDescription")} />
             </div>
           ) : null}
           <ErrorAlert message={error} />

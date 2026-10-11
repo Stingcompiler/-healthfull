@@ -79,6 +79,17 @@ class UpdateRunOut(Schema):
     started_at: datetime
     finished_at: datetime | None
     started_by: UserRefOut | None
+    run_key: str | None = Field(..., description="The update script's run id; null when by hand")
+    migration_plan: str = Field(..., description="`migrate --plan` of the new version")
+    migrations_applied: bool
+    db_restored: bool = Field(..., description="The rollback restored the pre-update dump")
+    backup_file: str = Field(..., description="File name of the pre-update dump (no folder)")
+    detail: str = Field(..., description="Why it failed or rolled back, and in which step")
+    log: str = Field(..., description="The last lines of the update script's log")
+
+    @staticmethod
+    def resolve_backup_file(obj: object) -> str:
+        return str(getattr(obj, "backup_file", "") or "").rsplit("/", 1)[-1]
 
 
 OpsWarningCode = Literal[
@@ -90,7 +101,27 @@ OpsWarningCode = Literal[
     "RESTORE_TEST_FAILED",
     "DISK_LOW",
     "MIGRATIONS_PENDING",
+    "INTEGRITY_FAILED",
 ]
+
+
+class IntegrityCheckOut(Schema):
+    name: str
+    ok: bool
+    checked: int
+    problems: int
+    examples: list[str]
+
+
+class IntegrityRunOut(Schema):
+    """The newest recorded ``manage.py integrity_check`` (daily from the maintenance loop)."""
+
+    id: int
+    started_at: datetime
+    finished_at: datetime
+    ok: bool
+    source: Literal["scheduled", "manual"]
+    results: list[IntegrityCheckOut]
 
 
 class SystemStatusOut(Schema):
@@ -107,6 +138,7 @@ class SystemStatusOut(Schema):
     backup_requests: list[BackupRequestOut]
     status_dir_configured: bool
     last_update: UpdateRunOut | None
+    last_integrity_check: IntegrityRunOut | None
     warnings: list[OpsWarningCode]
 
 

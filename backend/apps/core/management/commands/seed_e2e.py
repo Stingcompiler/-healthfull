@@ -65,6 +65,7 @@ USERS: tuple[SeedUser, ...] = (
     SeedUser("accountant", roles.ACCOUNTANT, "طارق الأمين", "Tarig Alamin"),
     SeedUser("manager", roles.MANAGER, "نادية محمود", "Nadia Mahmoud"),
     SeedUser("admin", roles.ADMIN, "مدير النظام", "System Admin"),
+    SeedUser("display", roles.DISPLAY, "شاشة الانتظار", "Waiting-room screen"),
 )
 
 #: More doctors (role ``doctor``, same test password) for the clinic screens; their profiles

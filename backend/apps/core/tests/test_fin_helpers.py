@@ -60,7 +60,7 @@ def test_permission_helpers() -> None:
     with pytest.raises(PermissionRequired) as exc:
         core.require_permission(cashier, "payments.confirm_transfer")
     assert exc.value.permission == "payments.confirm_transfer"
-    assert core.holds_permission(fin.staff(superuser=True), "ledger.manage_accounts")
+    assert core.holds_permission(fin.staff(superuser=True), "core.manage_roles")
 
 
 def test_notifications_reach_each_active_role_holder_once() -> None:
@@ -75,5 +75,8 @@ def test_notifications_reach_each_active_role_holder_once() -> None:
     rows = Notification.objects.filter(kind="transfer_rejected")
     assert sorted(rows.values_list("user_id", flat=True)) == sorted([manager.pk, other.pk])
     assert fin.some(rows.first()).payload == {"amount": "5.00"}
-    assert core.notify_users([manager, manager], "x" * 70) == 1
-    assert Notification.objects.filter(user=manager, kind="x" * 60).exists()
+    assert core.notify_users([manager, manager], "stock_low") == 1
+    assert Notification.objects.filter(user=manager, kind="stock_low").count() == 1
+    # An unregistered kind is a programming error (apps.core.notification_kinds).
+    with pytest.raises(KeyError):
+        core.notify_users([manager], "x" * 70)

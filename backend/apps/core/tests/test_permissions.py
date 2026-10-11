@@ -67,7 +67,10 @@ def test_doctors_hold_no_billing_permissions_by_default() -> None:
 
 
 def test_every_app_registers_permissions_and_admin_holds_all() -> None:
+    # Every app with an endpoint registers its codes. The ledger has none (its figures reach
+    # people through the reports), so it registers no code (core migration 0016).
     apps_with_codes = {code.split(".")[0] for code in PERMISSIONS}
+    assert "ledger" not in apps_with_codes
     assert apps_with_codes >= {
         "core",
         "ops",
@@ -78,7 +81,6 @@ def test_every_app_registers_permissions_and_admin_holds_all() -> None:
         "orders",
         "billing",
         "payments",
-        "ledger",
         "pharmacy",
         "lab",
         "claims",
@@ -259,6 +261,25 @@ def test_overrides_grant_and_revoke_per_role(make_user: Any) -> None:
     assert "core.view_audit" not in effective_permissions(
         make_user(roles=["manager", "accountant"])
     )
+
+
+@pytest.mark.django_db
+def test_removed_ledger_codes_leave_the_registry_and_the_matrix() -> None:
+    """Core migration 0016 deletes overrides of the two ledger codes that guarded nothing."""
+    import importlib
+
+    from django.apps import apps as django_apps
+
+    name = "0016_remove_unused_ledger_permissions"
+    migration = importlib.import_module(f"apps.core.migrations.{name}")
+    for code in migration.REMOVED:
+        assert code not in PERMISSIONS
+    role = Role.objects.get(code="accountant")
+    RolePermission.objects.create(role=role, code="ledger.view", allowed=True)
+    RolePermission.objects.create(role=role, code="ledger.manage_accounts", allowed=False)
+    kept = RolePermission.objects.create(role=role, code="core.view_audit", allowed=False)
+    migration.forwards(django_apps, None)
+    assert list(RolePermission.objects.filter(role=role)) == [kept]
 
 
 @pytest.mark.django_db

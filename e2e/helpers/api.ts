@@ -4,9 +4,12 @@
  * 1. `apiAs(who)`: a logged-in API client per seed user (cached), CSRF-aware: every unsafe
  *    request carries the current `csrftoken` cookie as `X-CSRFToken`. Errors throw `ApiError`
  *    with the backend's `{code, message, details}`.
- * 2. `fixture(name, params)`: runs `manage.py e2e_fixture <name> --json` against the e2e
+ * 2. `fixture(name, params)`: runs fixture `name` of `manage.py e2e_fixture` against the e2e
  *    database (backend/apps/core/e2e/fixtures.py). Fixtures build data through the services,
- *    as the user a real screen would act as, after checking that user's permission.
+ *    as the user a real screen would act as, after checking that user's permission. Calls go
+ *    to one long-running `e2e_fixture --serve` per worker (`fixture-server.ts`);
+ *    `E2E_FIXTURE_MODE=process` runs one `manage.py` process per call instead.
+ *    `fixtureBatch([...])` runs several fixtures in one round trip.
  * 3. Factories (`createPatient`, `createVisit`, `orderLines`, `createInvoice`,
  *    `approveInvoice`, `pay`, `openShift`, `closeShift`, `addCoverage`, `paidVisit`): typed
  *    wrappers that call the real API when an adapter for the endpoint is registered and the
@@ -30,6 +33,7 @@ import { request, type APIRequestContext, type APIResponse } from "@playwright/t
 import { BACKEND_DIR, BASE_URL, DB_NAME, FRONTEND_DIR } from "../env";
 import { resolveUser, type E2EUser, type SeedUser } from "../fixtures/users";
 import { apiLogin } from "./auth";
+import { FixtureServer, type ServerAnswer } from "./fixture-server";
 
 // ------------------------------------------------------------------------------------------------
 // API clients
@@ -334,12 +338,77 @@ function clean(params: Params): Params {
   return Object.fromEntries(Object.entries(params).filter(([, value]) => value !== undefined));
 }
 
+/** `server` (default): one long-running fixture process per worker; `process`: one per call. */
+function fixtureMode(): "server" | "process" {
+  const raw = process.env.E2E_FIXTURE_MODE ?? "server";
+  if (raw !== "server" && raw !== "process") {
+    throw new Error(`E2E_FIXTURE_MODE must be "server" or "process", got "${raw}"`);
+  }
+  return raw;
+}
+
+const fixtureServer = new FixtureServer(() => {
+  const { command, prefix } = python();
+  return {
+    command,
+    args: [...prefix, "manage.py", "e2e_fixture", "--serve"],
+    cwd: BACKEND_DIR,
+    env: { ...process.env, DB_NAME, DJANGO_DEBUG: "1" },
+  };
+});
+
+/** Stop this worker's fixture server (the next fixture call starts a new one). */
+export function stopFixtureServer(): void {
+  fixtureServer.stop();
+}
+
+function fromAnswer<T>(name: string, answer: ServerAnswer): T {
+  if (answer.ok) return answer.result as T;
+  if (answer.error) {
+    const { code, message, details } = answer.error;
+    throw new FixtureError(name, code, message, details);
+  }
+  throw new Error(`e2e_fixture ${name} failed: ${answer.crash ?? "no answer"}\n${answer.traceback ?? ""}`);
+}
+
 /**
- * Runs `manage.py e2e_fixture <name>` on the e2e database and returns its result, e.g.
- * `await fixture<{ shift: ShiftRef }>("open_shift", { opening_float: "5000" })`.
+ * Runs fixture `name` of `manage.py e2e_fixture` on the e2e database and returns its result,
+ * e.g. `await fixture<{ shift: ShiftRef }>("open_shift", { opening_float: "5000" })`.
  * Fixture names and parameters: `manage.py e2e_fixture --list` and e2e/README.md.
  */
-export function fixture<T = unknown>(name: string, params: Params = {}): Promise<T> {
+export async function fixture<T = unknown>(name: string, params: Params = {}): Promise<T> {
+  if (fixtureMode() === "process") return fixtureProcess<T>(name, params);
+  const answer = await fixtureServer.request({ name, params: clean(params) });
+  return fromAnswer<T>(name, answer);
+}
+
+/** One fixture of a `fixtureBatch` call. */
+export interface BatchItem {
+  name: string;
+  params?: Params;
+}
+
+/**
+ * Runs several fixtures in one round trip, in order, each in its own transaction (exactly as
+ * that many `fixture()` calls would), and returns their results in the same order. The first
+ * refusal throws its `FixtureError`; the items after it are not run.
+ */
+export async function fixtureBatch<T extends unknown[] = unknown[]>(items: readonly BatchItem[]): Promise<T> {
+  if (fixtureMode() === "process") {
+    const out: unknown[] = [];
+    for (const item of items) out.push(await fixtureProcess(item.name, item.params ?? {}));
+    return out as T;
+  }
+  const answer = await fixtureServer.request({
+    batch: items.map((item) => ({ name: item.name, params: clean(item.params ?? {}) })),
+  });
+  if (answer.crash) throw new Error(`e2e_fixture batch failed: ${answer.crash}\n${answer.traceback ?? ""}`);
+  const results = answer.results ?? [];
+  return results.map((r, i) => fromAnswer(items[i]?.name ?? "?", r)) as T;
+}
+
+/** One `manage.py e2e_fixture <name>` process per call (E2E_FIXTURE_MODE=process). */
+function fixtureProcess<T = unknown>(name: string, params: Params = {}): Promise<T> {
   const { command, prefix } = python();
   const args = [...prefix, "manage.py", "e2e_fixture", name, "--params", JSON.stringify(clean(params)), "--json"];
   return new Promise<T>((resolve, reject) => {
@@ -971,15 +1040,34 @@ export function closeShift(options: CloseShiftOptions = {}): Promise<ShiftRef> {
  * ready in the doctor's queue. The cashier's shift stays open.
  */
 export function paidVisit(options: PaidVisitOptions = {}): Promise<PaidVisitResult> {
-  return build("paidVisit", options, () =>
-    fixture<PaidVisitResult>("paid_visit", {
-      ...options,
-      patient: ref(options.patient),
-      patient_fields: options.patient_fields && patientParams(options.patient_fields),
-      doctor: options.doctor === null ? null : username(options.doctor ?? undefined),
-      as: username(options.as),
-      cashier_as: username(options.cashier_as),
-    }),
+  return build("paidVisit", options, () => fixture<PaidVisitResult>("paid_visit", paidVisitParams(options)));
+}
+
+function paidVisitParams(options: PaidVisitOptions): Params {
+  return {
+    ...options,
+    patient: ref(options.patient),
+    patient_fields: options.patient_fields && patientParams(options.patient_fields),
+    doctor: options.doctor === null ? null : username(options.doctor ?? undefined),
+    as: username(options.as),
+    cashier_as: username(options.cashier_as),
+  };
+}
+
+/**
+ * Several `paidVisit`s, made in order. Through the fixture command they go in one
+ * `fixtureBatch` round trip (each visit still its own transaction); with a `paidVisit` API
+ * adapter in use, or in `E2E_FACTORY_MODE=api`, they are made one by one exactly as
+ * `paidVisit` would.
+ */
+export async function paidVisits(list: readonly PaidVisitOptions[]): Promise<PaidVisitResult[]> {
+  if ((await usesApi("paidVisit")) || factoryMode() === "api") {
+    const out: PaidVisitResult[] = [];
+    for (const options of list) out.push(await paidVisit(options));
+    return out;
+  }
+  return fixtureBatch<PaidVisitResult[]>(
+    list.map((options) => ({ name: "paid_visit", params: paidVisitParams(options) })),
   );
 }
 

@@ -37,6 +37,7 @@ All use the test password `E2E_PASSWORD` (`fixtures/users.ts`).
 | Username | Role | Notes |
 |---|---|---|
 | `reception`, `doctor`, `cashier`, `cashsup`, `pharmacist`, `labtech`, `labsup`, `nurse`, `accountant`, `manager`, `admin` | one role each (`USERS`) | `doctor` is the general practitioner (GEN) |
+| `display` | display (`USERS`) | the waiting-room kiosk account: `/display/queue` only (ADR 0019); `login()` expects the staff shell, so sign it in with `submitLogin` |
 | `pediatrician`, `gynecologist`, `dentist` | doctor (`EXTRA_DOCTORS`) | PED, GYN, DEN clinics |
 | `root` | superuser, no role | break-glass account only |
 
@@ -133,6 +134,16 @@ numbers (`"PT-2026-000012"`, `"VIS-..."`, `"INV-..."`, `"SH-..."`), codes for ca
 usernames for users. Money is a string (`"15000.00"`) or a whole number, never a float. Unknown
 parameters are refused. The command runs only on `e2e_*` / `test_*` databases with DEBUG on.
 
+**Fast path.** `fixture()` does not start a `manage.py` process per call: each Playwright
+worker starts one `manage.py e2e_fixture --serve` on its first call (`helpers/fixture-server.ts`)
+and sends it one JSON request per line on stdin; answers come back in order on stdout. Each
+fixture still runs in its own transaction through the same builders, so the data is exactly what
+a separate process would make; only Python and Django start once. `fixtureBatch([{name,
+params}, ...])` runs several fixtures in one round trip (in order, each in its own transaction,
+stopping at the first refusal). A server that dies or stops answering for 120 s is killed and
+the next call starts a new one. `E2E_FIXTURE_MODE=process` goes back to one process per call
+(for debugging, and for before/after timings).
+
 | Fixture | Acts as | Does |
 |---|---|---|
 | `catalog` | | ids of the seeded catalog by code |
@@ -201,8 +212,9 @@ has no usable adapter: `E2E_FACTORY_MODE=api make e2e E2E_GREP=@cashier` proves 
 - One worker and one database: specs see each other's data. Create what you need (unique
   patients per test), search by file number, and leave shared state clean (close the cashier's
   shift, `reseed()` after changing a seed user).
-- A fixture call starts a Django process (about two seconds): prefer `paidVisit` and the
-  `visit`-level options to many small calls, and raise the test timeout for long set-ups
+- The first fixture call of a worker starts the fixture server (a few seconds); later calls cost
+  only the fixture itself. Prefer `paidVisit` and the `visit`-level options to many small calls,
+  use `fixtureBatch` for independent set-up steps, and raise the test timeout for long set-ups
   (`test.describe.configure({ timeout: 120_000 })`).
 - Tag specs with their module (`@patients`, `@clinic`, `@cashier`, `@admin`) for `E2E_GREP`.
 - New screens go into your module's `module-routes/<module>.ts` (never `routes.ts`); the
@@ -226,3 +238,7 @@ has no usable adapter: `E2E_FACTORY_MODE=api make e2e E2E_GREP=@cashier` proves 
   (`module-routes/portal.ts`) sign the page in to the portal there (`auth: false`, since the
   staff session plays no part). Portal data comes from the `portal_patient` fixture
   (`apps/portal/e2e_fixtures.py`); the portal specs are tagged `@portal`.
+
+Phase 8 follow-up specs live in `tests/followups/` (tag `@followups`); the pharmacy returns
+screen gets a dispensed prescription from the `pharmacy_dispensed` fixture
+(`apps/pharmacy/e2e_fixtures.py`).

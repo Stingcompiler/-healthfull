@@ -41,6 +41,7 @@ EXPECTED_USERS = {
     "accountant": "accountant",
     "manager": "manager",
     "admin": "admin",
+    "display": "display",
 }
 
 
@@ -77,7 +78,7 @@ def _snapshot() -> dict[str, Any]:
 @pytest.mark.django_db
 def test_seed_creates_the_contract_dataset(settings: Any) -> None:
     output = _seed(settings)
-    assert "11 users (11 new)" in output
+    assert "12 users (12 new)" in output
     assert {u.username: u.role for u in USERS} == EXPECTED_USERS
     for username, role in EXPECTED_USERS.items():
         user = User.objects.get(username=username)
@@ -158,7 +159,7 @@ def test_seed_is_idempotent_and_repairs_drift(settings: Any) -> None:
     UserRole.objects.create(user=nurse, role_id=User.objects.get(username="admin").roles.get().pk)
 
     output = _seed(settings)
-    assert "11 users (0 new)" in output
+    assert "12 users (0 new)" in output
     assert _snapshot() == first
     assert User.objects.get(username="doctor").check_password(E2E_PASSWORD)
     cashier = User.objects.get(username="cashier")
@@ -184,8 +185,8 @@ def test_seed_refuses_without_debug(settings: Any, monkeypatch: pytest.MonkeyPat
     assert not User.objects.exists()
     monkeypatch.setenv("ALLOW_SEED_E2E", "1")
     call_command("seed_e2e", stdout=StringIO())
-    # 11 role users, 3 more doctors and the break-glass superuser.
-    assert User.objects.count() == 15
+    # 12 role users (with the kiosk display, ADR 0019), 3 more doctors and the superuser.
+    assert User.objects.count() == 16
 
 
 @pytest.mark.django_db

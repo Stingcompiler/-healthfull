@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ALL_NAV, visibleNav } from "./nav";
-import { safeRedirectTarget } from "./guards";
+import { isKioskOnly, safeRedirectTarget } from "./guards";
 import { router } from "./router";
 
 const paths = new Set(Object.keys(router.routesByPath).map((p) => (p.length > 1 ? p.replace(/\/$/, "") : p)));
@@ -56,8 +56,10 @@ describe("route tree", () => {
 describe("visibleNav", () => {
   const ids = (roles: string[], permissions: string[]) => visibleNav({ roles, permissions }).map((n) => n.id);
 
-  it("shows everything to the admin role", () => {
-    expect(ids(["admin"], [])).toEqual(ALL_NAV.map((n) => n.id));
+  it("shows every module to the admin role (role shortcuts stay inside their modules)", () => {
+    // An `unless` entry is a shortcut for a role without the module (a cashier's walk-in sale);
+    // the admin holds every code, so reaches those screens through the modules.
+    expect(ids(["admin"], [])).toEqual(ALL_NAV.filter((n) => n.unless === undefined).map((n) => n.id));
   });
 
   it("filters by permission for other roles", () => {
@@ -89,4 +91,14 @@ describe("safeRedirectTarget", () => {
       expect(safeRedirectTarget(target)).toBeNull();
     },
   );
+});
+
+describe("isKioskOnly (ADR 0019)", () => {
+  it("is true only for an account holding just the waiting-room feed", () => {
+    expect(isKioskOnly({ permissions: ["visits.view_display"] })).toBe(true);
+    expect(isKioskOnly({ permissions: ["visits.view_display", "visits.view_queue"] })).toBe(false);
+    expect(isKioskOnly({ permissions: ["patients.view"] })).toBe(false);
+    // An account with no permission at all is not a kiosk: it sees the staff shell's empty state.
+    expect(isKioskOnly({ permissions: [] })).toBe(false);
+  });
 });

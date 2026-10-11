@@ -195,7 +195,7 @@ function CountLineRow({ count, line, editable }: { count: StockCount; line: Stoc
       data-batch-no={line.batch_no}
     >
       <div className="grid min-w-0 gap-1">
-        <p className="font-medium break-words">{line.item_name}</p>
+        <p className="font-medium break-words">{names.item(line)}</p>
         <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
           <span>
             {t("batch.number")} <bdi>{line.batch_no}</bdi>

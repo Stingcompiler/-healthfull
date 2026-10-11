@@ -20,6 +20,9 @@ export type PolicyIn = S["PolicyIn"];
 export type DepartmentOut = S["DepartmentOut"];
 export type DepartmentIn = S["DepartmentIn"];
 export type DepartmentPatch = S["DepartmentPatch"];
+export type BankOut = S["BankOut"];
+export type BankIn = S["BankIn"];
+export type BankPatch = S["BankPatch"];
 export type RoomOut = S["RoomOut"];
 export type RoomIn = S["RoomIn"];
 export type RoomPatch = S["RoomPatch"];
@@ -87,5 +90,6 @@ const REASON_CATEGORY_SET: Record<ReasonCategory, true> = {
   sample_reject: true,
   patient_merge: true,
   appointment_cancel: true,
+  admission_cancel: true,
 };
 export const REASON_CATEGORIES = Object.keys(REASON_CATEGORY_SET) as ReasonCategory[];

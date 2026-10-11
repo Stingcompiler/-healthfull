@@ -50,6 +50,7 @@ APPEND_ONLY = {
 UNTRACKED = {
     ("core", "Sequence"),  # counters; documents carry their numbers
     ("core", "Notification"),
+    ("ops", "IntegrityRun"),  # a log of read-only checks, written once by the command
     ("core", "LoginThrottle"),
     ("pharmacy", "StockBalance"),  # projection of StockMove, written only by its trigger
     ("imports", "ImportRow"),  # bulk staging rows of a tracked ImportJob

@@ -14,6 +14,8 @@ import type {
   CoveragePreviewIn,
   CoverageRuleIn,
   CoverageRulePatch,
+  BankIn,
+  BankPatch,
   DepartmentIn,
   DepartmentPatch,
   DoctorIn,
@@ -49,6 +51,7 @@ export const adminKeys = {
   center: ["admin", "center"] as const,
   policy: ["admin", "policy"] as const,
   departments: ["admin", "departments"] as const,
+  banks: ["admin", "banks"] as const,
   rooms: ["admin", "rooms"] as const,
   doctors: ["admin", "doctors"] as const,
   doctorCandidates: ["admin", "doctors", "candidates"] as const,
@@ -224,6 +227,20 @@ export function useSaveDepartment() {
         ? unwrap(api.POST("/api/core/departments", { body: body as DepartmentIn }))
         : unwrap(api.PATCH("/api/core/departments/{department_id}", { params: { path: { department_id: id } }, body })),
     [adminKeys.departments],
+  );
+}
+
+export function useBanks() {
+  return useQuery({ queryKey: adminKeys.banks, queryFn: () => unwrap(api.GET("/api/payments/banks/all")) });
+}
+
+export function useSaveBank() {
+  return useAdminMutation(
+    ({ id, body }: { id?: number; body: BankIn | BankPatch }) =>
+      id === undefined
+        ? unwrap(api.POST("/api/payments/banks", { body: body as BankIn }))
+        : unwrap(api.PATCH("/api/payments/banks/{bank_id}", { params: { path: { bank_id: id } }, body })),
+    [adminKeys.banks],
   );
 }
 

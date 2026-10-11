@@ -150,6 +150,71 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   results with print, prescriptions and lab preparation, invoices and receipts), the public receipt
   check `/verify/<token>` behind the receipt QR, and a portal access code the cashier prints on the
   receipt. Web manifest and bundled icons, no service worker (ADR 0016).
+- Phase 8, demo dataset: `manage.py seed_demo` and `make demo` (ADR 0017,
+  `docs/runbooks/demo.md`). A demo center (five clinical departments, ten doctors with
+  schedules, dated SDG price lists, three payers with different rules, 219 drugs and 14 supplies
+  with batches and expiries, 50 lab tests with ranges, 500 synthetic Sudanese patients) and a
+  month of activity played day by day through the services under a simulated clock: visits,
+  orders, insurance splits, cash and transfers (pending, confirmed, rejected after close),
+  credit notes and refunds, dispenses, approved results, procedures, admissions, reviewed shifts
+  with variances, claims at every stage. Deterministic per seed, idempotent, demo databases only.
+- Phase 8, e2e: the full FLOW cycle across every role through the UI with every non-localhost
+  request aborted and asserted absent (`e2e/tests/cycle/full-cycle.spec.ts`, `@cycle`), and a
+  backend hard-kill and restart mid-flow proving no money or stock is lost or doubled
+  (`e2e/tests/cycle/restart.spec.ts`, `@restart`).
+- E2E fast path: `manage.py e2e_fixture --serve` keeps one Django process per Playwright worker
+  (JSON lines over stdin/stdout, single fixtures and batches); `fixtureBatch()` and
+  `paidVisits()`; `E2E_FIXTURE_MODE=process` keeps the old one-process-per-call behaviour.
+- Phase 8 follow-ups (ADRs 0018, 0019): an admission made in error is cancelled from the bed
+  board with a reason and a second person's credentials, unbilled bed nights are voided and
+  invoiced nights send the nurse to the cashier's credit note; dispense returns screen
+  (`/pharmacy/returns`) putting units back into their batch, with a second approver for paid
+  lines; the `display` role for the waiting-room kiosk (only the queue feed); portal access
+  codes issued from the patient's file with a printable slip, and an explicit revoke; a second
+  person approves claims rebills and write-offs behind the `claims_second_approver` policy
+  switch (default on); items carry an Arabic generic name, used by the Arabic stock lists and
+  the item import template.
+- Phase 8 handover, documentation and operations (ADR 0020):
+  - `README.md`: what the system is, architecture overview, developer quick start, deployment
+    summary, feature map with FEATURES numbers, screenshot names, security model.
+  - User guides in Arabic with English summaries (`docs/guides/`): one per role (the 12 roles,
+    including the waiting-room display), shared basics, and a plain-language patient portal guide.
+  - Runbooks: new `operations.md` (daily to quarterly checks, users and passwords, break-glass
+    account, internet down, power cut, dead server, integrity check, troubleshooting); the
+    restore-from-scratch drill, post-restore checks, update history and first-run steps in the
+    existing runbooks; a runbooks index.
+  - `manage.py integrity_check`: read-only check that the trial balance is zero and every entry
+    balanced, AR_PATIENT per invoice and AR_PAYER per payer match the documents, shift cash
+    matches, stock is never negative and equals its moves, and no allocation is orphaned.
+  - `infra/backup/restore-drill.sh`: rebuilds a dump into a new database with the owner/app role
+    setup, runs `migrate --check` (owner) and `integrity_check` (app role), counts key tables and
+    records the result with the restore tests; tested end to end by `make infra-test`.
+  - `infra/update.sh` records every run in `ops.UpdateRun` (from/to tag, result, start/end,
+    migration plan, migrations applied, database restored, pre-update dump, reason, log tail,
+    optional `--release-notes`) through `manage.py record_update`; an interrupted run is
+    recorded as failed by the next one.
+- Phase 8 polish (`feat/8-polish`, ADRs 0021, 0022):
+  - Navigation reach per role with permission-filtered shortcuts (`NavItem.unless`): the
+    cashier's walk-in sale, reception's bed board and approved lab results (new
+    `/lab/approved-results`, `GET /api/lab/approved`), the nurse's sample collection (new
+    `/lab/collect`, `GET /api/lab/collection`) and allergy editing from the nursing chart; the
+    clinic entry is the doctor's (`clinical.write_note`).
+  - The doctor closes a visit («ختم الزيارة», `POST /api/visits/{id}/close`, `visits.close`):
+    only out of the queue (`VISIT_IN_QUEUE`) and not admitted (`VISIT_ADMITTED`).
+  - Banks screen at `/administration/banks` (`payments.manage_banks`; list, add, rename,
+    reorder, deactivate).
+  - Notification kinds in one table (`apps/core/notification_kinds.py`) with recipients and
+    permitted links; the bell opens only screens the reader may open.
+  - Daily `integrity_check --daily` from the maintenance loop, recorded in `ops.IntegrityRun`,
+    `integrity_failed` alert to administrators and managers, newest run and `INTEGRITY_FAILED`
+    on the status page.
+  - The update history shows every `UpdateRun` column (`/api/ops/updates`, status page).
+  - One shared approver field set for every desk approval (`SecondApproverFields`,
+    `ApproverFieldset`).
+
+### Removed
+- Unused permission codes `ledger.view` and `ledger.manage_accounts` (core migration 0016 deletes
+  their matrix rows).
 
 ### Security
 - Imports refuse formula cells and text starting with `=`, check the xlsx zip signature and
@@ -192,6 +257,10 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   placeholder sections left (imports, system status, data export and audit are real pages;
   `AdminSectionPage` removed). The clinic doctor-states e2e setup gets the test timeout
   instead of the 30 s hook default.
+- Phase 8 integration (`phase/8`): wave c from `main`, the phase 8 follow-ups (ADRs 0018, 0019)
+  and the docs and operations work (ADR 0020) merged together; the user guides and runbooks now
+  describe screens that exist on the same branch, and the restore drill's `integrity_check`
+  passes on data from the new returns, admission-in-error and claims second-approver flows.
 - Nurses hold `visits.admit` by default (they record the admission on the doctor's decision);
   the Nursing menu entry shows to holders of any nursing permission. A cancelled visit takes no
   nursing notes (`VISIT_CANCELLED`).
@@ -214,6 +283,13 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   before the swap. Role passwords: 16-128 characters of `A-Z a-z 0-9 . _ - ~`.
 
 ### Fixed
+- Phase 8 polish: the dispense override never offers an expired batch; the manager's
+  "transfer rejected" link opens the patient file instead of a refused queue; error and help
+  texts name every role that can act (shift review, refund approval, duplicate override,
+  handovers, portal codes); `claims.shortfall.description` no longer calls the recorder the
+  approver; every import column has a label; the `display` role is held alone
+  (`DEVICE_ROLE_ALONE`); a short transfer receipt without an allowed approver answers
+  `SECOND_APPROVER_REQUIRED` / `APPROVER_NOT_PERMITTED` instead of a bare 403.
 - Rejecting a transfer no longer uses pending transfer money: a confirmed bounce takes back
   every credit-funded allocation that confirmed credit cannot cover, and rejecting a pending
   transfer recovers nothing and reports nothing uncovered (ADR 0015).

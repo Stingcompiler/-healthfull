@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ageFromBirthDate } from "@/lib/age";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { formatDate } from "@/lib/format";
+import { usePermission } from "@/lib/auth/hooks";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { cn } from "@/lib/utils";
 
@@ -164,6 +165,8 @@ export function ResultPrintPage() {
   const lang: Lang = search.lang ?? uiLanguage;
   const id = Number(lineId);
   const data = useResultPrint(id, search.version);
+  // Reception prints without the bench: the way back is their list, not a refused page.
+  const onBench = usePermission("lab.view_worklist");
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -174,10 +177,17 @@ export function ResultPrintPage() {
         className="print:hidden"
         actions={
           <Button asChild variant="outline">
-            <Link to="/lab/results/$lineId" params={{ lineId: String(id) }}>
-              <ArrowBack aria-hidden="true" />
-              {t("print.back")}
-            </Link>
+            {onBench ? (
+              <Link to="/lab/results/$lineId" params={{ lineId: String(id) }}>
+                <ArrowBack aria-hidden="true" />
+                {t("print.back")}
+              </Link>
+            ) : (
+              <Link to="/lab/approved-results">
+                <ArrowBack aria-hidden="true" />
+                {t("approvedResults.back")}
+              </Link>
+            )}
           </Button>
         }
       />

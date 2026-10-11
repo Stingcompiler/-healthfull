@@ -10,6 +10,9 @@
 #                    [3600] (the compose `maintenance` service). Each cycle, all idempotent:
 #                      manage.py maintenance        expired sessions, stale login throttles
 #                      manage.py notify_scan        time-based alerts (FEATURES 0.13), once a day
+#                      manage.py integrity_check --daily  books and stock re-checked once a
+#                                                   day, recorded, admins/managers alerted
+#                                                   on findings (ADR 0021)
 #                      manage.py charge_bed_nights  passed bed nights of open admissions (10.5),
 #                                                   as BED_CHARGE_USER; skipped when it is unset
 #   maintenance-once one maintenance cycle, then exit
@@ -49,6 +52,9 @@ maintenance_cycle() {
   # Each job is idempotent and independent: one failing never skips the others.
   python manage.py maintenance || echo "app-entrypoint: maintenance failed; retrying next cycle" >&2
   python manage.py notify_scan || echo "app-entrypoint: notify_scan failed; retrying next cycle" >&2
+  # Findings exit 0 (reported in the app); a non-zero exit is a job that could not run.
+  python manage.py integrity_check --daily ||
+    echo "app-entrypoint: integrity_check failed; retrying next cycle" >&2
   if [[ -n "${BED_CHARGE_USER:-}" ]]; then
     python manage.py charge_bed_nights --as "$BED_CHARGE_USER" ||
       echo "app-entrypoint: charge_bed_nights failed; retrying next cycle" >&2

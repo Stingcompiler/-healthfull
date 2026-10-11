@@ -59,6 +59,11 @@ OPERATIONS = {
     ("get", "/api/pharmacy/queue/visits/{visit_id}"): "pharmacy_get_dispense_visit",
     ("post", "/api/pharmacy/dispenses"): "pharmacy_create_dispense",
     ("get", "/api/pharmacy/dispenses/{dispense_id}"): "pharmacy_get_dispense",
+    ("get", "/api/pharmacy/returns"): "pharmacy_list_returnable_dispenses",
+    (
+        "post",
+        "/api/pharmacy/dispense-lines/{dispense_line_id}/returns",
+    ): "pharmacy_return_dispensed_units",
     ("get", "/api/pharmacy/receipts"): "pharmacy_list_receipts",
     ("post", "/api/pharmacy/receipts"): "pharmacy_create_receipt",
     ("get", "/api/pharmacy/receipts/{receipt_id}"): "pharmacy_get_receipt",
@@ -703,12 +708,14 @@ def test_transfer_send_receive_short_with_an_approver_and_cancel(ph: Ph) -> None
     assert _balance(batch, ph.main) == 8
     (line,) = sent["lines"]
     short = {"lines": [{"line_id": line["id"], "qty_base": 10}], "shortage_reason": "LOST"}
-    # The pharmacist does not approve a shortage; the manager does at the counter.
-    error(
+    # The pharmacist does not approve a shortage; the manager does at the counter. Without an
+    # approver the answer names what is missing (409), never a bare 403 (ADR 0022).
+    body = error(
         ph.api.post(f"/api/pharmacy/transfers/{transfer['id']}/receive", short),
-        403,
-        "PERMISSION_DENIED",
+        409,
+        "SECOND_APPROVER_REQUIRED",
     )
+    assert body["details"]["permission"] == "pharmacy.approve_adjustment"
     received = ok(
         ph.api.post(
             f"/api/pharmacy/transfers/{transfer['id']}/receive",

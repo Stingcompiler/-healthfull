@@ -8,7 +8,7 @@ turnaround come from ``apps.lab.services`` and ``domain.lab``.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -271,28 +271,47 @@ def worklist(*, status: str, q: str | None, page: int, page_size: int) -> dict[s
             counts[str(stage)] += 1
     if status == "done":
         since = timezone.now() - timedelta(days=_DONE_DAYS)
-        done_qs = _search(
-            _rows_qs(
-                ServiceLine.objects.filter(
-                    kind=ServiceKind.LAB,
-                    fulfilment_status=FulfilmentStatus.PERFORMED,
-                    result_set__first_approved_at__gte=since,
-                )
-            ),
-            q,
-        ).order_by("-result_set__first_approved_at", "-id")
-        result = paginate(done_qs, page, page_size)
-        page_lines = list(result["items"])
-        ids = [ln.pk for ln in page_lines]
-        loaded = {
-            ln.pk: ln
-            for ln in _rows_qs(ServiceLine.objects.filter(pk__in=ids)).prefetch_related(_VERSIONS)
-        }
-        done_expected = _expected(ln.service.lab_test for ln in loaded.values())
-        result["items"] = [_row(loaded[i], done_expected)[1] for i in ids]
-        return {**result, "counts": counts}
+        return {**_approved_page(q, page, page_size, since=since), "counts": counts}
     rows = [row for stage, row in staged if status == "open" or str(stage) == status]
     return {**paginate(rows, page, page_size), "counts": counts}
+
+
+def _approved_page(
+    q: str | None, page: int, page_size: int, *, since: datetime | None
+) -> dict[str, Any]:
+    """Performed tests with an approved result, newest approval first."""
+    filters: dict[str, Any] = {
+        "kind": ServiceKind.LAB,
+        "fulfilment_status": FulfilmentStatus.PERFORMED,
+        "result_set__first_approved_at__isnull": False,
+    }
+    if since is not None:
+        filters["result_set__first_approved_at__gte"] = since
+    done_qs = _search(_rows_qs(ServiceLine.objects.filter(**filters)), q).order_by(
+        "-result_set__first_approved_at", "-id"
+    )
+    result = paginate(done_qs, page, page_size)
+    ids = [ln.pk for ln in result["items"]]
+    loaded = {
+        ln.pk: ln
+        for ln in _rows_qs(ServiceLine.objects.filter(pk__in=ids)).prefetch_related(_VERSIONS)
+    }
+    done_expected = _expected(ln.service.lab_test for ln in loaded.values())
+    result["items"] = [_row(loaded[i], done_expected)[1] for i in ids]
+    return result
+
+
+def collection_list(*, q: str | None, page: int, page_size: int) -> dict[str, Any]:
+    """Paid or authorized tests waiting for a sample, for whoever draws samples (a nurse)."""
+    data = worklist(status="to_collect", q=q, page=page, page_size=page_size)
+    return {key: data[key] for key in ("items", "count", "page", "page_size")}
+
+
+def approved_results(*, q: str | None, page: int, page_size: int) -> dict[str, Any]:
+    """Approved results to print for a patient (reception, FEATURES 9.6): the last
+    ``_DONE_DAYS`` days, or any age when searching by file number, name, visit or accession."""
+    since = None if (q or "").strip() else timezone.now() - timedelta(days=_DONE_DAYS)
+    return _approved_page(q, page, page_size, since=since)
 
 
 # --- result detail ---------------------------------------------------------------------------

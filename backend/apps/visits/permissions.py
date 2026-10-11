@@ -12,6 +12,7 @@ from apps.core.roles import (
     ADMIN,
     CASHIER,
     CASHIER_SUPERVISOR,
+    DISPLAY,
     DOCTOR,
     LAB_SUPERVISOR,
     LAB_TECH,
@@ -69,6 +70,14 @@ register_permission(
 )
 
 register_permission(
+    "visits.view_display",
+    label_ar="عرض شاشة الانتظار",
+    label_en="Waiting-room display feed",
+    # The kiosk account's only permission (ADR 0019); staff who had the queue keep the screen.
+    default_roles={DISPLAY, RECEPTIONIST, DOCTOR, NURSE, MANAGER, ADMIN},
+)
+
+register_permission(
     "visits.manage_queue",
     label_ar="إدارة الطابور (نداء، بدء، انتهاء)",
     label_en="Manage the queue (call, start, done)",
@@ -116,4 +125,19 @@ register_permission(
     label_ar="خروج مريض منوم",
     label_en="Discharge an inpatient",
     default_roles={DOCTOR, NURSE, ADMIN},
+)
+
+register_permission(
+    "visits.cancel_admission",
+    label_ar="إلغاء تنويم تم بالخطأ",
+    label_en="Cancel an admission made in error",
+    # The ward nurse who recorded it; a second person approves (ADR 0018).
+    default_roles={NURSE, MANAGER, ADMIN},
+)
+
+register_permission(
+    "visits.approve_admission_cancel",
+    label_ar="اعتماد إلغاء تنويم تم بالخطأ",
+    label_en="Approve cancelling an admission made in error",
+    default_roles={CASHIER_SUPERVISOR, MANAGER, ADMIN},
 )

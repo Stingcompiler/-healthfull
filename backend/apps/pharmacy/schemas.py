@@ -147,6 +147,7 @@ class StockItemListOut(Schema):
     id: int
     service: PharmacyNameOut
     generic_name: str
+    generic_name_ar: str = Field(..., description="Empty: the Arabic screens show the Latin name")
     brand_name: str
     form: DosageFormCode
     strength: str
@@ -186,6 +187,7 @@ class StoreBatchOut(BatchStockOut):
 
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     base_unit_name_ar: str
     base_unit_name_en: str
 
@@ -193,6 +195,7 @@ class StoreBatchOut(BatchStockOut):
 class StockItemIn(Schema):
     service_id: int
     generic_name: Annotated[str, Field(min_length=1, max_length=200)]
+    generic_name_ar: Annotated[str, Field(max_length=200)] = ""
     brand_name: Annotated[str, Field(max_length=200)] = ""
     form: DosageFormCode = "tablet"
     strength: Annotated[str, Field(max_length=60)] = ""
@@ -208,6 +211,7 @@ class StockItemIn(Schema):
 
 class StockItemPatch(Schema):
     generic_name: Annotated[str, Field(min_length=1, max_length=200)] | None = None
+    generic_name_ar: Annotated[str, Field(max_length=200)] | None = None
     brand_name: Annotated[str, Field(max_length=200)] | None = None
     form: DosageFormCode | None = None
     strength: Annotated[str, Field(max_length=60)] | None = None
@@ -410,6 +414,74 @@ class DispenseOut(Schema):
     lines: list[DispenseLineOut]
 
 
+# --- dispense returns (ADR 0018) --------------------------------------------------------------
+
+
+class ReturnCreditNoteOut(Schema):
+    id: int
+    number: str
+
+
+class DispenseReturnOut(Schema):
+    number: str
+    qty_base: int
+    reason: PharmacyReasonOut | None
+    note: str
+    returned_by: PharmacyUserRefOut | None
+    approved_by: PharmacyUserRefOut | None = Field(
+        ..., description="The second person who approved (billed lines only)"
+    )
+    returned_at: datetime
+    credit_note_number: str | None
+
+
+class ReturnableLineOut(Schema):
+    id: int = Field(..., description="The dispense line")
+    service_line_id: int
+    service: PharmacyNameOut
+    batch_no: str
+    expiry_date: date
+    unit_code: str | None
+    qty_base: int = Field(..., description="Base units dispensed")
+    returned: int = Field(..., description="Base units already returned")
+    returnable: int = Field(..., description="Base units that may still come back")
+    billing_status: str
+    needs_approver: bool = Field(
+        ..., description="A billed line: a second person approves the return"
+    )
+    credit_notes: list[ReturnCreditNoteOut] = Field(
+        ..., description="Approved credit notes that credit the line (the cashier's refund)"
+    )
+    returns: list[DispenseReturnOut]
+
+
+class ReturnableDispenseOut(Schema):
+    id: int
+    number: str
+    visit_id: int
+    visit_number: str
+    patient: DispensePatientOut
+    store: StoreOut
+    dispensed_by: PharmacyUserRefOut
+    dispensed_at: datetime
+    lines: list[ReturnableLineOut]
+
+
+class DispenseReturnIn(Schema):
+    """Units a patient brought back (FEATURES 8.4): base units, an ``stock_adjust`` reason, and
+    for a billed line a second person's credentials (``pharmacy.approve_return``)."""
+
+    quantity: Qty
+    reason_code: Code
+    note: Note = ""
+    credit_note_id: int | None = Field(
+        None, description="An approved credit note crediting the line (links the refund)"
+    )
+    approver: ApproverIn | None = Field(
+        None, description="Required for a billed line: someone else approves"
+    )
+
+
 # --- goods receipts -------------------------------------------------------------------------
 
 
@@ -435,6 +507,7 @@ class GoodsReceiptLineOut(Schema):
     id: int
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     batch_no: str
     expiry_date: date
     unit_code: str | None
@@ -485,6 +558,7 @@ class StockAdjustmentLineOut(Schema):
     id: int
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     batch_id: int
     batch_no: str
     expiry_date: date
@@ -526,6 +600,7 @@ class StockCountLineOut(Schema):
     id: int
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     base_unit_name_ar: str
     base_unit_name_en: str
     batch_id: int
@@ -595,6 +670,7 @@ class StockTransferLineOut(Schema):
     id: int
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     batch_id: int
     batch_no: str
     expiry_date: date
@@ -634,6 +710,7 @@ class ExpiringBatchOut(Schema):
     expired: bool
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     base_unit_name_ar: str
     base_unit_name_en: str
     store: PharmacyNameOut
@@ -644,6 +721,7 @@ class ExpiringBatchOut(Schema):
 class LowStockItemOut(Schema):
     item_id: int
     item_name: str
+    item_name_ar: str = Field(..., description="The Arabic generic name, else the Latin one")
     service_code: str
     base_unit_name_ar: str
     base_unit_name_en: str

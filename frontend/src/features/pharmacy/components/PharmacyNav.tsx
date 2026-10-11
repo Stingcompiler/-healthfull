@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   TrendingDown,
   Truck,
+  Undo2,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -27,10 +28,20 @@ type PharmacyPath =
   | "/pharmacy/counts"
   | "/pharmacy/transfers"
   | "/pharmacy/expiry"
-  | "/pharmacy/low-stock";
+  | "/pharmacy/low-stock"
+  | "/pharmacy/returns";
 
 type LinkKey =
-  "dispense" | "sale" | "items" | "receipts" | "adjustments" | "counts" | "transfers" | "expiry" | "lowStock";
+  | "dispense"
+  | "returns"
+  | "sale"
+  | "items"
+  | "receipts"
+  | "adjustments"
+  | "counts"
+  | "transfers"
+  | "expiry"
+  | "lowStock";
 
 interface PharmacyLink {
   to: PharmacyPath;
@@ -42,6 +53,7 @@ interface PharmacyLink {
 /** The pharmacy module's screens; each shows only to users who may use it (UI hint only). */
 const PHARMACY_LINKS: readonly PharmacyLink[] = [
   { to: "/pharmacy", key: "dispense", icon: Pill, permission: "pharmacy.dispense" },
+  { to: "/pharmacy/returns", key: "returns", icon: Undo2, permission: "pharmacy.dispense" },
   { to: "/pharmacy/sale", key: "sale", icon: ShoppingBag, permission: "billing.pharmacy_sale" },
   { to: "/pharmacy/items", key: "items", icon: Package, permission: "pharmacy.view" },
   { to: "/pharmacy/receipts", key: "receipts", icon: Truck, permission: "pharmacy.view" },

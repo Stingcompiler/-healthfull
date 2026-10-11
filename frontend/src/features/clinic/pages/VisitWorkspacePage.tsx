@@ -1,5 +1,15 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { CheckCheck, ClipboardList, FileText, FlaskConical, History, Megaphone, Play, Stethoscope } from "lucide-react";
+import {
+  CheckCheck,
+  ClipboardList,
+  FileText,
+  FlaskConical,
+  History,
+  Lock,
+  Megaphone,
+  Play,
+  Stethoscope,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -21,7 +31,7 @@ import { useTranslateError } from "@/lib/api/translate-error";
 import { useShortcut } from "@/lib/hooks/use-shortcut";
 import { useLanguage } from "@/lib/i18n-hooks";
 
-import { useQueueAction, useWorkspace } from "../api";
+import { useCloseVisit, useQueueAction, useWorkspace } from "../api";
 import { HistoryTab } from "../components/HistoryTab";
 import { NoteTab } from "../components/NoteTab";
 import { OrdersTab } from "../components/OrdersTab";
@@ -138,11 +148,16 @@ export function VisitWorkspacePage() {
         }
         icon={<Stethoscope />}
         actions={
-          <QueueActions
-            entryId={ws.queue_entry_id}
-            status={ws.queue_status}
-            pending={{ noteDirty, unsignedNote, draftCount }}
-          />
+          <>
+            <QueueActions
+              entryId={ws.queue_entry_id}
+              status={ws.queue_status}
+              pending={{ noteDirty, unsignedNote, draftCount }}
+            />
+            {open && !ACTIVE_QUEUE.includes(ws.queue_status ?? "") ? (
+              <CloseVisitAction visitId={ws.visit.id} pending={{ noteDirty, unsignedNote, draftCount }} />
+            ) : null}
+          </>
         }
       />
 
@@ -283,6 +298,57 @@ function QueueActions({
           </ConfirmDialog>
         </>
       ) : null}
+    </Can>
+  );
+}
+
+/** Queue states in which the patient is still in the clinic: the visit cannot be closed yet. */
+const ACTIVE_QUEUE: readonly string[] = ["waiting", "called", "in_progress"];
+
+/**
+ * «ختم الزيارة» (FLOW step 3): the doctor ends the visit's clinical record once the patient is
+ * out of the queue. The server checks the rules (VISIT_IN_QUEUE, VISIT_ADMITTED); ordered lines
+ * are still billed and performed afterwards.
+ */
+function CloseVisitAction({ visitId, pending }: { visitId: number; pending: Pending }) {
+  const { t } = useTranslation("clinic");
+  const close = useCloseVisit();
+  const translateError = useTranslateError();
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <Can permission="visits.close">
+      <Button variant="outline" onClick={() => setConfirming(true)} data-testid="visit-close">
+        <Lock aria-hidden="true" />
+        {t("visitClose.action")}
+      </Button>
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title={t("visitClose.title")}
+        description={t("visitClose.description")}
+        confirmLabel={t("visitClose.action")}
+        onConfirm={() =>
+          close.mutateAsync(visitId).then(
+            () => {
+              toast.success(t("visitClose.done"));
+            },
+            (error: unknown) => {
+              toast.error(translateError(error));
+              throw error;
+            },
+          )
+        }
+      >
+        {pending.noteDirty || pending.unsignedNote || pending.draftCount > 0 ? (
+          <AlertCard variant="warning" title={t("queue.unsavedTitle")}>
+            <ul className="list-disc ps-5">
+              {pending.noteDirty ? <li>{t("queue.unsavedNote")}</li> : null}
+              {pending.unsignedNote ? <li>{t("queue.unsignedNote")}</li> : null}
+              {pending.draftCount > 0 ? <li>{t("queue.unplacedOrders", { count: pending.draftCount })}</li> : null}
+            </ul>
+          </AlertCard>
+        ) : null}
+      </ConfirmDialog>
     </Can>
   );
 }

@@ -27,7 +27,7 @@ E2E_GREP ?=
         test test-backend test-frontend \
         lint lint-backend lint-frontend lint-shell \
         typecheck typecheck-backend typecheck-frontend typecheck-e2e \
-        api api-check e2e seed check clean distclean \
+        api api-check e2e seed demo check clean distclean \
         agent-setup agent-test agent-lint infra-test ports repo-hash
 
 help: ## List targets
@@ -123,6 +123,9 @@ seed: migrate ## Load the demo dataset into the dev DB (seed_demo when present, 
 		echo "seed: seed_demo not available yet; running seed_e2e (users, center, policy, base catalog)"; \
 		ALLOW_SEED_E2E=1 $(MANAGE) seed_e2e; \
 	fi
+
+demo: ## Create demo_hospital (DEMO_DB_NAME), migrate, load seed_demo (DEMO_RESET=1 drops it first)
+	"$(SCRIPTS)/demo.sh"
 
 check: ## lint + typecheck + test + api drift. Must be green before any commit to main
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" lint

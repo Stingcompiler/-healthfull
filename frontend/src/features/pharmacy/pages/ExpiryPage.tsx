@@ -35,7 +35,7 @@ export function ExpiryPage() {
         id: "item",
         header: t("expiry.columns.item"),
         meta: { label: t("expiry.columns.item") },
-        cell: ({ row }) => <span className="font-medium">{row.original.item_name}</span>,
+        cell: ({ row }) => <span className="font-medium">{names.item(row.original)}</span>,
       },
       {
         id: "batch",
@@ -121,7 +121,7 @@ export function ExpiryPage() {
           renderCard={(r) => (
             <div className="card-surface flex flex-col gap-1.5 p-4 text-sm" data-testid="expiry-row">
               <span className="flex flex-wrap items-start justify-between gap-2">
-                <span className="font-semibold">{r.item_name}</span>
+                <span className="font-semibold">{names.item(r)}</span>
                 <ExpiryBadge daysLeft={r.days_left} />
               </span>
               <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted">

@@ -123,10 +123,16 @@ class UpdateResult(models.TextChoices):
 class UpdateRun(models.Model):
     """One application update (FEATURES 13.10): version shown, release notes, rollback log.
 
-    Written by ``infra/update.sh`` through the ops services; the status page shows the
+    Written by ``infra/update.sh`` through ``manage.py record_update`` (one call per run, at
+    its end; ``run_key`` makes a repeated call update the same row); the status page shows the
     running version and the history.
+
+    The columns added after the first release carry database defaults, so an older image
+    started by a rollback (which does not know them) can still insert rows.
     """
 
+    #: The update script's run id (``<UTC stamp>-<tag>``); empty for rows written by hand.
+    run_key = models.CharField(max_length=100, unique=True, null=True, blank=True)
     version = models.CharField(max_length=50)
     previous_version = models.CharField(max_length=50, blank=True)
     release_notes = models.TextField(blank=True)
@@ -135,6 +141,15 @@ class UpdateRun(models.Model):
     )
     started_at = models.DateTimeField()
     finished_at = models.DateTimeField(null=True, blank=True)
+    #: ``manage.py migrate --plan`` of the new version, read before anything changed.
+    migration_plan = models.TextField(blank=True, default="", db_default="")
+    migrations_applied = models.BooleanField(default=False, db_default=False)
+    #: The rollback restored the pre-update dump (``--restore-db-on-failure``).
+    db_restored = models.BooleanField(default=False, db_default=False)
+    #: The verified pre-update dump a rollback can restore.
+    backup_file = models.CharField(max_length=500, blank=True, default="", db_default="")
+    #: Why it failed or rolled back, and in which step.
+    detail = models.TextField(blank=True, default="", db_default="")
     log = models.TextField(blank=True)
     started_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
@@ -242,3 +257,39 @@ class DataExport(models.Model):
 
     def __str__(self) -> str:
         return f"data export {self.pk} by {self.requested_by_id}"
+
+
+class IntegrityRun(models.Model):
+    """One recorded run of ``manage.py integrity_check`` (ADR 0021).
+
+    The compose ``maintenance`` loop records one a day (``--daily``); an operator may record
+    one by hand (``--record``). ``results`` keeps, per check, whether it passed, how much it
+    looked at, how many problems it found and the first few of them. A run with findings
+    alerts the holders of ``ops.view_status`` (``integrity_failed``); the status page shows
+    the newest run. Nothing is ever repaired.
+    """
+
+    started_at = models.DateTimeField()
+    finished_at = models.DateTimeField()
+    ok = models.BooleanField()
+    #: ``scheduled`` (the maintenance loop) or ``manual``.
+    source = models.CharField(max_length=20, default="scheduled")
+    database = models.CharField(max_length=100, blank=True)
+    #: ``[{name, ok, checked, problems, examples}]`` in check order.
+    results = models.JSONField(default=list)
+
+    class Meta:
+        verbose_name = "integrity run"
+        ordering: ClassVar[list[str]] = ["-started_at", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(source__in=["scheduled", "manual"]), name="ops_integrity_source_valid"
+            ),
+            models.CheckConstraint(
+                condition=Q(finished_at__gte=F("started_at")),
+                name="ops_integrity_finish_after_start",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"integrity run {self.pk} ({'ok' if self.ok else 'findings'})"

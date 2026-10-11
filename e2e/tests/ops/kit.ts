@@ -26,6 +26,7 @@ const ITEM_COLUMNS = [
   "name_en",
   "kind",
   "generic_name",
+  "generic_name_ar",
   "brand_name",
   "form",
   "strength",

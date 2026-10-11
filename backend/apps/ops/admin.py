@@ -3,7 +3,14 @@ from __future__ import annotations
 from django.contrib import admin
 
 from apps.core.admin_base import ReadOnlyAdmin
-from apps.ops.models import BackupRequest, BackupRun, DataExport, RestoreTest, UpdateRun
+from apps.ops.models import (
+    BackupRequest,
+    BackupRun,
+    DataExport,
+    IntegrityRun,
+    RestoreTest,
+    UpdateRun,
+)
 
 
 @admin.register(BackupRun)
@@ -40,3 +47,11 @@ class DataExportAdmin(ReadOnlyAdmin[DataExport]):
     """Full data exports (FEATURES 13.9): who took one and when."""
 
     list_display = ("created_at", "requested_by", "finished_at", "size_bytes")
+
+
+@admin.register(IntegrityRun)
+class IntegrityRunAdmin(ReadOnlyAdmin[IntegrityRun]):
+    """Recorded integrity checks (ADR 0021): daily from the maintenance loop, never edited."""
+
+    list_display = ("started_at", "source", "ok", "finished_at")
+    list_filter = ("source", "ok")

@@ -80,4 +80,13 @@ export const routes: readonly AppRoute[] = [
   appRoute("lab-tat", "/lab/tat", {
     ready: (page) => firstRow(page, "tat-row"),
   }),
+  // Phase 8 polish: the ward's sample collection and the desk's approved results.
+  appRoute("lab-collect", "/lab/collect"),
+  appRoute("lab-approved-results", "/lab/approved-results", {
+    resolve: async () => {
+      await benchOnce();
+      return "/lab/approved-results";
+    },
+    ready: (page) => firstRow(page, "approved-row"),
+  }),
 ];
