@@ -169,3 +169,18 @@ def test_a_small_month_is_complete_consistent_and_idempotent() -> None:
         JournalEntry.objects.count(),
     )
     assert Patient.objects.annotate(n=Count("visits")).filter(Q(n=0)).count() == 0
+
+
+def test_a_month_long_enough_resolves_claim_rejections_with_a_second_approver() -> None:
+    """Claims are answered on day 21 and resolved on day 22; a shorter run never gets there.
+
+    The second-approver rule (ADR 0018) made the demo script fail on exactly this step, and
+    the four-day run above could not see it.
+    """
+    from apps.claims.models import ClaimLine
+
+    _run("--days", "24", "--patients", "30", "--visits-per-day", "4", "--seed", "5")
+    resolved = ClaimLine.objects.filter(resolved_by__isnull=False)
+    assert resolved.exists(), "the demo never resolved a rejected claim line"
+    assert not resolved.filter(resolution_approved_by__isnull=True).exists()
+    assert not resolved.filter(resolution_approved_by=F("resolved_by")).exists()
