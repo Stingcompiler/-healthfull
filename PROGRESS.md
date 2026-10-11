@@ -12,7 +12,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merged to main (PR #5) | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
 | 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merged to main (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
 | 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merged to main (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
-| 8. Hardening and handover | in progress on `phase/8` | merged into `phase/8`: follow-ups from `feat/8-followups` (admission in error, dispense returns, `display` role, reception portal codes, claims second approver, Arabic generic names; ADRs 0018, 0019) and docs and operations from `feat/8-docs` (README, user guides, runbooks, `integrity_check`, restore drill, UpdateRun from `update.sh`, ADR 0020); `feat/8-cycle` (ADR 0017) still in progress |
+| 8. Hardening and handover | in progress on `phase/8` | merged into `phase/8`: follow-ups from `feat/8-followups` (admission in error, dispense returns, `display` role, reception portal codes, claims second approver, Arabic generic names; ADRs 0018, 0019) and docs and operations from `feat/8-docs` (README, user guides, runbooks, `integrity_check`, restore drill, UpdateRun from `update.sh`, ADR 0020); `feat/8-cycle` (ADR 0017: demo dataset, full-cycle and restart e2e, e2e fixture server) done, merge pending |
 
 ## Phase 0 checklist
 
@@ -266,7 +266,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
   portal 0016; the next ADR is 0017.
 - [x] The payment-engine bug found by `test_visit_machine.py` (reports follow-ups): fixed on
   `main` (PR #6, ADR 0015) and merged into `wave/c` with `origin/main`.
-- E2E under load: setup-heavy responsive cases (`nursing-desk` builds a paid procedure through
+- [x] E2E under load: the fixture side is fixed on `feat/8-cycle` (one `e2e_fixture --serve`
+  per worker, `fixtureBatch`, `paidVisits`): `nursing-desk` set-up 18.7 s to 2.9 s,
+  `patient-file` 11.5 s to 3.1 s. The original note follows. Setup-heavy responsive cases (`nursing-desk` builds a paid procedure through
   several `e2e_fixture` calls; `patient-file` waits until no region of the file is still
   loading) exceed the 30 s test timeout when the machine is loaded (other agents' runs pushed
   the load to 50-70) or wakes from sleep. After a timeout the worker restarts and builds its
@@ -345,6 +347,21 @@ where ticked (ADRs 0021, 0022):
   no scheduled `integrity_check` with an in-app alert. Polish: both done (ADR 0021).
 - [ ] The production drill runs in two parts (backup container, then the app containers) because
   no image has both `pg_restore` and Django.
+
+## Follow-ups (cycle, demo and e2e speed, `feat/8-cycle`)
+
+- `seed_demo` default month (30 visits on a working day, about 820 visits) took 772 s here
+  with the machine swapping (2.6 GB swap in use, load 10-40); a small month runs about twice as
+  fast as before the per-day transactions and per-event audit contexts. It is above the 10
+  minute aim on this machine; `--visits-per-day` trims it. Most of the time is the services'
+  own invoice approval and payment work (about 500 queries per visit).
+- The restart spec's "kill lands after the commit" branch is coded and asserted but every run
+  so far killed the server before the commit (the payment was then taken once, again).
+- The full-cycle spec cleans both cashiers' shifts and filters claims and reports by its own
+  file number; in the full run it passed at its place in file order.
+- Demo audit rows carry the seed's database time, not the simulated day (ADR 0017).
+- e2e has no Prettier config of its own; specs were formatted with `frontend/.prettierrc.json`
+  only where touched.
 
 ## Next: finish Phase 8 on `phase/8`
 

@@ -65,6 +65,10 @@ ignore = [
 "**/tests/**" = ["S101", "S105", "S106", "S311", "DTZ"]
 "conftest.py" = ["S101", "S105", "S106"]
 "**/management/commands/*.py" = ["T20"]
+# The demo dataset is deterministic on purpose: a seeded random.Random, never for secrets.
+"apps/core/demo/*.py" = ["S311"]
+"apps/core/demo/data.py" = ["S311", "E501"]  # the drug table is one row per line
+"apps/core/management/commands/seed_demo.py" = ["T20", "S311"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["api", "apps", "config", "domain"]

@@ -22,6 +22,7 @@ import {
   expectNoHorizontalScroll,
   login,
   paidVisit,
+  paidVisits,
   seededCatalog,
   setPrefs,
   snap,
@@ -100,18 +101,13 @@ test.beforeAll(async () => {
   await doctor.post(`/api/clinical/worklist/${String(earlierEntry)}/action`, {
     action: "complete",
   });
-  const busy = await paidVisit({
-    doctor: DOCTOR,
-    patient: earlier.patient.id,
-  });
-  const called = await paidVisit({
-    doctor: DOCTOR,
-    patient_fields: { allergies: ["NSAID"] },
-  });
-  await paidVisit({
-    doctor: DOCTOR,
-    patient_fields: { full_name_en: "Hiba Salah Eldin Ahmed" },
-  });
+  // Three independent visits, made in this order in one fixture round trip.
+  const [busy, called] = await paidVisits([
+    { doctor: DOCTOR, patient: earlier.patient.id },
+    { doctor: DOCTOR, patient_fields: { allergies: ["NSAID"] } },
+    { doctor: DOCTOR, patient_fields: { full_name_en: "Hiba Salah Eldin Ahmed" } },
+  ]);
+  if (!busy || !called) throw new Error("paidVisits() returned fewer visits than asked");
   const rows = await doctor.get<(WorklistRow & { visit: { id: number } })[]>(
     "/api/clinical/worklist",
   );

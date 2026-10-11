@@ -150,6 +150,21 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   results with print, prescriptions and lab preparation, invoices and receipts), the public receipt
   check `/verify/<token>` behind the receipt QR, and a portal access code the cashier prints on the
   receipt. Web manifest and bundled icons, no service worker (ADR 0016).
+- Phase 8, demo dataset: `manage.py seed_demo` and `make demo` (ADR 0017,
+  `docs/runbooks/demo.md`). A demo center (five clinical departments, ten doctors with
+  schedules, dated SDG price lists, three payers with different rules, 219 drugs and 14 supplies
+  with batches and expiries, 50 lab tests with ranges, 500 synthetic Sudanese patients) and a
+  month of activity played day by day through the services under a simulated clock: visits,
+  orders, insurance splits, cash and transfers (pending, confirmed, rejected after close),
+  credit notes and refunds, dispenses, approved results, procedures, admissions, reviewed shifts
+  with variances, claims at every stage. Deterministic per seed, idempotent, demo databases only.
+- Phase 8, e2e: the full FLOW cycle across every role through the UI with every non-localhost
+  request aborted and asserted absent (`e2e/tests/cycle/full-cycle.spec.ts`, `@cycle`), and a
+  backend hard-kill and restart mid-flow proving no money or stock is lost or doubled
+  (`e2e/tests/cycle/restart.spec.ts`, `@restart`).
+- E2E fast path: `manage.py e2e_fixture --serve` keeps one Django process per Playwright worker
+  (JSON lines over stdin/stdout, single fixtures and batches); `fixtureBatch()` and
+  `paidVisits()`; `E2E_FIXTURE_MODE=process` keeps the old one-process-per-call behaviour.
 - Phase 8 follow-ups (ADRs 0018, 0019): an admission made in error is cancelled from the bed
   board with a reason and a second person's credentials, unbilled bed nights are voided and
   invoiced nights send the nurse to the cashier's credit note; dispense returns screen
