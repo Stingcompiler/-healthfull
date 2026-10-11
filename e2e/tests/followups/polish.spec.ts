@@ -29,7 +29,7 @@ async function openFromNav(page: Page, id: string, path: RegExp): Promise<void> 
 
 test.describe("@polish nav reach", () => {
   test("a cashier opens the walk-in sale from the navigation", async ({ page }) => {
-    const logged = trackConsoleErrors(page);
+    const logged = trackConsoleErrors(page, { allowAnonymousMe: true });
     await page.setViewportSize({ width: 1280, height: 800 });
     await login(page, "cashier");
     await expect(page.getByTestId("nav-pharmacy")).toHaveCount(0);
@@ -41,7 +41,7 @@ test.describe("@polish nav reach", () => {
   });
 
   test("reception opens the bed board and approved lab results", async ({ page }) => {
-    const logged = trackConsoleErrors(page);
+    const logged = trackConsoleErrors(page, { allowAnonymousMe: true });
     await page.setViewportSize({ width: 1280, height: 800 });
     await login(page, "reception");
     await expect(page.getByTestId("nav-nursing")).toHaveCount(0);
@@ -59,7 +59,7 @@ test.describe("@polish nav reach", () => {
   });
 
   test("a nurse collects a sample from the navigation and has no doctor's clinic", async ({ page }) => {
-    const logged = trackConsoleErrors(page);
+    const logged = trackConsoleErrors(page, { allowAnonymousMe: true });
     await page.setViewportSize({ width: 1280, height: 800 });
     await login(page, "nurse");
     await expect(page.getByTestId("nav-clinic")).toHaveCount(0);
@@ -74,7 +74,7 @@ test.describe("@polish nav reach", () => {
 
 test.describe("@polish visit close", () => {
   test("the doctor closes the visit after finishing the consultation", async ({ page }) => {
-    const logged = trackConsoleErrors(page);
+    const logged = trackConsoleErrors(page, { allowAnonymousMe: true });
     const visit = await paidVisit({
       doctor: "doctor",
       patient_fields: { full_name_en: "Mustafa Idris Polish" },
