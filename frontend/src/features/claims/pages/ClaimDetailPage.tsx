@@ -24,7 +24,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { ArrowBack } from "@/components/icons";
 import { MoneyText } from "@/components/MoneyText";
 import { PageHeader } from "@/components/PageHeader";
-import { ReasonDialog } from "@/components/ReasonDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NoteDialog } from "@/features/cashier/components/NoteDialog";
@@ -38,7 +37,6 @@ import {
   useCloseClaim,
   useRecordResponses,
   useRemoveClaimLine,
-  useResolveRejection,
   useSubmitClaim,
   useVoidClaim,
 } from "../api";
@@ -46,6 +44,7 @@ import { AmountTiles } from "../components/AmountTiles";
 import { ClaimStageBadge, ClaimStatusBadge } from "../components/ClaimBadges";
 import { ClaimsNav } from "../components/ClaimsNav";
 import { Period } from "../components/Period";
+import { ResolveDialog } from "../components/ResolveDialog";
 import { ResponseDialog } from "../components/ResponseDialog";
 import { ShortfallDialog } from "../components/ShortfallDialog";
 import { useClaimNames } from "../lib/names";
@@ -119,7 +118,6 @@ function LineAnswer({ line }: { line: ClaimLine }) {
 export function ClaimDetailPage() {
   const { t } = useTranslation(["claims", "common", "errors"]);
   const translateError = useTranslateError();
-  const names = useClaimNames();
   const { claimId: raw } = useParams({ strict: false });
   const claimId = Number(raw);
   const claim = useClaim(claimId);
@@ -132,7 +130,6 @@ export function ClaimDetailPage() {
   const close = useCloseClaim();
   const remove = useRemoveClaimLine();
   const respond = useRecordResponses();
-  const resolve = useResolveRejection();
   const [answering, setAnswering] = useState<ClaimLine | null>(null);
   const [resolving, setResolving] = useState<{ line: ClaimLine; resolution: Resolution } | null>(null);
   const [shortfall, setShortfall] = useState<ClaimLine | null>(null);
@@ -422,42 +419,20 @@ export function ClaimDetailPage() {
         claimId={claimId}
         line={shortfall}
         reasons={reasons}
+        secondApprover={options.data?.second_approver_required ?? true}
         onOpenChange={(o) => {
           if (!o) setShortfall(null);
         }}
       />
-      <ReasonDialog
-        open={resolving !== null}
+      <ResolveDialog
+        claimId={claimId}
+        target={resolving}
+        reasons={reasons}
+        secondApprover={options.data?.second_approver_required ?? true}
         onOpenChange={(o) => {
           if (!o) setResolving(null);
         }}
-        title={resolving?.resolution === "rebilled" ? t("resolve.rebillTitle") : t("resolve.writeOffTitle")}
-        description={
-          resolving?.resolution === "rebilled" ? t("resolve.rebillDescription") : t("resolve.writeOffDescription")
-        }
-        reasons={reasons.map((r) => ({ code: r.code, label: names.label(r) }))}
-        noteRequired={false}
-        destructive={resolving?.resolution === "written_off"}
-        confirmLabel={resolving?.resolution === "rebilled" ? t("detail.rebill") : t("detail.writeOff")}
-        onSubmit={async ({ code, note }) => {
-          if (!resolving) return;
-          await resolve.mutateAsync({
-            claimId,
-            lineId: resolving.line.id,
-            body: { resolution: resolving.resolution, reason: code, note },
-          });
-        }}
-      >
-        {resolving ? (
-          <p className="flex flex-wrap items-center justify-between gap-2 rounded-control bg-subtle px-3 py-2 text-sm">
-            <span className="min-w-0">
-              {names.text(resolving.line.description_ar, resolving.line.description_en)} ·{" "}
-              {names.person(resolving.line.patient)}
-            </span>
-            <MoneyText value={resolving.line.unresolved_rejection} />
-          </p>
-        ) : null}
-      </ReasonDialog>
+      />
       <ConfirmDialog
         open={removing !== null}
         onOpenChange={(o) => {

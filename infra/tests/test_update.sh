@@ -28,7 +28,7 @@ setup() {
   echo "v1.0.0" >"$FAKE_STATE/running"
   unset FAKE_PENDING FAKE_HEALTH_v2_0_0 FAKE_HEALTH_v1_0_0 FAKE_BACKUP_EXIT FAKE_MIGRATE_EXIT \
     FAKE_PULL_EXIT FAKE_MISSING_IMAGE FAKE_RESTORE_EXIT FAKE_UP_EXIT FAKE_ROLES_EXIT \
-    FAKE_VERIFY_OUTPUT || true
+    FAKE_VERIFY_OUTPUT FAKE_RECORD_EXIT || true
 }
 OWNER_PW="owner-test-value-0123456789"
 APP_PW="app-test-value-0123456789"
@@ -47,7 +47,7 @@ env_tag() { grep '^APP_IMAGE_TAG=' "$ENV_FILE" | cut -d= -f2; }
 last_status() { _json_get "$WORK/case/backups/status/update-runs.jsonl" -1 status; }
 
 show_and_fail() {
-  echo "--- calls"; calls; echo "--- output"; cat "$WORK/case/out.log"
+  echo "--- calls"; calls || true; echo "--- output"; cat "$WORK/case/out.log"
   fail "$1"
 }
 
@@ -265,6 +265,96 @@ rm -f "$WORK/held"
 assert_eq "$CODE" "1" "a running update blocks a second one"
 grep -q "another update is running" "$WORK/case/out.log" || show_and_fail "lock message"
 called "compose pull" && show_and_fail "blocked run must not touch anything"
+called "record_update" && show_and_fail "a blocked run records nothing"
 pass "a live update holds the lock; a second run refuses"
+
+# ---------------------------------------------------------------- ops.UpdateRun (record_update)
+rec_args() { cat "$FAKE_STATE/record-$1.args"; }
+rec_in() { cat "$FAKE_STATE/record-$1.stdin"; }
+rec_count() { find "$FAKE_STATE" -maxdepth 1 -name 'record-*.args' | wc -l | tr -d ' '; }
+
+setup
+export FAKE_PENDING=1
+printf 'Release 2.0.0\n- lab work list is faster\n' >"$WORK/case/notes.md"
+run_update --release-notes "$WORK/case/notes.md"
+[[ $CODE -eq 0 ]] || show_and_fail "expected success, got $CODE"
+assert_eq "$(rec_count)" "1" "one UpdateRun write per run"
+a="$(rec_args 1)"
+key="$(_json_get "$WORK/case/backups/status/update-runs.jsonl" -1 run)"
+assert_match "$key" '^[0-9]{8}T[0-9]{6}Z-v2\.0\.0$' "run key in the status line"
+[[ "$a" == "TAG=v2.0.0 --rm --no-deps -T app manage record_update --run-key $key --to v2.0.0 --result ok --started-at "* ]] ||
+  show_and_fail "record_update runs in the new image with the run key: $a"
+[[ "$a" == *"--from v1.0.0"* && "$a" == *"--migrations-applied"* ]] || show_and_fail "from tag and migrations flag: $a"
+[[ "$a" == *"--backup /backups/dumps/hospital-20261006T000000Z-pre-update.dump"* ]] || show_and_fail "pre-update dump: $a"
+[[ "$a" == *"--finished-at 20"*"--stdin"* ]] || show_and_fail "finish time and stdin: $a"
+[[ "$a" == *"--db-restored"* ]] && show_and_fail "no restore on success"
+rec_in 1 | grep -qx '@@plan' || show_and_fail "plan section"
+rec_in 1 | grep -qx 'core.0002_example' || show_and_fail "the migrate --plan output is recorded"
+rec_in 1 | grep -qx -- '- lab work list is faster' || show_and_fail "release notes recorded"
+rec_in 1 | grep -q '\[update\] ==> 7/7 commit' || show_and_fail "log tail recorded"
+u=$(line_of "TAG=v2.0.0 compose up -d --no-deps app web")
+r=$(line_of "app manage record_update")
+[[ -n "$r" && $u -lt $r ]] || show_and_fail "recorded after the swap"
+grep -qs -e "$APP_PW" -e "$OWNER_PW" "$FAKE_STATE"/record-1.* && show_and_fail "a role password reached the record"
+pass "success: one UpdateRun through manage.py record_update (new image), with plan, notes and log tail"
+
+setup
+export FAKE_PENDING=1 FAKE_HEALTH_v2_0_0=degraded
+run_update --restore-db-on-failure
+assert_eq "$CODE" "1" "rolled back"
+a="$(rec_args 1)"
+[[ "$a" == "TAG=v1.0.0 --rm --no-deps -T app manage record_update "*"--result rolled_back"* ]] ||
+  show_and_fail "a rollback is recorded with the previous image: $a"
+[[ "$a" == *"--migrations-applied"* && "$a" == *"--db-restored"* ]] || show_and_fail "rollback flags: $a"
+[[ "$a" == *"--detail v2.0.0 did not become healthy (during 6/7 health check)"* ]] || show_and_fail "rollback reason: $a"
+pass "rollback: recorded as rolled_back by the previous image, with the restore and the reason"
+
+setup
+export FAKE_MISSING_IMAGE="web:v2.0.0"
+run_update
+assert_eq "$CODE" "1" "nothing changed"
+a="$(rec_args 1)"
+[[ "$a" == "TAG=v1.0.0 "*"--result failed"* ]] || show_and_fail "failed run recorded: $a"
+[[ "$a" == *"--migrations-applied"* || "$a" == *"--backup"* ]] && show_and_fail "nothing migrated or backed up: $a"
+rec_in 1 | grep -qx '@@plan' || show_and_fail "empty plan section still sent"
+pass "a run that changed nothing is recorded as failed, without migrations or a dump"
+
+setup
+export FAKE_RECORD_EXIT=1
+run_update
+[[ $CODE -eq 0 ]] || show_and_fail "a failing record must not fail the update, got $CODE"
+assert_eq "$(env_tag)" "v2.0.0" "committed"
+grep -q "could not record run .* in the update history" "$WORK/case/out.log" || show_and_fail "record warning"
+assert_eq "$(last_status)" "ok" "status line still written"
+pass "recording is best effort: a failed record_update warns and the update stands"
+
+setup
+mkdir -p "$UPDATE_STATE_DIR"
+printf 'target=v2.0.0\nfrom=v1.0.0\nstep=4/7 apply migrations with v2.0.0\nmigrated=1\nswapped=0\ndump=/backups/dumps/x.dump\nstarted=2026-10-01T00:00:00Z\nlog=/tmp/old.log\nrun=20261001T000000Z-v2.0.0\n' \
+  >"$UPDATE_STATE_DIR/.update.state"
+run_update
+[[ $CODE -eq 0 ]] || show_and_fail "rerun after an interrupted update"
+assert_eq "$(rec_count)" "2" "the interrupted run and this one"
+a="$(rec_args 1)"
+[[ "$a" == "TAG=v1.0.0 "*"--run-key 20261001T000000Z-v2.0.0 --to v2.0.0 --result failed --started-at 2026-10-01T00:00:00Z"* ]] ||
+  show_and_fail "interrupted run recorded under its own key: $a"
+[[ "$a" == *"--migrations-applied"* && "$a" == *"--backup /backups/dumps/x.dump"* ]] || show_and_fail "interrupted flags: $a"
+[[ "$a" == *"--detail interrupted during '4/7 apply migrations with v2.0.0'"* ]] || show_and_fail "interrupted reason: $a"
+[[ "$(rec_args 2)" == *"--result ok"* ]] || show_and_fail "this run recorded too"
+assert_json_field "$WORK/case/backups/status/update-runs.jsonl" 0 status failed
+assert_json_field "$WORK/case/backups/status/update-runs.jsonl" 0 run 20261001T000000Z-v2.0.0
+assert_json_field "$WORK/case/backups/status/update-runs.jsonl" 1 status ok
+pass "a run cut short by a power cut is recorded as failed by the next run (status line and UpdateRun)"
+
+setup
+export FAKE_PENDING=1
+run_update --dry-run
+called "record_update" && show_and_fail "a dry run records nothing"
+set +e
+"$UPDATE" --tag v2.0.0 --yes --release-notes "$WORK/case/missing.md" >"$WORK/case/out.log" 2>&1
+code=$?
+set -e
+assert_eq "$code" "2" "missing release notes file is a usage error"
+pass "dry runs record nothing; a missing release notes file is refused up front"
 
 summary

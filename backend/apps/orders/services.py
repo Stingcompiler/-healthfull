@@ -81,6 +81,7 @@ __all__ = [
     "doctor_line",
     "doctor_lines",
     "doctor_status",
+    "end_stay_authorization",
     "given_units",
     "line_state",
     "line_status",
@@ -100,6 +101,7 @@ __all__ = [
     "set_line_payer",
     "start_line",
     "sync_settlement",
+    "void_line_in_error",
     "whole_quantity",
     "withdraw_order",
     "withdraw_reasons",
@@ -564,6 +566,18 @@ def revoke_authorization(auth: PerformAuthorization, *, actor: User, note: str) 
         DomainError: ``REASON_REQUIRED``, ``AUTHORIZATION_REVOKED``, ``AUTHORIZATION_IN_USE``.
     """
     require_permission(actor, "orders.authorize_perform_first")
+    _revoke(auth, actor=actor, note=note)
+
+
+def end_stay_authorization(auth: PerformAuthorization, *, actor: User, note: str) -> None:
+    """Revoke an inpatient stay's authorization when its admission is cancelled in error
+    (ADR 0018). The caller checked the permission of that action (``visits.cancel_admission``)
+    and its second-person approval; the rules of :func:`revoke_authorization` apply.
+    """
+    _revoke(auth, actor=actor, note=note)
+
+
+def _revoke(auth: PerformAuthorization, *, actor: User, note: str) -> None:
     text = note.strip()
     if not text:
         raise DomainError("REASON_REQUIRED", "Say why the authorization is withdrawn")
@@ -785,6 +799,44 @@ def cancel_line(
             locked,
             new,
             cancelled_at=now,
+            cancelled_by=actor,
+            cancel_reason=reason_obj,
+            cancel_note=note.strip(),
+        )
+
+
+def void_line_in_error(
+    line: ServiceLine,
+    reason: ReasonCode | str,
+    actor: User,
+    *,
+    approval: Approval,
+    note: str = "",
+) -> ServiceLine:
+    """Void an unbilled line recorded performed under an authorization made in error: the
+    unbilled bed nights of an admission cancelled in error (ADR 0018, invariant 4).
+
+    The line leaves any draft invoice and is cancelled with the reason; ``approval`` names
+    the second person who approved the cancellation. The caller holds the patient lock and
+    has already marked the admission cancelled (the ``line_guard`` trigger allows this
+    exception only then).
+
+    Raises:
+        DomainError: ``CREDIT_NOTE_REQUIRED`` (billed: credit it at the cashier),
+            ``LINE_ALREADY_CANCELLED``, ``LINE_NOT_VOIDABLE``; reason errors.
+    """
+    reason_obj = resolve_reason(reason, "line_cancel", note)
+    with (
+        transaction.atomic(),
+        pghistory.context(user=actor.pk, reason=f"void line in error: {reason_obj.code}"),
+    ):
+        locked = _lock_line(line)
+        new = dsl.void_in_error(line_status(locked), approval)
+        _billing().drop_from_drafts(locked, actor=actor)
+        return _store(
+            locked,
+            new,
+            cancelled_at=approval.at,
             cancelled_by=actor,
             cancel_reason=reason_obj,
             cancel_note=note.strip(),

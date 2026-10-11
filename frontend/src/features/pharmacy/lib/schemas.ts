@@ -13,6 +13,7 @@ const level = z
 /** The editable item fields (FEATURES 8.1), shared by the new-item dialog and the item page. */
 export const itemFieldsSchema = z.object({
   generic_name: z.string().trim().min(1, vmsg("validation.required")).max(200),
+  generic_name_ar: z.string().trim().max(200),
   brand_name: z.string().trim().max(200),
   form: z.enum(DOSAGE_FORMS),
   strength: z.string().trim().max(60),

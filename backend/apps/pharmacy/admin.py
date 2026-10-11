@@ -39,9 +39,17 @@ class UnitConversionInline(admin.TabularInline[UnitConversion, Item]):
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin[Item]):
-    list_display = ("generic_name", "brand_name", "form", "strength", "base_unit_code", "active")
+    list_display = (
+        "generic_name",
+        "generic_name_ar",
+        "brand_name",
+        "form",
+        "strength",
+        "base_unit_code",
+        "active",
+    )
     list_filter = ("form", "storage", "is_controlled", "active")
-    search_fields = ("generic_name", "brand_name", "barcode", "service__code")
+    search_fields = ("generic_name", "generic_name_ar", "brand_name", "barcode", "service__code")
     raw_id_fields = ("service",)
     filter_horizontal = ("drug_classes",)
     inlines = (UnitConversionInline,)

@@ -999,7 +999,7 @@ export interface paths {
         put?: never;
         /**
          * Rebill a rejected amount to the patient or write it off, with a reason
-         * @description 409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN.
+         * @description 409 CLAIM_NOTHING_REJECTED, REASON_REQUIRED, REASON_UNKNOWN, SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID.
          */
         post: operations["claims_resolve_rejection"];
         delete?: never;
@@ -1019,7 +1019,7 @@ export interface paths {
         put?: never;
         /**
          * Write off accepted money the payer will not pay, with a reason
-         * @description 409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT.
+         * @description 409 CLAIM_NOTHING_UNPAID, CLAIM_AMOUNT_INVALID, INVALID_AMOUNT, SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID.
          */
         post: operations["claims_write_off_shortfall"];
         delete?: never;
@@ -4109,6 +4109,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pharmacy/dispense-lines/{dispense_line_id}/returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put units a patient brought back on the shelf (stock only; refunds at the cashier)
+         * @description 409 RETURN_EXCEEDS_DISPENSED, SECOND_APPROVER_REQUIRED (billed line), APPROVER_NOT_PERMITTED, APPROVER_INVALID, REFUND_SOURCE_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED.
+         */
+        post: operations["pharmacy_return_dispensed_units"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pharmacy/dispenses": {
         parameters: {
             query?: never;
@@ -4438,6 +4458,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pharmacy/returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dispenses whose units may come back (last 30 days, or any by number, file or name) */
+        get: operations["pharmacy_list_returnable_dispenses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pharmacy/sale/customers": {
         parameters: {
             query?: never;
@@ -4630,6 +4667,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/access-codes/{code_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a portal access code (a lost slip): it stops working, its sessions end
+         * @description 409 `PORTAL_CODE_ALREADY_REVOKED`, `REASON_REQUIRED`.
+         */
+        post: operations["portal_revoke_access_code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/appointments": {
         parameters: {
             query?: never;
@@ -4784,6 +4841,27 @@ export interface paths {
         get: operations["portal_get_me"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/patients/{patient_id}/access-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A file's portal access codes, newest first (their state, never the codes) */
+        get: operations["portal_list_patient_access_codes"];
+        put?: never;
+        /**
+         * Issue a portal access code from the patient's file for a printed slip (shown once)
+         * @description Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.
+         */
+        post: operations["portal_issue_patient_access_code"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5689,6 +5767,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/inpatient/admissions/{admission_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel an admission made in error, approved by a second person (ADR 0018)
+         * @description Frees the bed and voids the nights still unbilled. 409 NOT_ADMITTED, ADMISSION_NIGHTS_INVOICED (credit them at the cashier first), SECOND_APPROVER_REQUIRED, APPROVER_NOT_PERMITTED, APPROVER_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED; 423 ACCOUNT_LOCKED; 429 RATE_LIMITED.
+         */
+        post: operations["visits_cancel_admission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/visits/inpatient/admissions/{admission_id}/discharge": {
         parameters: {
             query?: never;
@@ -5864,7 +5962,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Waiting-room screen feed: paid tokens, abbreviated names */
+        /** Waiting-room screen feed: paid tokens, abbreviated names, the clinics to pick */
         get: operations["visits_get_display"];
         put?: never;
         post?: never;
@@ -7360,6 +7458,11 @@ export interface components {
             open_shift: components["schemas"]["ClaimShiftOut"] | null;
             /** Payers */
             payers: components["schemas"]["ClaimPayerOut"][];
+            /**
+             * Second Approver Required
+             * @description Rebills and write-offs need a second person (Policy, ADR 0018)
+             */
+            second_approver_required: boolean;
             /** Write Off Reasons */
             write_off_reasons: components["schemas"]["ClaimReasonOut"][];
         };
@@ -7640,6 +7743,8 @@ export interface components {
         };
         /** ClaimResolveIn */
         ClaimResolveIn: {
+            /** @description A second person's credentials while the policy requires one */
+            approver?: components["schemas"]["ApproverIn"] | null;
             /**
              * Note
              * @default
@@ -7702,6 +7807,8 @@ export interface components {
              * @example 2500.50
              */
             amount: string;
+            /** @description A second person's credentials while the policy requires one */
+            approver?: components["schemas"]["ApproverIn"] | null;
             /**
              * Note
              * @default
@@ -8807,6 +8914,49 @@ export interface components {
             /** Visit Type */
             visit_type: string;
         };
+        /**
+         * DispenseReturnIn
+         * @description Units a patient brought back (FEATURES 8.4): base units, an ``stock_adjust`` reason, and
+         *     for a billed line a second person's credentials (``pharmacy.approve_return``).
+         */
+        DispenseReturnIn: {
+            /** @description Required for a billed line: someone else approves */
+            approver?: components["schemas"]["ApproverIn"] | null;
+            /**
+             * Credit Note Id
+             * @description An approved credit note crediting the line (links the refund)
+             */
+            credit_note_id?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Quantity */
+            quantity: number;
+            /** Reason Code */
+            reason_code: string;
+        };
+        /** DispenseReturnOut */
+        DispenseReturnOut: {
+            /** @description The second person who approved (billed lines only) */
+            approved_by: components["schemas"]["PharmacyUserRefOut"] | null;
+            /** Credit Note Number */
+            credit_note_number: string | null;
+            /** Note */
+            note: string;
+            /** Number */
+            number: string;
+            /** Qty Base */
+            qty_base: number;
+            reason: components["schemas"]["PharmacyReasonOut"] | null;
+            /**
+             * Returned At
+             * Format: date-time
+             */
+            returned_at: string;
+            returned_by: components["schemas"]["PharmacyUserRefOut"] | null;
+        };
         /** DispenseVisitOut */
         DispenseVisitOut: {
             /**
@@ -9214,6 +9364,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** On Hand */
             on_hand: number;
             store: components["schemas"]["PharmacyNameOut"];
@@ -9296,6 +9451,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /**
              * Line Total
              * @example 150.00
@@ -9672,6 +9832,17 @@ export interface components {
             admitting_doctor: components["schemas"]["InpatientPersonOut"];
             /** @description The current bed (last bed when out) */
             bed: components["schemas"]["InpatientRefOut"] | null;
+            cancel_approved_by: components["schemas"]["InpatientPersonOut"] | null;
+            /** Cancel Note */
+            cancel_note: string;
+            /**
+             * Cancel Reason
+             * @description admission_cancel reason code
+             */
+            cancel_reason: string | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            cancelled_by: components["schemas"]["InpatientPersonOut"] | null;
             /** Diagnosis */
             diagnosis: string;
             /** Discharge Summary */
@@ -9749,6 +9920,22 @@ export interface components {
             /** Wards */
             wards: components["schemas"]["InpatientWardOut"][];
         };
+        /**
+         * InpatientCancelIn
+         * @description Cancel an admission made in error (ADR 0018): an ``admission_cancel`` reason code, the
+         *     words, and a second person's credentials (``visits.approve_admission_cancel``).
+         */
+        InpatientCancelIn: {
+            /** @description Required: someone other than the caller approves */
+            approver?: components["schemas"]["ApproverIn"] | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Reason Code */
+            reason_code: string;
+        };
         /** InpatientChargeOut */
         InpatientChargeOut: {
             /**
@@ -9808,6 +9995,11 @@ export interface components {
              * @description Passed nights not charged yet (the daily run)
              */
             nights_due: number;
+            /**
+             * Nights Invoiced
+             * @description Charged nights on an approved invoice and not credited: they block cancelling the admission in error until the cashier credits them
+             */
+            nights_invoiced: number;
             /** Number */
             number: string;
             patient: components["schemas"]["PatientBriefOut"];
@@ -10936,6 +11128,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** Min Stock */
             min_stock: number;
             /** On Hand */
@@ -10962,7 +11159,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin";
+            role: "receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display";
         };
         /** MatrixChangeOut */
         MatrixChangeOut: {
@@ -11908,6 +12105,20 @@ export interface components {
             count: number;
             /** Items */
             items: components["schemas"]["RefundOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ReturnableDispenseOut] */
+        Page_ReturnableDispenseOut_: {
+            /**
+             * Count
+             * @description Total number of matching items
+             */
+            count: number;
+            /** Items */
+            items: components["schemas"]["ReturnableDispenseOut"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -12876,6 +13087,11 @@ export interface components {
         PolicyIn: {
             /** Allow Partial Payment */
             allow_partial_payment: boolean;
+            /**
+             * Claims Second Approver
+             * @description Omitted or null keeps the current value
+             */
+            claims_second_approver?: boolean | null;
             /** Discount Limit Percent */
             discount_limit_percent: {
                 [key: string]: number;
@@ -12892,7 +13108,7 @@ export interface components {
             /** Pending Transfer Alert Days */
             pending_transfer_alert_days: number;
             /** Perform First Roles */
-            perform_first_roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[];
+            perform_first_roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display")[];
             /** Session Idle Minutes */
             session_idle_minutes: number;
             /** Show Estimated Cost */
@@ -12902,6 +13118,11 @@ export interface components {
         PolicyOut: {
             /** Allow Partial Payment */
             allow_partial_payment: boolean;
+            /**
+             * Claims Second Approver
+             * @description Claims rebills and write-offs need a second person (ADR 0018)
+             */
+            claims_second_approver: boolean;
             /**
              * Default Pay First
              * @description Always true (invariant 1); read-only
@@ -12930,6 +13151,56 @@ export interface components {
             show_estimated_cost: boolean;
             /** Updated At */
             updated_at: string | null;
+        };
+        /**
+         * PortalAccessCodeRowOut
+         * @description An issued code as staff see it: its state, never the code.
+         */
+        PortalAccessCodeRowOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["PortalStaffRefOut"];
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Failed Attempts */
+            failed_attempts: number;
+            /** Id */
+            id: number;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Revoke Note */
+            revoke_note: string;
+            /** Revoked At */
+            revoked_at: string | null;
+            revoked_by: components["schemas"]["PortalStaffRefOut"] | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "active" | "expired" | "locked" | "revoked";
+        };
+        /** PortalAccessCodesOut */
+        PortalAccessCodesOut: {
+            /** Codes */
+            codes: components["schemas"]["PortalAccessCodeRowOut"][];
+            /** File No */
+            file_no: string;
+            /**
+             * Has Phone
+             * @description A code needs a phone on the file to sign in with
+             */
+            has_phone: boolean;
+            /**
+             * Patient Id
+             * @description The file the codes belong to (survivor of a merge)
+             */
+            patient_id: number;
         };
         /** PortalAppointmentOut */
         PortalAppointmentOut: {
@@ -13015,6 +13286,28 @@ export interface components {
             name_en: string;
             /** Phone */
             phone: string;
+        };
+        /**
+         * PortalCodeSlipOut
+         * @description A code issued at reception for the printed slip (shown once).
+         */
+        PortalCodeSlipOut: {
+            /**
+             * Code
+             * @description Shown once; only its hash is stored
+             */
+            code: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
         };
         /** PortalDoctorOut */
         PortalDoctorOut: {
@@ -13404,6 +13697,14 @@ export interface components {
             /** Value */
             value: string;
         };
+        /** PortalRevokeCodeIn */
+        PortalRevokeCodeIn: {
+            /**
+             * Note
+             * @description Why the code is revoked
+             */
+            note: string;
+        };
         /** PortalSessionOut */
         PortalSessionOut: {
             me: components["schemas"]["PortalMeOut"] | null;
@@ -13433,6 +13734,15 @@ export interface components {
             doctor: components["schemas"]["PortalDoctorOut"];
             /** Slots */
             slots: components["schemas"]["PortalSlotOut"][];
+        };
+        /** PortalStaffRefOut */
+        PortalStaffRefOut: {
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /** Id */
+            id: number;
         };
         /** PortalSummaryOut */
         PortalSummaryOut: {
@@ -13928,7 +14238,7 @@ export interface components {
              * Category
              * @enum {string}
              */
-            category: "line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel";
+            category: "line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel" | "admission_cancel";
             /** Code */
             code: string;
             /** Label Ar */
@@ -13951,7 +14261,7 @@ export interface components {
             /** Active */
             active?: boolean | null;
             /** Category */
-            category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel") | null;
+            category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel" | "admission_cancel") | null;
         };
         /** ReasonCodeOut */
         ReasonCodeOut: {
@@ -14588,6 +14898,83 @@ export interface components {
             unit: string;
             /** Value */
             value: string;
+        };
+        /** ReturnCreditNoteOut */
+        ReturnCreditNoteOut: {
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+        };
+        /** ReturnableDispenseOut */
+        ReturnableDispenseOut: {
+            /**
+             * Dispensed At
+             * Format: date-time
+             */
+            dispensed_at: string;
+            dispensed_by: components["schemas"]["PharmacyUserRefOut"];
+            /** Id */
+            id: number;
+            /** Lines */
+            lines: components["schemas"]["ReturnableLineOut"][];
+            /** Number */
+            number: string;
+            patient: components["schemas"]["DispensePatientOut"];
+            store: components["schemas"]["StoreOut"];
+            /** Visit Id */
+            visit_id: number;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** ReturnableLineOut */
+        ReturnableLineOut: {
+            /** Batch No */
+            batch_no: string;
+            /** Billing Status */
+            billing_status: string;
+            /**
+             * Credit Notes
+             * @description Approved credit notes that credit the line (the cashier's refund)
+             */
+            credit_notes: components["schemas"]["ReturnCreditNoteOut"][];
+            /**
+             * Expiry Date
+             * Format: date
+             */
+            expiry_date: string;
+            /**
+             * Id
+             * @description The dispense line
+             */
+            id: number;
+            /**
+             * Needs Approver
+             * @description A billed line: a second person approves the return
+             */
+            needs_approver: boolean;
+            /**
+             * Qty Base
+             * @description Base units dispensed
+             */
+            qty_base: number;
+            /**
+             * Returnable
+             * @description Base units that may still come back
+             */
+            returnable: number;
+            /**
+             * Returned
+             * @description Base units already returned
+             */
+            returned: number;
+            /** Returns */
+            returns: components["schemas"]["DispenseReturnOut"][];
+            service: components["schemas"]["PharmacyNameOut"];
+            /** Service Line Id */
+            service_line_id: number;
+            /** Unit Code */
+            unit_code: string | null;
         };
         /** RevokeIn */
         RevokeIn: {
@@ -15276,6 +15663,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** Note */
             note: string;
             /** Qty Base */
@@ -15403,6 +15795,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** Note */
             note: string;
             /** Variance */
@@ -15472,6 +15869,11 @@ export interface components {
             /** Generic Name */
             generic_name: string;
             /**
+             * Generic Name Ar
+             * @default
+             */
+            generic_name_ar: string;
+            /**
              * Is Controlled
              * @default false
              */
@@ -15521,6 +15923,11 @@ export interface components {
             form: "tablet" | "capsule" | "syrup" | "suspension" | "injection" | "infusion" | "cream" | "drops" | "inhaler" | "suppository" | "sachet" | "supply" | "other";
             /** Generic Name */
             generic_name: string;
+            /**
+             * Generic Name Ar
+             * @description Empty: the Arabic screens show the Latin name
+             */
+            generic_name_ar: string;
             /** Id */
             id: number;
             /** Is Controlled */
@@ -15573,6 +15980,11 @@ export interface components {
             form: "tablet" | "capsule" | "syrup" | "suspension" | "injection" | "infusion" | "cream" | "drops" | "inhaler" | "suppository" | "sachet" | "supply" | "other";
             /** Generic Name */
             generic_name: string;
+            /**
+             * Generic Name Ar
+             * @description Empty: the Arabic screens show the Latin name
+             */
+            generic_name_ar: string;
             /** Id */
             id: number;
             /** Is Controlled */
@@ -15618,6 +16030,8 @@ export interface components {
             form?: ("tablet" | "capsule" | "syrup" | "suspension" | "injection" | "infusion" | "cream" | "drops" | "inhaler" | "suppository" | "sachet" | "supply" | "other") | null;
             /** Generic Name */
             generic_name?: string | null;
+            /** Generic Name Ar */
+            generic_name_ar?: string | null;
             /** Is Controlled */
             is_controlled?: boolean | null;
             /** Min Stock */
@@ -15683,6 +16097,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** Qty Base */
             qty_base: number;
         };
@@ -15751,6 +16170,11 @@ export interface components {
             item_id: number;
             /** Item Name */
             item_name: string;
+            /**
+             * Item Name Ar
+             * @description The Arabic generic name, else the Latin one
+             */
+            item_name_ar: string;
             /** On Hand */
             on_hand: number;
             /** Store Id */
@@ -16068,7 +16492,7 @@ export interface components {
              */
             phone: string;
             /** Roles */
-            roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[];
+            roles: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display")[];
             /** Username */
             username: string;
         };
@@ -16089,7 +16513,7 @@ export interface components {
             /** Q */
             q?: string | null;
             /** Role */
-            role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin") | null;
+            role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display") | null;
         };
         /** UserOut */
         UserOut: {
@@ -16144,7 +16568,7 @@ export interface components {
             /** Phone */
             phone?: string | null;
             /** Roles */
-            roles?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin")[] | null;
+            roles?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display")[] | null;
         };
         /** UserRefOut */
         UserRefOut: {
@@ -16590,6 +17014,11 @@ export interface components {
         };
         /** WaitingRoomOut */
         WaitingRoomOut: {
+            /**
+             * Departments
+             * @description Active departments, for the screen's clinic picker (ADR 0019)
+             */
+            departments: components["schemas"]["VisitDepartmentOut"][];
             /** Serving */
             serving: components["schemas"]["DisplayEntryOut"][];
             /** Waiting */
@@ -25327,7 +25756,7 @@ export interface operations {
     core_list_reason_codes: {
         parameters: {
             query?: {
-                category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel") | null;
+                category?: ("line_cancel" | "visit_cancel" | "discount" | "refund" | "credit_note" | "stock_adjust" | "variance" | "override" | "writeoff" | "perform_first" | "transfer_reject" | "result_amend" | "sample_reject" | "patient_merge" | "appointment_cancel" | "admission_cancel") | null;
                 active?: boolean | null;
             };
             header?: never;
@@ -25842,7 +26271,7 @@ export interface operations {
                 page?: number;
                 page_size?: number;
                 q?: string | null;
-                role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin") | null;
+                role?: ("receptionist" | "doctor" | "cashier" | "cashier_supervisor" | "pharmacist" | "lab_tech" | "lab_supervisor" | "nurse" | "accountant" | "manager" | "admin" | "display") | null;
                 active?: boolean | null;
             };
             header?: never;
@@ -33606,6 +34035,77 @@ export interface operations {
             };
         };
     };
+    pharmacy_return_dispensed_units: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dispense_line_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispenseReturnIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnableDispenseOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     pharmacy_create_dispense: {
         parameters: {
             query?: never;
@@ -35078,6 +35578,75 @@ export interface operations {
             };
         };
     };
+    pharmacy_list_returnable_dispenses: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ReturnableDispenseOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     pharmacy_list_sale_customers: {
         parameters: {
             query: {
@@ -35969,6 +36538,77 @@ export interface operations {
             };
         };
     };
+    portal_revoke_access_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalRevokeCodeIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAccessCodesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     portal_list_appointments: {
         parameters: {
             query?: never;
@@ -36372,6 +37012,140 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_patient_access_codes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalAccessCodesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_issue_patient_access_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalCodeSlipOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39463,6 +40237,77 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_cancel_admission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                admission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InpatientCancelIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientAdmissionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

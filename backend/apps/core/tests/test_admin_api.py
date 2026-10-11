@@ -286,7 +286,7 @@ def test_unlock_with_reason(client: ApiClient, make_user: Any) -> None:
 
 def test_roles_list_counts_active_users(client: ApiClient) -> None:
     rows = {r["code"]: r for r in client.get("/api/core/roles").json()}
-    assert len(rows) == 11
+    assert len(rows) == 12  # the eleven of FEATURES 0.2 and the kiosk display (ADR 0019)
     assert rows["admin"]["user_count"] >= 1
 
 

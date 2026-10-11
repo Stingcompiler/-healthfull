@@ -20,7 +20,7 @@
  *       ├── /administration/*            admin (Django admin owns /admin/*)
  *       └── /design                      design system (style guide)
  */
-import { createRootRouteWithContext, createRoute } from "@tanstack/react-router";
+import { createRootRouteWithContext, createRoute, redirect } from "@tanstack/react-router";
 
 import { routes as adminRoutes } from "@/features/admin/routes";
 import { routes as authRoutes } from "@/features/auth/routes";
@@ -37,7 +37,7 @@ import { routes as reportsRoutes } from "@/features/reports/routes";
 import { kioskRoutes as visitsKioskRoutes, routes as visitsRoutes } from "@/features/visits/routes";
 import { routes as portalRoutes } from "@/portal/routes";
 
-import { requireAppUser } from "./guards";
+import { isKioskOnly, requireAppUser } from "./guards";
 import { AppLayout } from "./layouts/AppLayout";
 import { RootLayout } from "./layouts/RootLayout";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -54,7 +54,11 @@ export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "_app",
   beforeLoad: async ({ context, location }) => {
-    await requireAppUser({ context, location });
+    const me = await requireAppUser({ context, location });
+    if (isKioskOnly(me)) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
+      throw redirect({ to: "/display/queue" });
+    }
   },
   component: AppLayout,
 });

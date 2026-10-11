@@ -405,5 +405,10 @@
   "PORTAL_BOOKING_LIMIT": "You already have {{limit}} upcoming appointments. Cancel one to book another.",
   "PORTAL_ALREADY_BOOKED": "You already have an appointment with this doctor on that day.",
   "PORTAL_CANCEL_TOO_LATE": "Appointments can be cancelled online up to {{cutoff_hours}} hours before. Please call the center.",
-  "PORTAL_PHONE_REQUIRED": "Add a phone number to the patient's file before printing a portal code."
+  "PORTAL_PHONE_REQUIRED": "Add a phone number to the patient's file before printing a portal code.",
+  "SECOND_APPROVER_REQUIRED": "Another person must approve this. Enter the username and password of a colleague who may approve it.",
+  "APPROVER_NOT_PERMITTED": "The approver you entered is not allowed to approve this action.",
+  "ADMISSION_NIGHTS_INVOICED": "{{count}} bed night(s) of this admission are already invoiced. Ask the cashier to credit them first, then cancel the admission.",
+  "LINE_NOT_VOIDABLE": "Only a line given under a perform-first authorization and not yet invoiced can be voided.",
+  "PORTAL_CODE_ALREADY_REVOKED": "This portal code is already revoked."
 }

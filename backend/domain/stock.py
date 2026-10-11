@@ -24,10 +24,10 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from enum import StrEnum
 
-from domain.audit import Approval
+from domain.audit import Approval, second_approval
 from domain.errors import DomainError
 
 __all__ = [
@@ -49,6 +49,7 @@ __all__ = [
     "is_usable",
     "on_hand",
     "reorder_suggestion",
+    "return_approval",
     "return_move",
     "select_batches",
     "to_base",
@@ -384,6 +385,27 @@ def return_move(
             returned=back,
         )
     return StockMoveDraft(item_id, batch_id, store_id, qty, MoveKind.RETURN)
+
+
+def return_approval(
+    *,
+    billed: bool,
+    actor_id: int,
+    approver_id: int | None,
+    at: datetime,
+    reason: str = "",
+    reason_code: str | None = None,
+) -> Approval:
+    """Who approves a dispense return (ADR 0018, invariant 4).
+
+    Units of a billed line (invoiced or paid at some point) come back only on a second
+    person's approval, since their money is refunded at the cashier by a credit note; units
+    given under a perform-first authorization and never billed come back on the actor's own
+    reason. Raises ``SECOND_APPROVER_REQUIRED``, ``REASON_REQUIRED``.
+    """
+    if billed:
+        return second_approval(actor_id, approver_id, at, reason, reason_code)
+    return Approval(actor_id, at, reason, reason_code)
 
 
 def transfer_receipt(sent: int, received: int, approval: Approval | None) -> int:

@@ -19,10 +19,25 @@ Installed before the separate database roles existed (no `DB_OWNER_PASSWORD` in 
    image, which connects as the owner role. The app role cannot change the schema.
 5. Recreates `app` and `web` on the new tag.
 6. Polls `/api/ops/health` inside the app until `status=ok` and `version=<tag>`.
-7. Writes `APP_IMAGE_TAG=<tag>` to `.env` and records the run in `status/update-runs.jsonl`.
+7. Writes `APP_IMAGE_TAG=<tag>` to `.env` and records the run.
 
 On failure it restarts the previous tag. The database is restored from the step-3 dump only if
 migrations were applied **and** you passed `--restore-db-on-failure`. Logs: `infra/logs/`.
+
+**The update history.** Every run (success, failure, rollback) is recorded twice:
+
+- one line in `status/update-runs.jsonl` (format in [backup-restore.md](backup-restore.md#status-file-format-read-by-the-ops-module));
+- one `ops.UpdateRun` row, shown on **Administration > System status** with the version history:
+  from and to tag, result (`succeeded`, `failed`, `rolled_back`), start and end, the
+  `migrate --plan` output, whether migrations were applied and the database restored, the
+  pre-update dump, the reason and step of a failure, the last 200 log lines and the release
+  notes given with `--release-notes FILE`. The script writes it with
+  `manage.py record_update` in a one-off container of the version serving at the end (the new
+  one after a success, the previous one after a rollback), never with SQL.
+
+Recording never changes the outcome: if it fails (database down, or a rollback to a version
+older than the command) the script warns and the JSON line remains. A run cut short by a power
+cut is recorded as `failed` ("interrupted during ...") by the next run.
 
 | Exit | Meaning |
 |---|---|
@@ -56,7 +71,7 @@ docker save <registry>/app:v1.4.0 <registry>/web:v1.4.0 <registry>/db:16 | gzip 
 cd /opt/hospital-sys
 git fetch --tags && git checkout v1.4.0        # infra scripts of the release (if installed from git)
 infra/update.sh --tag v1.4.0 --dry-run         # shows the migration plan; changes nothing
-infra/update.sh --tag v1.4.0 --restore-db-on-failure
+infra/update.sh --tag v1.4.0 --restore-db-on-failure --release-notes /media/usb/RELEASE-v1.4.0.md
 # offline:
 infra/update.sh --tag v1.4.0 --image-archive /media/usb/hospital-sys-v1.4.0.tar.gz --restore-db-on-failure
 ```
@@ -67,9 +82,10 @@ first.
 
 **Power cut during an update.** `.env` is replaced atomically, so it is never half-written, and the
 update lock is a kernel lock that dies with the process (nothing to delete by hand). The script
-keeps `infra/.update.state` (target tag, step, whether migrations ran or containers were swapped).
-Simply run the same `infra/update.sh --tag ...` again: it prints what the interrupted run left
-behind and finishes the job (or rolls back) from the last committed tag in `.env`.
+keeps `infra/.update.state` (target tag, step, whether migrations ran or containers were swapped,
+the run key). Simply run the same `infra/update.sh --tag ...` again: it prints what the
+interrupted run left behind, records it as failed in the update history, and finishes the job
+(or rolls back) from the last committed tag in `.env`.
 
 A pre-update backup with status `partial` (database dump verified, media archive failed) does not
 stop the update; it is logged as a warning. Fix the media problem afterwards (backup-restore.md).
@@ -78,7 +94,10 @@ After the swap the script checks the app and the web container (SPA served, prox
 ## After — بعد التحديث
 
 - Log in as a cashier and a doctor; open a patient, an invoice, the shift screen.
-- Status page shows the new version; `tail -n 1 /srv/hospital/backups/status/update-runs.jsonl`.
+- Status page shows the new version and the run in the update history;
+  `tail -n 1 /srv/hospital/backups/status/update-runs.jsonl`.
+- After a release with migrations: `infra/compose.sh run --rm --no-deps -T app manage integrity_check`
+  must end with "all checks passed" ([operations.md](operations.md#integrity-check--فحص-سلامة-البيانات)).
 - Keep the previous images for a week (rollback), then `docker image prune -a --filter "until=168h"`.
 
 ## Separate database roles — فصل أدوار قاعدة البيانات
@@ -146,6 +165,7 @@ it swaps it in, so the old tag can read it at once. If a migration ever has to b
    `permission denied for table ...` in the app log means ownership or grants are off (a database
    restored by hand, a role changed): run `infra/db-roles.sh`, then `infra/compose.sh up -d app`.
 2. Database down: `infra/compose.sh up -d db`, wait for healthy, then start the previous tag as above.
-3. Database up but the old app fails on the new schema: restore the pre-update dump (above).
+3. Database up but the old app fails on the new schema: restore the pre-update dump (above),
+   then `infra/compose.sh run --rm --no-deps -T app manage integrity_check`.
 4. Still down after 30 minutes: switch the clinic to the paper fallback forms and call support with
    the log file from `infra/logs/`.

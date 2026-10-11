@@ -240,9 +240,9 @@ def move_queue_entry(request: HttpRequest, entry_id: int, payload: QueueMoveIn) 
     "/queue/display",
     response={200: WaitingRoomOut, **_READ},
     operation_id="visits_get_display",
-    summary="Waiting-room screen feed: paid tokens, abbreviated names",
+    summary="Waiting-room screen feed: paid tokens, abbreviated names, the clinics to pick",
 )
-@require_perm("visits.view_queue")
+@require_perm("visits.view_display")
 def get_display(request: HttpRequest, params: Query[DisplayParams]) -> Any:
     return services.waiting_room(department=_opt(Department, params.department_id))
 

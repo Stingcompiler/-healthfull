@@ -1,12 +1,14 @@
 /**
  * Partial rejection and rebill (FEATURES 11.4, 11.5; ARCHITECTURE 4.5): the payer accepts
  * 4,000 of a 7,000 claimed ECG share; the accountant records the answer on the line with the
- * payer's reason, then rebills the rejected 3,000 to the patient with a reason. The patient
+ * payer's reason, then rebills the rejected 3,000 to the patient with a reason and the
+ * manager's approval (ADR 0018). The patient
  * now owes it on the original invoice: the cashier desk shows the patient's outstanding
  * balance grow from the 3,000 patient share to 6,000.
  */
 import { expect, test } from "@playwright/test";
 
+import { E2E_PASSWORD } from "../../fixtures/users";
 import { disposeApiClients } from "../../helpers";
 import { choose, claimCase, claimLoaded, pageAs, rowAction, sdg, t } from "./kit";
 
@@ -42,11 +44,14 @@ test.describe("@claims rebill", () => {
     await expect(line.locator('[data-stage="partially_accepted"]')).toBeVisible();
     await expect(page.getByTestId("claim-totals")).toContainText(sdg("4000.00"));
 
-    // Rebill the rejected 3,000 to the patient, with a reason (invariant 4).
+    // Rebill the rejected 3,000 to the patient, with a reason and a second person's approval
+    // (invariant 4, ADR 0018: the manager types their own credentials).
     await rowAction(page, line, t("claims:detail.rebill"));
-    const reason = page.getByRole("dialog");
-    await choose(page, t("reason.code"), "Not covered");
-    await reason.getByRole("button", { name: t("claims:detail.rebill") }).click();
+    const reason = page.getByTestId("resolve-dialog");
+    await choose(page, t("claims:resolve.reason"), "Not covered");
+    await reason.getByLabel(t("approver.username")).fill("manager");
+    await reason.getByLabel(t("approver.password")).fill(E2E_PASSWORD);
+    await reason.getByTestId("resolve-confirm").click();
     await expect(reason).toBeHidden();
     await expect(line.getByTestId("line-resolution")).toContainText(t("claims:resolution.rebilled"));
 

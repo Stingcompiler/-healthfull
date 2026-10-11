@@ -2,7 +2,8 @@
 
 Target: one mini PC on the clinic LAN running the Docker stack (`infra/docker-compose.yml`).
 Time: about 2 hours. Works with no internet once images are on the machine.
-Related: [backup-restore.md](backup-restore.md), [update-rollback.md](update-rollback.md).
+Related: [backup-restore.md](backup-restore.md), [update-rollback.md](update-rollback.md),
+[operations.md](operations.md) (daily checks, users, failures, troubleshooting).
 
 ## 1. Hardware and power — العتاد والكهرباء
 
@@ -127,6 +128,13 @@ infra/db-roles.sh                                        # roles and grants veri
 infra/compose.sh run --rm --no-deps app manage createsuperuser   # first system admin
 ```
 
+The account `createsuperuser` makes is the **break-glass** account: seal its password with the
+printed `.env` and use it only to repair access. Sign in with it once, create a named account
+with the `admin` role for each system administrator in **Administration > Users**
+(`/administration/users`), then the staff accounts with their roles, and one account with only
+the `display` role for each waiting-room screen
+([system-admin.md](../guides/system-admin.md), [waiting-room-display.md](../guides/waiting-room-display.md)).
+
 Open `http://hospital.lan` from a workstation and log in. `up -d` first runs the one-off `migrate`
 service: with `MIGRATE_ON_START=true` it creates the schema as the owner role, then exits, and only
 then do `app` and `maintenance` start (as the app role). Later schema changes only go through
@@ -156,6 +164,16 @@ or one job with `infra/compose.sh run --rm --no-deps app manage notify_scan`.
 infra/compose.sh run --rm --no-deps -T backup /opt/backup/backup-nightly.sh
 infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-test.sh
 tail -n 1 /srv/hospital/backups/status/restore-tests.jsonl    # "status":"ok"
+```
+
+Then, once, the restore-from-scratch drill (a new database with the roles, `migrate --check` and
+the integrity check; [backup-restore.md](backup-restore.md#restore-from-scratch-drill--تمرين-الاستعادة-من-الصفر)):
+
+```bash
+infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-drill.sh --keep --target restore_drill
+infra/compose.sh run --rm --no-deps -T -e DB_NAME=restore_drill migrate manage migrate --check
+infra/compose.sh run --rm --no-deps -T -e DB_NAME=restore_drill app manage integrity_check
+infra/compose.sh exec db psql -U hospital -d postgres -c 'DROP DATABASE "restore_drill" WITH (FORCE)'
 ```
 
 The sidecar then runs the backup nightly at `BACKUP_TIME` and a restore test monthly.
@@ -200,5 +218,7 @@ returns, the BIOS setting powers the server on and `restart: unless-stopped` bri
 - [ ] `.env` filled, printed, stored in the safe
 - [ ] `infra/compose.sh ps` all healthy; login works from a workstation
 - [ ] `infra/db-roles.sh` ends with "verified."
-- [ ] Manual backup and restore test both `ok`
+- [ ] Manual backup and restore test both `ok`; restore drill and `integrity_check` pass
+- [ ] Break-glass password sealed in the safe; named admin accounts created
+- [ ] Server clock right (`timedatectl`): prices take effect by date
 - [ ] Off-site USB rotation scheduled (backup-restore.md)

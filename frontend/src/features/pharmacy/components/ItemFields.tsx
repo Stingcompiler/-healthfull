@@ -13,6 +13,7 @@ export function ItemFields({ control }: { control: Control<ItemFieldValues> }) {
     <>
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField control={control} name="generic_name" label={t("items.fields.genericName")} required />
+        <TextField control={control} name="generic_name_ar" label={t("items.fields.genericNameAr")} dir="rtl" />
         <TextField control={control} name="brand_name" label={t("items.fields.brandName")} />
         <SelectField
           control={control}

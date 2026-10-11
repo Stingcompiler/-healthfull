@@ -19,6 +19,7 @@ from django.db import transaction
 
 from apps.billing import queries as billing_queries
 from apps.billing import services as billing
+from apps.billing.models import CreditNote
 from apps.catalog.models import Service
 from apps.core.models import User
 from apps.orders import services as orders
@@ -29,6 +30,7 @@ from apps.pharmacy import queries
 from apps.pharmacy import services as ps
 from apps.pharmacy.models import (
     Batch,
+    DispenseLine,
     GoodsReceipt,
     Item,
     StockAdjustment,
@@ -60,6 +62,7 @@ __all__ = [
     "record_count",
     "reject_adjustment",
     "request_adjustment",
+    "return_units",
     "send_transfer",
     "start_count",
     "update_item",
@@ -153,6 +156,32 @@ def dispense(
         approver=chosen,
     )
     return queries.dispense_detail(record.pk)
+
+
+def return_units(
+    dispense_line_id: int,
+    *,
+    actor: User,
+    quantity: int,
+    reason_code: str,
+    note: str,
+    credit_note_id: int | None,
+    approver: ApproverLogin | None,
+) -> dict[str, Any]:
+    """Units a patient brought back go on the shelf in the batch and store they left
+    (FEATURES 8.4, ADR 0018). A billed line needs a second person's credentials typed at the
+    counter; the money goes back through the cashier's credit note, never here."""
+    line = DispenseLine.objects.get(pk=dispense_line_id)
+    ps.return_dispense(
+        line,
+        quantity=quantity,
+        actor=actor,
+        reason_code=reason_code,
+        note=note,
+        credit_note=None if credit_note_id is None else CreditNote.objects.get(pk=credit_note_id),
+        approver=resolve_approver(approver, actor=actor),
+    )
+    return queries.returnable_dispense(line.dispense_id)
 
 
 # --- goods receipts -------------------------------------------------------------------------

@@ -21,6 +21,7 @@ RoleCode = Literal[
     "accountant",
     "manager",
     "admin",
+    "display",
 ]
 ReasonCategoryCode = Literal[
     "line_cancel",
@@ -38,6 +39,7 @@ ReasonCategoryCode = Literal[
     "sample_reject",
     "patient_merge",
     "appointment_cancel",
+    "admission_cancel",
 ]
 PrintDocumentCode = Literal[
     "invoice", "receipt", "prescription", "lab_result", "claim_export", "shift_report"
@@ -139,7 +141,7 @@ class UserIn(Schema):
     full_name_ar: str = Field("", max_length=150)
     full_name_en: str = Field("", max_length=150)
     phone: str = Field("", max_length=30)
-    roles: list[RoleCode] = Field(..., min_length=1, max_length=11)
+    roles: list[RoleCode] = Field(..., min_length=1, max_length=12)
     password: str = Field(..., min_length=1, max_length=256, description="Temporary password")
 
 
@@ -148,7 +150,7 @@ class UserPatch(PatchSchema):
     full_name_en: str | None = Field(None, max_length=150)
     phone: str | None = Field(None, max_length=30)
     is_active: bool | None = None
-    roles: list[RoleCode] | None = Field(None, min_length=1, max_length=11)
+    roles: list[RoleCode] | None = Field(None, min_length=1, max_length=12)
 
 
 class ResetPasswordIn(Schema):
@@ -256,6 +258,9 @@ class PolicyOut(Schema):
     discount_limit_percent: dict[str, float]
     session_idle_minutes: int
     perform_first_roles: list[str]
+    claims_second_approver: bool = Field(
+        ..., description="Claims rebills and write-offs need a second person (ADR 0018)"
+    )
     updated_at: datetime | None
 
 
@@ -268,7 +273,10 @@ class PolicyIn(Schema):
     follow_up_discount_percent: Decimal = Field(..., ge=0, le=100, decimal_places=2)
     discount_limit_percent: dict[RoleCode, Percent]
     session_idle_minutes: int = Field(..., ge=5, le=1440)
-    perform_first_roles: list[RoleCode] = Field(..., max_length=11)
+    perform_first_roles: list[RoleCode] = Field(..., max_length=12)
+    claims_second_approver: bool | None = Field(
+        None, description="Omitted or null keeps the current value"
+    )
 
 
 # --- Departments, rooms, doctors ---------------------------------------------------------

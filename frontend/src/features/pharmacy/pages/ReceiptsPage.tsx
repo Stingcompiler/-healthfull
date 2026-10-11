@@ -283,7 +283,7 @@ function ReceiptDialog({
               {receipt.lines.map((ln) => (
                 <li key={ln.id} className="grid gap-1 rounded-control border border-border px-3 py-2">
                   <span className="flex flex-wrap justify-between gap-2">
-                    <span className="font-medium">{ln.item_name}</span>
+                    <span className="font-medium">{names.item(ln)}</span>
                     <MoneyText value={ln.line_total} />
                   </span>
                   <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted">

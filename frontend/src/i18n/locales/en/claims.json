@@ -181,9 +181,10 @@
     "rebillTitle": "Rebill the rejected part to the patient",
     "rebillDescription": "The patient will owe this amount on the original invoice. The invoice itself does not change.",
     "writeOffTitle": "Write off the rejected part",
-    "writeOffDescription": "The center absorbs this amount. The write-off records you as approver, the reason and the time.",
+    "writeOffDescription": "The center absorbs this amount. The write-off records you, the approver, the reason and the time.",
     "reason": "Reason",
-    "note": "Note"
+    "note": "Note",
+    "approverHint": "Another person who may resolve rejections (manager or accountant) approves with their own username and password."
   },
   "shortfall": {
     "title": "Write off an unpaid accepted amount",

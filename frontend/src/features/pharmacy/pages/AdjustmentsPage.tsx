@@ -78,7 +78,7 @@ export function AdjustmentsPage() {
   const lineSummary = (a: StockAdjustment) =>
     a.lines.map((ln) => (
       <span key={ln.id} className="flex flex-wrap gap-x-2">
-        <span>{ln.item_name}</span>
+        <span>{names.item(ln)}</span>
         <bdi className="text-muted">{ln.batch_no}</bdi>
         <bdi className={ln.qty_base < 0 ? "tabular text-danger-fg" : "tabular text-success-fg"}>
           {(ln.qty_base > 0 ? "+" : "") + formatNumber(ln.qty_base, names.language)}

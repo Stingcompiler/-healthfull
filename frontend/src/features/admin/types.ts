@@ -87,5 +87,6 @@ const REASON_CATEGORY_SET: Record<ReasonCategory, true> = {
   sample_reject: true,
   patient_merge: true,
   appointment_cancel: true,
+  admission_cancel: true,
 };
 export const REASON_CATEGORIES = Object.keys(REASON_CATEGORY_SET) as ReasonCategory[];

@@ -9,7 +9,8 @@ requests and update history.
   directory read-only) and from ``BackupRun`` / ``RestoreTest`` rows; the newest wins.
 * :func:`request_backup` records a :class:`BackupRequest`; the backup service picks it up
   (``infra/backup/backup-requests.sh``). A request never runs a command on the app server.
-* :func:`update_runs` lists the recorded updates (read-only; ``infra/update.sh`` runs them).
+* :func:`record_update_run` stores one run of ``infra/update.sh`` (``manage.py record_update``);
+  :func:`update_runs` lists the recorded updates.
 """
 
 from __future__ import annotations
@@ -39,6 +40,7 @@ from apps.ops.models import (
     CloudStatus,
     RestoreTest,
     RunStatus,
+    UpdateResult,
     UpdateRun,
 )
 from domain.errors import DomainError
@@ -49,9 +51,11 @@ __all__ = [
     "BACKUP_STALE_HOURS",
     "DISK_LOW_PERCENT",
     "RESTORE_TEST_STALE_DAYS",
+    "UpdateRecord",
     "check_database",
     "health",
     "last_backup",
+    "record_update_run",
     "request_backup",
     "system_status",
     "update_log",
@@ -391,6 +395,97 @@ def request_backup(*, actor: User, note: str = "") -> BackupRequest:
 
 
 # --- updates --------------------------------------------------------------------------------
+
+
+#: ``infra/update.sh`` outcomes to ``UpdateRun.result``.
+SCRIPT_RESULTS: dict[str, str] = {
+    "ok": UpdateResult.SUCCEEDED,
+    "succeeded": UpdateResult.SUCCEEDED,
+    "failed": UpdateResult.FAILED,
+    "rolled_back": UpdateResult.ROLLED_BACK,
+    "running": UpdateResult.RUNNING,
+}
+_TAG_MAX = 50
+#: Text columns are trimmed to keep a runaway log from bloating the table.
+_TEXT_MAX = 64 * 1024
+
+
+def _clip(text: str, limit: int = _TEXT_MAX) -> str:
+    text = text.replace("\x00", "")
+    return text if len(text) <= limit else "...\n" + text[-(limit - 4) :]
+
+
+@dataclass(frozen=True, slots=True)
+class UpdateRecord:
+    """One run of ``infra/update.sh`` as the script reports it (``manage.py record_update``)."""
+
+    run_key: str
+    version: str
+    previous_version: str
+    result: str
+    started_at: datetime
+    finished_at: datetime | None
+    migration_plan: str = ""
+    migrations_applied: bool = False
+    db_restored: bool = False
+    backup_file: str = ""
+    detail: str = ""
+    log: str = ""
+    release_notes: str = ""
+
+
+def record_update_run(record: UpdateRecord) -> UpdateRun:
+    """Insert or complete the ``UpdateRun`` of one update script run (FEATURES 13.10).
+
+    Keyed by ``run_key``, so the script may call it again for the same run (a retry, or an
+    interrupted run recorded by the next one) without creating a second row. Release notes
+    already recorded are kept when the new call brings none.
+
+    Raises:
+        ValueError: an unknown result, a missing run key or version, a finish before the
+            start, or a finished result without a finish time (the script's input, never a
+            user's: it is not an API error code).
+    """
+    result = SCRIPT_RESULTS.get(record.result)
+    problems: list[str] = []
+    if result is None:
+        problems.append("result")
+    if not record.run_key.strip() or len(record.run_key) > 100:
+        problems.append("run_key")
+    if not record.version.strip() or len(record.version) > _TAG_MAX:
+        problems.append("version")
+    if len(record.previous_version) > _TAG_MAX:
+        problems.append("previous_version")
+    if record.finished_at is not None and record.finished_at < record.started_at:
+        problems.append("finished_at")
+    if result != UpdateResult.RUNNING and record.finished_at is None:
+        problems.append("finished_at")
+    if problems:
+        raise ValueError(f"invalid update record: {', '.join(sorted(set(problems)))}")
+    values: dict[str, Any] = {
+        "version": record.version.strip(),
+        "previous_version": record.previous_version.strip(),
+        "result": result,
+        "started_at": record.started_at,
+        "finished_at": record.finished_at,
+        "migration_plan": _clip(record.migration_plan),
+        "migrations_applied": record.migrations_applied,
+        "db_restored": record.db_restored,
+        "backup_file": record.backup_file.strip()[:500],
+        "detail": _clip(record.detail, 4000),
+        "log": _clip(record.log),
+    }
+    if record.release_notes.strip():
+        values["release_notes"] = _clip(record.release_notes)
+    with (
+        transaction.atomic(),
+        pghistory.context(reason=f"infra/update.sh {record.result}", run=record.run_key),
+    ):
+        run, _ = UpdateRun.objects.select_for_update().update_or_create(
+            run_key=record.run_key.strip(), defaults=values
+        )
+    logger.info("update_run_recorded", run_key=run.run_key, version=run.version, result=run.result)
+    return run
 
 
 def update_runs() -> QuerySet[UpdateRun]:

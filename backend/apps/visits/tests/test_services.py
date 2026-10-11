@@ -566,7 +566,14 @@ def test_bed_nights_are_charged_once_and_discharge_closes(clerk, doctor, ward) -
 def test_admission_is_required_for_discharge(clerk, doctor, ward) -> None:
     v = vs.create_visit(patient=b.patient(), actor=clerk, department=b.department())
     adm = vs.admit(v, doctor=doctor, bed=ward[0], actor=clerk)
-    Admission.objects.filter(pk=adm.pk).update(status="cancelled")
+    # A cancelled admission documents who, who approved, why and when (ADR 0018).
+    Admission.objects.filter(pk=adm.pk).update(
+        status="cancelled",
+        cancelled_at=timezone.now(),
+        cancelled_by=clerk,
+        cancel_approved_by=b.user(),
+        cancel_reason=b.reason("admission_cancel"),
+    )
     with pytest.raises(DomainError) as exc:
         vs.discharge(adm, actor=clerk)
     assert exc.value.code == "NOT_ADMITTED"

@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useBedBoard, useChargeDue, useSetBedStatus } from "../api";
 import { AdmitDialog } from "../components/AdmitDialog";
 import { DischargeDialog, TransferDialog, type OccupiedBed } from "../components/BedActionDialogs";
+import { CancelAdmissionDialog } from "../components/CancelAdmissionDialog";
 import { NursingTabs } from "../components/NursingTabs";
 import { QueryError } from "../components/QueryError";
 import { nameOf, patientName } from "../lib";
@@ -44,6 +45,7 @@ export function BedBoardPage() {
   const [admitBed, setAdmitBed] = useState<number | null | undefined>(undefined);
   const [transfer, setTransfer] = useState<OccupiedBed | null>(null);
   const [discharge, setDischarge] = useState<OccupiedBed | null>(null);
+  const [cancelling, setCancelling] = useState<OccupiedBed | null>(null);
   const data = board.data;
   const freeBeds = useMemo(
     () => (data?.wards ?? []).flatMap((w) => w.beds.filter((b) => b.status === "available")),
@@ -148,6 +150,9 @@ export function BedBoardPage() {
                         onDischarge={(o) => {
                           setDischarge(o);
                         }}
+                        onCancel={(o) => {
+                          setCancelling(o);
+                        }}
                       />
                     </li>
                   ))}
@@ -168,6 +173,7 @@ export function BedBoardPage() {
       />
       <TransferDialog target={transfer} freeBeds={freeBeds} onOpenChange={() => setTransfer(null)} />
       <DischargeDialog target={discharge} onOpenChange={() => setDischarge(null)} />
+      <CancelAdmissionDialog target={cancelling} onOpenChange={() => setCancelling(null)} />
     </div>
   );
 }
@@ -178,12 +184,14 @@ function BedCard({
   onAdmit,
   onTransfer,
   onDischarge,
+  onCancel,
 }: {
   bed: Bed;
   canAdmit: boolean;
   onAdmit: () => void;
   onTransfer: (o: OccupiedBed) => void;
   onDischarge: (o: OccupiedBed) => void;
+  onCancel: (o: OccupiedBed) => void;
 }) {
   const { t } = useTranslation("nursing");
   const language = useLanguage();
@@ -191,6 +199,7 @@ function BedCard({
   const canManage = usePermission("visits.manage_beds");
   const canDischarge = usePermission("visits.discharge");
   const canChart = usePermission("clinical.view");
+  const canCancel = usePermission("visits.cancel_admission");
   const setStatus = useSetBedStatus();
   const occupant = bed.occupant;
 
@@ -256,6 +265,11 @@ function BedCard({
             {occupant.nights_due > 0 ? (
               <Badge variant="warning">{t("beds.nightsDue", { count: occupant.nights_due })}</Badge>
             ) : null}
+            {occupant.nights_invoiced > 0 ? (
+              <Badge variant="info" data-testid="bed-nights-invoiced">
+                {t("beds.nightsInvoiced", { count: occupant.nights_invoiced })}
+              </Badge>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -296,6 +310,19 @@ function BedCard({
                 data-testid="bed-discharge"
               >
                 {t("beds.discharge")}
+              </Button>
+            ) : null}
+            {canCancel ? (
+              <Button
+                variant="ghost"
+                className="text-danger"
+                onClick={() => {
+                  onCancel({ bed, occupant });
+                }}
+                aria-label={t("beds.cancelAdmissionNamed", { name: patientName(occupant.patient, language) })}
+                data-testid="bed-cancel-admission"
+              >
+                {t("beds.cancelAdmission")}
               </Button>
             ) : null}
           </>

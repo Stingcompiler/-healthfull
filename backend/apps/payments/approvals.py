@@ -18,10 +18,10 @@ from dataclasses import dataclass
 from django.http import HttpRequest
 
 from apps.core.models import User
-from apps.core.services import authenticate_credentials
+from apps.core.services import authenticate_credentials, holds_permission
 from domain.errors import DomainError
 
-__all__ = ["ApproverLogin", "resolve_approver"]
+__all__ = ["ApproverLogin", "approver_holding", "resolve_approver", "resolve_second_approver"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,3 +60,35 @@ def resolve_approver(login: ApproverLogin | None, *, actor: User) -> User | None
     if result.pk == actor.pk:
         return None
     return result
+
+
+def approver_holding(approver: User, permission: str) -> User:
+    """``approver`` when they hold ``permission``.
+
+    Raises:
+        DomainError: ``APPROVER_NOT_PERMITTED`` (409, with ``permission``), never a 403
+            that would read as the actor's own lack of permission.
+    """
+    if not holds_permission(approver, permission):
+        raise DomainError(
+            "APPROVER_NOT_PERMITTED",
+            "The approver may not approve this action",
+            permission=permission,
+        )
+    return approver
+
+
+def resolve_second_approver(login: ApproverLogin | None, *, actor: User, permission: str) -> User:
+    """The second person who approves at the actor's desk (ADR 0018).
+
+    Unlike :func:`resolve_approver`, an approver is required and must be someone else:
+    no credentials, or the actor's own, answer ``SECOND_APPROVER_REQUIRED``.
+
+    Raises:
+        DomainError: ``SECOND_APPROVER_REQUIRED``, ``APPROVER_NOT_PERMITTED``, and the
+            errors of :func:`resolve_approver`.
+    """
+    approver = resolve_approver(login, actor=actor)
+    if approver is None:
+        raise DomainError("SECOND_APPROVER_REQUIRED", "Another person must approve this action")
+    return approver_holding(approver, permission)

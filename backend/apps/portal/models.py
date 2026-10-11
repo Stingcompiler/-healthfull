@@ -44,6 +44,11 @@ class PortalAccessCode(models.Model):
     revoked_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
+    revoke_note = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Why staff revoked it; empty when a newer code replaced it.",
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
@@ -162,6 +167,7 @@ class PortalThrottle(models.Model):
 
 class PortalEventKind(models.TextChoices):
     CODE_ISSUED = "code_issued", "Access code issued"
+    CODE_REVOKED = "code_revoked", "Access code revoked by staff"
     LOGIN_SUCCESS = "login_success", "Signed in"
     LOGIN_FAILED = "login_failed", "Sign-in refused: wrong details"
     LOGIN_LOCKED = "login_locked", "Sign-in refused: file number locked"

@@ -416,6 +416,24 @@ class Admission(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
     discharge_summary = models.TextField(blank=True)
+    # An admission made in error (ADR 0018): reason, who cancelled, a second person who
+    # approved, and when (invariant 4).
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    cancel_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    cancel_reason = models.ForeignKey(
+        "core.ReasonCode",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        limit_choices_to={"category": "admission_cancel"},
+    )
+    cancel_note = models.TextField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -436,6 +454,19 @@ class Admission(models.Model):
                 fields=["patient"],
                 condition=Q(status=AdmissionStatus.ADMITTED),
                 name="visits_admission_one_open_per_patient",
+            ),
+            models.CheckConstraint(
+                condition=~Q(status=AdmissionStatus.CANCELLED)
+                | (
+                    Q(
+                        cancelled_at__isnull=False,
+                        cancelled_by__isnull=False,
+                        cancel_approved_by__isnull=False,
+                        cancel_reason__isnull=False,
+                    )
+                    & ~Q(cancel_approved_by=F("cancelled_by"))
+                ),
+                name="visits_admission_cancel_documented",
             ),
         ]
         indexes: ClassVar[list[models.Index]] = [
