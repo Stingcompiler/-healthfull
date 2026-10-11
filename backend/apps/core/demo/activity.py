@@ -1214,6 +1214,7 @@ class Simulation:
                     cl,
                     resolution="written_off",
                     actor=self.u("accountant"),
+                    approver=self.u("manager"),
                     reason_code="NOT_COVERED",
                     note="شطب حسب العقد",
                 )
@@ -1222,6 +1223,7 @@ class Simulation:
                     cl,
                     resolution="rebilled",
                     actor=self.u("accountant"),
+                    approver=self.u("manager"),
                     reason_code="NOT_COVERED",
                     note="يُحمّل على المريض",
                 )
