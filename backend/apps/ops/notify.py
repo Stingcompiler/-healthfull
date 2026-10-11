@@ -23,8 +23,7 @@ from datetime import date, timedelta
 
 from django.utils import timezone
 
-from apps.core.permissions import roles_holding
-from apps.core.services import notify_roles
+from apps.core.services import notify_kind
 from apps.ops import services as ops
 from apps.payments import services as payments
 from apps.payments.models import Shift, ShiftStatus
@@ -43,8 +42,7 @@ def _shift_reviews(day: date) -> int:
     )
     if not pending:
         return 0
-    return notify_roles(
-        roles_holding("payments.review_shift"),
+    return notify_kind(
         "shift_review_pending",
         dedupe_key=f"shift_review_pending:{day.isoformat()}",
         count=len(pending),
@@ -63,8 +61,7 @@ def _low_stock(day: date) -> int:
     low = pharmacy.low_stock()
     if not low:
         return 0
-    return notify_roles(
-        roles_holding("pharmacy.receive_goods"),
+    return notify_kind(
         "stock_low_summary",
         dedupe_key=f"stock_low_summary:{day.isoformat()}",
         count=len(low),
@@ -87,8 +84,7 @@ def _backup(day: date) -> int:
         hours=ops.BACKUP_STALE_HOURS
     ):
         return 0
-    return notify_roles(
-        roles_holding("ops.view_status"),
+    return notify_kind(
         "backup_stale",
         dedupe_key=f"backup_stale:{day.isoformat()}",
         last_backup_at=finished.isoformat() if finished is not None else None,

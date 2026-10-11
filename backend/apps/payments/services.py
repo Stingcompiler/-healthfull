@@ -50,7 +50,7 @@ from apps.core.permissions import roles_holding
 from apps.core.services import (
     holds_permission,
     next_number,
-    notify_roles,
+    notify_kind,
     require_permission,
     resolve_reason,
 )
@@ -88,7 +88,6 @@ from domain.money import ZERO, require_non_negative, require_positive
 
 __all__ = [
     "HANDOVER_RECEIVER_PERMISSIONS",
-    "MANAGER_ROLES",
     "PatientBalance",
     "ShiftSummary",
     "acting_shift_id",
@@ -123,10 +122,7 @@ __all__ = [
     "spendable_credit",
 ]
 
-#: Roles alerted by money exceptions (FLOW 9, FEATURES 6.8, 7.5).
-MANAGER_ROLES = ["manager", "cashier_supervisor"]
-#: Roles alerted when transfers wait too long for verification (FEATURES 0.13).
-VERIFIER_ROLES = ["cashier_supervisor", "accountant"]
+# Who is alerted by money exceptions and overdue transfers: apps.core.notification_kinds.
 
 
 # --- shifts ----------------------------------------------------------------------------------
@@ -348,8 +344,7 @@ def close_shift(
             ]
         )
         if result.variance != 0:
-            notify_roles(
-                MANAGER_ROLES,
+            notify_kind(
                 "shift_variance",
                 shift_id=locked.pk,
                 shift_number=locked.number,
@@ -1057,8 +1052,7 @@ def reject_transfer(
         )
         for invoice in Invoice.objects.filter(pk__in={r.invoice_id for r in rows}).order_by("id"):
             billing.refresh_settlement(invoice, at=now)
-        notify_roles(
-            MANAGER_ROLES,
+        notify_kind(
             "transfer_rejected",
             payment_id=locked.pk,
             payment_number=locked.number,
@@ -1068,8 +1062,7 @@ def reject_transfer(
             reversal_id=reversal.pk if reversal else None,
         )
         if plan.uncovered > 0:
-            notify_roles(
-                MANAGER_ROLES,
+            notify_kind(
                 "patient_credit_negative",
                 patient_id=locked.patient_id,
                 payment_number=locked.number,
@@ -1098,8 +1091,7 @@ def notify_overdue_transfers(
             overdue.append({"payment_id": pk, "number": number, "amount": str(amount), "age": age})
     if not overdue:
         return 0
-    return notify_roles(
-        VERIFIER_ROLES,
+    return notify_kind(
         "transfers_pending_overdue",
         dedupe_key=dedupe_key,
         days=days,

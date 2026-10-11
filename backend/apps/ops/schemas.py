@@ -101,7 +101,27 @@ OpsWarningCode = Literal[
     "RESTORE_TEST_FAILED",
     "DISK_LOW",
     "MIGRATIONS_PENDING",
+    "INTEGRITY_FAILED",
 ]
+
+
+class IntegrityCheckOut(Schema):
+    name: str
+    ok: bool
+    checked: int
+    problems: int
+    examples: list[str]
+
+
+class IntegrityRunOut(Schema):
+    """The newest recorded ``manage.py integrity_check`` (daily from the maintenance loop)."""
+
+    id: int
+    started_at: datetime
+    finished_at: datetime
+    ok: bool
+    source: Literal["scheduled", "manual"]
+    results: list[IntegrityCheckOut]
 
 
 class SystemStatusOut(Schema):
@@ -118,6 +138,7 @@ class SystemStatusOut(Schema):
     backup_requests: list[BackupRequestOut]
     status_dir_configured: bool
     last_update: UpdateRunOut | None
+    last_integrity_check: IntegrityRunOut | None
     warnings: list[OpsWarningCode]
 
 

@@ -38,6 +38,7 @@ from apps.ops.models import (
     BackupRequest,
     BackupRun,
     CloudStatus,
+    IntegrityRun,
     RestoreTest,
     RunStatus,
     UpdateResult,
@@ -343,6 +344,9 @@ def system_status(*, now: datetime | None = None) -> dict[str, Any]:
         cloud_status=CloudStatus.PENDING, status__in=[RunStatus.SUCCEEDED, RunStatus.PARTIAL]
     ).count()
     latest_update = UpdateRun.objects.order_by("-started_at").first()
+    latest_integrity = IntegrityRun.objects.order_by("-started_at", "-id").first()
+    if latest_integrity is not None and not latest_integrity.ok:
+        warnings.append("INTEGRITY_FAILED")
     return {
         "version": settings.APP_VERSION,
         "time": at,
@@ -361,6 +365,7 @@ def system_status(*, now: datetime | None = None) -> dict[str, Any]:
         ),
         "status_dir_configured": folder is not None,
         "last_update": latest_update,
+        "last_integrity_check": latest_integrity,
         "warnings": warnings,
     }
 

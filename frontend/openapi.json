@@ -10249,6 +10249,90 @@
         "title": "InpatientWardOut",
         "type": "object"
       },
+      "IntegrityCheckOut": {
+        "properties": {
+          "checked": {
+            "title": "Checked",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "problems": {
+            "title": "Problems",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "ok",
+          "checked",
+          "problems",
+          "examples"
+        ],
+        "title": "IntegrityCheckOut",
+        "type": "object"
+      },
+      "IntegrityRunOut": {
+        "description": "The newest recorded ``manage.py integrity_check`` (daily from the maintenance loop).",
+        "properties": {
+          "finished_at": {
+            "format": "date-time",
+            "title": "Finished At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrityCheckOut"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "scheduled",
+              "manual"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "started_at",
+          "finished_at",
+          "ok",
+          "source",
+          "results"
+        ],
+        "title": "IntegrityRunOut",
+        "type": "object"
+      },
       "InvoiceCreateIn": {
         "properties": {
           "line_ids": {
@@ -27196,6 +27280,16 @@
             ],
             "description": "The newest ok or partial backup"
           },
+          "last_integrity_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntegrityRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "last_restore_test": {
             "anyOf": [
               {
@@ -27253,7 +27347,8 @@
                 "RESTORE_TEST_STALE",
                 "RESTORE_TEST_FAILED",
                 "DISK_LOW",
-                "MIGRATIONS_PENDING"
+                "MIGRATIONS_PENDING",
+                "INTEGRITY_FAILED"
               ],
               "type": "string"
             },
@@ -27275,6 +27370,7 @@
           "backup_requests",
           "status_dir_configured",
           "last_update",
+          "last_integrity_check",
           "warnings"
         ],
         "title": "SystemStatusOut",

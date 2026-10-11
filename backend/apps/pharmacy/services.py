@@ -48,11 +48,10 @@ from django.utils import timezone
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus
 from apps.catalog.models import Service, ServiceKind
 from apps.core.models import PartialDispenseRemainder, Policy, ReasonCode, User
-from apps.core.roles import PHARMACIST
 from apps.core.services import (
     holds_permission,
     next_number,
-    notify_roles,
+    notify_kind,
     require_permission,
     resolve_reason,
 )
@@ -1094,8 +1093,7 @@ def _notify_low_stock(
         minimum = int(item.min_stock)
         was, now = before.get(item_id, 0), after.get(item_id, 0)
         if minimum > 0 and not ds.is_low_stock(was, minimum) and ds.is_low_stock(now, minimum):
-            notify_roles(
-                [PHARMACIST],
+            notify_kind(
                 "stock_low",
                 item_id=item_id,
                 store_id=store.pk,

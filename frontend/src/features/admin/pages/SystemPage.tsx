@@ -22,7 +22,7 @@ import { useRequestBackup, useSystemStatus, useUpdateHistory } from "../ops-api"
 import { formatBytes } from "../ops-format";
 import { useCurrentUser } from "@/lib/auth/hooks";
 import { hasPermission } from "@/lib/auth/permissions";
-import type { BackupRequest, OpsRun, SystemStatus, UpdateLog, UpdateRun } from "../ops-types";
+import type { BackupRequest, IntegrityRun, OpsRun, SystemStatus, UpdateLog, UpdateRun } from "../ops-types";
 
 type BadgeVariant = "success" | "warning" | "danger" | "outline" | "info";
 
@@ -262,10 +262,74 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
         </section>
       </div>
 
+      <IntegritySection run={status.last_integrity_check} />
+
       <RunsSection title={t("system.backups")} runs={status.backups} id="sys-backups" kind="backup" />
       <RunsSection title={t("system.restoreTests")} runs={status.restore_tests} id="sys-restores" kind="restore" />
       <RequestsSection requests={status.backup_requests} />
     </div>
+  );
+}
+
+/**
+ * The newest recorded integrity check (daily from the maintenance loop, ADR 0021): when it ran,
+ * whether the books and stock matched, and per check what was looked at and found.
+ */
+function IntegritySection({ run }: { run: IntegrityRun | null }) {
+  const { t } = useTranslation("ops");
+  return (
+    <section
+      className="card-surface flex flex-col gap-3 p-4 md:p-5"
+      aria-labelledby="sys-integrity"
+      data-testid="system-integrity"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="sys-integrity" className="flex items-center gap-2 text-base font-semibold text-fg">
+          <ShieldCheck className="size-4 text-muted" aria-hidden="true" />
+          {t("system.integrity.title")}
+        </h2>
+        {run ? (
+          <Badge variant={run.ok ? "success" : "danger"}>
+            {t(run.ok ? "system.integrity.ok" : "system.integrity.findings")}
+          </Badge>
+        ) : null}
+      </div>
+      {run ? (
+        <>
+          <p className="text-sm text-muted">
+            {t(`system.integrity.source.${run.source}`)} <DateText value={run.finished_at} format="datetime" />
+          </p>
+          <ul className="grid gap-2 text-sm">
+            {run.results.map((check) => (
+              <li key={check.name} className="grid gap-0.5">
+                <span className="flex flex-wrap items-center gap-x-2">
+                  <span className="font-medium text-fg">
+                    {t(`system.integrity.checks.${check.name}`, { defaultValue: check.name })}
+                  </span>
+                  <span className={check.ok ? "text-success-fg" : "text-danger-fg"}>
+                    {check.ok
+                      ? t("system.integrity.checkOk", { checked: check.checked })
+                      : t("system.integrity.checkFailed", { problems: check.problems, checked: check.checked })}
+                  </span>
+                </span>
+                {check.examples.length > 0 ? (
+                  <ul className="grid gap-0.5 ps-4 text-xs text-muted">
+                    {check.examples.map((example, i) => (
+                      <li key={i} dir="ltr" className="text-start break-words">
+                        {example}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          {!run.ok ? <p className="text-sm text-fg">{t("system.integrity.whatToDo")}</p> : null}
+        </>
+      ) : (
+        <p className="text-sm text-muted">{t("system.integrity.never")}</p>
+      )}
+    </section>
   );
 }
 

@@ -10132,6 +10132,46 @@ export interface components {
             /** @description null: beds outside any ward */
             room: components["schemas"]["InpatientRefOut"] | null;
         };
+        /** IntegrityCheckOut */
+        IntegrityCheckOut: {
+            /** Checked */
+            checked: number;
+            /** Examples */
+            examples: string[];
+            /** Name */
+            name: string;
+            /** Ok */
+            ok: boolean;
+            /** Problems */
+            problems: number;
+        };
+        /**
+         * IntegrityRunOut
+         * @description The newest recorded ``manage.py integrity_check`` (daily from the maintenance loop).
+         */
+        IntegrityRunOut: {
+            /**
+             * Finished At
+             * Format: date-time
+             */
+            finished_at: string;
+            /** Id */
+            id: number;
+            /** Ok */
+            ok: boolean;
+            /** Results */
+            results: components["schemas"]["IntegrityCheckOut"][];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "scheduled" | "manual";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+        };
         /** InvoiceCreateIn */
         InvoiceCreateIn: {
             /**
@@ -16353,6 +16393,7 @@ export interface components {
             disks: components["schemas"]["OpsDiskOut"][];
             /** @description The newest ok or partial backup */
             last_backup: components["schemas"]["OpsRunOut"] | null;
+            last_integrity_check: components["schemas"]["IntegrityRunOut"] | null;
             last_restore_test: components["schemas"]["OpsRunOut"] | null;
             last_update: components["schemas"]["UpdateRunOut"] | null;
             migrations: components["schemas"]["OpsMigrationsOut"];
@@ -16370,7 +16411,7 @@ export interface components {
             /** Version */
             version: string;
             /** Warnings */
-            warnings: ("DB_UNAVAILABLE" | "BACKUP_STATUS_UNAVAILABLE" | "BACKUP_STALE" | "BACKUP_FAILED" | "RESTORE_TEST_STALE" | "RESTORE_TEST_FAILED" | "DISK_LOW" | "MIGRATIONS_PENDING")[];
+            warnings: ("DB_UNAVAILABLE" | "BACKUP_STATUS_UNAVAILABLE" | "BACKUP_STALE" | "BACKUP_FAILED" | "RESTORE_TEST_STALE" | "RESTORE_TEST_FAILED" | "DISK_LOW" | "MIGRATIONS_PENDING" | "INTEGRITY_FAILED")[];
         };
         /** TemplateParams */
         TemplateParams: {

@@ -257,3 +257,39 @@ class DataExport(models.Model):
 
     def __str__(self) -> str:
         return f"data export {self.pk} by {self.requested_by_id}"
+
+
+class IntegrityRun(models.Model):
+    """One recorded run of ``manage.py integrity_check`` (ADR 0021).
+
+    The compose ``maintenance`` loop records one a day (``--daily``); an operator may record
+    one by hand (``--record``). ``results`` keeps, per check, whether it passed, how much it
+    looked at, how many problems it found and the first few of them. A run with findings
+    alerts the holders of ``ops.view_status`` (``integrity_failed``); the status page shows
+    the newest run. Nothing is ever repaired.
+    """
+
+    started_at = models.DateTimeField()
+    finished_at = models.DateTimeField()
+    ok = models.BooleanField()
+    #: ``scheduled`` (the maintenance loop) or ``manual``.
+    source = models.CharField(max_length=20, default="scheduled")
+    database = models.CharField(max_length=100, blank=True)
+    #: ``[{name, ok, checked, problems, examples}]`` in check order.
+    results = models.JSONField(default=list)
+
+    class Meta:
+        verbose_name = "integrity run"
+        ordering: ClassVar[list[str]] = ["-started_at", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(source__in=["scheduled", "manual"]), name="ops_integrity_source_valid"
+            ),
+            models.CheckConstraint(
+                condition=Q(finished_at__gte=F("started_at")),
+                name="ops_integrity_finish_after_start",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"integrity run {self.pk} ({'ok' if self.ok else 'findings'})"
