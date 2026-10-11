@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import { AlertCard } from "@/components/AlertCard";
-import { Form, PasswordField, SelectField, TextareaField, TextField } from "@/components/form";
+import { Form, SelectField, TextareaField } from "@/components/form";
+import { SecondApproverFields } from "@/components/SecondApproverFields";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -112,27 +113,14 @@ function CancelForm({ result, onOpenChange }: { result: LabResult; onOpenChange:
         />
         <TextareaField control={form.control} name="note" label={t("common:reason.note")} rows={2} maxLength={500} />
         {billed ? (
-          <fieldset className="grid gap-3 rounded-control border border-border p-3" data-testid="cancel-approver">
-            <legend className="px-1 text-sm font-medium">{t("cancel.approverTitle")}</legend>
-            <p className="text-xs text-muted">{needsApprover ? t("cancel.approverHint") : t("cancel.approverSelf")}</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <TextField
-                control={form.control}
-                name="username"
-                label={t("cancel.username")}
-                autoComplete="off"
-                dir="ltr"
-                required={needsApprover}
-              />
-              <PasswordField
-                control={form.control}
-                name="password"
-                label={t("cancel.password")}
-                autoComplete="new-password"
-                required={needsApprover}
-              />
-            </div>
-          </fieldset>
+          <SecondApproverFields
+            control={form.control}
+            usernameName="username"
+            passwordName="password"
+            required={needsApprover}
+            hint={needsApprover ? t("cancel.approverHint") : t("cancel.approverSelf")}
+            testId="cancel-approver"
+          />
         ) : null}
         {billed ? <p className="text-xs text-muted">{t("cancel.refundNote")}</p> : null}
         {error ? (

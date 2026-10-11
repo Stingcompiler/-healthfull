@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupSegment } from "@/components/ui/radio-group";
 import { isApiError } from "@/lib/api/errors";
+import { SecondApproverFields } from "@/components/SecondApproverFields";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { useShortcut } from "@/lib/hooks/use-shortcut";
@@ -43,7 +44,6 @@ import {
 } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import { PAYMENT_METHODS, REFERENCE_METHODS, type Payment, type PaymentMethod, type VisitBilling } from "../types";
-import { ApproverFields } from "./ApproverFields";
 
 export const PAY_SHORTCUT = "mod+enter";
 export const AMOUNT_SHORTCUT = "f9";
@@ -436,13 +436,14 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
                   required
                 />
                 <TextareaField control={control} name="overrideNote" label={t("common:reason.note")} rows={2} />
-                <ApproverFields
+                <SecondApproverFields
                   control={control}
                   enabledName="withApprover"
                   usernameName="username"
                   passwordName="password"
                   enabled={withApprover}
-                  description={t("payment.override.approver")}
+                  hint={t("payment.override.approver")}
+                  testId="override-approver"
                 />
               </fieldset>
             ) : null}

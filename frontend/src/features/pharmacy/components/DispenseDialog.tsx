@@ -22,18 +22,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ApproverFieldset } from "@/components/SecondApproverFields";
+import { approverPayload, NO_APPROVER, type ApproverState } from "@/lib/approver";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import { scanBarcode, useDispense, useDispenseVisit, usePharmacyOptions } from "../api";
-import { approverPayload, NO_APPROVER, type ApproverState } from "../lib/approver";
 import { hasPickable, isPickable, overridePicks, pickedTotal } from "../lib/batches";
 import { REMAINDERS } from "../lib/constants";
 import { parseWhole } from "../lib/qty";
 import { useNames } from "../lib/use-names";
 import type { Dispense, DispenseLineIn, DispenseLineOptions } from "../types";
-import { ApproverInputs, ErrorAlert, ExpiryBadge, LabeledField, QtyText } from "./common";
+import { ErrorAlert, ExpiryBadge, LabeledField, QtyText } from "./common";
 
 type Remainder = "defer" | "refund";
 
@@ -294,10 +295,10 @@ function DispenseDialogOpen({
                 })}
               </ul>
               {needsApprover ? (
-                <ApproverInputs
+                <ApproverFieldset
                   value={approver}
                   onChange={setApprover}
-                  description={t("dispense.approverDescription")}
+                  hint={t("dispense.approverDescription")}
                   testId="dispense-approver"
                 />
               ) : null}

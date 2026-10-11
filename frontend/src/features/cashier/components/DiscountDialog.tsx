@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SecondApproverFields } from "@/components/SecondApproverFields";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { vmsg } from "@/lib/validation";
 
@@ -23,7 +24,6 @@ import { useDiscountInvoice, useDiscountLine, useReasons } from "../api";
 import { isAmount, normalizeAmountInput } from "../lib/money";
 import { useNames } from "../lib/use-names";
 import type { Invoice, InvoiceLine } from "../types";
-import { ApproverFields } from "./ApproverFields";
 
 const schema = z
   .object({
@@ -155,12 +155,13 @@ function DiscountDialogOpen({
               required
             />
             <TextareaField control={control} name="note" label={t("common:reason.note")} rows={2} maxLength={500} />
-            <ApproverFields
+            <SecondApproverFields
               control={control}
               enabledName="withApprover"
               usernameName="username"
               passwordName="password"
               enabled={withApprover}
+              hint={t("approver.description")}
             />
             {error ? (
               <AlertCard variant="danger" title={t("errors:title")} live>

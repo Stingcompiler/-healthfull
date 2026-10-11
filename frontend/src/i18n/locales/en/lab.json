@@ -181,11 +181,8 @@
   "cancel": {
     "title": "Test cannot be performed",
     "description": "The test is cancelled with a reason and leaves the work list. This cannot be undone.",
-    "approverTitle": "Billing approval",
     "approverHint": "This test is billed. A cashier supervisor or accountant approves the credit with their username and password.",
     "approverSelf": "This test is billed; you may approve the credit yourself, or enter another approver.",
-    "username": "Approver's username",
-    "password": "Approver's password",
     "refundNote": "The patient's money becomes credit and a refund request opens at the cashier.",
     "confirm": "Cancel the test"
   },

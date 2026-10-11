@@ -17,10 +17,7 @@
     "positiveAmount": "أدخل مبلغاً أكبر من صفر"
   },
   "approver": {
-    "toggle": "يعتمد المشرف",
-    "description": "فوق حدّك يكتب المشرف اسم المستخدم وكلمة المرور الخاصة به هنا.",
-    "username": "اسم مستخدم المشرف",
-    "password": "كلمة مرور المشرف"
+    "description": "فوق حدّك يكتب المشرف اسم المستخدم وكلمة المرور الخاصة به هنا."
   },
   "shortcuts": {
     "button": "الاختصارات",
@@ -297,7 +294,7 @@
     "ageDays_many": "{{count}} يوماً",
     "ageDays_other": "{{count}} يوم",
     "confirmedTitle": "تحويلات مؤكدة",
-    "discountsTitle": "الخصومات حسب المعتمد",
+    "discountsTitle": "الخصومات حسب المعتمِد",
     "cancellationsTitle": "الإلغاءات والإشعارات الدائنة",
     "creditNotes": "الإشعارات الدائنة (حصة المريض)",
     "creditFromCancellations": "رصيد ناتج عن الإلغاءات",

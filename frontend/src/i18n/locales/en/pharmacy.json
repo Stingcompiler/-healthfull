@@ -32,11 +32,6 @@
     "unitCode": "Latin letters, digits, - and _ only",
     "factor": "A whole number of 2 or more"
   },
-  "approver": {
-    "toggle": "A supervisor approves now",
-    "username": "Supervisor username",
-    "password": "Supervisor password"
-  },
   "status": {
     "receipt": {
       "draft": "Draft",

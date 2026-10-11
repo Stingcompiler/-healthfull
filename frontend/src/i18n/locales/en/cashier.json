@@ -17,10 +17,7 @@
     "positiveAmount": "Enter an amount above zero"
   },
   "approver": {
-    "toggle": "A supervisor approves",
-    "description": "Above your limit a supervisor types their own username and password here.",
-    "username": "Supervisor username",
-    "password": "Supervisor password"
+    "description": "Above your limit a supervisor types their own username and password here."
   },
   "shortcuts": {
     "button": "Shortcuts",

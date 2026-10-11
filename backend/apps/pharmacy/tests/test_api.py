@@ -708,12 +708,14 @@ def test_transfer_send_receive_short_with_an_approver_and_cancel(ph: Ph) -> None
     assert _balance(batch, ph.main) == 8
     (line,) = sent["lines"]
     short = {"lines": [{"line_id": line["id"], "qty_base": 10}], "shortage_reason": "LOST"}
-    # The pharmacist does not approve a shortage; the manager does at the counter.
-    error(
+    # The pharmacist does not approve a shortage; the manager does at the counter. Without an
+    # approver the answer names what is missing (409), never a bare 403 (ADR 0022).
+    body = error(
         ph.api.post(f"/api/pharmacy/transfers/{transfer['id']}/receive", short),
-        403,
-        "PERMISSION_DENIED",
+        409,
+        "SECOND_APPROVER_REQUIRED",
     )
+    assert body["details"]["permission"] == "pharmacy.approve_adjustment"
     received = ok(
         ph.api.post(
             f"/api/pharmacy/transfers/{transfer['id']}/receive",
