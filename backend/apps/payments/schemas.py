@@ -29,6 +29,41 @@ HandoverDestinationCode = Literal["next_shift", "safe", "bank_deposit", "supervi
 ReviewOutcomeCode = Literal["approved", "flagged"]
 
 
+# --- banks (administration, FEATURES 6.1) ----------------------------------------------------
+
+#: A bank's code: upper-case letters, digits, "-" and "_", starting with a letter.
+BANK_CODE = r"^[A-Z][A-Z0-9_-]{0,19}$"
+
+
+class BankOut(Schema):
+    id: int
+    code: str
+    name_ar: str
+    name_en: str
+    active: bool
+    sort_order: int
+
+
+class BankIn(Schema):
+    code: str = Field(..., pattern=BANK_CODE)
+    name_ar: str = Field(..., min_length=1, max_length=150)
+    name_en: str = Field(..., min_length=1, max_length=150)
+    active: bool = True
+    sort_order: int = Field(0, ge=0, le=32767)
+
+
+class BankPatch(Schema):
+    """Only the fields sent change; the code never does."""
+
+    name_ar: str | None = Field(None, min_length=1, max_length=150)
+    name_en: str | None = Field(None, min_length=1, max_length=150)
+    active: bool | None = None
+    sort_order: int | None = Field(None, ge=0, le=32767)
+
+    def changes(self) -> dict[str, object]:
+        return {k: v for k, v in self.model_dump(exclude_unset=True).items() if v is not None}
+
+
 # --- shifts ----------------------------------------------------------------------------------
 
 

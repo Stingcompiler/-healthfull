@@ -3,6 +3,7 @@ import { createRoute, type AnyRoute } from "@tanstack/react-router";
 import { AdminLayout } from "./components/AdminLayout";
 import { AdminIndexPage } from "./pages/AdminIndexPage";
 import { AuditPage } from "./pages/AuditPage";
+import { BanksPage } from "./pages/BanksPage";
 import { CatalogPage } from "./pages/CatalogPage";
 import { DepartmentsPage } from "./pages/DepartmentsPage";
 import { ExportPage } from "./pages/ExportPage";
@@ -40,6 +41,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     component: PriceListPage,
   });
   const payers = createRoute({ getParentRoute: () => admin, path: "/payers", component: PayersPage });
+  const banks = createRoute({ getParentRoute: () => admin, path: "/banks", component: BanksPage });
   const payer = createRoute({ getParentRoute: () => admin, path: "/payers/$payerId", component: PayerPage });
   const imports = createRoute({ getParentRoute: () => admin, path: "/imports", component: ImportsPage });
   const system = createRoute({ getParentRoute: () => admin, path: "/system", component: SystemPage });
@@ -58,6 +60,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
       priceLists,
       priceList,
       payers,
+      banks,
       payer,
       imports,
       system,

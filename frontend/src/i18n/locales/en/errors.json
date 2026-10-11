@@ -346,6 +346,7 @@
   "LOGO_TOO_LARGE": "The logo must be 1 MB or smaller.",
   "MATRIX_CHANGE_CONFLICT": "The same permission is both granted and removed for a role.",
   "PAYER_CODE_TAKEN": "This payer code is already in use.",
+  "BANK_CODE_TAKEN": "This bank code is already in use.",
   "PAYER_CONTRACT_DATES": "The contract cannot end before it starts.",
   "PAYER_KIND_UNKNOWN": "Unknown payer type.",
   "PERMISSION_PROTECTED": "This permission cannot be removed from this role.",

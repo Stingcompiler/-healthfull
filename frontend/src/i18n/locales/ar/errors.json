@@ -346,6 +346,7 @@
   "LOGO_TOO_LARGE": "حجم الشعار يجب ألا يتجاوز 1 ميغابايت.",
   "MATRIX_CHANGE_CONFLICT": "الصلاحية نفسها مُنحت وسُحبت لنفس الدور.",
   "PAYER_CODE_TAKEN": "رمز الجهة هذا مستخدم من قبل.",
+  "BANK_CODE_TAKEN": "رمز البنك هذا مستخدم من قبل.",
   "PAYER_CONTRACT_DATES": "لا يمكن أن ينتهي العقد قبل بدايته.",
   "PAYER_KIND_UNKNOWN": "نوع جهة غير معروف.",
   "PERMISSION_PROTECTED": "لا يمكن سحب هذه الصلاحية من هذا الدور.",

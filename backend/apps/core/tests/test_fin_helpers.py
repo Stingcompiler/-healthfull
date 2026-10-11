@@ -60,7 +60,7 @@ def test_permission_helpers() -> None:
     with pytest.raises(PermissionRequired) as exc:
         core.require_permission(cashier, "payments.confirm_transfer")
     assert exc.value.permission == "payments.confirm_transfer"
-    assert core.holds_permission(fin.staff(superuser=True), "ledger.manage_accounts")
+    assert core.holds_permission(fin.staff(superuser=True), "core.manage_roles")
 
 
 def test_notifications_reach_each_active_role_holder_once() -> None:
