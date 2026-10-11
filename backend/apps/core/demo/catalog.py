@@ -418,6 +418,8 @@ def _pharmacy(cat: Catalog, actor: User, on: date, rng: random.Random) -> None:
         )
         for s in data.SUPPLIES
     ]
+    arabic = {d.service_code: d.name_ar for d in data.DRUGS}
+    arabic.update({sp.service_code: sp.name_ar for sp in data.SUPPLIES})
     plans: dict[str, StockPlan] = {}
     for code, generic, strength, unit, form, pack, price, pop, cls, storage in specs:
         plan = _stock_plan(code[4:], unit, pop, price, rng)
@@ -438,6 +440,7 @@ def _pharmacy(cat: Catalog, actor: User, on: date, rng: random.Random) -> None:
             item = pharmacy_services.create_item(
                 service=cat.services[code],
                 generic_name=generic,
+                generic_name_ar=arabic[code],
                 base_unit_code=unit,
                 base_unit_name_ar=unit_ar,
                 base_unit_name_en=unit_en,

@@ -223,6 +223,7 @@ STAFF: tuple[StaffUser, ...] = (
     StaffUser("accountant", "accountant", "طارق الأمين", "Tarig Alamin"),
     StaffUser("manager", "manager", "نادية محمود", "Nadia Mahmoud"),
     StaffUser("admin", "admin", "مدير النظام", "System Admin"),
+    StaffUser("display", "display", "شاشة الانتظار", "Waiting-room screen"),
 )
 
 # --- services ----------------------------------------------------------------------------------

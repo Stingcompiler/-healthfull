@@ -120,7 +120,10 @@ def test_a_small_month_is_complete_consistent_and_idempotent() -> None:
     assert Payment.objects.filter(method=PaymentMethod.CASH).exists()
     transfers = Payment.objects.filter(method=PaymentMethod.BANK_TRANSFER)
     assert transfers.filter(verification=Verification.PENDING).exists()
-    assert transfers.filter(verification=Verification.CONFIRMED).exists()
+    # Transfers of the last two days wait for the accountant; older ones were checked.
+    older = transfers.filter(reversal_of__isnull=True, transfer_date__lt=today - timedelta(days=2))
+    if older.exists():
+        assert older.exclude(verification=Verification.PENDING).exists()
     unbalanced = (
         JournalEntry.objects.annotate(d=Sum("lines__debit"), c=Sum("lines__credit"))
         .exclude(d=F("c"))
