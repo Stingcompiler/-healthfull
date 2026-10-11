@@ -66397,6 +66397,94 @@
         ]
       }
     },
+    "/api/visits/{visit_id}/close": {
+      "post": {
+        "description": "No new orders, notes or vitals afterwards; ordered lines are still invoiced, paid and performed. 409 VISIT_NOT_OPEN, VISIT_IN_QUEUE (finish the consultation or mark the patient absent first), VISIT_ADMITTED (the discharge closes it).",
+        "operationId": "visits_close_visit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Close a visit (the doctor ends its clinical record)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
     "/api/visits/{visit_id}/timeline": {
       "get": {
         "description": "Orders, results, dispenses, admission and closing for every reader; invoices, payments, credit notes and refunds only for holders of billing.view.",

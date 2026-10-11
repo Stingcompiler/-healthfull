@@ -165,6 +165,22 @@ def cancel_visit(request: HttpRequest, visit_id: int, payload: VisitCancelIn) ->
     )
 
 
+@visits_router.post(
+    "/{int:visit_id}/close",
+    response={200: VisitDetailOut, **_WRITE},
+    operation_id="visits_close_visit",
+    summary="Close a visit (the doctor ends its clinical record)",
+    description=(
+        "No new orders, notes or vitals afterwards; ordered lines are still invoiced, paid and "
+        "performed. 409 VISIT_NOT_OPEN, VISIT_IN_QUEUE (finish the consultation or mark the "
+        "patient absent first), VISIT_ADMITTED (the discharge closes it)."
+    ),
+)
+@require_perm("visits.close")
+def close_visit(request: HttpRequest, visit_id: int) -> Any:
+    return services.close_visit_view(get_object_or_404(Visit, pk=visit_id), actor=_actor(request))
+
+
 @visits_router.get(
     "/{int:visit_id}/timeline",
     response={200: list[TimelineOut], **_READ},

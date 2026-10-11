@@ -135,6 +135,8 @@
   "AUTHORIZATION_REVOKED": "This authorization has been withdrawn.",
   "AUTHORIZATION_IN_USE": "Unpaid work under this authorization is already in progress, so it cannot be withdrawn.",
   "VISIT_NOT_OPEN": "This visit is closed or cancelled, so this action is not possible.",
+  "VISIT_IN_QUEUE": "The patient is still in the clinic queue. Finish the consultation or mark the patient absent, then close the visit.",
+  "VISIT_ADMITTED": "The patient is admitted. The visit closes at discharge.",
   "VISIT_HAS_PERFORMED_WORK": "Services were already performed in this visit, so it cannot be cancelled. Correct the charges with a credit note instead.",
   "INVALID_VISIT_TYPE": "Choose a valid visit type.",
   "PATIENT_INACTIVE": "This patient file is inactive.",
