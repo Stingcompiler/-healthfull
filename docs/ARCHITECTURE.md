@@ -71,7 +71,7 @@ Several checkouts (git worktrees) may run at once. Never hardcode DB names or po
 | `reports` | no models; read-only query services |
 | `portal` | PortalAccessCode, portal auth |
 | `imports` | ImportJob, ImportRow (Excel preview/confirm) |
-| `ops` | BackupRun, RestoreTest, UpdateRun (written by `infra/update.sh` through `manage.py record_update`), BackupRequest, DataExport, health checks, status page, `manage.py integrity_check` (`apps/ops/integrity.py`) |
+| `ops` | BackupRun, RestoreTest, UpdateRun (written by `infra/update.sh` through `manage.py record_update`), BackupRequest, DataExport, health checks, status page, `manage.py integrity_check` (`apps/ops/integrity.py`; daily runs recorded in IntegrityRun, ADR 0021) |
 
 ### 4.2 Layering (strict)
 
@@ -188,12 +188,12 @@ Postings (each a balanced JournalEntry with `source_type`, `source_id` and, when
   - `truncate_guard` on the 22 money, claim, service-line, stock and lab result tables: `TRUNCATE` is refused unless the session role is a member of the table owner.
   - `pgtrigger`'s ignore switch is replaced after every `migrate` by a function that never ignores a trigger.
 - Database roles: production runs the application as a non-owner role with DML grants only; the owner runs migrations. The table owner or a superuser can still truncate or disable triggers, so the guards hold only under that split (ADR 0006 (m); roles set up by `infra/db/`).
-- Verification: `manage.py integrity_check` (read-only snapshot, runs as the app role) re-derives what the guards protect: trial balance zero and every entry balanced, AR_PATIENT per invoice = document position, AR_PAYER per payer = claims documents, shift CASH = expected cash (zero once closed), stock never negative and balances = moves, no orphan allocations. The restore drill (`infra/backup/restore-drill.sh`) runs it on every rebuilt database (ADR 0020).
+- Verification: `manage.py integrity_check` (read-only snapshot, runs as the app role) re-derives what the guards protect: trial balance zero and every entry balanced, AR_PATIENT per invoice = document position, AR_PAYER per payer = claims documents, shift CASH = expected cash (zero once closed), stock never negative and balances = moves, no orphan allocations. The restore drill (`infra/backup/restore-drill.sh`) runs it on every rebuilt database (ADR 0020). The `maintenance` loop runs it daily (`--daily`), records the result for the status page and alerts administrators and managers on findings (ADR 0021).
 - `django-pghistory` tracks every mutable model with context (user id, request id, reason). Services set context via `pghistory.context(user=..., reason=...)`. Middleware attaches the request user.
 
 ### 4.10 Permissions
 
-- Permission codes are strings `"<app>.<action>"` registered in `apps/core/permissions.py` with default roles. `RolePermission` rows override defaults (editable matrix).
+- Permission codes are strings `"<app>.<action>"` registered in `apps/core/permissions.py` with default roles. Notification kinds, their recipients and the screens they link to (each with its permission) are one table, `apps/core/notification_kinds.py`; every default recipient may open one of its kind's screens (ADR 0021). `RolePermission` rows override defaults (editable matrix).
 - Roles: `receptionist`, `doctor`, `cashier`, `cashier_supervisor`, `pharmacist`, `lab_tech`, `lab_supervisor`, `nurse`, `accountant`, `manager`, `admin`, and `display` (the waiting-room kiosk account: only `visits.view_display`, ADR 0019). A user may hold several roles.
 - Routers enforce with `@require_perm("billing.approve_invoice")` (403 `PERMISSION_DENIED`). `GET /api/auth/me` returns the user's roles and effective permission codes; the frontend uses them only to hide UI, never as security.
 - Doctors never get billing permissions by default.

@@ -178,6 +178,28 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
     migration plan, migrations applied, database restored, pre-update dump, reason, log tail,
     optional `--release-notes`) through `manage.py record_update`; an interrupted run is
     recorded as failed by the next one.
+- Phase 8 polish (`feat/8-polish`, ADRs 0021, 0022):
+  - Navigation reach per role with permission-filtered shortcuts (`NavItem.unless`): the
+    cashier's walk-in sale, reception's bed board and approved lab results (new
+    `/lab/approved-results`, `GET /api/lab/approved`), the nurse's sample collection (new
+    `/lab/collect`, `GET /api/lab/collection`) and allergy editing from the nursing chart; the
+    clinic entry is the doctor's (`clinical.write_note`).
+  - The doctor closes a visit («ختم الزيارة», `POST /api/visits/{id}/close`, `visits.close`):
+    only out of the queue (`VISIT_IN_QUEUE`) and not admitted (`VISIT_ADMITTED`).
+  - Banks screen at `/administration/banks` (`payments.manage_banks`; list, add, rename,
+    reorder, deactivate).
+  - Notification kinds in one table (`apps/core/notification_kinds.py`) with recipients and
+    permitted links; the bell opens only screens the reader may open.
+  - Daily `integrity_check --daily` from the maintenance loop, recorded in `ops.IntegrityRun`,
+    `integrity_failed` alert to administrators and managers, newest run and `INTEGRITY_FAILED`
+    on the status page.
+  - The update history shows every `UpdateRun` column (`/api/ops/updates`, status page).
+  - One shared approver field set for every desk approval (`SecondApproverFields`,
+    `ApproverFieldset`).
+
+### Removed
+- Unused permission codes `ledger.view` and `ledger.manage_accounts` (core migration 0016 deletes
+  their matrix rows).
 
 ### Security
 - Imports refuse formula cells and text starting with `=`, check the xlsx zip signature and
@@ -246,6 +268,13 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   before the swap. Role passwords: 16-128 characters of `A-Z a-z 0-9 . _ - ~`.
 
 ### Fixed
+- Phase 8 polish: the dispense override never offers an expired batch; the manager's
+  "transfer rejected" link opens the patient file instead of a refused queue; error and help
+  texts name every role that can act (shift review, refund approval, duplicate override,
+  handovers, portal codes); `claims.shortfall.description` no longer calls the recorder the
+  approver; every import column has a label; the `display` role is held alone
+  (`DEVICE_ROLE_ALONE`); a short transfer receipt without an allowed approver answers
+  `SECOND_APPROVER_REQUIRED` / `APPROVER_NOT_PERMITTED` instead of a bare 403.
 - Rejecting a transfer no longer uses pending transfer money: a confirmed bounce takes back
   every credit-funded allocation that confirmed credit cannot cover, and rejecting a pending
   transfer recovers nothing and reports nothing uncovered (ADR 0015).

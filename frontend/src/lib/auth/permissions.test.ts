@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { hasPermission, isKnownRole } from "./permissions";
+import { hasPermission, isKnownRole, mixesDeviceRole, toggleRole } from "./permissions";
 
 describe("hasPermission", () => {
   const cashier = { roles: ["cashier"], permissions: ["billing.approve_invoice", "payments.take_payment"] };
@@ -33,5 +33,27 @@ describe("hasPermission", () => {
   it("knows the eleven roles", () => {
     expect(isKnownRole("cashier_supervisor")).toBe(true);
     expect(isKnownRole("superhero")).toBe(false);
+  });
+});
+
+describe("the display role is held alone (ADR 0019)", () => {
+  it("ticking the display role clears every person's role", () => {
+    expect(toggleRole(["nurse", "doctor"], "display", true)).toEqual(["display"]);
+  });
+
+  it("ticking a person's role clears the display role", () => {
+    expect(toggleRole(["display"], "receptionist", true)).toEqual(["receptionist"]);
+  });
+
+  it("person roles combine and untick normally, in the roles' order", () => {
+    expect(toggleRole(["nurse"], "doctor", true)).toEqual(["doctor", "nurse"]);
+    expect(toggleRole(["doctor", "nurse"], "doctor", false)).toEqual(["nurse"]);
+    expect(toggleRole(["display"], "display", false)).toEqual([]);
+  });
+
+  it("detects a mixed set", () => {
+    expect(mixesDeviceRole(["display", "nurse"])).toBe(true);
+    expect(mixesDeviceRole(["display"])).toBe(false);
+    expect(mixesDeviceRole(["nurse", "doctor"])).toBe(false);
   });
 });

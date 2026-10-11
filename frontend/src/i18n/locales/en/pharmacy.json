@@ -32,11 +32,6 @@
     "unitCode": "Latin letters, digits, - and _ only",
     "factor": "A whole number of 2 or more"
   },
-  "approver": {
-    "toggle": "A supervisor approves now",
-    "username": "Supervisor username",
-    "password": "Supervisor password"
-  },
   "status": {
     "receipt": {
       "draft": "Draft",
@@ -143,6 +138,7 @@
     "fefo": "Expires first",
     "suggestedTake": "Take {{qty}}",
     "pickLabel": "Units from batch {{batch}}",
+    "expiredNotDispensed": "Expired: never dispensed",
     "overrideReason": "Reason for another batch",
     "overrideNote": "Note",
     "partialTitle": "{{rest}} units will not be given now",
@@ -150,7 +146,7 @@
       "defer": "Keep the rest open",
       "deferHint": "Dispense it later, when stock arrives.",
       "refund": "Cancel and refund the rest",
-      "refundHint": "A credit note and a refund request are opened; a cashier supervisor approves."
+      "refundHint": "A credit note and a refund request are opened; a cashier supervisor or an accountant approves."
     },
     "approverDescription": "Refunding the rest needs a cashier supervisor or accountant.",
     "note": "Note",
@@ -295,10 +291,10 @@
   },
   "adjustments": {
     "title": "Stock adjustments",
-    "description": "Corrections for damage, expiry or loss, approved by a supervisor.",
+    "description": "Corrections for damage, expiry or loss, approved by a manager.",
     "new": "New adjustment",
     "newTitle": "Request a stock adjustment",
-    "newDescription": "Stock changes only when a supervisor approves, and never goes below zero.",
+    "newDescription": "Stock changes only when a manager approves, and never goes below zero.",
     "empty": "No adjustments",
     "approve": "Approve",
     "reject": "Reject",
@@ -384,7 +380,7 @@
     "sent": "sent {{qty}}",
     "arrived": "Arrived",
     "arrivedInvalid": "0 to {{max}}",
-    "shortage": "Less arrived than was sent: say why. A supervisor approves.",
+    "shortage": "Less arrived than was sent: say why. A manager approves.",
     "shortageReason": "Reason",
     "shortageNote": "Note",
     "approverDescription": "A shortage needs a holder of the adjustment approval.",

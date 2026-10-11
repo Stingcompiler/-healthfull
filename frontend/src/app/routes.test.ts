@@ -56,8 +56,10 @@ describe("route tree", () => {
 describe("visibleNav", () => {
   const ids = (roles: string[], permissions: string[]) => visibleNav({ roles, permissions }).map((n) => n.id);
 
-  it("shows everything to the admin role", () => {
-    expect(ids(["admin"], [])).toEqual(ALL_NAV.map((n) => n.id));
+  it("shows every module to the admin role (role shortcuts stay inside their modules)", () => {
+    // An `unless` entry is a shortcut for a role without the module (a cashier's walk-in sale);
+    // the admin holds every code, so reaches those screens through the modules.
+    expect(ids(["admin"], [])).toEqual(ALL_NAV.filter((n) => n.unless === undefined).map((n) => n.id));
   });
 
   it("filters by permission for other roles", () => {

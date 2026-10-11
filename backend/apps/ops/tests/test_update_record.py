@@ -183,3 +183,37 @@ def test_recorded_runs_show_in_the_update_history(make_user: Any, api_client: Ap
     assert api_client.login("opsadmin").status_code == 200
     body = api_client.get("/api/ops/updates").json()
     assert [(r["version"], r["result"]) for r in body["items"]] == [("v2.0.0", "rolled_back")]
+
+
+def test_the_history_shows_what_the_update_script_recorded(
+    make_user: Any, api_client: ApiClient, monkeypatch: Any
+) -> None:
+    """Every column update.sh writes reaches the status page (ADR 0020 left this open)."""
+    make_user("opsadmin2", roles=["admin"])
+    record(
+        "--result",
+        "rolled_back",
+        "--finished-at",
+        END,
+        "--migrations-applied",
+        "--db-restored",
+        "--backup",
+        "/backups/dumps/hospital-20261010T120000Z-pre-update-v2.0.0.dump",
+        "--detail",
+        "v2.0.0 did not become healthy (during 6/7 health check)",
+        "--stdin",
+        stdin="@@plan\nPlanned operations:\nops.0005_x\n@@log\nline one\nline two\n",
+        monkeypatch=monkeypatch,
+    )
+    assert api_client.login("opsadmin2").status_code == 200
+    item = api_client.get("/api/ops/updates").json()["items"][0]
+    assert item["run_key"] == "20261010T120000Z-v2.0.0"
+    assert item["migration_plan"] == "Planned operations:\nops.0005_x"
+    assert item["migrations_applied"] is True
+    assert item["db_restored"] is True
+    # The file name only: the server's folders are not shown on a screen.
+    assert item["backup_file"] == "hospital-20261010T120000Z-pre-update-v2.0.0.dump"
+    assert item["detail"] == "v2.0.0 did not become healthy (during 6/7 health check)"
+    assert item["log"] == "line one\nline two"
+    status = api_client.get("/api/ops/status").json()
+    assert status["last_update"]["db_restored"] is True

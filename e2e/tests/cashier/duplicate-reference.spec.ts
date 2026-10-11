@@ -47,13 +47,13 @@ test.describe("@cashier duplicate reference", () => {
 
     // A wrong supervisor password is refused without ending the cashier's session.
     await choose(page, tr("en", "reason.code"), "Duplicate reference verified");
-    await override.getByRole("switch", { name: t("cashier:approver.toggle") }).click();
-    await override.getByLabel(t("cashier:approver.username")).fill("cashsup");
-    await override.getByLabel(t("cashier:approver.password")).fill("not-the-password");
+    await override.getByRole("switch", { name: t("approver.toggle") }).click();
+    await override.getByLabel(t("approver.username")).fill("cashsup");
+    await override.getByLabel(t("approver.password")).fill("not-the-password");
     await panel.getByTestId("take-payment").click();
     await expect(panel.getByRole("alert")).toContainText(tr("en", "errors:APPROVER_INVALID"));
 
-    await override.getByLabel(t("cashier:approver.password")).fill(E2E_PASSWORD);
+    await override.getByLabel(t("approver.password")).fill(E2E_PASSWORD);
     await panel.getByTestId("take-payment").click();
     await expect(panel.getByTestId("payment-done").locator('[data-status="pending_verification"]')).toBeVisible();
 

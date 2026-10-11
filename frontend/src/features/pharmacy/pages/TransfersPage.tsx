@@ -21,6 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApproverFieldset } from "@/components/SecondApproverFields";
+import { approverPayload, NO_APPROVER, type ApproverState } from "@/lib/approver";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { formatNumber } from "@/lib/format";
@@ -34,11 +36,10 @@ import {
   useSendTransfer,
   useTransfers,
 } from "../api";
-import { ApproverInputs, DocStatusBadge, ErrorAlert, LabeledField, StoreSelect } from "../components/common";
+import { DocStatusBadge, ErrorAlert, LabeledField, StoreSelect } from "../components/common";
 import { NoteDialog } from "../components/NoteDialog";
 import { BatchPicker } from "../components/pickers";
 import { PharmacyNav } from "../components/PharmacyNav";
-import { approverPayload, NO_APPROVER, type ApproverState } from "../lib/approver";
 import { parseWhole } from "../lib/qty";
 import { useNames } from "../lib/use-names";
 import type { StockTransfer, StoreBatch, TransferStatus } from "../types";
@@ -569,11 +570,7 @@ function ReceiveDialogOpen({ transfer, onClose }: { transfer: StockTransfer; onC
                   )}
                 </LabeledField>
               </div>
-              <ApproverInputs
-                value={approver}
-                onChange={setApprover}
-                description={t("transfers.approverDescription")}
-              />
+              <ApproverFieldset value={approver} onChange={setApprover} hint={t("transfers.approverDescription")} />
             </div>
           ) : null}
           <ErrorAlert message={error} />

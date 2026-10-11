@@ -1,5 +1,7 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { BedDouble, ClipboardList, HeartPulse } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { BedDouble, ClipboardList, HeartPulse, ShieldAlert } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
@@ -10,9 +12,11 @@ import { PatientCard } from "@/components/PatientCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AllergyManager } from "@/features/clinic/components/AllergyManager";
+import { usePermission } from "@/lib/auth/hooks";
 import { useLanguage } from "@/lib/i18n-hooks";
 
-import { useNursingChart } from "../api";
+import { nursingKeys, useNursingChart } from "../api";
 import { NursingNotesPanel } from "../components/NursingNotesPanel";
 import { QueryError } from "../components/QueryError";
 import { VitalsPanel } from "../components/VitalsPanel";
@@ -69,6 +73,9 @@ function ChartBody({ data }: { data: NursingChart }) {
   const language = useLanguage();
   const open = data.visit.status === "open";
   const cancelled = data.visit.status === "cancelled";
+  const canEditAllergies = usePermission("clinical.manage_allergies");
+  const [allergiesOpen, setAllergiesOpen] = useState(false);
+  const qc = useQueryClient();
   return (
     <>
       <PatientCard
@@ -79,6 +86,30 @@ function ChartBody({ data }: { data: NursingChart }) {
           data.visit.payer,
         )}
       />
+      {canEditAllergies && !cancelled ? (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="nursing-edit-allergies"
+            onClick={() => {
+              setAllergiesOpen(true);
+            }}
+          >
+            <ShieldAlert aria-hidden="true" />
+            {t("chart.editAllergies")}
+          </Button>
+          <AllergyManager
+            patientId={data.patient.id}
+            open={allergiesOpen}
+            onOpenChange={(next) => {
+              setAllergiesOpen(next);
+              // The chart shows the allergies: read them again once the registry closes.
+              if (!next) void qc.invalidateQueries({ queryKey: nursingKeys.chart(data.visit.id) });
+            }}
+          />
+        </div>
+      ) : null}
       {cancelled ? (
         <AlertCard variant="warning" title={t("chart.visitCancelled")} />
       ) : !open ? (

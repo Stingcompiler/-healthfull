@@ -301,39 +301,50 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (docs and operations, phase 8)
 
-Found while writing the user guides against the code (`feat/8-docs`); none is fixed there:
+Found while writing the user guides against the code (`feat/8-docs`); fixed on `feat/8-polish`
+where ticked (ADRs 0021, 0022):
 
-- Nav reach: a cashier holds `billing.pharmacy_sale` but the pharmacy nav entry needs
+- [x] Nav reach: a cashier holds `billing.pharmacy_sale` but the pharmacy nav entry needs
   `pharmacy.dispense`/`pharmacy.view` (URL only, `/pharmacy/sale`); a receptionist holds
   `visits.admit` and `lab.print_results` but cannot reach the bed board or a lab result from the
   nav; a nurse holds `lab.collect_sample` (no lab work list without `lab.view_worklist`) and
   `clinical.manage_allergies` (allergy editing lives only in the doctor's workspace); a nurse sees
   «العيادة» with an empty "My patients" and «نداء التالي» answers `DOCTOR_PROFILE_REQUIRED`.
-- Managers get `transfer_rejected` notifications linking to `/cashier/transfers`, whose API
-  needs `payments.confirm_transfer` (PERMISSION_DENIED).
-- Registered but unused codes: `payments.manage_banks`, `ledger.view`, `ledger.manage_accounts`.
-- The accountant holds `billing.apply_discount` without `billing.create_invoice` (discount
+  Polish: role shortcuts (`NavItem.unless`) to `/pharmacy/sale`, `/nursing/beds`, the new
+  `/lab/approved-results` and `/lab/collect`; allergy editing in the nursing chart; the clinic
+  entry needs `clinical.write_note`. No permission was granted.
+- [x] Managers get `transfer_rejected` notifications linking to `/cashier/transfers`, whose API
+  needs `payments.confirm_transfer` (PERMISSION_DENIED). Polish: one table of kinds with
+  recipients and permitted links, tested per recipient role; managers open the patient file.
+- [x] Registered but unused codes: `payments.manage_banks`, `ledger.view`, `ledger.manage_accounts`.
+  Polish: banks screen at `/administration/banks`; the ledger codes removed (core migration 0016).
+- [ ] The accountant holds `billing.apply_discount` without `billing.create_invoice` (discount
   actions on drafts they cannot otherwise edit) and cannot approve a desk discount
-  (`billing.override_discount_limit`).
-- The dashboard's stale-transfer alert uses a fixed 2 days; the notification uses
-  `Policy.pending_transfer_alert_days` (3).
-- Wording names fewer roles than can act: the shift review form «اعتماد المدير» and
+  (`billing.override_discount_limit`). Not in the polish scope (a role-default decision).
+- [ ] The dashboard's stale-transfer alert uses a fixed 2 days; the notification uses
+  `Policy.pending_transfer_alert_days` (3). Not in the polish scope.
+- [x] Wording names fewer roles than can act: the shift review form «اعتماد المدير» and
   `SELF_REVIEW_NOT_ALLOWED` (supervisors and accountants review too), `SELF_APPROVAL_NOT_ALLOWED`
   (accountants approve refunds), `OVERRIDE_NOT_PERMITTED` (admin may override); `portal.login.help`
   names only the cashier (reception and lab supervisors issue codes too).
-- Approver UI: pharmacy uses a switch «يعتمد المشرف الآن», `SecondApproverFields` shows its fields
+- [x] Approver UI: pharmacy uses a switch «يعتمد المشرف الآن», `SecondApproverFields` shows its fields
   always, lab cancel spells «المعتمد» without the shadda; a short transfer receipt without the
-  switch answers a bare `PERMISSION_DENIED`.
-- The dispense dialog lists expired batches and lets override mode fill them (the server refuses
+  switch answers a bare `PERMISSION_DENIED`. Polish: one shared field set (ADR 0022); the short
+  receipt answers `SECOND_APPROVER_REQUIRED` / `APPROVER_NOT_PERMITTED`.
+- [x] The dispense dialog lists expired batches and lets override mode fill them (the server refuses
   with `BATCH_EXPIRED`).
-- On `feat/8-followups`: `claims.shortfall.description` still says the recorder is the approver;
+- [x] On `feat/8-followups`: `claims.shortfall.description` still says the recorder is the approver;
   the item import's `generic_name_ar` column has no `imports.field.generic_name_ar` label; the
   `display` role can be combined with person roles on the users screen (ADR 0019 says alone).
-- No screen closes a visit (`visits.close`, «ختم الزيارة») although FLOW.md has the doctor close
-  it; the kiosk page has no sign-out; «دليل التصميم» shows in every user's menu.
-- Operations: the new `UpdateRun` columns are not in `/api/ops/updates` or on the status page;
-  no scheduled `integrity_check` with an in-app alert; the production drill runs in two parts
-  (backup container, then the app containers) because no image has both `pg_restore` and Django.
+  Polish: `DEVICE_ROLE_ALONE` in the API and an exclusive checkbox on the users screen.
+- [x] No screen closes a visit (`visits.close`, «ختم الزيارة») although FLOW.md has the doctor close
+  it. Polish: «ختم الزيارة» in the clinic workspace, `POST /api/visits/{id}/close`.
+- [ ] The kiosk page has no sign-out; «دليل التصميم» shows in every user's menu. Not in the
+  polish scope.
+- [x] Operations: the new `UpdateRun` columns are not in `/api/ops/updates` or on the status page;
+  no scheduled `integrity_check` with an in-app alert. Polish: both done (ADR 0021).
+- [ ] The production drill runs in two parts (backup container, then the app containers) because
+  no image has both `pg_restore` and Django.
 
 ## Next: finish Phase 8 on `phase/8`
 

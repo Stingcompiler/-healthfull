@@ -1,4 +1,4 @@
-import { Wallet } from "lucide-react";
+import { ShoppingBag, Wallet } from "lucide-react";
 
 import type { NavItem } from "@/app/nav-types";
 
@@ -12,5 +12,17 @@ export const nav: NavItem[] = [
     order: 50,
     // Cashiers, supervisors, accountants and managers each use some cashier screens.
     permission: ["payments.take_payment", "payments.view", "billing.view", "orders.authorize_perform_first"],
+  },
+  {
+    // A cashier sells to walk-in customers (billing.pharmacy_sale) without the pharmacy module;
+    // pharmacists reach the same screen from Pharmacy.
+    id: "walk-in-sale",
+    to: "/pharmacy/sale",
+    labelKey: "walkInSale",
+    icon: ShoppingBag,
+    group: "finance",
+    order: 55,
+    permission: "billing.pharmacy_sale",
+    unless: ["pharmacy.dispense", "pharmacy.view"],
   },
 ];

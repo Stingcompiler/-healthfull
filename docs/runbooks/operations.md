@@ -146,7 +146,16 @@ anything, and the app role may run it during opening hours) and checks:
 infra/compose.sh run --rm --no-deps -T app manage integrity_check            # text
 infra/compose.sh run --rm --no-deps -T app manage integrity_check --json     # one JSON object
 infra/compose.sh run --rm --no-deps -T app manage integrity_check --check stock
+infra/compose.sh run --rm --no-deps -T app manage integrity_check --record   # also store it and alert
 ```
+
+**Daily, automatically (ADR 0021).** The `maintenance` service runs
+`manage.py integrity_check --daily` every cycle; it runs the checks once a local day, stores
+the result (shown under **Administration > System status > Integrity check**) and, on any
+finding, notifies administrators and managers in the app (`integrity_failed`, linking to the
+status page) and shows the `INTEGRITY_FAILED` warning. Findings exit 0 there (they are not a
+job to retry); `integrity_check failed; retrying next cycle` in
+`infra/compose.sh logs maintenance` means the check itself could not run.
 
 Exit 0: all checks passed. Exit 1: at least one failed; up to 20 examples per check are printed.
 **A failure is never fixed by editing the database.** The guards (triggers, the app role) exist

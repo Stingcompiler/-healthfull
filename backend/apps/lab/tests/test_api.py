@@ -79,6 +79,8 @@ def test_router_surface_and_permissions() -> None:
     assert ops == {
         ("lab_get_ping", None),
         ("lab_list_worklist", "lab.view_worklist"),
+        ("lab_list_collection", "lab.collect_sample"),
+        ("lab_list_approved_results", "lab.print_results"),
         ("lab_get_result", "lab.view_worklist"),
         ("lab_enter_results", "lab.enter_results"),
         ("lab_approve_results", "lab.approve_results"),
@@ -143,9 +145,9 @@ def test_every_lab_operation_refuses_roles_without_its_permission(make_user: Any
             checked.add((op_id, role))
     every = {op["operationId"] for _, _, op in ops}
     assert {op_id for op_id, _ in checked} == every
-    # Doctors reach only the printout of approved results; cashiers reach nothing of the lab.
+    # Doctors reach only approved results (list and printout); cashiers reach nothing of the lab.
     doctor_ops = every - {op_id for op_id, role in checked if role == "doctor"}
-    assert doctor_ops == {"lab_get_result_print"}
+    assert doctor_ops == {"lab_get_result_print", "lab_list_approved_results"}
     assert {op_id for op_id, role in checked if role == "cashier"} == every
 
 
@@ -240,6 +242,59 @@ def test_receive_enter_flag_approve_and_doctor_print(lab: Bench, cbc: LabTest) -
     assert line.pk in {r["line_id"] for r in done["items"]}
     # Doctors never read the bench (drafts stay in the lab).
     err(lab.doctor.api.get(f"/api/lab/lines/{line.pk}/result"), 403, "PERMISSION_DENIED")
+
+
+def test_nurse_collects_from_the_collection_list(make_user: Any, lab: Bench, cbc: LabTest) -> None:
+    """A nurse holds lab.collect_sample but not the bench: the collection list is theirs."""
+    nurse = _login(make_user, "ward", "nurse")
+    visit = b.visit(adult())
+    paid = lab_line(visit, cbc)
+    lab_line(visit, cbc, billing_status="invoiced")  # unpaid: never listed (invariant 1)
+    rows = ok(nurse.api.get(f"/api/lab/collection?q={visit.patient.file_no}"))
+    assert [r["line_id"] for r in rows["items"]] == [paid.pk]
+    assert rows["items"][0]["stage"] == "to_collect"
+    assert "counts" not in rows
+    err(nurse.api.get("/api/lab/worklist"), 403, "PERMISSION_DENIED")
+    # A nurse collects; receiving stays in the lab.
+    err(
+        nurse.api.post("/api/lab/samples", {"line_ids": [paid.pk], "receive": True}),
+        403,
+        "PERMISSION_DENIED",
+    )
+    body = {"line_ids": [paid.pk], "receive": False}
+    collected = ok(nurse.api.post("/api/lab/samples", body), 201)
+    assert collected["sample"]["status"] == "collected"
+    sample_id = collected["sample"]["id"]
+    ok(nurse.api.get(f"/api/lab/samples/{sample_id}/label"))
+    assert ok(nurse.api.get(f"/api/lab/collection?q={visit.patient.file_no}"))["count"] == 0
+
+
+def test_reception_finds_approved_results_to_print(
+    make_user: Any, lab: Bench, cbc: LabTest
+) -> None:
+    desk = _login(make_user, "front", "receptionist")
+    visit = b.visit(adult())
+    line = lab_line(visit, cbc)
+    draft_line = lab_line(visit, cbc)
+    _received(lab, line.pk)
+    entered = ok(
+        lab.tech.api.request(
+            "PUT", f"/api/lab/lines/{line.pk}/result", {"values": {"HB": "14", "BG": "A"}}
+        )
+    )
+    revision = entered["versions"][0]["revision"]
+    ok(lab.sup.api.post(f"/api/lab/lines/{line.pk}/result/approve", {"revision": revision}))
+    _received(lab, draft_line.pk)  # received, never approved: not printable, not listed
+
+    rows = ok(desk.api.get("/api/lab/approved"))
+    ids = [r["line_id"] for r in rows["items"]]
+    assert line.pk in ids
+    assert draft_line.pk not in ids
+    found = ok(desk.api.get(f"/api/lab/approved?q={visit.patient.file_no}"))
+    assert [r["line_id"] for r in found["items"]] == [line.pk]
+    assert found["items"][0]["approved_at"] is not None
+    ok(desk.api.get(f"/api/lab/lines/{line.pk}/result/print"))
+    err(desk.api.get(f"/api/lab/lines/{line.pk}/result"), 403, "PERMISSION_DENIED")
 
 
 def test_amendment_keeps_the_original(lab: Bench, cbc: LabTest) -> None:

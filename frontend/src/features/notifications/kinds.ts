@@ -3,6 +3,8 @@
  * kind and a payload of ids, numbers and amounts; the text is translated here
  * (`ops:notifications.kinds.<kind>`) and the link opens the screen that resolves it.
  */
+import type { MeOut } from "@/lib/api/contract";
+import { hasPermission } from "@/lib/auth/permissions";
 import { formatMoney, formatNumber } from "@/lib/format";
 import type { Language } from "@/lib/preferences";
 
@@ -19,6 +21,7 @@ export const KNOWN_KINDS = [
   "shift_variance",
   "shift_review_pending",
   "backup_stale",
+  "integrity_failed",
 ] as const;
 
 export type KnownKind = (typeof KNOWN_KINDS)[number];
@@ -59,32 +62,70 @@ export function notificationParams(note: AppNotification, language: Language): R
   };
 }
 
-/** The screen a notification opens, or null when there is nothing to open. */
-export function notificationTarget(note: AppNotification): NotificationTarget | null {
-  const p = note.payload;
-  switch (note.kind) {
-    case "lab_result_ready":
-    case "lab_result_critical":
-      return p.visit_id != null ? { to: "/clinic/visits/$visitId", visitId: str(p.visit_id) } : null;
-    case "stock_low":
-    case "stock_low_summary":
-      return { to: "/pharmacy/low-stock" };
-    case "transfers_pending_overdue":
-    case "transfer_rejected":
-      return { to: "/cashier/transfers" };
-    case "patient_credit_negative":
-      return p.patient_id != null ? { to: "/patients/$patientId", patientId: str(p.patient_id) } : null;
-    case "shift_variance":
-    case "shift_review_pending":
-      return { to: "/cashier/review" };
-    case "backup_stale":
-      return { to: "/administration/system" };
+export type NotificationRoute = NotificationTarget["to"];
+
+export interface NotificationLink {
+  route: NotificationRoute;
+  /** The permission the screen's endpoints require. */
+  permission: string;
+}
+
+/**
+ * The screens that resolve each kind, in order of preference, with the permission each needs.
+ * Mirrors backend/apps/core/notification_kinds.py (kinds.test.ts reads it and fails on any
+ * difference), where a backend test proves every default recipient may open one of them.
+ */
+export const NOTIFICATION_LINKS: Readonly<Record<KnownKind, readonly NotificationLink[]>> = {
+  lab_result_ready: [{ route: "/clinic/visits/$visitId", permission: "clinical.view" }],
+  lab_result_critical: [{ route: "/clinic/visits/$visitId", permission: "clinical.view" }],
+  stock_low: [{ route: "/pharmacy/low-stock", permission: "pharmacy.view" }],
+  stock_low_summary: [{ route: "/pharmacy/low-stock", permission: "pharmacy.view" }],
+  transfers_pending_overdue: [{ route: "/cashier/transfers", permission: "payments.confirm_transfer" }],
+  transfer_rejected: [
+    { route: "/cashier/transfers", permission: "payments.confirm_transfer" },
+    { route: "/patients/$patientId", permission: "patients.view" },
+  ],
+  patient_credit_negative: [{ route: "/patients/$patientId", permission: "patients.view" }],
+  shift_variance: [{ route: "/cashier/review", permission: "payments.review_shift" }],
+  shift_review_pending: [{ route: "/cashier/review", permission: "payments.review_shift" }],
+  backup_stale: [{ route: "/administration/system", permission: "ops.view_status" }],
+  integrity_failed: [{ route: "/administration/system", permission: "ops.view_status" }],
+};
+
+function targetOf(route: NotificationRoute, p: AppNotification["payload"]): NotificationTarget | null {
+  switch (route) {
+    case "/clinic/visits/$visitId":
+      return p.visit_id != null ? { to: route, visitId: str(p.visit_id) } : null;
+    case "/patients/$patientId":
+      return p.patient_id != null ? { to: route, patientId: str(p.patient_id) } : null;
     default:
-      return null;
+      return { to: route };
   }
+}
+
+/**
+ * The screen a notification opens for `me`: the first of its kind's screens they may open
+ * whose ids the payload carries, or null when there is none (no dead link to a refused page).
+ */
+export function notificationTarget(
+  note: AppNotification,
+  me: Pick<MeOut, "roles" | "permissions"> | null | undefined,
+): NotificationTarget | null {
+  if (!isKnownKind(note.kind)) return null;
+  for (const link of NOTIFICATION_LINKS[note.kind]) {
+    if (!hasPermission(me, link.permission)) continue;
+    const target = targetOf(link.route, note.payload);
+    if (target) return target;
+  }
+  return null;
 }
 
 /** Kinds that need attention now (shown with the danger tone). */
 export function isUrgent(kind: string): boolean {
-  return kind === "lab_result_critical" || kind === "transfer_rejected" || kind === "patient_credit_negative";
+  return (
+    kind === "lab_result_critical" ||
+    kind === "transfer_rejected" ||
+    kind === "patient_credit_negative" ||
+    kind === "integrity_failed"
+  );
 }

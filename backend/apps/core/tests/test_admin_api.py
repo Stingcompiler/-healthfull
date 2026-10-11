@@ -747,3 +747,34 @@ def test_create_reason_in_a_wave_a_category(client: ApiClient) -> None:
     )
     assert res.status_code == 201, res.content
     assert ReasonCode.objects.filter(category="patient_merge", code="SAME_PHONE").exists()
+
+
+def test_the_display_role_is_held_alone(client: ApiClient, make_user: Any) -> None:
+    """ADR 0019: the kiosk account is a device, never a person's second role."""
+    base = {"full_name_ar": "شاشة", "full_name_en": "Screen", "password": NEW_PASSWORD}
+    body = _error(
+        client.post("/api/core/users", {**base, "username": "tv1", "roles": ["display", "nurse"]}),
+        409,
+        "DEVICE_ROLE_ALONE",
+    )
+    assert body["details"]["role"] == "display"
+    assert not User.objects.filter(username="tv1").exists()
+    created = client.post("/api/core/users", {**base, "username": "tv2", "roles": ["display"]})
+    assert created.status_code == 201, created.content
+
+    nurse = make_user("n-alone", roles=["nurse"])
+    _error(
+        client.patch(f"/api/core/users/{nurse.pk}", {"roles": ["nurse", "display"]}),
+        409,
+        "DEVICE_ROLE_ALONE",
+    )
+    assert User.objects.get(pk=nurse.pk).role_codes() == ["nurse"]
+    kiosk = User.objects.get(username="tv2")
+    _error(
+        client.patch(f"/api/core/users/{kiosk.pk}", {"roles": ["display", "receptionist"]}),
+        409,
+        "DEVICE_ROLE_ALONE",
+    )
+    # Moving the account from the device role to a person's role is a plain change.
+    moved = client.patch(f"/api/core/users/{kiosk.pk}", {"roles": ["receptionist"]})
+    assert moved.status_code == 200, moved.content

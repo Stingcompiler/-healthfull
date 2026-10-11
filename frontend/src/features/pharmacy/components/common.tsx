@@ -3,14 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-import type { ApproverState } from "../lib/approver";
 import { useNames } from "../lib/use-names";
 import type { AdjustmentStatus, CountStatus, ReceiptStatus, Store, TransferStatus } from "../types";
 
@@ -170,74 +167,6 @@ export function QtyText({ value, unit, className }: { value: number; unit: strin
     <span className={cn("tabular whitespace-nowrap", className)}>
       <bdi>{formatNumber(value, names.language)}</bdi> {unit}
     </span>
-  );
-}
-
-/**
- * A supervisor approves at the counter by typing their own credentials (ADR 0009); the
- * fields show only while "a supervisor approves" is on.
- */
-export function ApproverInputs({
-  value,
-  onChange,
-  description,
-  testId,
-}: {
-  value: ApproverState;
-  onChange: (next: ApproverState) => void;
-  description: ReactNode;
-  testId?: string;
-}) {
-  const { t } = useTranslation("pharmacy");
-  const switchId = useId();
-  return (
-    <fieldset className="grid gap-3 rounded-control border border-border p-3" data-testid={testId}>
-      <div className="flex items-start gap-3">
-        <Switch
-          id={switchId}
-          checked={value.enabled}
-          onCheckedChange={(enabled) => {
-            onChange({ ...value, enabled });
-          }}
-        />
-        <div className="grid gap-0.5">
-          <Label htmlFor={switchId}>{t("approver.toggle")}</Label>
-          <p className="text-xs text-muted">{description}</p>
-        </div>
-      </div>
-      {value.enabled ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <LabeledField label={t("approver.username")} required>
-            {(id) => (
-              <Input
-                id={id}
-                value={value.username}
-                autoComplete="off"
-                dir="ltr"
-                data-testid="approver-username"
-                onChange={(e) => {
-                  onChange({ ...value, username: e.target.value });
-                }}
-              />
-            )}
-          </LabeledField>
-          <LabeledField label={t("approver.password")} required>
-            {(id) => (
-              <Input
-                id={id}
-                type="password"
-                value={value.password}
-                autoComplete="new-password"
-                data-testid="approver-password"
-                onChange={(e) => {
-                  onChange({ ...value, password: e.target.value });
-                }}
-              />
-            )}
-          </LabeledField>
-        </div>
-      ) : null}
-    </fieldset>
   );
 }
 

@@ -76,6 +76,7 @@
   "chart": {
     "title": "Nursing chart",
     "back": "Back to visits",
+    "editAllergies": "Allergies",
     "loadError": "Could not load the chart",
     "visitClosed": "This visit is closed. Vital signs can no longer be recorded; nursing notes can still be added.",
     "visitCancelled": "This visit was cancelled.",

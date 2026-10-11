@@ -10,6 +10,7 @@ export const routes: readonly AppRoute[] = [
   appRoute("admin-policies", "/administration/policies"),
   appRoute("admin-departments", "/administration/departments"),
   appRoute("admin-reason-codes", "/administration/reason-codes"),
+  appRoute("admin-banks", "/administration/banks"),
   appRoute("admin-price-list", "/administration/price-lists/$priceListId", {
     resolve: async () => {
       const id = (await seededCatalog()).price_lists.CASH;

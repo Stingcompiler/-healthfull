@@ -151,11 +151,11 @@ test.describe("@lab bench", () => {
     // A billed test needs the billing approver.
     await dialog.getByTestId("confirm-cancel").click();
     await expect(dialog.getByText(t("validation.required")).first()).toBeVisible();
-    await dialog.getByLabel(t("lab:cancel.username")).fill("cashsup");
-    await dialog.getByLabel(t("lab:cancel.password")).fill("wrong-password");
+    await dialog.getByLabel(t("approver.username")).fill("cashsup");
+    await dialog.getByLabel(t("approver.password")).fill("wrong-password");
     await dialog.getByTestId("confirm-cancel").click();
     await expect(dialog.getByText(t("errors:APPROVER_INVALID"))).toBeVisible();
-    await dialog.getByLabel(t("lab:cancel.password")).fill(E2E_PASSWORD);
+    await dialog.getByLabel(t("approver.password")).fill(E2E_PASSWORD);
     await dialog.getByTestId("confirm-cancel").click();
     await expect(sup.getByTestId("cancelled-notice")).toContainText(t("lab:result.refundOpened"));
     await expect(sup.locator('[data-slot="lab-stage"]').first()).toHaveAttribute("data-stage", "cancelled");

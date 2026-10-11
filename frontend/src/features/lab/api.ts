@@ -25,6 +25,8 @@ export const labKeys = {
   print: (lineId: number, versionId: number | undefined) => ["lab", "print", lineId, versionId ?? 0] as const,
   label: (sampleId: number) => ["lab", "label", sampleId] as const,
   approvals: (page: number) => ["lab", "approvals", page] as const,
+  collection: (q: string, page: number) => ["lab", "collection", q, page] as const,
+  approved: (q: string, page: number) => ["lab", "approved", q, page] as const,
   tests: ["lab", "tests"] as const,
   test: (testId: number) => ["lab", "test", testId] as const,
   services: ["lab", "services-available"] as const,
@@ -141,6 +143,41 @@ function useResultMutation<V>(lineId: number, call: (vars: V) => Promise<LabResu
       qc.setQueryData(labKeys.result(lineId), data);
       void qc.invalidateQueries({ queryKey: ["lab", "worklist"] });
       void qc.invalidateQueries({ queryKey: ["lab", "approvals"] });
+    },
+  });
+}
+
+/** Tests waiting for a sample, for whoever draws samples without the bench (a nurse). */
+export function useCollection(q: string, page: number) {
+  const term = q.trim();
+  return useQuery({
+    queryKey: labKeys.collection(term, page),
+    queryFn: () =>
+      unwrap(api.GET("/api/lab/collection", { params: { query: { q: term || null, page, page_size: PAGE_SIZE } } })),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+}
+
+/** Approved results to print (reception): the last 14 days, or any age when searching. */
+export function useApprovedResults(q: string, page: number) {
+  const term = q.trim();
+  return useQuery({
+    queryKey: labKeys.approved(term, page),
+    queryFn: () =>
+      unwrap(api.GET("/api/lab/approved", { params: { query: { q: term || null, page, page_size: PAGE_SIZE } } })),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Collect a sample outside the lab: collected only; the lab receives it. */
+export function useCollectAtWard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (lineId: number) =>
+      unwrap(api.POST("/api/lab/samples", { body: { line_ids: [lineId], receive: false } })),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["lab", "collection"] });
     },
   });
 }

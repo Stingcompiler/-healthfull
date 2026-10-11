@@ -16,6 +16,7 @@ export type OpsWarning = SystemStatus["warnings"][number];
 export type BackupRequest = S["BackupRequestOut"];
 export type UpdateHistory = S["UpdateHistoryOut"];
 export type UpdateRun = S["UpdateRunOut"];
+export type IntegrityRun = S["IntegrityRunOut"];
 export type UpdateLog = S["UpdateLogOut"];
 export type AuditEvent = S["AuditEventOut"];
 export type AuditModel = S["AuditModelOut"];

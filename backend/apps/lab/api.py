@@ -35,7 +35,9 @@ from apps.lab.schemas import (
     LabRejectIn,
     LabResultIn,
     LabResultOut,
+    LabRowPageOut,
     LabSampleIn,
+    LabSearchParams,
     LabServiceOptionOut,
     LabTatOut,
     LabTatParams,
@@ -76,6 +78,29 @@ def worklist(request: HttpRequest, params: Query[LabWorklistParams]) -> Any:
     return queries.worklist(
         status=params.status, q=params.q, page=params.page, page_size=params.page_size
     )
+
+
+@lab_router.get(
+    "/collection",
+    response={200: LabRowPageOut, **_READ},
+    operation_id="lab_list_collection",
+    summary="Paid or authorized tests waiting for a sample, for whoever draws samples",
+    description="The ward's view of the bench's first stage: a nurse collects, the lab receives.",
+)
+@require_perm("lab.collect_sample")
+def collection(request: HttpRequest, params: Query[LabSearchParams]) -> Any:
+    return queries.collection_list(q=params.q, page=params.page, page_size=params.page_size)
+
+
+@lab_router.get(
+    "/approved",
+    response={200: LabRowPageOut, **_READ},
+    operation_id="lab_list_approved_results",
+    summary="Approved results to print: the last 14 days, or any age when searching",
+)
+@require_perm("lab.print_results")
+def approved(request: HttpRequest, params: Query[LabSearchParams]) -> Any:
+    return queries.approved_results(q=params.q, page=params.page, page_size=params.page_size)
 
 
 @lab_router.get(

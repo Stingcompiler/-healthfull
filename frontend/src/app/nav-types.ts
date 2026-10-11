@@ -24,6 +24,11 @@ export interface NavItem {
    * Undefined = every logged-in user. The admin role sees everything.
    */
   permission?: string | readonly string[];
+  /**
+   * Hide the item from users holding ANY of these codes: they reach the same screen through a
+   * module entry (a pharmacist's Pharmacy holds the walk-in sale). Admins hold every code.
+   */
+  unless?: string | readonly string[];
   /** Match only the exact path (for "/"). */
   exact?: boolean;
   /** Reachable from quick search but not listed in the sidebar. */

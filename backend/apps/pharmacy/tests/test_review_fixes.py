@@ -411,6 +411,7 @@ def test_returned_units_go_back_on_the_shelf(cashier, supervisor, pharmacist, st
 
 def test_sent_transfer_can_be_cancelled_and_received_short(pharmacist, make_user) -> None:
     manager = make_user(roles=["manager"])
+    pharmacist2 = make_user(roles=["pharmacist"])
     main, ward = b.store("MAINX"), b.store("WARDX")
     _it, batch = _stocked(main, qty=20)
     t = ps.create_transfer(from_store=main, to_store=ward, lines=[(batch.pk, 10)], actor=pharmacist)
@@ -430,10 +431,20 @@ def test_sent_transfer_can_be_cancelled_and_received_short(pharmacist, make_user
     with pytest.raises(DomainError) as exc:
         ps.receive_transfer(t2, actor=pharmacist, received={line_id: 7})
     assert exc.value.code == "REASON_REQUIRED"
-    with pytest.raises(PermissionRequired):
+    with pytest.raises(DomainError) as exc:
         ps.receive_transfer(
             t2, actor=pharmacist, received={line_id: 7}, shortage_reason_code="LOST"
         )
+    assert exc.value.code == "SECOND_APPROVER_REQUIRED"
+    with pytest.raises(DomainError) as exc:  # a colleague without the permission
+        ps.receive_transfer(
+            t2,
+            actor=pharmacist,
+            received={line_id: 7},
+            shortage_reason_code="LOST",
+            approver=pharmacist2,
+        )
+    assert exc.value.code == "APPROVER_NOT_PERMITTED"
     done = ps.receive_transfer(
         t2,
         actor=pharmacist,

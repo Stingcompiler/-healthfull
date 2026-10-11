@@ -85,6 +85,7 @@ from domain import queue as dq
 from domain import service_line as dsl
 from domain.audit import second_approval
 from domain.errors import DomainError
+from domain.visit import check_close
 
 __all__ = [
     "EMERGENCY_PRIORITY",
@@ -125,6 +126,8 @@ __all__ = [
     "charge_due_bed_nights",
     "check_in",
     "close_visit",
+    "close_visit_by_hand",
+    "close_visit_view",
     "convert_appointment",
     "create_bed",
     "create_visit",
@@ -359,6 +362,32 @@ def close_visit(visit: Visit, *, actor: User, now: datetime | None = None) -> Vi
         locked.closed_by = actor
         locked.save(update_fields=["status", "closed_at", "closed_by", "updated_at"])
     return locked
+
+
+def close_visit_by_hand(visit: Visit, *, actor: User, now: datetime | None = None) -> Visit:
+    """A person closes a visit («ختم الزيارة», FLOW step 3), under ``domain.visit.check_close``.
+
+    The patient must be out of the clinic queue (consultation finished, or marked absent or
+    cancelled) and not admitted (the discharge closes an inpatient visit). Nothing billed
+    changes: ordered lines are still invoiced, paid and performed on a closed visit.
+
+    Raises:
+        PermissionRequired: without ``visits.close``.
+        DomainError: ``VISIT_NOT_OPEN``, ``VISIT_IN_QUEUE``, ``VISIT_ADMITTED``.
+    """
+    require_permission(actor, "visits.close")
+    with transaction.atomic():
+        locked = Visit.objects.select_for_update(no_key=True).get(pk=visit.pk)
+        check_close(
+            status=str(locked.status),
+            active_queue_entries=QueueEntry.objects.filter(
+                visit=locked, status__in=ACTIVE_QUEUE_STATUSES
+            ).count(),
+            open_admission=Admission.objects.filter(
+                visit=locked, status=AdmissionStatus.ADMITTED
+            ).exists(),
+        )
+        return close_visit(locked, actor=actor, now=now)
 
 
 def cancel_visit(
@@ -2008,6 +2037,11 @@ def open_visit(*, patient: Patient, actor: User, **kwargs: Any) -> VisitView:
 def cancel_visit_view(visit: Visit, *, actor: User, reason_code: str, note: str = "") -> VisitView:
     """:func:`cancel_visit` (the actor approves any credit note), returned as a view."""
     return visit_view(cancel_visit(visit, actor=actor, reason_code=reason_code, note=note))
+
+
+def close_visit_view(visit: Visit, *, actor: User) -> VisitView:
+    """:func:`close_visit_by_hand`, returned as a view."""
+    return visit_view(close_visit_by_hand(visit, actor=actor))
 
 
 def check_in(

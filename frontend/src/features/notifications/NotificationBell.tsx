@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber } from "@/lib/format";
+import { useCurrentUser } from "@/lib/auth/hooks";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { cn } from "@/lib/utils";
 
@@ -27,12 +28,13 @@ export function NotificationBell() {
   const markRead = useMarkRead();
   const markAll = useMarkAllRead();
   const navigate = useNavigate();
+  const me = useCurrentUser();
   const unread = count.data?.count ?? 0;
   const badge = unread > 99 ? t("notifications.many") : formatNumber(unread, language);
 
   const openNote = (note: AppNotification) => {
     if (!note.read_at) markRead.mutate(note.id);
-    const target = notificationTarget(note);
+    const target = notificationTarget(note, me);
     setOpen(false);
     if (!target) return;
     if (target.to === "/clinic/visits/$visitId") {

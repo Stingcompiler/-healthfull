@@ -1393,6 +1393,141 @@
         "title": "BalanceOut",
         "type": "object"
       },
+      "BankIn": {
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "code": {
+            "pattern": "^[A-Z][A-Z0-9_-]{0,19}$",
+            "title": "Code",
+            "type": "string"
+          },
+          "name_ar": {
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name En",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "maximum": 32767,
+            "minimum": 0,
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "BankIn",
+        "type": "object"
+      },
+      "BankOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en",
+          "active",
+          "sort_order"
+        ],
+        "title": "BankOut",
+        "type": "object"
+      },
+      "BankPatch": {
+        "description": "Only the fields sent change; the code never does.",
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "name_ar": {
+            "anyOf": [
+              {
+                "maxLength": 150,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Ar"
+          },
+          "name_en": {
+            "anyOf": [
+              {
+                "maxLength": 150,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name En"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "maximum": 32767,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "BankPatch",
+        "type": "object"
+      },
       "BatchStockOut": {
         "description": "One batch of an item in one store.",
         "properties": {
@@ -10114,6 +10249,90 @@
         "title": "InpatientWardOut",
         "type": "object"
       },
+      "IntegrityCheckOut": {
+        "properties": {
+          "checked": {
+            "title": "Checked",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "problems": {
+            "title": "Problems",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "ok",
+          "checked",
+          "problems",
+          "examples"
+        ],
+        "title": "IntegrityCheckOut",
+        "type": "object"
+      },
+      "IntegrityRunOut": {
+        "description": "The newest recorded ``manage.py integrity_check`` (daily from the maintenance loop).",
+        "properties": {
+          "finished_at": {
+            "format": "date-time",
+            "title": "Finished At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrityCheckOut"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "scheduled",
+              "manual"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "started_at",
+          "finished_at",
+          "ok",
+          "source",
+          "results"
+        ],
+        "title": "IntegrityRunOut",
+        "type": "object"
+      },
       "InvoiceCreateIn": {
         "properties": {
           "line_ids": {
@@ -11873,6 +12092,38 @@
         "title": "LabResultOut",
         "type": "object"
       },
+      "LabRowPageOut": {
+        "description": "A page of lab test rows without the bench's stage counts.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LabWorklistRowOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "page_size"
+        ],
+        "title": "LabRowPageOut",
+        "type": "object"
+      },
       "LabSampleIn": {
         "properties": {
           "line_ids": {
@@ -12003,6 +12254,37 @@
           "label_printed_at"
         ],
         "title": "LabSampleOut",
+        "type": "object"
+      },
+      "LabSearchParams": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          }
+        },
+        "title": "LabSearchParams",
         "type": "object"
       },
       "LabServiceOptionOut": {
@@ -27061,6 +27343,16 @@
             ],
             "description": "The newest ok or partial backup"
           },
+          "last_integrity_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntegrityRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "last_restore_test": {
             "anyOf": [
               {
@@ -27118,7 +27410,8 @@
                 "RESTORE_TEST_STALE",
                 "RESTORE_TEST_FAILED",
                 "DISK_LOW",
-                "MIGRATIONS_PENDING"
+                "MIGRATIONS_PENDING",
+                "INTEGRITY_FAILED"
               ],
               "type": "string"
             },
@@ -27140,6 +27433,7 @@
           "backup_requests",
           "status_dir_configured",
           "last_update",
+          "last_integrity_check",
           "warnings"
         ],
         "title": "SystemStatusOut",
@@ -27527,6 +27821,21 @@
       },
       "UpdateRunOut": {
         "properties": {
+          "backup_file": {
+            "description": "File name of the pre-update dump (no folder)",
+            "title": "Backup File",
+            "type": "string"
+          },
+          "db_restored": {
+            "description": "The rollback restored the pre-update dump",
+            "title": "Db Restored",
+            "type": "boolean"
+          },
+          "detail": {
+            "description": "Why it failed or rolled back, and in which step",
+            "title": "Detail",
+            "type": "string"
+          },
           "finished_at": {
             "anyOf": [
               {
@@ -27542,6 +27851,20 @@
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "log": {
+            "description": "The last lines of the update script's log",
+            "title": "Log",
+            "type": "string"
+          },
+          "migration_plan": {
+            "description": "`migrate --plan` of the new version",
+            "title": "Migration Plan",
+            "type": "string"
+          },
+          "migrations_applied": {
+            "title": "Migrations Applied",
+            "type": "boolean"
           },
           "previous_version": {
             "title": "Previous Version",
@@ -27560,6 +27883,18 @@
             ],
             "title": "Result",
             "type": "string"
+          },
+          "run_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The update script's run id; null when by hand",
+            "title": "Run Key"
           },
           "started_at": {
             "format": "date-time",
@@ -27589,7 +27924,14 @@
           "result",
           "started_at",
           "finished_at",
-          "started_by"
+          "started_by",
+          "run_key",
+          "migration_plan",
+          "migrations_applied",
+          "db_restored",
+          "backup_file",
+          "detail",
+          "log"
         ],
         "title": "UpdateRunOut",
         "type": "object"
@@ -44238,6 +44580,243 @@
         ]
       }
     },
+    "/api/lab/approved": {
+      "get": {
+        "operationId": "lab_list_approved_results",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabRowPageOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Approved results to print: the last 14 days, or any age when searching",
+        "tags": [
+          "lab"
+        ]
+      }
+    },
+    "/api/lab/collection": {
+      "get": {
+        "description": "The ward's view of the bench's first stage: a nurse collects, the lab receives.",
+        "operationId": "lab_list_collection",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabRowPageOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Paid or authorized tests waiting for a sample, for whoever draws samples",
+        "tags": [
+          "lab"
+        ]
+      }
+    },
     "/api/lab/lines/{line_id}/cannot-perform": {
       "post": {
         "description": "A billed test needs a billing supervisor's credentials in `approver` (409 CANCEL_NEEDS_BILLING_APPROVER, APPROVER_INVALID); 409 RESULT_APPROVED_IMMUTABLE.",
@@ -49929,6 +50508,271 @@
           }
         ],
         "summary": "Banks for transfer, QR and card payments",
+        "tags": [
+          "payments"
+        ]
+      },
+      "post": {
+        "description": "409 INVALID_CODE, BANK_CODE_TAKEN.",
+        "operationId": "payments_create_bank",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Add a bank or wallet for transfer, QR and card payments",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/api/payments/banks/all": {
+      "get": {
+        "operationId": "payments_list_all_banks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BankOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Every bank, active or not, for the administration list",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/api/payments/banks/{bank_id}": {
+      "patch": {
+        "description": "An inactive bank leaves the cashier's list; its payments keep it.",
+        "operationId": "payments_update_bank",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bank_id",
+            "required": true,
+            "schema": {
+              "title": "Bank Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Rename, reorder or (de)activate a bank (the code never changes)",
         "tags": [
           "payments"
         ]
@@ -65548,6 +66392,94 @@
           }
         ],
         "summary": "Cancel an open visit with a reason (paid lines go through a credit note)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/{visit_id}/close": {
+      "post": {
+        "description": "No new orders, notes or vitals afterwards; ordered lines are still invoiced, paid and performed. 409 VISIT_NOT_OPEN, VISIT_IN_QUEUE (finish the consultation or mark the patient absent first), VISIT_ADMITTED (the discharge closes it).",
+        "operationId": "visits_close_visit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Close a visit (the doctor ends its clinical record)",
         "tags": [
           "visits"
         ]

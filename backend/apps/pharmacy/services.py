@@ -48,11 +48,10 @@ from django.utils import timezone
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus
 from apps.catalog.models import Service, ServiceKind
 from apps.core.models import PartialDispenseRemainder, Policy, ReasonCode, User
-from apps.core.roles import PHARMACIST
 from apps.core.services import (
     holds_permission,
     next_number,
-    notify_roles,
+    notify_kind,
     require_permission,
     resolve_reason,
 )
@@ -1094,8 +1093,7 @@ def _notify_low_stock(
         minimum = int(item.min_stock)
         was, now = before.get(item_id, 0), after.get(item_id, 0)
         if minimum > 0 and not ds.is_low_stock(was, minimum) and ds.is_low_stock(now, minimum):
-            notify_roles(
-                [PHARMACIST],
+            notify_kind(
                 "stock_low",
                 item_id=item_id,
                 store_id=store.pk,
@@ -1486,10 +1484,15 @@ def receive_transfer(
     is recorded on the transfer with a reason and an approver holding
     ``pharmacy.approve_adjustment`` (FEATURES 8.6, invariant 4).
 
+    Without ``approver`` the actor approves when they hold the permission (a manager receiving);
+    otherwise someone who does must type their credentials (ADR 0009, 0022).
+
     Raises:
         DomainError: ``TRANSFER_NOT_SENT``, ``RECEIPT_EXCEEDS_SENT``, ``REASON_REQUIRED``,
-            ``TRANSFER_LINE_UNKNOWN``, reason errors.
-        PermissionDenied: a shortage approver without ``pharmacy.approve_adjustment``.
+            ``TRANSFER_LINE_UNKNOWN``, reason errors; ``SECOND_APPROVER_REQUIRED`` (a shortage,
+            no approver, and the actor may not approve it; ``permission`` names the code),
+            ``APPROVER_NOT_PERMITTED`` (the typed approver may not), both 409, never a 403 that
+            would read as the actor's own lack of access.
     """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="receive transfer"):
         locked = StockTransfer.objects.select_for_update().get(pk=transfer.pk)
@@ -1506,7 +1509,19 @@ def receive_transfer(
         chosen = approver or actor
         if any(got.get(ln.pk, _whole(ln.qty_base)) < _whole(ln.qty_base) for ln in lines):
             reason = resolve_reason(shortage_reason_code, "stock_adjust", shortage_note)
-            require_permission(chosen, "pharmacy.approve_adjustment")
+            if approver is not None:
+                if not holds_permission(approver, "pharmacy.approve_adjustment"):
+                    raise DomainError(
+                        "APPROVER_NOT_PERMITTED",
+                        "The approver may not approve stock adjustments",
+                        permission="pharmacy.approve_adjustment",
+                    )
+            elif not holds_permission(actor, "pharmacy.approve_adjustment"):
+                raise DomainError(
+                    "SECOND_APPROVER_REQUIRED",
+                    "A shortage needs the approval of someone who may approve adjustments",
+                    permission="pharmacy.approve_adjustment",
+                )
             approval = Approval(chosen.pk, now, shortage_note.strip(), reason.code)
         moves = []
         for ln in lines:

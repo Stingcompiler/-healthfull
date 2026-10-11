@@ -69,6 +69,20 @@ export function useCallNext() {
   });
 }
 
+/** Close the visit («ختم الزيارة»): no new orders or notes; ordered lines are still billed. */
+export function useCloseVisit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (visitId: number) =>
+      unwrap(api.POST("/api/visits/{visit_id}/close", { params: { path: { visit_id: visitId } } })),
+    onSettled: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: clinicKeys.worklist }),
+        qc.invalidateQueries({ queryKey: ["clinic", "workspace"] }),
+      ]),
+  });
+}
+
 export function useQueueAction() {
   const qc = useQueryClient();
   return useMutation({

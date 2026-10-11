@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Landmark,
   Building2,
   FileDown,
   FileSpreadsheet,
@@ -27,6 +28,7 @@ export type AdminSectionId =
   | "catalog"
   | "priceLists"
   | "payers"
+  | "banks"
   | "imports"
   | "system"
   | "export"
@@ -103,6 +105,13 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     icon: Building2,
     permission: "catalog.manage_payers",
     navKey: "adminPayers",
+  },
+  {
+    id: "banks",
+    to: "/administration/banks",
+    icon: Landmark,
+    permission: "payments.manage_banks",
+    navKey: "adminBanks",
   },
   {
     id: "imports",

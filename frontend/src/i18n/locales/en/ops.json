@@ -99,6 +99,7 @@
       "name_en": "English name",
       "kind": "kind",
       "generic_name": "generic name",
+      "generic_name_ar": "Arabic generic name",
       "brand_name": "brand name",
       "form": "form",
       "strength": "strength",
@@ -121,7 +122,17 @@
       "date_of_birth": "date of birth",
       "age_years": "age",
       "phone": "phone",
-      "national_id": "national ID"
+      "national_id": "national ID",
+      "base_unit_name_ar": "base unit (Arabic)",
+      "base_unit_name_en": "base unit (English)",
+      "pack_unit_name_ar": "pack unit (Arabic)",
+      "pack_unit_name_en": "pack unit (English)",
+      "name": "service name",
+      "phone_alt": "second phone",
+      "address": "address",
+      "emergency_contact_name": "emergency contact",
+      "emergency_contact_phone": "emergency contact phone",
+      "notes": "notes"
     },
     "hint": {
       "phone": "Same phone as file {{fileNo, bidi}} ({{name}})",
@@ -175,6 +186,10 @@
       "MIGRATIONS_PENDING": {
         "title": "Database update pending",
         "description": "The database schema is behind the application. Run the update procedure."
+      },
+      "INTEGRITY_FAILED": {
+        "title": "The books or the stock do not match",
+        "description": "The last integrity check found problems (below). Nothing was changed. Take a backup and call support before correcting anything."
       }
     },
     "allGood": "Everything looks fine",
@@ -239,7 +254,34 @@
       "rolled_back": "Rolled back"
     },
     "releaseNotes": "Release notes",
-    "updateFromTo": "{{from, bidi}} to {{to, bidi}}"
+    "migrationPlan": "Database changes planned",
+    "runLog": "Update log",
+    "migrationsApplied": "Database changes applied",
+    "noMigrations": "No database changes",
+    "dbRestored": "Database restored from the pre-update backup",
+    "backupFile": "Pre-update backup:",
+    "updateFromTo": "{{from, bidi}} to {{to, bidi}}",
+    "integrity": {
+      "title": "Integrity check",
+      "ok": "All checks match",
+      "findings": "Problems found",
+      "never": "No integrity check has been recorded yet. The maintenance service runs one every day.",
+      "source": {
+        "scheduled": "Daily check, finished",
+        "manual": "Run by hand, finished"
+      },
+      "checkOk": "matches ({{checked}} checked)",
+      "checkFailed": "{{problems}} problem(s) in {{checked}} checked",
+      "whatToDo": "Nothing was repaired. Take a backup and call support; do not correct the data by hand.",
+      "checks": {
+        "ledger_balanced": "Ledger balanced",
+        "invoice_positions": "Patient balances per invoice",
+        "payer_receivables": "Payer receivables",
+        "shift_cash": "Cash per shift",
+        "stock": "Stock",
+        "allocations": "Payment allocations"
+      }
+    }
   },
   "export": {
     "description": "Download all patients, visits, invoices, payments, stock moves and claims as CSV files in one zip.",
@@ -341,6 +383,7 @@
       "shift_review_pending_one": "{{count}} closed shift waits for review",
       "shift_review_pending_other": "{{count}} closed shifts wait for review",
       "backup_stale": "No successful backup in the last {{hours}} hours",
+      "integrity_failed": "The daily integrity check found problems in the books or the stock",
       "other": "New notification"
     }
   }

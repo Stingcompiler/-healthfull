@@ -2539,6 +2539,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lab/approved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Approved results to print: the last 14 days, or any age when searching */
+        get: operations["lab_list_approved_results"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lab/collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Paid or authorized tests waiting for a sample, for whoever draws samples
+         * @description The ward's view of the bench's first stage: a nurse collects, the lab receives.
+         */
+        get: operations["lab_list_collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lab/lines/{line_id}/cannot-perform": {
         parameters: {
             query?: never;
@@ -3531,11 +3568,52 @@ export interface paths {
         /** Banks for transfer, QR and card payments */
         get: operations["payments_list_banks"];
         put?: never;
+        /**
+         * Add a bank or wallet for transfer, QR and card payments
+         * @description 409 INVALID_CODE, BANK_CODE_TAKEN.
+         */
+        post: operations["payments_create_bank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/banks/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every bank, active or not, for the administration list */
+        get: operations["payments_list_all_banks"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/payments/banks/{bank_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename, reorder or (de)activate a bank (the code never changes)
+         * @description An inactive bank leaves the cashier's list; its payments keep it.
+         */
+        patch: operations["payments_update_bank"];
         trace?: never;
     };
     "/api/payments/handover-receivers": {
@@ -6046,6 +6124,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/{visit_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a visit (the doctor ends its clinical record)
+         * @description No new orders, notes or vitals afterwards; ordered lines are still invoiced, paid and performed. 409 VISIT_NOT_OPEN, VISIT_IN_QUEUE (finish the consultation or mark the patient absent first), VISIT_ADMITTED (the discharge closes it).
+         */
+        post: operations["visits_close_visit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/visits/{visit_id}/timeline": {
         parameters: {
             query?: never;
@@ -6621,6 +6719,54 @@ export interface components {
              * @description Credit that may be spent or refunded now
              */
             spendable: string;
+        };
+        /** BankIn */
+        BankIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** BankOut */
+        BankOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /**
+         * BankPatch
+         * @description Only the fields sent change; the code never does.
+         */
+        BankPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Name Ar */
+            name_ar?: string | null;
+            /** Name En */
+            name_en?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
         };
         /**
          * BatchStockOut
@@ -10043,6 +10189,46 @@ export interface components {
             /** @description null: beds outside any ward */
             room: components["schemas"]["InpatientRefOut"] | null;
         };
+        /** IntegrityCheckOut */
+        IntegrityCheckOut: {
+            /** Checked */
+            checked: number;
+            /** Examples */
+            examples: string[];
+            /** Name */
+            name: string;
+            /** Ok */
+            ok: boolean;
+            /** Problems */
+            problems: number;
+        };
+        /**
+         * IntegrityRunOut
+         * @description The newest recorded ``manage.py integrity_check`` (daily from the maintenance loop).
+         */
+        IntegrityRunOut: {
+            /**
+             * Finished At
+             * Format: date-time
+             */
+            finished_at: string;
+            /** Id */
+            id: number;
+            /** Ok */
+            ok: boolean;
+            /** Results */
+            results: components["schemas"]["IntegrityCheckOut"][];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "scheduled" | "manual";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+        };
         /** InvoiceCreateIn */
         InvoiceCreateIn: {
             /**
@@ -10623,6 +10809,20 @@ export interface components {
             /** Versions */
             versions: components["schemas"]["LabVersionOut"][];
         };
+        /**
+         * LabRowPageOut
+         * @description A page of lab test rows without the bench's stage counts.
+         */
+        LabRowPageOut: {
+            /** Count */
+            count: number;
+            /** Items */
+            items: components["schemas"]["LabWorklistRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** LabSampleIn */
         LabSampleIn: {
             /** Line Ids */
@@ -10664,6 +10864,21 @@ export interface components {
              * @enum {string}
              */
             status: "collected" | "received" | "rejected";
+        };
+        /** LabSearchParams */
+        LabSearchParams: {
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Q */
+            q?: string | null;
         };
         /** LabServiceOptionOut */
         LabServiceOptionOut: {
@@ -16264,6 +16479,7 @@ export interface components {
             disks: components["schemas"]["OpsDiskOut"][];
             /** @description The newest ok or partial backup */
             last_backup: components["schemas"]["OpsRunOut"] | null;
+            last_integrity_check: components["schemas"]["IntegrityRunOut"] | null;
             last_restore_test: components["schemas"]["OpsRunOut"] | null;
             last_update: components["schemas"]["UpdateRunOut"] | null;
             migrations: components["schemas"]["OpsMigrationsOut"];
@@ -16281,7 +16497,7 @@ export interface components {
             /** Version */
             version: string;
             /** Warnings */
-            warnings: ("DB_UNAVAILABLE" | "BACKUP_STATUS_UNAVAILABLE" | "BACKUP_STALE" | "BACKUP_FAILED" | "RESTORE_TEST_STALE" | "RESTORE_TEST_FAILED" | "DISK_LOW" | "MIGRATIONS_PENDING")[];
+            warnings: ("DB_UNAVAILABLE" | "BACKUP_STATUS_UNAVAILABLE" | "BACKUP_STALE" | "BACKUP_FAILED" | "RESTORE_TEST_STALE" | "RESTORE_TEST_FAILED" | "DISK_LOW" | "MIGRATIONS_PENDING" | "INTEGRITY_FAILED")[];
         };
         /** TemplateParams */
         TemplateParams: {
@@ -16447,10 +16663,37 @@ export interface components {
         };
         /** UpdateRunOut */
         UpdateRunOut: {
+            /**
+             * Backup File
+             * @description File name of the pre-update dump (no folder)
+             */
+            backup_file: string;
+            /**
+             * Db Restored
+             * @description The rollback restored the pre-update dump
+             */
+            db_restored: boolean;
+            /**
+             * Detail
+             * @description Why it failed or rolled back, and in which step
+             */
+            detail: string;
             /** Finished At */
             finished_at: string | null;
             /** Id */
             id: number;
+            /**
+             * Log
+             * @description The last lines of the update script's log
+             */
+            log: string;
+            /**
+             * Migration Plan
+             * @description `migrate --plan` of the new version
+             */
+            migration_plan: string;
+            /** Migrations Applied */
+            migrations_applied: boolean;
             /** Previous Version */
             previous_version: string;
             /** Release Notes */
@@ -16460,6 +16703,11 @@ export interface components {
              * @enum {string}
              */
             result: "running" | "succeeded" | "failed" | "rolled_back";
+            /**
+             * Run Key
+             * @description The update script's run id; null when by hand
+             */
+            run_key: string | null;
             /**
              * Started At
              * Format: date-time
@@ -27451,6 +27699,144 @@ export interface operations {
             };
         };
     };
+    lab_list_approved_results: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabRowPageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    lab_list_collection: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabRowPageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     lab_cancel_test: {
         parameters: {
             query?: never;
@@ -31452,6 +31838,211 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NameOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_create_bank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_list_all_banks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    payments_update_bank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bank_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankOut"];
                 };
             };
             /** @description Unauthorized */
@@ -41142,6 +41733,73 @@ export interface operations {
                 "application/json": components["schemas"]["VisitCancelIn"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitDetailOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    visits_close_visit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {

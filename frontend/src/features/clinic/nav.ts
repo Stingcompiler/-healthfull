@@ -10,6 +10,8 @@ export const nav: NavItem[] = [
     icon: Stethoscope,
     group: "clinical",
     order: 40,
-    permission: "clinical.view",
+    // The doctor's workspace: a queue of their own patients needs a doctor (nurses hold
+    // clinical.view for the nursing chart, not a clinic of their own).
+    permission: "clinical.write_note",
   },
 ];
