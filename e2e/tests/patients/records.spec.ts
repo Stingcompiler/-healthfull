@@ -257,6 +257,12 @@ test("@patients the token slip prints on an 80 mm page", async ({ page }) => {
     await signIn(page, "reception", lang);
     await page.goto("/queue");
     const row = page.getByRole("row").filter({ hasText: patient.file_no });
+    // The board is in serving order, 50 rows a page, and the shared e2e database keeps every
+    // earlier spec's tokens for the day: page forward until the new patient's row is on screen.
+    const next = page.getByRole("button", { name: tr(lang, "common:table.nextPage") });
+    for (let hops = 0; hops < 20 && (await row.count()) === 0 && (await next.isEnabled()); hops++) {
+      await next.click();
+    }
     await row.getByRole("button", { name: tr(lang, "common:table.rowActions") }).click();
     await page.getByRole("menuitem", { name: tr(lang, "visits:board.action.print") }).click();
     await expect(page.getByRole("dialog").getByTestId("token-slip")).toContainText(patient.file_no);
