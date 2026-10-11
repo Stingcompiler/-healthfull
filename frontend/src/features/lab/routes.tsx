@@ -1,8 +1,10 @@
 import { createRoute, type AnyRoute } from "@tanstack/react-router";
 
 import { parseLabelSearch, parsePrintSearch, parseWorklistSearch } from "./lib/search";
+import { ApprovedResultsPage } from "./pages/ApprovedResultsPage";
 import { ApprovePage } from "./pages/ApprovePage";
 import { CatalogPage } from "./pages/CatalogPage";
+import { CollectionPage } from "./pages/CollectionPage";
 import { LabelPage } from "./pages/LabelPage";
 import { LabPage } from "./pages/LabPage";
 import { ResultPage } from "./pages/ResultPage";
@@ -39,5 +41,11 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     component: TestEditorPage,
   });
   const tat = createRoute({ getParentRoute: () => parent, path: "/lab/tat", component: TatPage });
-  return [index, result, print, label, approve, catalog, testEditor, tat] as const;
+  const collection = createRoute({ getParentRoute: () => parent, path: "/lab/collect", component: CollectionPage });
+  const approved = createRoute({
+    getParentRoute: () => parent,
+    path: "/lab/approved-results",
+    component: ApprovedResultsPage,
+  });
+  return [index, result, print, label, approve, catalog, testEditor, tat, collection, approved] as const;
 }

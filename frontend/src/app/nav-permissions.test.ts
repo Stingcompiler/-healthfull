@@ -46,6 +46,9 @@ function uiCodes(): Set<string> {
   for (const item of ALL_NAV) {
     if (item.permission === undefined) continue;
     for (const code of typeof item.permission === "string" ? [item.permission] : item.permission) codes.add(code);
+    if (item.unless !== undefined) {
+      for (const code of typeof item.unless === "string" ? [item.unless] : item.unless) codes.add(code);
+    }
   }
   for (const section of ADMIN_SECTIONS) codes.add(section.permission);
   return codes;

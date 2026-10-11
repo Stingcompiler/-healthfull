@@ -37,5 +37,9 @@ export const ALL_NAV: readonly NavItem[] = [
 
 /** Entries the user may see: any listed permission grants the item. */
 export function visibleNav(me: Pick<MeOut, "roles" | "permissions"> | null): NavItem[] {
-  return ALL_NAV.filter((item) => hasPermission(me, item.permission, "any"));
+  return ALL_NAV.filter(
+    (item) =>
+      hasPermission(me, item.permission, "any") &&
+      !(item.unless !== undefined && hasPermission(me, item.unless, "any")),
+  );
 }

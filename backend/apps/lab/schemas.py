@@ -124,6 +124,21 @@ class LabWorklistPageOut(Schema):
     counts: LabStageCountsOut
 
 
+class LabRowPageOut(Schema):
+    """A page of lab test rows without the bench's stage counts."""
+
+    items: list[LabWorklistRowOut]
+    count: int
+    page: int
+    page_size: int
+
+
+class LabSearchParams(Schema):
+    q: str | None = Field(None, max_length=200)
+    page: int = Field(1, ge=1)
+    page_size: int = Field(25, ge=1, le=100)
+
+
 # --- results ---------------------------------------------------------------------------------
 
 

@@ -83,6 +83,26 @@
     "emptyDone": "No results approved in the last two weeks",
     "emptyHint": "A test appears here once the cashier has collected the patient's share or a supervisor authorized it."
   },
+  "collection": {
+    "title": "Sample collection",
+    "description": "Paid or authorized tests waiting for a sample. Collect, label the tube and send it to the lab, which receives it.",
+    "action": "Sample",
+    "collect": "Collected",
+    "collectFor": "Mark the sample of {{test}} for {{patient}} as collected",
+    "done": "Sample for {{test}} collected. Print its label.",
+    "printLabel": "Print label",
+    "collectedNow": "Collected just now",
+    "empty": "No test is waiting for a sample",
+    "back": "Back to sample collection"
+  },
+  "approvedResults": {
+    "title": "Lab results",
+    "description": "Approved results to print for a patient: the last two weeks, or any age when you search.",
+    "print": "Print",
+    "printFor": "Print {{test}} for {{patient}}",
+    "emptySearch": "No approved result matches",
+    "back": "Back to lab results"
+  },
   "sample": {
     "title": "Sample",
     "type": "Sample type",
