@@ -61,7 +61,8 @@ function walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "test") continue;
+      // design/directions: the dev-only visual exploration (it renders the current patterns on purpose).
+      if (entry.name === "node_modules" || entry.name === "test" || entry.name === "directions") continue;
       out.push(...walk(full));
     } else if (/\.(tsx|jsx|css)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
       if (entry.name === "tokens.css") continue; // the one place raw color values (and shadows) live

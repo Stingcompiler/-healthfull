@@ -61,6 +61,7 @@ const ONLY = process.env.ONLY?.split(",").map((s) => s.trim());
 /** Facts looked up once per role through the API (stable: first match of a stable query). */
 interface Facts {
   cashierVisit?: number;
+  cashierPatient?: { id: number; file_no: string; phone?: string | null };
   doctorVisit?: number;
   portal?: { fileNo: string; phone: string; code: string };
 }
@@ -78,6 +79,8 @@ interface Screen {
   intercept?: (page: any) => Promise<void>;
   /** States are captured on a reduced matrix (light theme only) to keep the run short. */
   stateOnly?: boolean;
+  /** Only when ONLY names it (the dev-only direction exploration, not part of the regular run). */
+  optIn?: boolean;
 }
 
 const SCREENS: Screen[] = [
@@ -156,6 +159,15 @@ const SCREENS: Screen[] = [
       await page.locator('[data-slot="empty-state"]').waitFor();
     },
   },
+  ...["current", "calm", "flat", "tinted"].map(
+    (d): Screen => ({
+      id: `direction-${d}`,
+      role: "manager",
+      path: () => `/design/directions?d=${d}`,
+      ready: '[data-testid="directions"]',
+      optIn: true,
+    }),
+  ),
   {
     id: "portal-home",
     role: "portal",
@@ -197,35 +209,55 @@ async function json(ctx: any, url: string): Promise<any> {
 /** Looks up the demo records the screens need. Adjust here if the demo dataset changes. */
 async function findFacts(browser: any): Promise<Facts> {
   const facts: Facts = {};
+  if (ONLY?.every((o) => o.startsWith("direction"))) return facts; // static sample data, no records needed
 
   const cashier = await browser.newContext({ baseURL: BASE_URL });
   await staffLogin(cashier, USERNAME.cashier);
   // A visit with invoice lines: the first visit among the pharmacy queue's paid ones is a good
   // candidate; fall back to a cashier lookup by a common letter.
-  const lookup = await json(cashier, "/api/billing/lookup?q=a");
-  const visits: any[] = lookup.visits ?? lookup.results ?? [];
-  for (const v of visits.slice(0, 12)) {
-    const billing = await json(cashier, `/api/billing/visits/${v.visit_id ?? v.id}`);
-    if ((billing.invoices ?? []).some((inv: any) => (inv.lines ?? []).length >= 2)) {
-      facts.cashierVisit = v.visit_id ?? v.id;
-      break;
+  // The demo month is fully settled, so pick the open visit with the most invoice lines (ties:
+  // lowest id) among a stable sample of lookups; that shows the payer/patient split best.
+  const ids: number[] = [];
+  for (const q of ["a", "m", "h"]) {
+    const lookup = await json(cashier, `/api/billing/lookup?q=${q}`);
+    for (const row of lookup.items ?? []) for (const v of row.visits ?? []) if (v.status === "open") ids.push(v.id);
+  }
+  let best = 0;
+  for (const id of [...new Set(ids)].sort((a, b) => a - b).slice(0, 40)) {
+    const billing = await json(cashier, `/api/billing/visits/${id}`);
+    const all = (billing.invoices ?? []).flatMap((inv: any) => inv.lines ?? []);
+    // A payer-covered line shows the payer/patient split, which is the point of the screen.
+    const score = all.length + (all.some((l: any) => l.payer && l.payer_share !== "0.00") ? 10 : 0);
+    if (score > best) {
+      best = score;
+      facts.cashierVisit = id;
+      facts.cashierPatient = billing.patient;
     }
   }
+  // The cashier's shift bar and payment panel need an open shift: open one (demo DB only).
+  const shiftOpen = await cashier.request.post("/api/payments/shifts", {
+    headers: await csrf(cashier),
+    data: { opening_float: "50000.00", till: "T1" },
+  });
+  console.log(`shift: ${shiftOpen.status()} (200/201 opened, 409 already open)`);
   await cashier.close();
 
   const doctor = await browser.newContext({ baseURL: BASE_URL });
   await staffLogin(doctor, USERNAME.doctor);
   const worklist = await json(doctor, "/api/clinical/worklist");
-  const entries: any[] = worklist.entries ?? worklist.items ?? worklist ?? [];
-  const first = entries.find((e: any) => e.visit_id ?? e.visit?.id);
-  if (first) facts.doctorVisit = first.visit_id ?? first.visit.id;
+  const entries: any[] = Array.isArray(worklist) ? worklist : (worklist.entries ?? []);
+  const open = entries.find((e: any) => e.status !== "done" && e.visit?.id) ?? entries.find((e: any) => e.visit?.id);
+  if (open) facts.doctorVisit = open.visit.id;
   await doctor.close();
 
   // The portal needs a printed access code: issue one for a demo patient as the receptionist.
   const reception = await browser.newContext({ baseURL: BASE_URL });
   await staffLogin(reception, "reception");
-  const found = await json(reception, "/api/patients?q=a&limit=1");
-  const patient = (found.items ?? found.results ?? found)[0];
+  // The patient of the cashier's visit (insured, with invoices and receipts), else any with a phone.
+  const found = await json(reception, "/api/patients?q=a&limit=20");
+  const patient =
+    (facts.cashierPatient?.phone ? facts.cashierPatient : undefined) ??
+    (found.items ?? []).find((p: any) => p.phone && p.is_active);
   if (patient) {
     const issued = await reception.request.post(`/api/portal/patients/${patient.id}/access-codes`, {
       headers: await csrf(reception),
@@ -270,7 +302,9 @@ async function main(): Promise<void> {
   const facts = await findFacts(browser);
   console.log("facts:", JSON.stringify({ ...facts, portal: facts.portal ? { ...facts.portal, code: "***" } : undefined }));
 
-  const screens = SCREENS.filter((s) => !ONLY || ONLY.some((o) => s.id === o || s.id.startsWith(`${o}-`)));
+  const screens = SCREENS.filter((s) =>
+    ONLY ? ONLY.some((o) => s.id === o || s.id.startsWith(`${o}-`)) : !s.optIn,
+  );
   const roles = [...new Set(screens.map((s) => s.role))];
   const skipped: string[] = [];
   let taken = 0;
