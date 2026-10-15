@@ -1,5 +1,4 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { MousePointerClick, Wallet } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -67,7 +66,7 @@ export function CashierPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("title")} description={t("description")} icon={<Wallet />} actions={<ShortcutsDialog />} />
+      <PageHeader title={t("title")} description={t("description")} actions={<ShortcutsDialog />} />
       <CashierNav />
       <ShiftBar />
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
@@ -84,11 +83,7 @@ export function CashierPage() {
         />
         <div className="flex min-w-0 flex-col gap-4">
           {visitId === undefined ? (
-            <EmptyState
-              icon={<MousePointerClick />}
-              title={t("billing.pickTitle")}
-              description={t("billing.pickDescription")}
-            />
+            <EmptyState title={t("billing.pickTitle")} description={t("billing.pickDescription")} />
           ) : billing.isError ? (
             <AlertCard variant="danger" title={t("errors:title")}>
               {translateError(billing.error)}

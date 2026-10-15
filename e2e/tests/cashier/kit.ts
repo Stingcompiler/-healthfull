@@ -51,9 +51,9 @@ export function lineRow(scope: Locator, service: string): Locator {
   return scope.locator("tr, [data-testid=invoice-line]").filter({ hasText: service });
 }
 
-/** CSS selector of invoice line cards in `state` (the shared service line card). */
+/** CSS selector of invoice line rows in `state` (the cashier's InvoiceLines table row). */
 export function lineState(state: string): string {
-  return `[data-slot="service-line-card"][data-status="${state}"]`;
+  return `[data-slot="invoice-line"][data-status="${state}"]`;
 }
 
 /** Picks an option of a shared SelectField by its label text. */
