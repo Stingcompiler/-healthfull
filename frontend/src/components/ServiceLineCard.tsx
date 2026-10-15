@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { DateText } from "@/components/DateText";
 import { MoneyText } from "@/components/MoneyText";
-import { STATUS_STYLES, type ServiceLineState } from "@/components/status";
+import type { ServiceLineState } from "@/components/status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatNumber } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
@@ -50,9 +50,8 @@ export function ServiceLineCard({
     <article
       data-slot="service-line-card"
       data-status={status}
-      className={cn("card-surface relative flex min-w-0 flex-col gap-3 overflow-hidden p-4 ps-5", className)}
+      className={cn("card-surface flex min-w-0 flex-col gap-3 p-4", className)}
     >
-      <span aria-hidden="true" className={cn("absolute inset-y-0 start-0 w-1", STATUS_STYLES[status].dotClassName)} />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm leading-snug font-semibold text-fg">{name}</h3>

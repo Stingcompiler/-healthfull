@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/** 12px radius; soft shadow in light/warm, hairline border in dark (tokens). */
+/** 12px radius, one hairline border, no shadow (the shared card-surface). */
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
