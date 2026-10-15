@@ -288,5 +288,23 @@
     "previous": "Previous",
     "forward": "Forward",
     "back": "Back"
+  },
+  "directions": {
+    "title": "Visual directions (dev only)",
+    "subtitle": "The manager KPIs and the cashier invoice, in each candidate direction.",
+    "current": "Current",
+    "calm": "A. Calm and precise",
+    "flat": "B. Flat operating units",
+    "tinted": "C. Tinted bento",
+    "currentNote": "Today's shared components (KpiCard, AlertCard, ServiceLineCard).",
+    "calmNote": "One bordered surface, no shadows, no icon tiles, one hero figure; lines as divided rows.",
+    "flatNote": "No surfaces: whitespace and hairlines; figures in the open; lines as a dense table.",
+    "tintedNote": "Bento sizes by priority; tint marks only what needs attention; split block per line.",
+    "dashboardPart": "Manager dashboard",
+    "cashierPart": "Cashier invoice",
+    "total": "Totals",
+    "service": "Service",
+    "status": "Status",
+    "toCollect": "To collect"
   }
 }

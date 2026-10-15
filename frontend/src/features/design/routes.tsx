@@ -7,5 +7,15 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     // The style guide is not part of daily work: load it on demand.
     component: lazyRouteComponent(() => import("./DesignSystemPage"), "DesignSystemPage"),
   });
-  return [design] as const;
+  // DEV ONLY (UI review, phase 1): visual direction exploration. Registered only by the Vite dev
+  // server (import.meta.env.DEV is false in `vite build`), so production never ships or serves it.
+  const directions = createRoute({
+    getParentRoute: () => parent,
+    path: "/design/directions",
+    validateSearch: (search: Record<string, unknown>): { d?: string } => ({
+      d: typeof search.d === "string" ? search.d : undefined,
+    }),
+    component: lazyRouteComponent(() => import("./directions/DirectionsPage"), "DirectionsPage"),
+  });
+  return import.meta.env.DEV ? ([design, directions] as const) : ([design] as const);
 }
