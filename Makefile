@@ -27,7 +27,7 @@ E2E_GREP ?=
         test test-backend test-frontend \
         lint lint-backend lint-frontend lint-shell \
         typecheck typecheck-backend typecheck-frontend typecheck-e2e \
-        api api-check e2e seed demo check clean distclean \
+        api api-check e2e seed demo lint-ui shots check clean distclean \
         agent-setup agent-test agent-lint infra-test ports repo-hash
 
 help: ## List targets
@@ -126,6 +126,12 @@ seed: migrate ## Load the demo dataset into the dev DB (seed_demo when present, 
 
 demo: ## Create demo_hospital (DEMO_DB_NAME), migrate, load seed_demo (DEMO_RESET=1 drops it first)
 	"$(SCRIPTS)/demo.sh"
+
+lint-ui: ## UI review text scan for the forbidden card patterns (docs/ui-profile.md); LINT_UI_REPORT_ONLY=1 never fails
+	node "$(SCRIPTS)/lint-ui.mjs" --summary
+
+shots: ## Screenshots of the representative screens: make shots LABEL=before (app on demo_hospital; see scripts/shots.ts)
+	cd "$(E2E)" && node "$(SCRIPTS)/shots.ts" "$(or $(LABEL),current)"
 
 check: ## lint + typecheck + test + api drift. Must be green before any commit to main
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" lint

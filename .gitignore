@@ -33,6 +33,8 @@ e2e/.auth/
 e2e/.logs/
 artifacts/screens/*.png
 !artifacts/screens/.gitkeep
+# make shots output (docs/ui-review/ holds the few screenshots that are presented)
+shots/
 
 # Env
 .env
