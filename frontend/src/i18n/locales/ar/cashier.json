@@ -129,7 +129,6 @@
     "qtyPrice": "الكمية {{qty}}",
     "excluded": "غير مشمول",
     "needsPreapproval": "يحتاج موافقة مسبقة",
-    "lineStatus": "الحالة",
     "toCollect": "المطلوب تحصيله",
     "lineActions": "الإجراءات",
     "linesCaption": "سطور الفاتورة",

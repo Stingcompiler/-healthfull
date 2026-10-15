@@ -366,9 +366,13 @@ async function main(): Promise<void> {
               await screen.setup?.(page);
               await page.evaluate(() => document.fonts.ready);
               await page.waitForTimeout(400);
+              // Grow the viewport to the page height instead of using fullPage: a beyond-viewport
+              // capture makes chart containers (recharts) re-measure and spill out of their card.
+              const height = await page.evaluate(() => document.documentElement.scrollHeight);
+              await page.setViewportSize({ width: vp.width, height: Math.max(vp.height, height) });
+              await page.waitForTimeout(400);
               await page.screenshot({
                 path: path.join(OUT, `${screen.id}--${vp.name}--${theme}--${lang}.png`),
-                fullPage: true,
               });
               taken += 1;
             } catch (error) {

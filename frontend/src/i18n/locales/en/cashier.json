@@ -116,7 +116,6 @@
     "qtyPrice": "Qty {{qty}}",
     "excluded": "Not covered",
     "needsPreapproval": "Pre-approval needed",
-    "lineStatus": "Status",
     "toCollect": "To collect",
     "lineActions": "Actions",
     "linesCaption": "Invoice lines",
