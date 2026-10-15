@@ -33,7 +33,11 @@ export function CardsSection() {
   return (
     <Section id="cards" title={t("sections.cards")} description={t("descriptions.cards")}>
       <Demo label={t("cards.kpi")} className="flex flex-col gap-4">
-        <KpiGroup className="md:grid-cols-3 xl:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]">
+        <KpiGroup
+          /* ui-allow: hero-led track list (1.6fr then three), not equal columns */
+          className="md:grid-cols-3 xl:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]"
+        >
+          {/* ui-allow: the documented hero group: one hero and three secondary figures in one surface */}
           <KpiCard
             bare
             hero
@@ -164,6 +168,7 @@ export function CardsSection() {
         ))}
       </Demo>
 
+      {/* ui-allow: style-guide demo grid of different line states */}
       <Demo label={t("cards.serviceLine")} className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <ServiceLineCard
           name={services.consult}

@@ -117,8 +117,10 @@ function ManagerDashboard() {
           Colour only on pending transfers when some are waiting (a decision), never to decorate. */}
       <KpiGroup
         aria-label={t("kpi.title")}
+        /* ui-allow: hero-led track list (1.6fr then three), not equal columns */
         className="md:grid-cols-3 xl:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]"
       >
+        {/* ui-allow: one hero figure and three secondary figures inside ONE group surface */}
         <KpiCard
           bare
           hero
@@ -234,6 +236,7 @@ function StaffHome() {
         {t("staff.modules")}
       </h2>
       <ul
+        /* ui-allow: a list of module links in one surface, not stat cards */
         className="grid grid-cols-1 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-2 xl:grid-cols-3"
         data-testid="staff-modules"
       >
