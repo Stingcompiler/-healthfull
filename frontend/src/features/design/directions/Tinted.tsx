@@ -146,7 +146,12 @@ function TintedLine({ line }: { line: DirLine }) {
           <LineFlags line={line} />
         </div>
       </div>
-      <dl className="grid grid-cols-2 gap-3 rounded-control bg-surface/70 p-3 text-sm">
+      <dl
+        className={cn(
+          "grid grid-cols-2 gap-3 rounded-control p-3 text-sm",
+          needsAction || cancelled ? "bg-surface/70" : "bg-subtle",
+        )}
+      >
         <div>
           <dt className="text-xs text-muted">{t("invoice.payerShare")}</dt>
           <dd className="tabular">
