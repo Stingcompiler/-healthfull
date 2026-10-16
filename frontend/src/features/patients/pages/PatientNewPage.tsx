@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -86,7 +85,6 @@ export function PatientNewPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={<UserPlus />}
         eyebrow={<Link to="/patients">{t("title")}</Link>}
         title={t("new.title")}
         description={t("new.description")}

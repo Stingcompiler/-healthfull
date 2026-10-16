@@ -116,6 +116,8 @@
     "qtyPrice": "Qty {{qty}}",
     "excluded": "Not covered",
     "needsPreapproval": "Pre-approval needed",
+    "toCollect": "To collect",
+    "lineActions": "Actions",
     "linesCaption": "Invoice lines",
     "lineActionsFor": "Actions for {{name}}",
     "noLines": "No lines on this draft.",

@@ -37,7 +37,6 @@ export function PortalCodePage() {
       <PageHeader
         title={t("staff.slipTitle")}
         description={t("staff.slipDescription")}
-        icon={<KeyRound />}
         actions={
           <Button asChild variant="outline" className="print:hidden">
             <Link to="/patients/$patientId" params={{ patientId: String(patientId) }}>

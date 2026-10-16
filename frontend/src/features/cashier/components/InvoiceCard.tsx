@@ -11,7 +11,6 @@ import { KbdCombo } from "@/components/Kbd";
 import { MoneyText } from "@/components/MoneyText";
 import { AlertCard } from "@/components/AlertCard";
 import { ReasonDialog } from "@/components/ReasonDialog";
-import { ServiceLineCard } from "@/components/ServiceLineCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,65 +32,29 @@ import type { Invoice, InvoiceLine, PaymentMethod } from "../types";
 import { CreditNoteDialog } from "./CreditNoteDialog";
 import { DiscountDialog, type DiscountTarget } from "./DiscountDialog";
 import { NoteDialog } from "./NoteDialog";
+import { InvoiceLines, type InvoiceLineRow } from "./InvoiceLines";
 import { PreapprovalDialog } from "./PreapprovalDialog";
 
 export const APPROVE_SHORTCUT = "f8";
 
-function Amount({
+function Figure({
   label,
   value,
-  strong = false,
+  emphasis = false,
   testId,
 }: {
   label: ReactNode;
   value: string;
-  strong?: boolean;
+  /** The amount to collect: the strongest figure of the bar. */
+  emphasis?: boolean;
   testId?: string;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-3" data-testid={testId}>
-      <dt className="text-muted">{label}</dt>
-      <dd className={strong ? "font-semibold" : undefined}>
-        <MoneyText value={value} />
+    <div className="flex min-w-0 flex-col gap-0.5" data-testid={testId}>
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className={emphasis ? "text-xl leading-tight font-bold text-fg" : "text-sm text-fg"}>
+        <MoneyText value={value} className={emphasis ? "font-bold" : "font-normal"} />
       </dd>
-    </div>
-  );
-}
-
-function LineCard({ line, actions, approved }: { line: InvoiceLine; actions: ReactNode; approved: boolean }) {
-  const { t } = useTranslation("cashier");
-  const names = useNames();
-  return (
-    <div className="h-full" data-testid="invoice-line">
-      <ServiceLineCard
-        name={names.name(line.service)}
-        quantity={line.quantity}
-        unitPrice={line.unit_price}
-        status={line.state}
-        className="h-full p-3 ps-4 shadow-none"
-        meta={
-          <span className="mt-1 flex flex-wrap items-center gap-1.5">
-            <Badge variant={line.payer ? "info" : "neutral"}>
-              {line.payer ? names.name(line.payer) : t("invoice.cash")}
-            </Badge>
-            {line.excluded ? <Badge variant="warning">{t("invoice.excluded")}</Badge> : null}
-            {line.requires_pre_approval && !line.pre_approval_ref ? (
-              <Badge variant="warning">{t("invoice.needsPreapproval")}</Badge>
-            ) : null}
-          </span>
-        }
-        actions={actions}
-      >
-        <dl className="grid gap-1 text-sm">
-          <Amount label={t("invoice.gross")} value={line.gross} />
-          {line.discount !== "0.00" ? <Amount label={t("invoice.discount")} value={negate(line.discount)} /> : null}
-          <Amount label={t("invoice.payerShare")} value={line.payer_share} testId="payer-share" />
-          <Amount label={t("invoice.patientShare")} value={line.patient_share} strong testId="patient-share" />
-          {approved && line.outstanding !== null ? (
-            <Amount label={t("invoice.outstanding")} value={line.outstanding} />
-          ) : null}
-        </dl>
-      </ServiceLineCard>
     </div>
   );
 }
@@ -179,14 +142,20 @@ export function InvoiceCard({
     return out;
   };
 
+  // The coverage payer is shown once, in the header. A line repeats a payer badge only when it
+  // differs from it (another payer, cash) or needs a decision (not covered, pre-approval).
+  const payerIds = new Set(invoice.lines.filter((l) => l.payer).map((l) => l.payer?.id));
+  const invoicePayer = payerIds.size === 1 ? (invoice.lines.find((l) => l.payer)?.payer ?? null) : null;
+  const mixedPayers = payerIds.size > 1;
+
   return (
     <section
-      className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5"
+      className="card-surface flex min-w-0 flex-col gap-4 overflow-hidden pt-4 md:pt-5"
       data-testid={isDraft ? "draft-invoice" : "approved-invoice"}
       data-invoice-id={invoice.id}
       aria-label={invoice.number ?? t("invoice.draft")}
     >
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-3 px-4 md:px-5">
         <div className="flex min-w-0 flex-col gap-1">
           <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold">
             {invoice.number ? <bdi data-testid="invoice-number">{invoice.number}</bdi> : t("invoice.draft")}
@@ -204,6 +173,14 @@ export function InvoiceCard({
               <DateText value={invoice.created_at} format="datetime" />
             )}
           </span>
+          {invoice.lines.length > 0 && !mixedPayers ? (
+            <span className="flex flex-wrap items-center gap-1.5 text-sm text-muted" data-testid="invoice-payer">
+              {t("invoice.payer")}
+              <Badge variant={invoicePayer ? "info" : "neutral"}>
+                {invoicePayer ? names.name(invoicePayer) : t("invoice.cash")}
+              </Badge>
+            </span>
+          ) : null}
         </div>
         {approved ? (
           <div className="flex flex-wrap gap-2">
@@ -235,47 +212,59 @@ export function InvoiceCard({
       </header>
 
       {invoice.lines.length === 0 ? (
-        <p className="text-sm text-muted">{t("invoice.noLines")}</p>
+        <p className="px-4 text-sm text-muted md:px-5">{t("invoice.noLines")}</p>
       ) : (
-        <ul className="grid gap-3 xl:grid-cols-2" aria-label={t("invoice.linesCaption")}>
-          {invoice.lines.map((line) => (
-            <li key={line.id} className="min-w-0">
-              <LineCard
-                line={line}
-                approved={approved}
-                actions={isDraft ? <LineActions actions={rowActions(line)} name={names.name(line.service)} /> : null}
-              />
-            </li>
-          ))}
-        </ul>
+        <InvoiceLines
+          caption={t("invoice.linesCaption")}
+          lines={invoice.lines.map((line): InvoiceLineRow => {
+            const showPayer = mixedPayers || (invoicePayer !== null && line.payer?.id !== invoicePayer.id);
+            const needsPreapproval = line.requires_pre_approval && !line.pre_approval_ref;
+            return {
+              id: line.id,
+              name: names.name(line.service),
+              meta:
+                showPayer || line.excluded || needsPreapproval ? (
+                  <>
+                    {showPayer ? (
+                      <Badge variant={line.payer ? "info" : "neutral"}>
+                        {line.payer ? names.name(line.payer) : t("invoice.cash")}
+                      </Badge>
+                    ) : null}
+                    {line.excluded ? <Badge variant="warning">{t("invoice.excluded")}</Badge> : null}
+                    {needsPreapproval ? <Badge variant="warning">{t("invoice.needsPreapproval")}</Badge> : null}
+                  </>
+                ) : null,
+              quantity: line.quantity,
+              gross: line.gross,
+              discount: line.discount,
+              payerShare: line.payer_share,
+              patientShare: line.patient_share,
+              outstanding: approved ? line.outstanding : null,
+              status: line.state,
+              needsDecision: line.excluded || (line.requires_pre_approval && !line.pre_approval_ref),
+              actions: isDraft ? <LineActions actions={rowActions(line)} name={names.name(line.service)} /> : null,
+            };
+          })}
+        />
       )}
 
       {lineError ? (
-        <AlertCard
-          variant="danger"
-          title={t("errors:title")}
-          live
-          onDismiss={() => {
-            setLineError(null);
-          }}
-        >
-          {lineError}
-        </AlertCard>
+        <div className="px-4 md:px-5">
+          <AlertCard
+            variant="danger"
+            title={t("errors:title")}
+            live
+            onDismiss={() => {
+              setLineError(null);
+            }}
+          >
+            {lineError}
+          </AlertCard>
+        </div>
       ) : null}
 
-      <dl className="grid gap-1 text-sm sm:ms-auto sm:w-80" data-testid="invoice-totals">
-        <Amount label={t("invoice.grossTotal")} value={invoice.gross_total} />
-        <Amount label={t("invoice.discountTotal")} value={negate(invoice.discount_total)} />
-        <Amount label={t("invoice.payerTotal")} value={invoice.payer_total} />
-        <Amount label={t("invoice.patientTotal")} value={invoice.patient_total} strong />
-        {approved && invoice.paid !== null ? <Amount label={t("invoice.paid")} value={invoice.paid} /> : null}
-        {approved && invoice.outstanding !== null ? (
-          <Amount label={t("invoice.outstanding")} value={invoice.outstanding} strong />
-        ) : null}
-      </dl>
-
       {approved && invoice.payments.length > 0 ? (
-        <div className="flex flex-col gap-1 text-sm">
+        <div className="flex flex-col gap-1 px-4 text-sm md:px-5">
           <h4 className="font-medium">{t("invoice.payments")}</h4>
           <ul className="flex flex-col gap-1">
             {invoice.payments.map((p) => (
@@ -302,7 +291,7 @@ export function InvoiceCard({
       ) : null}
 
       {approved && invoice.credit_notes.length > 0 ? (
-        <div className="flex flex-col gap-1 text-sm">
+        <div className="flex flex-col gap-1 px-4 text-sm md:px-5">
           <h4 className="font-medium">{t("invoice.creditNotes")}</h4>
           <ul className="flex flex-col gap-1">
             {invoice.credit_notes.map((cn) => (
@@ -320,52 +309,67 @@ export function InvoiceCard({
         </div>
       ) : null}
 
-      {isDraft ? (
-        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
-          {canDiscount && invoice.lines.length > 0 ? (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDiscountTarget({ kind: "invoice", invoice });
-              }}
-              data-testid="discount-invoice"
-            >
-              <BadgePercent aria-hidden="true" />
-              {t("invoice.actions.discountInvoice")}
-            </Button>
+      <footer
+        className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4 border-t border-border bg-subtle px-4 py-4 md:px-5"
+        data-slot="invoice-totals-bar"
+      >
+        <dl className="flex min-w-0 flex-wrap items-end gap-x-8 gap-y-3" data-testid="invoice-totals">
+          <Figure label={t("invoice.grossTotal")} value={invoice.gross_total} />
+          <Figure label={t("invoice.discountTotal")} value={negate(invoice.discount_total)} />
+          <Figure label={t("invoice.payerTotal")} value={invoice.payer_total} />
+          {approved && invoice.paid !== null ? <Figure label={t("invoice.paid")} value={invoice.paid} /> : null}
+          {approved && invoice.outstanding !== null ? (
+            <Figure label={t("invoice.outstanding")} value={invoice.outstanding} />
           ) : null}
-          <Can permission="billing.void_draft">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setVoidOpen(true);
-              }}
-            >
-              {t("invoice.void")}
-            </Button>
-          </Can>
-          <Can permission="billing.approve_invoice">
-            <ConfirmDialog
-              open={approveOpen}
-              onOpenChange={setApproveOpen}
-              trigger={
-                <Button data-testid="approve-invoice" disabled={invoice.lines.length === 0}>
-                  <CheckCircle2 aria-hidden="true" />
-                  {t("invoice.approve")}
-                  <KbdCombo combo={APPROVE_SHORTCUT} className="ms-1 hidden md:inline-flex" />
-                </Button>
-              }
-              title={t("invoice.approveTitle")}
-              description={t("invoice.approveDescription")}
-              confirmLabel={t("invoice.approve")}
-              onConfirm={async () => {
-                const inv = await approve.mutateAsync(invoice.id);
-                onApproved?.(inv);
-              }}
-            />
-          </Can>
-        </footer>
-      ) : null}
+          <Figure label={t("invoice.toCollect")} value={invoice.patient_total} emphasis />
+        </dl>
+        {isDraft ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {canDiscount && invoice.lines.length > 0 ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDiscountTarget({ kind: "invoice", invoice });
+                }}
+                data-testid="discount-invoice"
+              >
+                <BadgePercent aria-hidden="true" />
+                {t("invoice.actions.discountInvoice")}
+              </Button>
+            ) : null}
+            <Can permission="billing.void_draft">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setVoidOpen(true);
+                }}
+              >
+                {t("invoice.void")}
+              </Button>
+            </Can>
+            <Can permission="billing.approve_invoice">
+              <ConfirmDialog
+                open={approveOpen}
+                onOpenChange={setApproveOpen}
+                trigger={
+                  <Button data-testid="approve-invoice" disabled={invoice.lines.length === 0}>
+                    <CheckCircle2 aria-hidden="true" />
+                    {t("invoice.approve")}
+                    <KbdCombo combo={APPROVE_SHORTCUT} className="ms-1 hidden md:inline-flex" />
+                  </Button>
+                }
+                title={t("invoice.approveTitle")}
+                description={t("invoice.approveDescription")}
+                confirmLabel={t("invoice.approve")}
+                onConfirm={async () => {
+                  const inv = await approve.mutateAsync(invoice.id);
+                  onApproved?.(inv);
+                }}
+              />
+            </Can>
+          </div>
+        ) : null}
+      </footer>
 
       <DiscountDialog
         invoiceId={invoice.id}

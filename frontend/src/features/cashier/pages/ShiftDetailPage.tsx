@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "@tanstack/react-router";
-import { ClipboardCheck, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -53,7 +53,6 @@ export function ShiftDetailPage() {
             ? t(shift.data.shift.status === "open" ? "shiftDetail.descriptionOpen" : "shiftDetail.description")
             : undefined
         }
-        icon={<ClipboardCheck />}
         actions={
           <Button
             variant="outline"

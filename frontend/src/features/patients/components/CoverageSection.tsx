@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil, Plus, ShieldCheck, ShieldOff } from "lucide-react";
+import { Pencil, Plus, ShieldOff } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -99,7 +99,6 @@ export function CoverageSection({ patientId, readOnly = false }: { patientId: nu
     <section aria-labelledby="coverage-heading" className="card-surface flex flex-col gap-3 p-4 md:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="coverage-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
-          <ShieldCheck className="size-5 text-muted" aria-hidden="true" />
           {t("coverage.title")}
         </h2>
         {canManage ? (

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CircleDollarSign, FilePlus2, FileStack, Hourglass, Scale, Undo2 } from "lucide-react";
+import { FilePlus2, FileStack, Scale, Undo2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,7 +8,7 @@ import { AlertCard } from "@/components/AlertCard";
 import { Can } from "@/components/Can";
 import { DataTable, type DataTableRowAction } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
-import { KpiCard } from "@/components/KpiCard";
+import { KpiCard, KpiGroup } from "@/components/KpiCard";
 import { MoneyText } from "@/components/MoneyText";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,6 @@ export function ClaimsPage() {
       <PageHeader
         title={t("receivables.title")}
         description={t("receivables.description")}
-        icon={<Scale />}
         actions={
           <Can permission="claims.manage">
             <Button asChild>
@@ -120,39 +119,37 @@ export function ClaimsPage() {
         </AlertCard>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="receivable-kpis">
+          <KpiGroup lead data-testid="receivable-kpis">
             <KpiCard
+              bare
+              hero
               label={t("stages.receivable")}
               value={totals ? <MoneyText value={totals.receivable} /> : null}
               hint={t("receivables.receivableHint")}
-              icon={<Scale />}
               loading={data.isPending}
             />
             <KpiCard
+              bare
               label={t("stages.accrued")}
               value={totals ? <MoneyText value={totals.accrued} /> : null}
               hint={t("receivables.accruedHint")}
-              icon={<FilePlus2 />}
-              tone="info"
               loading={data.isPending}
             />
             <KpiCard
+              bare
               label={t("stages.claimed")}
               value={totals ? <MoneyText value={totals.claimed} /> : null}
               hint={t("receivables.claimedHint")}
-              icon={<Hourglass />}
-              tone="warning"
               loading={data.isPending}
             />
             <KpiCard
+              bare
               label={t("stages.collected")}
               value={totals ? <MoneyText value={totals.collected} /> : null}
               hint={t("receivables.collectedHint")}
-              icon={<CircleDollarSign />}
-              tone="success"
               loading={data.isPending}
             />
-          </div>
+          </KpiGroup>
           {totals && totals.rejected_unresolved !== "0.00" ? (
             <AlertCard variant="warning" title={t("receivables.rejectedTitle")}>
               {t("receivables.rejectedBody", {

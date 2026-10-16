@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { KeyRound, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -46,7 +46,6 @@ function PortalAccessBody({ patientId }: { patientId: number }) {
       data-testid="portal-access-card"
     >
       <h2 id="portal-access-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
-        <KeyRound className="size-4 text-muted" aria-hidden="true" />
         {t("staff.title")}
       </h2>
       {codes.isError ? (

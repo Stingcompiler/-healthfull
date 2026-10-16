@@ -148,7 +148,6 @@ export function PayerPaymentsPage() {
       <PageHeader
         title={t("payments.title")}
         description={t("payments.description")}
-        icon={<Banknote />}
         actions={
           <Can permission="claims.record_payer_payment">
             <Button

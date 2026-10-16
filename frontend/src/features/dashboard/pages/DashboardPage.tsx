@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Banknote, ChartColumn, CircleCheck, Clock3, Hourglass, TrendingUp } from "lucide-react";
+import { ChartColumn } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { visibleNav } from "@/app/nav";
 import { AlertCard } from "@/components/AlertCard";
 import { DateText } from "@/components/DateText";
 import { ChevronNext } from "@/components/icons";
-import { KpiCard } from "@/components/KpiCard";
+import { DecisionList, DecisionRow } from "@/components/DecisionList";
+import { KpiCard, KpiGroup } from "@/components/KpiCard";
 import { MoneyText } from "@/components/MoneyText";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { useCurrentUser, usePermission } from "@/lib/auth/hooks";
 import { formatNumber } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
+import { cn } from "@/lib/utils";
 
 import type { ReportAlert, ReportDashboard } from "@/features/reports/types";
 
@@ -39,10 +41,10 @@ function isAlertKey(key: string): key is AlertKey {
   return (ALERT_KEYS as readonly string[]).includes(key);
 }
 
-/** The variant of each alert tone (the server sends the tone). */
-const ALERT_VARIANT = {
-  neutral: "info",
-  primary: "info",
+/** Only warning and danger alerts are coloured (they need a decision); the rest read plain. */
+const ALERT_TONE = {
+  neutral: "neutral",
+  primary: "neutral",
   info: "info",
   success: "success",
   warning: "warning",
@@ -107,14 +109,24 @@ function ManagerDashboard() {
   const count = (key: string) => formatNumber(Number(data ? (metricValue(data, key) ?? 0) : 0), language);
   const loading = !data;
 
+  const hasPending = Number(data ? (metricValue(data, "pending_count") ?? 0) : 0) > 0;
+
   return (
     <div className="flex min-w-0 flex-col gap-6" data-testid="manager-dashboard">
-      <section aria-label={t("kpi.title")} className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+      {/* One surface: the hero figure (confirmed collection) and the figures a step below it.
+          Colour only on pending transfers when some are waiting (a decision), never to decorate. */}
+      <KpiGroup
+        aria-label={t("kpi.title")}
+        /* ui-allow: hero-led track list (1.6fr then three), not equal columns */
+        className="md:grid-cols-3 xl:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]"
+      >
+        {/* ui-allow: one hero figure and three secondary figures inside ONE group surface */}
         <KpiCard
+          bare
+          hero
+          className="col-span-2 md:col-span-3 xl:col-span-1"
           label={t("kpi.collectedToday")}
           value={<MoneyText value={money("collected_today")} currency={false} />}
-          icon={<Banknote />}
-          tone="success"
           loading={loading}
           hint={
             data ? (
@@ -130,55 +142,54 @@ function ManagerDashboard() {
           }
         />
         <KpiCard
+          bare
           label={t("kpi.pendingTransfers")}
           value={<MoneyText value={money("pending_transfers")} currency={false} />}
-          icon={<Hourglass />}
-          tone="warning"
+          tone={hasPending ? "warning" : "primary"}
           loading={loading}
           hint={data ? t("kpi.pendingCount", { n: count("pending_count") }) : undefined}
         />
         <KpiCard
+          bare
           label={t("kpi.queueWaiting")}
           value={count("queue_waiting")}
-          icon={<Clock3 />}
-          tone="info"
           loading={loading}
           hint={data ? t("kpi.withDoctor", { n: count("with_doctor") }) : undefined}
         />
         <KpiCard
+          bare
+          className="col-span-2 md:col-span-1"
           label={t("kpi.netRevenueToday")}
           value={<MoneyText value={money("net_revenue_today")} currency={false} />}
-          icon={<TrendingUp />}
-          tone="primary"
           loading={loading}
           hint={data ? t("kpi.visitsToday", { n: count("visits_today") }) : undefined}
         />
-      </section>
+      </KpiGroup>
 
       <section aria-labelledby="dashboard-alerts" className="flex flex-col gap-3">
         <h2 id="dashboard-alerts" className="text-base font-semibold text-fg">
           {t("alerts.title")}
         </h2>
         {loading ? (
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-40 w-full rounded-card" />
         ) : data.alerts.length === 0 ? (
-          <AlertCard variant="success" icon={<CircleCheck />} title={t("alerts.allClear")} />
+          <DecisionList>
+            <DecisionRow tone="success" title={t("alerts.allClear")} />
+          </DecisionList>
         ) : (
-          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2" data-testid="dashboard-alerts">
+          <DecisionList data-testid="dashboard-alerts">
             {data.alerts.map((alert) => (
-              <li key={alert.key} className="min-w-0">
-                <AlertItem alert={alert} />
-              </li>
+              <AlertItem key={alert.key} alert={alert} />
             ))}
-          </ul>
+          </DecisionList>
         )}
       </section>
 
       <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
         {loading ? (
           <>
-            <Skeleton className="h-72 w-full" />
-            <Skeleton className="h-72 w-full" />
+            <Skeleton className="h-72 w-full rounded-card" />
+            <Skeleton className="h-72 w-full rounded-card" />
           </>
         ) : (
           <>
@@ -195,14 +206,11 @@ function AlertItem({ alert }: { alert: ReportAlert }) {
   const { t } = useTranslation("dashboard");
   const language = useLanguage();
   return (
-    <AlertCard
-      variant={ALERT_VARIANT[alert.tone]}
-      title={
-        <span className="flex flex-wrap items-baseline gap-x-2">
-          <span className="tabular text-lg font-bold">{formatNumber(alert.count, language)}</span>
-          <span>{isAlertKey(alert.key) ? t(`alerts.${alert.key}`) : alert.key}</span>
-        </span>
-      }
+    <DecisionRow
+      tone={ALERT_TONE[alert.tone]}
+      count={formatNumber(alert.count, language)}
+      title={isAlertKey(alert.key) ? t(`alerts.${alert.key}`) : alert.key}
+      detail={alert.amount !== null ? <MoneyText value={alert.amount} /> : undefined}
       action={
         alert.report ? (
           <Button asChild variant="outline" size="sm">
@@ -213,9 +221,7 @@ function AlertItem({ alert }: { alert: ReportAlert }) {
           </Button>
         ) : undefined
       }
-    >
-      {alert.amount !== null ? <MoneyText value={alert.amount} /> : null}
-    </AlertCard>
+    />
   );
 }
 
@@ -229,18 +235,23 @@ function StaffHome() {
       <h2 id="staff-modules" className="text-base font-semibold text-fg">
         {t("staff.modules")}
       </h2>
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="staff-modules">
+      <ul
+        /* ui-allow: a list of module links in one surface, not stat cards */
+        className="grid grid-cols-1 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-2 xl:grid-cols-3"
+        data-testid="staff-modules"
+      >
         {items.map((item) => {
           const Icon = item.icon;
           return (
-            <li key={item.id} className="min-w-0">
+            <li key={item.id} className="min-w-0 bg-surface">
               <Link
                 to={item.to}
-                className="card-surface flex min-h-14 items-center gap-3 p-4 focus-ring transition-colors hover:border-primary/40"
+                className="flex min-h-14 items-center gap-3 px-4 py-3 focus-ring transition-colors hover:bg-subtle"
               >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary-strong [&_svg]:size-5">
-                  <Icon aria-hidden="true" className={item.flipInRtl ? "rtl:-scale-x-100" : undefined} />
-                </span>
+                <Icon
+                  aria-hidden="true"
+                  className={cn("size-5 shrink-0 text-muted", item.flipInRtl && "rtl:-scale-x-100")}
+                />
                 <span className="min-w-0 flex-1 font-semibold text-fg">{t(`nav:items.${item.labelKey}`)}</span>
                 <ChevronNext className="size-4 shrink-0 text-muted" aria-hidden="true" />
               </Link>

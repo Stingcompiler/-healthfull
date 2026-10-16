@@ -1,4 +1,4 @@
-import { Activity, ChevronDown, HeartPulse, Pill, ShieldAlert, Stethoscope, TestTube } from "lucide-react";
+import { ChevronDown, ShieldAlert } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -89,7 +89,6 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
       ) : (
         <div id={detailsId} className="card-surface flex flex-col divide-y divide-border" data-testid="summary-details">
           <Section
-            icon={<HeartPulse />}
             title={t("summary.conditions")}
             action={
               <Can permission="clinical.manage_conditions">
@@ -119,7 +118,7 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
           </Section>
 
           {latestVitals ? (
-            <Section icon={<Activity />} title={t("summary.latestVitals")}>
+            <Section title={t("summary.latestVitals")}>
               <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3 lg:grid-cols-2">
                 {latestVitals.temperature_c ? (
                   <Vital
@@ -152,7 +151,7 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
             </Section>
           ) : null}
 
-          <Section icon={<Pill />} title={t("summary.medications")}>
+          <Section title={t("summary.medications")}>
             {data.active_medications.length === 0 ? (
               <Empty>{t("summary.noMedications")}</Empty>
             ) : (
@@ -177,7 +176,7 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
             )}
           </Section>
 
-          <Section icon={<TestTube />} title={t("summary.latestResults")}>
+          <Section title={t("summary.latestResults")}>
             {data.latest_results.length === 0 ? (
               <Empty>{t("summary.noResults")}</Empty>
             ) : (
@@ -197,7 +196,7 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
             )}
           </Section>
 
-          <Section icon={<Stethoscope />} title={t("summary.recentVisits")}>
+          <Section title={t("summary.recentVisits")}>
             {data.recent_visits.length === 0 ? (
               <Empty>{t("summary.noVisits")}</Empty>
             ) : (
@@ -231,23 +230,10 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
   );
 }
 
-function Section({
-  icon,
-  title,
-  action,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  action?: ReactNode;
-  children: ReactNode;
-}) {
+function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-2 p-4">
       <div className="flex items-center gap-2">
-        <span className="text-muted [&_svg]:size-4" aria-hidden="true">
-          {icon}
-        </span>
         <h2 className="text-sm font-semibold text-fg">{title}</h2>
         {action ? <div className="ms-auto">{action}</div> : null}
       </div>

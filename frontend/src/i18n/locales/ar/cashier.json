@@ -129,6 +129,8 @@
     "qtyPrice": "الكمية {{qty}}",
     "excluded": "غير مشمول",
     "needsPreapproval": "يحتاج موافقة مسبقة",
+    "toCollect": "المطلوب تحصيله",
+    "lineActions": "الإجراءات",
     "linesCaption": "سطور الفاتورة",
     "lineActionsFor": "إجراءات {{name}}",
     "noLines": "لا سطور في هذه المسودة.",

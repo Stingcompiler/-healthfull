@@ -136,7 +136,6 @@ export function ReceiptsPage() {
       <PageHeader
         title={t("receipts.title")}
         description={t("receipts.description")}
-        icon={<Truck />}
         actions={
           canReceive ? (
             <Button

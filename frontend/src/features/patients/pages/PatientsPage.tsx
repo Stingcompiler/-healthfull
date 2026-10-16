@@ -110,7 +110,6 @@ export function PatientsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={<Users />}
         title={t("title")}
         description={t("description")}
         actions={

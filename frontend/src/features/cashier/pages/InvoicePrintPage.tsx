@@ -1,5 +1,4 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { FileText } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -161,7 +160,6 @@ export function InvoicePrintPage() {
       <PageHeader
         title={t("invoicePrint.pageTitle")}
         description={t("invoicePrint.pageDescription")}
-        icon={<FileText />}
         className="print:hidden"
         actions={
           <Button asChild variant="outline">

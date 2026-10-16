@@ -1,5 +1,4 @@
 import { Link, useParams, useSearch } from "@tanstack/react-router";
-import { ReceiptText } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -170,7 +169,6 @@ export function ReceiptPage() {
       <PageHeader
         title={t("receipt.pageTitle")}
         description={t("receipt.pageDescription")}
-        icon={<ReceiptText />}
         className="print:hidden"
         actions={
           <Button asChild variant="outline">

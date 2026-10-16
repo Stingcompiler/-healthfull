@@ -1,4 +1,3 @@
-import { Palette } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -53,7 +52,6 @@ export function DesignSystemPage() {
         <PageHeader
           title={t("title")}
           description={t("subtitle")}
-          icon={<Palette />}
           actions={
             <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("preview")}>
               <ThemeSwitcher variant="segmented" />

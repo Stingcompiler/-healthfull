@@ -56,9 +56,7 @@ export function VerifyPage() {
       </header>
       <main id="main" className="mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-4 py-6">
         <div className="text-center">
-          <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary-strong">
-            <ShieldCheck className="size-6" aria-hidden="true" />
-          </span>
+          <ShieldCheck className="mx-auto mb-3 size-7 text-primary-strong" aria-hidden="true" />
           <h1 className="text-xl font-bold text-fg">{t("verify.title")}</h1>
           <p className="mt-1 text-sm text-pretty text-muted">{t("verify.description")}</p>
         </div>

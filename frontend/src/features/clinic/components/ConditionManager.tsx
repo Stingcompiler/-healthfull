@@ -1,4 +1,4 @@
-import { HeartPulse, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -62,10 +62,7 @@ export function ConditionManager({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <HeartPulse className="size-5 text-muted" aria-hidden="true" />
-            {t("condition.title")}
-          </DialogTitle>
+          <DialogTitle className="flex items-center gap-2">{t("condition.title")}</DialogTitle>
           <DialogDescription>{t("condition.description")}</DialogDescription>
         </DialogHeader>
 

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CircleCheck, Copy, Download, FileSpreadsheet, TriangleAlert, Upload } from "lucide-react";
+import { CircleCheck, Download, FileSpreadsheet, Upload } from "lucide-react";
 import { useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { Can } from "@/components/Can";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
-import { KpiCard } from "@/components/KpiCard";
+import { KpiCard, KpiGroup } from "@/components/KpiCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,7 +132,6 @@ export function PatientImportPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={<FileSpreadsheet />}
         eyebrow={<Link to="/patients">{t("title")}</Link>}
         title={t("import.title")}
         description={t("import.description")}
@@ -218,12 +217,22 @@ export function PatientImportPage() {
               </AlertCard>
             ) : null}
 
-            <section aria-label={t("import.summary")} className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-              <KpiCard label={t("import.total")} value={n(job.total_rows)} icon={<FileSpreadsheet />} />
-              <KpiCard label={t("import.valid")} value={n(job.valid_rows)} icon={<CircleCheck />} tone="success" />
-              <KpiCard label={t("import.errors")} value={n(job.error_rows)} icon={<TriangleAlert />} tone="danger" />
-              <KpiCard label={t("import.duplicates")} value={n(job.duplicate_rows)} icon={<Copy />} tone="warning" />
-            </section>
+            <KpiGroup lead aria-label={t("import.summary")}>
+              <KpiCard bare hero label={t("import.total")} value={n(job.total_rows)} />
+              <KpiCard bare label={t("import.valid")} value={n(job.valid_rows)} />
+              <KpiCard
+                bare
+                label={t("import.errors")}
+                value={n(job.error_rows)}
+                tone={job.error_rows > 0 ? "danger" : "primary"}
+              />
+              <KpiCard
+                bare
+                label={t("import.duplicates")}
+                value={n(job.duplicate_rows)}
+                tone={job.duplicate_rows > 0 ? "warning" : "primary"}
+              />
+            </KpiGroup>
 
             <Tabs
               value={filter}

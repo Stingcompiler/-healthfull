@@ -105,7 +105,6 @@ export function CountsPage() {
       <PageHeader
         title={t("counts.title")}
         description={t("counts.description")}
-        icon={<ClipboardList />}
         actions={
           canCount ? (
             <Button

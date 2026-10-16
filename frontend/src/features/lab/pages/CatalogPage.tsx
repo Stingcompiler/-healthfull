@@ -96,7 +96,6 @@ export function CatalogPage() {
       <PageHeader
         title={t("catalog.title")}
         description={t("catalog.description")}
-        icon={<BookOpen />}
         actions={
           <Button
             onClick={() => {

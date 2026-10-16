@@ -40,7 +40,6 @@ export function CountPage() {
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title={count.data ? t("count.title", { number: count.data.number }) : t("counts.title")}
-        icon={<ClipboardList />}
         eyebrow={
           <Link
             to="/pharmacy/counts"

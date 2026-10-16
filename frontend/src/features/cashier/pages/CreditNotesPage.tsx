@@ -147,7 +147,7 @@ export function CreditNotesPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("creditNotes.title")} description={t("creditNotes.description")} icon={<FileMinus />} />
+      <PageHeader title={t("creditNotes.title")} description={t("creditNotes.description")} />
       <CashierNav />
       <Tabs
         value={filter}

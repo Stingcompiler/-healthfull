@@ -1,15 +1,5 @@
 import { Link, useParams } from "@tanstack/react-router";
-import {
-  CheckCheck,
-  ClipboardList,
-  FileText,
-  FlaskConical,
-  History,
-  Lock,
-  Megaphone,
-  Play,
-  Stethoscope,
-} from "lucide-react";
+import { CheckCheck, ClipboardList, FileText, FlaskConical, History, Lock, Megaphone, Play } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -76,7 +66,7 @@ export function VisitWorkspacePage() {
   if (!valid || (workspace.isError && isApiError(workspace.error) && workspace.error.status === 404)) {
     return (
       <div className="flex flex-col gap-5">
-        <PageHeader title={t("workspace.notFoundTitle")} icon={<Stethoscope />} />
+        <PageHeader title={t("workspace.notFoundTitle")} />
         <EmptyState
           title={t("workspace.notFoundTitle")}
           description={t("workspace.notFoundDescription")}
@@ -93,7 +83,7 @@ export function VisitWorkspacePage() {
   if (workspace.isError) {
     return (
       <div className="flex flex-col gap-5">
-        <PageHeader title={t("workspace.title")} icon={<Stethoscope />} />
+        <PageHeader title={t("workspace.title")} />
         <QueryError
           title={t("workspace.loadError")}
           error={workspace.error}
@@ -107,7 +97,7 @@ export function VisitWorkspacePage() {
   if (workspace.isPending) {
     return (
       <div className="flex flex-col gap-5" aria-busy="true">
-        <PageHeader title={t("workspace.title")} icon={<Stethoscope />} />
+        <PageHeader title={t("workspace.title")} />
         <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
           <Skeleton className="h-64" />
           <Skeleton className="h-96" />
@@ -146,7 +136,6 @@ export function VisitWorkspacePage() {
             {!open ? <span className="font-medium text-warning-fg">{t(`visitStatus.${ws.visit.status}`)}</span> : null}
           </span>
         }
-        icon={<Stethoscope />}
         actions={
           <>
             <QueueActions

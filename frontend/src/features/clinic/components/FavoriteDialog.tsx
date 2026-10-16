@@ -1,4 +1,3 @@
-import { Star } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -57,10 +56,7 @@ export function FavoriteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Star className="size-5 text-muted" aria-hidden="true" />
-            {t("orderSets.saveTitle")}
-          </DialogTitle>
+          <DialogTitle className="flex items-center gap-2">{t("orderSets.saveTitle")}</DialogTitle>
           <DialogDescription>{t("orderSets.saveDescription", { count: items.length })}</DialogDescription>
         </DialogHeader>
         <form

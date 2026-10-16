@@ -42,7 +42,7 @@ export function SalePage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("sale.title")} description={t("sale.description")} icon={<ShoppingBag />} />
+      <PageHeader title={t("sale.title")} description={t("sale.description")} />
       <PharmacyNav />
       {!canSell ? (
         <AlertCard variant="info" title={t("sale.noAccessTitle")}>

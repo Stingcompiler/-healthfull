@@ -1,6 +1,6 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { BedDouble, ClipboardList, HeartPulse, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -47,7 +47,6 @@ export function NursingChartPage() {
         eyebrow={t("chart.title")}
         description={data ? t("chart.visit", { number: data.visit.number }) : undefined}
         documentTitle={t("chart.title")}
-        icon={<HeartPulse />}
       />
       {chart.isError ? (
         <QueryError
@@ -124,7 +123,6 @@ function ChartBody({ data }: { data: NursingChart }) {
           {data.admission ? (
             <section aria-labelledby="nursing-admission" className="card-surface flex flex-col gap-3 p-4 md:p-5">
               <h2 id="nursing-admission" className="flex items-center gap-2 text-base font-semibold text-fg">
-                <BedDouble className="size-4 text-muted" aria-hidden="true" />
                 {t("chart.admissionNumber", { number: data.admission.number })}
               </h2>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -151,7 +149,6 @@ function ChartBody({ data }: { data: NursingChart }) {
           ) : null}
           <section aria-labelledby="nursing-procedures" className="card-surface flex flex-col gap-3 p-4 md:p-5">
             <h2 id="nursing-procedures" className="flex items-center gap-2 text-base font-semibold text-fg">
-              <ClipboardList className="size-4 text-muted" aria-hidden="true" />
               {t("chart.procedures")}
             </h2>
             {data.procedures.length === 0 ? (

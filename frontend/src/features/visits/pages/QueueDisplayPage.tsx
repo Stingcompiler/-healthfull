@@ -1,5 +1,5 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { Megaphone, WifiOff } from "lucide-react";
+import { WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -87,6 +87,7 @@ export function QueueDisplayPage() {
         <div
           role="alert"
           data-testid="display-offline"
+          // ui-allow: full-screen offline alert panel (functional state), not an icon tile
           className="m-4 flex flex-1 flex-col items-center justify-center gap-4 rounded-card border-4 border-danger-border bg-danger-bg p-8 text-center text-danger-fg md:m-8"
         >
           <WifiOff className="size-16 md:size-24" aria-hidden="true" />
@@ -101,7 +102,6 @@ export function QueueDisplayPage() {
         <div className="grid flex-1 content-start gap-4 p-4 md:grid-cols-[3fr_2fr] md:gap-6 md:p-8">
           <section aria-labelledby="display-now" className="flex min-w-0 flex-col gap-4">
             <h2 id="display-now" className="flex items-center gap-2 text-xl font-bold md:text-3xl">
-              <Megaphone className="size-6 md:size-8" aria-hidden="true" />
               {t("display.nowServing")}
             </h2>
             <div aria-live="polite" aria-atomic="true">

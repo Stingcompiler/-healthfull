@@ -78,7 +78,6 @@ export function AgingPage() {
           )
         }
         documentTitle={t("aging.title")}
-        icon={<CalendarClock />}
       />
       <ClaimsNav />
       {aging.isError ? (

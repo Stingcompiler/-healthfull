@@ -69,7 +69,7 @@ export function PerformFirstPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("performFirst.title")} description={t("performFirst.description")} icon={<ShieldCheck />} />
+      <PageHeader title={t("performFirst.title")} description={t("performFirst.description")} />
       <CashierNav />
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <LookupPanel query={query} onQueryChange={setQuery} selectedVisitId={visitId} onSelectVisit={setVisitId} />

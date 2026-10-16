@@ -1,4 +1,4 @@
-import { NotebookPen, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -60,7 +60,6 @@ export function NursingNotesPanel({
   return (
     <section aria-labelledby="nursing-notes" className="card-surface flex flex-col gap-4 p-4 md:p-5">
       <h2 id="nursing-notes" className="flex items-center gap-2 text-base font-semibold text-fg">
-        <NotebookPen className="size-4 text-muted" aria-hidden="true" />
         {t("notes.title")}
       </h2>
       {canWrite ? (

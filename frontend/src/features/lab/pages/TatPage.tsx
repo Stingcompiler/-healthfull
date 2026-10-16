@@ -1,12 +1,12 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { CheckCheck, Gauge, Hourglass, Timer } from "lucide-react";
+import { Timer } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
-import { KpiCard } from "@/components/KpiCard";
+import { KpiCard, KpiGroup } from "@/components/KpiCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -113,7 +113,7 @@ export function TatPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("tat.title")} description={t("tat.description")} icon={<Timer />} />
+      <PageHeader title={t("tat.title")} description={t("tat.description")} />
       <LabNav />
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1.5">
@@ -151,38 +151,32 @@ export function TatPage() {
         </AlertCard>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" data-testid="tat-totals">
+          <KpiGroup lead data-testid="tat-totals">
             <KpiCard
+              bare
+              hero
               label={t("tat.kpi.completed")}
               value={total ? formatNumber(total.count, language) : "—"}
-              icon={<CheckCheck />}
               loading={report.isPending}
             />
             <KpiCard
+              bare
               label={t("tat.kpi.median")}
               value={minutes(total?.median ?? null)}
-              icon={<Timer />}
               loading={report.isPending}
             />
+            <KpiCard bare label={t("tat.kpi.p90")} value={minutes(total?.p90 ?? null)} loading={report.isPending} />
             <KpiCard
-              label={t("tat.kpi.p90")}
-              value={minutes(total?.p90 ?? null)}
-              icon={<Hourglass />}
-              loading={report.isPending}
-              tone="warning"
-            />
-            <KpiCard
+              bare
               label={t("tat.kpi.within")}
               value={
                 total?.within_target_percent != null
                   ? formatNumber(total.within_target_percent / 100, language, { style: "percent" })
                   : "—"
               }
-              icon={<Gauge />}
               loading={report.isPending}
-              tone="success"
             />
-          </div>
+          </KpiGroup>
           <DataTable
             columns={columns}
             data={report.data?.rows ?? []}

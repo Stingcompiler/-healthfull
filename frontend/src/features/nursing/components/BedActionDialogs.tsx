@@ -1,4 +1,3 @@
-import { ArrowLeftRight, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -61,10 +60,7 @@ export function TransferDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ArrowLeftRight className="size-5 text-muted" aria-hidden="true" />
-            {t("transfer.title")}
-          </DialogTitle>
+          <DialogTitle className="flex items-center gap-2">{t("transfer.title")}</DialogTitle>
           {target ? (
             <DialogDescription>{t("transfer.description", { name, bed: target.bed.code })}</DialogDescription>
           ) : null}
@@ -155,10 +151,7 @@ export function DischargeDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <LogOut className="size-5 text-muted rtl:-scale-x-100" aria-hidden="true" />
-            {t("discharge.title")}
-          </DialogTitle>
+          <DialogTitle className="flex items-center gap-2">{t("discharge.title")}</DialogTitle>
           {target ? (
             <DialogDescription>{t("discharge.description", { name, bed: target.bed.code })}</DialogDescription>
           ) : null}

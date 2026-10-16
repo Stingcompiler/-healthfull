@@ -87,7 +87,7 @@ export function NursingPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title={t("title")} description={t("procedures.description")} icon={<Syringe />} />
+      <PageHeader title={t("title")} description={t("procedures.description")} />
       <NursingTabs current="procedures" />
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center">

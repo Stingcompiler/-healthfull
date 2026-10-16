@@ -72,7 +72,7 @@ export function LowStockPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("lowStock.title")} description={t("lowStock.description")} icon={<TrendingDown />} />
+      <PageHeader title={t("lowStock.title")} description={t("lowStock.description")} />
       <PharmacyNav />
       <StoreSelect
         stores={options.data?.stores ?? []}

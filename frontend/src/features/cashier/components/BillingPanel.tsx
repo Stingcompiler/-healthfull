@@ -1,4 +1,4 @@
-import { FilePlus2, ListChecks } from "lucide-react";
+import { FilePlus2 } from "lucide-react";
 import { useState, type Ref } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -121,12 +121,7 @@ function UnbilledLines({ billing }: { billing: VisitBilling }) {
   if (billing.unbilled.length === 0) {
     if (billing.drafts.length > 0 || billing.invoices.length > 0) return null;
     return (
-      <EmptyState
-        icon={<ListChecks />}
-        title={t("billing.nothingTitle")}
-        description={t("billing.nothingDescription")}
-        size="compact"
-      />
+      <EmptyState title={t("billing.nothingTitle")} description={t("billing.nothingDescription")} size="compact" />
     );
   }
 

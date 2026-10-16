@@ -153,7 +153,6 @@ export function TransfersPage() {
       <PageHeader
         title={t("transfers.title")}
         description={t("transfers.description")}
-        icon={<ArrowLeftRight />}
         actions={
           canTransfer ? (
             <Button

@@ -71,9 +71,7 @@ export function PortalLoginPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary-strong">
-          <Smartphone className="size-6" aria-hidden="true" />
-        </span>
+        <Smartphone className="mx-auto mb-3 size-7 text-primary-strong" aria-hidden="true" />
         <h1 className="text-xl font-bold text-fg">{t("login.title")}</h1>
         <p className="mt-1 text-sm text-pretty text-muted">{t("login.subtitle")}</p>
       </div>
@@ -131,9 +129,7 @@ export function PortalLoginPage() {
             { icon: ReceiptText, text: t("features.receipts") },
           ].map(({ icon: Icon, text }) => (
             <li key={text} className="card-surface flex items-center gap-3 p-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary-strong">
-                <Icon className="size-[18px]" aria-hidden="true" />
-              </span>
+              <Icon className="size-[18px] shrink-0 text-primary-strong" aria-hidden="true" />
               <span className="text-sm text-fg">{text}</span>
             </li>
           ))}

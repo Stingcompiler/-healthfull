@@ -1,5 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { Archive, Database, DatabaseBackup, HardDrive, History, RefreshCw, ShieldCheck, Tag } from "lucide-react";
+import { DatabaseBackup, RefreshCw } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { Can } from "@/components/Can";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
-import { KpiCard } from "@/components/KpiCard";
+import { KpiCard, KpiGroup } from "@/components/KpiCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,13 +150,13 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
         </AlertCard>
       ) : null}
 
-      <section aria-label={t("system.summary")} className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={t("system.version")} value={<bdi className="tabular">{status.version}</bdi>} icon={<Tag />} />
+      <KpiGroup lead aria-label={t("system.summary")}>
+        <KpiCard bare hero label={t("system.version")} value={<bdi className="tabular">{status.version}</bdi>} />
         <KpiCard
+          bare
           label={t("system.database")}
           value={status.database.ok ? t("system.dbOk") : t("system.dbDown")}
           tone={status.database.ok ? "success" : "danger"}
-          icon={<Database />}
           hint={
             status.database.size_bytes != null
               ? t("system.dbHint", {
@@ -167,15 +167,16 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
           }
         />
         <KpiCard
+          bare
           label={t("system.lastBackup")}
           value={
             lastBackup?.finished_at ? <DateText value={lastBackup.finished_at} format="relative" /> : t("system.never")
           }
           tone={status.warnings.includes("BACKUP_STALE") ? "warning" : "success"}
-          icon={<Archive />}
           hint={lastBackup ? <RunHint run={lastBackup} /> : undefined}
         />
         <KpiCard
+          bare
           label={t("system.lastRestoreTest")}
           value={
             lastRestore?.finished_at ? (
@@ -189,17 +190,15 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
               ? "warning"
               : "success"
           }
-          icon={<ShieldCheck />}
           hint={
             lastRestore ? t(`system.runStatus.${lastRestore.status}`, { defaultValue: lastRestore.status }) : undefined
           }
         />
-      </section>
+      </KpiGroup>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="card-surface flex flex-col gap-3 p-4 md:p-5" aria-labelledby="sys-disks">
           <h2 id="sys-disks" className="flex items-center gap-2 text-base font-semibold text-fg">
-            <HardDrive className="size-4 text-muted" aria-hidden="true" />
             {t("system.disks")}
           </h2>
           {status.disks.length === 0 ? (
@@ -241,7 +240,6 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
 
         <section className="card-surface flex flex-col gap-3 p-4 md:p-5" aria-labelledby="sys-migrations">
           <h2 id="sys-migrations" className="flex items-center gap-2 text-base font-semibold text-fg">
-            <Database className="size-4 text-muted" aria-hidden="true" />
             {t("system.migrations")}
           </h2>
           <p className="text-sm text-fg">
@@ -285,7 +283,6 @@ function IntegritySection({ run }: { run: IntegrityRun | null }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="sys-integrity" className="flex items-center gap-2 text-base font-semibold text-fg">
-          <ShieldCheck className="size-4 text-muted" aria-hidden="true" />
           {t("system.integrity.title")}
         </h2>
         {run ? (
@@ -391,7 +388,6 @@ function RunsSection({
   return (
     <section className="flex flex-col gap-3" aria-labelledby={id}>
       <h2 id={id} className="flex items-center gap-2 text-base font-semibold text-fg">
-        <History className="size-4 text-muted" aria-hidden="true" />
         {title}
       </h2>
       <DataTable

@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { ReceiptText, ScanLine } from "lucide-react";
+import { ReceiptText } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -113,7 +113,7 @@ export function ReceiptCheckPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("receiptCheck.title")} description={t("receiptCheck.description")} icon={<ScanLine />} />
+      <PageHeader title={t("receiptCheck.title")} description={t("receiptCheck.description")} />
       <CashierNav />
       <form
         className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5"

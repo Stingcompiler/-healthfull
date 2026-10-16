@@ -137,7 +137,7 @@ export function TransfersPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("transfers.title")} description={t("transfers.description")} icon={<Landmark />} />
+      <PageHeader title={t("transfers.title")} description={t("transfers.description")} />
       <CashierNav />
       <Tabs
         value={verification}

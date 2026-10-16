@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Ban, PackageCheck, Printer, Syringe, TestTube } from "lucide-react";
+import { Ban, PackageCheck, Printer, Syringe } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -57,10 +57,7 @@ export function SamplePanel({ result }: { result: LabResult }) {
   return (
     <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="sample-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-base font-semibold">
-          <TestTube className="size-4 text-muted" aria-hidden="true" />
-          {t("sample.title")}
-        </h2>
+        <h2 className="flex items-center gap-2 text-base font-semibold">{t("sample.title")}</h2>
         {sample ? (
           <Badge variant={sample.status === "rejected" ? "danger" : sample.status === "received" ? "success" : "info"}>
             {t(`sampleStatus.${sample.status}`)}

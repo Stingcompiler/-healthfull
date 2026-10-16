@@ -13,7 +13,6 @@ import {
   Stethoscope,
   UserRound,
   UserX,
-  Wallet,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,7 +23,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable, DataTableOpenButton, type DataTableRowAction } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
-import { KpiCard } from "@/components/KpiCard";
+import { KpiCard, KpiGroup } from "@/components/KpiCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -221,7 +220,6 @@ export function QueuePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={<ListOrdered />}
         title={t("queue.title")}
         description={t("queue.description")}
         actions={
@@ -293,11 +291,11 @@ export function QueuePage() {
         </p>
       ) : null}
 
-      <section aria-label={t("board.summary")} className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-4">
-        <KpiCard label={t("board.kpiWaiting")} value={n(waiting)} icon={<ListOrdered />} />
-        <KpiCard label={t("board.kpiServing")} value={n(serving)} icon={<Stethoscope />} tone="info" />
-        <KpiCard label={t("board.kpiUnpaid")} value={n(unpaid)} icon={<Wallet />} tone="warning" />
-      </section>
+      <KpiGroup trio aria-label={t("board.summary")}>
+        <KpiCard bare hero label={t("board.kpiWaiting")} value={n(waiting)} />
+        <KpiCard bare label={t("board.kpiServing")} value={n(serving)} />
+        <KpiCard bare label={t("board.kpiUnpaid")} value={n(unpaid)} tone={unpaid > 0 ? "warning" : "primary"} />
+      </KpiGroup>
 
       {board.isError ? (
         <QueryErrorAlert
@@ -322,9 +320,7 @@ export function QueuePage() {
           minTableWidth={820}
           renderCard={(r, { actions }) => (
             <div className="card-surface relative flex items-start gap-3 p-4" data-testid="queue-card">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-card bg-primary-soft tabular text-xl font-bold text-primary-strong">
-                {n(r.token_no)}
-              </span>
+              <span className="w-10 shrink-0 text-center tabular text-2xl font-bold text-fg">{n(r.token_no)}</span>
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <DataTableOpenButton
                   onOpen={() => {

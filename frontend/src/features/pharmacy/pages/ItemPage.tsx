@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Package, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, type Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -48,7 +48,6 @@ export function ItemPage() {
       <PageHeader
         title={title}
         description={item.data?.brand_name}
-        icon={<Package />}
         eyebrow={
           <Link
             to="/pharmacy/items"
@@ -354,7 +353,7 @@ function BatchesSection({ item }: { item: StockItem }) {
         minTableWidth={560}
         emptyState={<EmptyState bare size="compact" title={t("item.noBatches")} />}
         renderCard={(r) => (
-          <div className="card-surface flex flex-col gap-1 p-3 text-sm" data-testid="batch-row">
+          <div className="flex flex-col gap-1 rounded-control border border-border p-3 text-sm" data-testid="batch-row">
             <span className="flex flex-wrap items-center justify-between gap-2">
               <bdi className="font-semibold">{r.batch_no}</bdi>
               <ExpiryBadge daysLeft={r.days_left} />
@@ -457,7 +456,10 @@ function StockCardSection({ item }: { item: StockItem }) {
           pageSize={25}
           emptyState={<EmptyState bare size="compact" title={t("card.empty")} />}
           renderCard={(r) => (
-            <div className="card-surface flex flex-col gap-1 p-3 text-sm" data-testid="card-row">
+            <div
+              className="flex flex-col gap-1 rounded-control border border-border p-3 text-sm"
+              data-testid="card-row"
+            >
               <span className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium">{t(`moves.${r.kind}`)}</span>
                 <span className={r.qty_base < 0 ? "tabular text-danger-fg" : "tabular text-success-fg"}>

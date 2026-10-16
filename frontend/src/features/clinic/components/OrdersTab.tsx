@@ -126,7 +126,6 @@ export function OrdersTab({
       {canOrder ? (
         <section aria-labelledby="new-order-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
           <div className="flex items-center gap-2">
-            <ClipboardList className="size-4 text-muted" aria-hidden="true" />
             <h2 id="new-order-heading" className="text-base font-semibold text-fg">
               {t("orders.newOrder")}
             </h2>

@@ -29,7 +29,7 @@ export function ShiftPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("shiftPage.title")} description={t("shiftPage.description")} icon={<Clock3 />} />
+      <PageHeader title={t("shiftPage.title")} description={t("shiftPage.description")} />
       <CashierNav />
       {current.isPending ? (
         <Skeleton className="h-64 w-full rounded-card" />

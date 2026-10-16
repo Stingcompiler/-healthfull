@@ -1,5 +1,5 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { BadgeCheck, Ban, FilePenLine, FlaskConical, Printer, TriangleAlert } from "lucide-react";
+import { BadgeCheck, Ban, FilePenLine, Printer, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -47,7 +47,7 @@ export function ResultPage() {
       {result.data ? (
         <Header result={result.data} />
       ) : (
-        <PageHeader title={t("result.title")} icon={<FlaskConical />} actions={<BackButton />} />
+        <PageHeader title={t("result.title")} actions={<BackButton />} />
       )}
       <LabNav />
       {result.isPending ? (
@@ -91,7 +91,6 @@ function Header({ result }: { result: LabResult }) {
           <bdi>{result.line.visit_number}</bdi>
         </span>
       }
-      icon={<FlaskConical />}
       actions={
         <>
           <StageBadge stage={result.stage} />
@@ -228,7 +227,6 @@ function Bench({ result }: { result: LabResult }) {
             data-testid="approval-panel"
           >
             <h2 className="flex items-center gap-2 text-base font-semibold">
-              <BadgeCheck className="size-4 text-muted" aria-hidden="true" />
               {draft.amends_version_no ? t("approve.amendTitle") : t("approve.title")}
             </h2>
             <p className="text-sm text-muted">{t("approve.hint")}</p>

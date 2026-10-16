@@ -102,7 +102,7 @@
     "serviceLine": "Service line card",
     "doctorView": "Doctor view (no prices)",
     "basic": "Basic card",
-    "basicDescription": "12px corners, a soft shadow in light themes and a hairline border in dark.",
+    "basicDescription": "12px corners and one hairline border; no shadow in any theme.",
     "basicBody": "Padding is 16px on phones and 20px on larger screens.",
     "open": "Open file",
     "markDone": "Done",
@@ -110,7 +110,14 @@
     "collect": "Collect",
     "dose": "1 tablet every 8 hours for 5 days",
     "labDept": "Laboratory · blood sample",
-    "procedureDept": "Procedures · room 3"
+    "procedureDept": "Procedures · room 3",
+    "decisions": "Alerts as divided rows",
+    "decisionDanger": "variances not reviewed",
+    "decisionWarning": "paid services not performed since yesterday",
+    "decisionInfo": "requests not invoiced since yesterday",
+    "invoiceLines": "Invoice lines (table from md, rows on phones)",
+    "payerSample": "Al-Salam Group",
+    "basicDescriptionNew": "12px corners and one hairline border; no shadow in any theme."
   },
   "alerts": {
     "infoTitle": "The shift closes at 8 PM",

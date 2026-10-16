@@ -58,7 +58,7 @@ export function PharmacyPage() {
   if (!canDispense) {
     return (
       <div className="flex min-w-0 flex-col gap-4">
-        <PageHeader title={t("queue.title")} icon={<Pill />} />
+        <PageHeader title={t("queue.title")} />
         <PharmacyNav />
         <AlertCard variant="info" title={t("queue.noAccessTitle")}>
           {t("queue.noAccess")}
@@ -69,7 +69,7 @@ export function PharmacyPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("queue.title")} description={t("queue.description")} icon={<Pill />} />
+      <PageHeader title={t("queue.title")} description={t("queue.description")} />
       <PharmacyNav />
       <div className="card-surface grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_16rem] md:items-end md:p-5">
         <form onSubmit={(e) => void onSubmit(e)} role="search" className="flex items-end gap-2">

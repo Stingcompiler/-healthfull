@@ -68,11 +68,7 @@ export function ApprovedResultsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader
-        title={t("approvedResults.title")}
-        description={t("approvedResults.description")}
-        icon={<FileCheck2 />}
-      />
+      <PageHeader title={t("approvedResults.title")} description={t("approvedResults.description")} />
       <SearchInput
         label={t("worklist.search")}
         placeholder={t("worklist.searchPlaceholder")}

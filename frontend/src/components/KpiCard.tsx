@@ -1,5 +1,5 @@
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,13 +18,21 @@ export interface KpiTrend {
 export interface KpiCardProps {
   label: ReactNode;
   value: ReactNode;
+  /** Kept for compatibility; no longer rendered (direction A: no icon tiles). */
   icon?: ReactNode;
   trend?: KpiTrend;
   /** Secondary line under the value. */
   hint?: ReactNode;
   loading?: boolean;
-  /** Accent for the icon tile. */
+  /**
+   * Colour is spent only on figures that need a decision: "warning" and "danger" tint the
+   * value; every other tone renders as a plain figure.
+   */
   tone?: "primary" | "success" | "warning" | "danger" | "info";
+  /** The one figure a screen is about: larger than its siblings. */
+  hero?: boolean;
+  /** No surface of its own: the card sits inside a KpiGroup. */
+  bare?: boolean;
   /**
    * Element of the label. Default "h2" (cards directly under the page's h1); use "h3"/"h4"
    * inside a titled section, or "p" when the card is not part of the outline.
@@ -33,22 +41,24 @@ export interface KpiCardProps {
   className?: string;
 }
 
-const toneClasses: Record<NonNullable<KpiCardProps["tone"]>, string> = {
-  primary: "bg-primary-soft text-primary-strong",
-  success: "bg-success-bg text-success-fg",
-  warning: "bg-warning-bg text-warning-fg",
-  danger: "bg-danger-bg text-danger-fg",
-  info: "bg-info-bg text-info-fg",
+/**
+ * Container-query sizing: the figure scales with the width of its own cell and never wraps
+ * (an amount split over two lines is unreadable), so a long value shrinks instead.
+ */
+const valueSize = {
+  normal: "text-lg @[10rem]:text-xl @[13rem]:text-2xl",
+  hero: "text-2xl @[14rem]:text-3xl @[22rem]:text-4xl",
 };
 
 export function KpiCard({
   label,
   value,
-  icon,
   trend,
   hint,
   loading = false,
   tone = "primary",
+  hero = false,
+  bare = false,
   headingLevel: Heading = "h2",
   className,
 }: KpiCardProps) {
@@ -56,28 +66,26 @@ export function KpiCard({
   return (
     <section
       data-slot="kpi-card"
-      className={cn("card-surface @container flex min-w-0 flex-col gap-3 p-4 md:p-5", className)}
+      data-hero={hero || undefined}
+      className={cn(
+        "@container flex min-w-0 flex-col gap-1.5 p-4 md:p-5",
+        bare ? "bg-surface" : "card-surface",
+        className,
+      )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <Heading className="min-w-0 text-sm font-medium text-muted">{label}</Heading>
-        {icon ? (
-          <div
-            className={cn(
-              "flex size-9 shrink-0 items-center justify-center rounded-control [&_svg]:size-[18px]",
-              toneClasses[tone],
-            )}
-            aria-hidden="true"
-          >
-            {icon}
-          </div>
-        ) : null}
-      </div>
+      <Heading className="min-w-0 text-sm font-medium text-muted">{label}</Heading>
       {loading ? (
-        <Skeleton className="h-8 w-28" />
+        <Skeleton className={hero ? "h-10 w-40" : "h-7 w-28"} />
       ) : (
-        // Container-query sizing keeps long values (money) on one line in narrow
-        // grid cells instead of truncating them.
-        <div className="tabular text-xl leading-tight font-bold break-words text-fg @[14rem]:text-2xl @[18rem]:text-[1.75rem] [&_[data-slot=money]]:whitespace-normal">
+        <div
+          className={cn(
+            "tabular leading-tight whitespace-nowrap text-fg",
+            hero ? cn("font-bold", valueSize.hero) : cn("font-semibold", valueSize.normal),
+            tone === "danger" && "text-danger-fg",
+            tone === "warning" && "text-warning-fg",
+            "[&_[data-slot=money]]:font-[inherit]",
+          )}
+        >
           {value}
         </div>
       )}
@@ -92,10 +100,45 @@ export function KpiCard({
   );
 }
 
+/**
+ * One bordered surface holding a hero figure and the figures a step below it, separated by
+ * hairlines (not a row of equal cards). Children are `<KpiCard bare>`.
+ */
+export function KpiGroup({
+  children,
+  className,
+  lead = false,
+  trio = false,
+  ...props
+}: ComponentProps<"section"> & {
+  /** Four figures led by a hero first child (wider cell), the last one spanning on phones. */
+  lead?: boolean;
+  /** Three figures led by a hero first child; the last spans the row on phones. */
+  trio?: boolean;
+}) {
+  return (
+    <section
+      data-slot="kpi-group"
+      className={cn(
+        "grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border",
+        // ui-allow: hero-led track list (1.6fr then three), not equal columns
+        lead &&
+          "md:grid-cols-3 xl:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] [&>:first-child]:col-span-2 md:[&>:first-child]:col-span-3 xl:[&>:first-child]:col-span-1 [&>:last-child]:col-span-2 md:[&>:last-child]:col-span-1",
+        // ui-allow: hero-led three-figure group, not equal columns
+        trio && "sm:grid-cols-3 [&>:last-child]:col-span-2 sm:[&>:last-child]:col-span-1",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </section>
+  );
+}
+
 function TrendPill({ trend }: { trend: KpiTrend }) {
   const { t } = useTranslation();
   const { direction, value, upIsGood = true } = trend;
-  const good = direction === "flat" ? null : (direction === "up") === upIsGood;
+  const bad = direction === "flat" ? false : (direction === "up") !== upIsGood;
   const Icon = direction === "up" ? TrendingUp : direction === "down" ? TrendingDown : Minus;
   // Only the direction word is screen-reader-only; the value itself stays exposed, so any
   // ReactNode (MoneyText, a formatted number) is read after it: "Up 12%".
@@ -103,10 +146,9 @@ function TrendPill({ trend }: { trend: KpiTrend }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium",
-        good === null && "bg-subtle text-muted",
-        good === true && "bg-success-bg text-success-fg",
-        good === false && "bg-danger-bg text-danger-fg",
+        "inline-flex items-center gap-1 rounded-full font-medium",
+        // Tint only when the movement is a bad one (it needs a look); good or flat stays plain.
+        bad ? "bg-danger-bg px-2 py-0.5 text-danger-fg" : "text-muted",
       )}
     >
       <Icon className="size-3.5" aria-hidden="true" />

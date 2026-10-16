@@ -225,9 +225,8 @@ function VersionTimeline({
               }}
               data-testid={`version-${v.effective_from}`}
               className={cn(
-                "flex w-full flex-col gap-1 rounded-control border-s-4 px-3 py-2 text-start focus-ring transition-colors",
-                v.status === "current" ? "border-success" : v.status === "scheduled" ? "border-info" : "border-border",
-                v.id === selected ? "bg-primary-soft" : "hover:bg-accent",
+                "flex w-full flex-col gap-1 rounded-control border px-3 py-2 text-start focus-ring transition-colors",
+                v.id === selected ? "border-primary bg-primary-soft" : "border-border hover:bg-accent",
               )}
             >
               <span className="flex flex-wrap items-center justify-between gap-2">

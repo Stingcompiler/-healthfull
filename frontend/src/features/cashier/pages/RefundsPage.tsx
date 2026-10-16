@@ -134,7 +134,7 @@ export function RefundsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("refunds.title")} description={t("refunds.description")} icon={<Undo2 />} />
+      <PageHeader title={t("refunds.title")} description={t("refunds.description")} />
       <CashierNav />
       <Tabs
         value={filter}

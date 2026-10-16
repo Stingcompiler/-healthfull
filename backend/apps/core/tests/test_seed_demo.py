@@ -76,7 +76,11 @@ def test_people_are_deterministic_distinct_and_sudanese() -> None:
 
 
 def test_simulated_clock_moves_time_and_is_restored() -> None:
-    start = timezone.now() - timedelta(days=20)
+    # Pin the starting time of day (10:00 local) so the test does not depend on when it runs:
+    # late in the evening, "the next day at 09:00" is less than 12 hours after "now".
+    start = timezone.localtime(timezone.now() - timedelta(days=20)).replace(
+        hour=10, minute=0, second=0, microsecond=0
+    )
     clock = DemoClock(start)
     with simulated_time(clock):
         assert timezone.now() >= start

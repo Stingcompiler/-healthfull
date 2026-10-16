@@ -1,4 +1,4 @@
-import { ClipboardCheck, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -67,7 +67,6 @@ export function DiagnosisSection({
   return (
     <section aria-labelledby="dx-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
       <div className="flex items-center gap-2">
-        <ClipboardCheck className="size-4 text-muted" aria-hidden="true" />
         <h2 id="dx-heading" className="text-base font-semibold text-fg">
           {t("diagnosis.title")}
         </h2>

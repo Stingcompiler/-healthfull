@@ -436,6 +436,7 @@ function MatrixGrid({ roles, groups, granted, toggle, pending, label }: CellProp
       <div
         aria-hidden="true"
         className={cn(
+          // ui-allow: scroll-fade affordance (functional: more role columns are hidden at the end)
           "pointer-events-none absolute inset-y-px end-px w-10 rounded-e-card bg-linear-to-l from-fg/15 to-transparent transition-opacity rtl:bg-linear-to-r",
           moreAtEnd ? "opacity-100" : "opacity-0",
         )}

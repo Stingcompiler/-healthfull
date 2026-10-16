@@ -1,9 +1,8 @@
-import { Banknote, Clock3, Landmark, Scale } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { DateText } from "@/components/DateText";
-import { KpiCard } from "@/components/KpiCard";
+import { KpiCard, KpiGroup } from "@/components/KpiCard";
 import { MoneyText } from "@/components/MoneyText";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
@@ -79,14 +78,16 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
         {s.till ? <span>{names.name(s.till)}</span> : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <KpiGroup lead>
         <KpiCard
+          bare
+          hero
           label={t("report.expectedCash")}
           value={<MoneyText value={report.expected_cash} />}
-          icon={<Banknote />}
           headingLevel="h3"
         />
         <KpiCard
+          bare
           label={t("report.counted")}
           value={report.counted_cash !== null ? <MoneyText value={report.counted_cash} /> : t("report.notCounted")}
           hint={
@@ -96,18 +97,17 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
               </span>
             ) : undefined
           }
-          icon={<Scale />}
           tone={report.variance !== null && report.variance !== "0.00" ? "warning" : "primary"}
           headingLevel="h3"
         />
         <KpiCard
+          bare
           label={t("report.confirmedTotal")}
           value={<MoneyText value={c.confirmed_total} />}
-          icon={<Landmark />}
-          tone="success"
           headingLevel="h3"
         />
         <KpiCard
+          bare
           label={t("report.bankPending")}
           value={
             <span data-testid="report-bank-pending">
@@ -115,11 +115,10 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
             </span>
           }
           hint={t("report.pendingHint")}
-          icon={<Clock3 />}
           tone={c.bank_pending !== "0.00" ? "warning" : "info"}
           headingLevel="h3"
         />
-      </div>
+      </KpiGroup>
 
       {s.variance_reason ? (
         <p className="text-sm">

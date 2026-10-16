@@ -1,5 +1,5 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { CalendarDays, Ellipsis, GitMerge, Pencil, Plus, RotateCcw, UserRound } from "lucide-react";
+import { Ellipsis, GitMerge, Pencil, Plus, RotateCcw, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -72,7 +72,7 @@ export function PatientProfilePage() {
     const title = notFound ? t("profile.notFoundTitle") : t("profile.loadFailed");
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader icon={<UserRound />} title={title} />
+        <PageHeader title={title} />
         <EmptyState
           icon={<UserRound />}
           title={title}
@@ -108,7 +108,6 @@ export function PatientProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={<UserRound />}
         eyebrow={<Link to="/patients">{t("title")}</Link>}
         // On phones the identity card right below shows the name; the heading stays for readers.
         title={<span className="max-md:sr-only">{name}</span>}
@@ -218,7 +217,6 @@ export function PatientProfilePage() {
         {hasUpcoming ? (
           <section aria-labelledby="upcoming-heading" className="card-surface flex flex-col gap-3 p-4 md:p-5">
             <h2 id="upcoming-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
-              <CalendarDays className="size-5 text-muted" aria-hidden="true" />
               {t("profile.upcoming")}
             </h2>
             <ul className="grid gap-2 text-sm">
@@ -255,7 +253,6 @@ export function PatientProfilePage() {
           data-testid="merge-history"
         >
           <h2 id="merges-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
-            <GitMerge className="size-5 text-muted" aria-hidden="true" />
             {t("merge.history")}
           </h2>
           <ul className="grid gap-2 text-sm">

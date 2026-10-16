@@ -1,4 +1,4 @@
-import { Activity, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -113,7 +113,6 @@ export function VitalsSection({
   return (
     <section aria-labelledby="vitals-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
       <div className="flex items-center gap-2">
-        <Activity className="size-4 text-muted" aria-hidden="true" />
         <h2 id="vitals-heading" className="text-base font-semibold text-fg">
           {t("vitals.title")}
         </h2>
