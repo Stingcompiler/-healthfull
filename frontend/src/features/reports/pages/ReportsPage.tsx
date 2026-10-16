@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useCurrentUser } from "@/lib/auth/hooks";
 import { hasPermission } from "@/lib/auth/permissions";
 
-import { AREA_ICONS, REPORT_AREAS, REPORT_CATALOG } from "../catalog";
+import { REPORT_AREAS, REPORT_CATALOG } from "../catalog";
 
 /**
  * The report catalog (FEATURES 12.x): the reports the user may open, grouped by area. Each
@@ -28,7 +28,6 @@ export function ReportsPage() {
         REPORT_AREAS.map((area) => {
           const reports = visible.filter((r) => r.area === area);
           if (reports.length === 0) return null;
-          const AreaIcon = AREA_ICONS[area];
           return (
             <section
               key={area}
@@ -37,25 +36,20 @@ export function ReportsPage() {
               data-testid={`area-${area}`}
             >
               <div className="flex items-center gap-2">
-                <AreaIcon className="size-5 text-primary-strong" aria-hidden="true" />
                 <h2 id={`area-${area}`} className="text-base font-semibold text-fg">
                   {t(`areas.${area}`)}
                 </h2>
               </div>
-              <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <ul className="card-surface divide-y divide-border overflow-hidden">
                 {reports.map((report) => {
-                  const Icon = report.icon;
                   return (
                     <li key={report.key} className="min-w-0">
                       <Link
                         to="/reports/$reportKey"
                         params={{ reportKey: report.key }}
                         data-testid={`report-${report.key}`}
-                        className="card-surface flex min-h-11 items-start gap-3 p-4 focus-ring transition-colors hover:border-primary/40"
+                        className="flex min-h-11 items-start gap-3 px-4 py-3 focus-ring transition-colors hover:bg-accent"
                       >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary-strong [&_svg]:size-5">
-                          <Icon aria-hidden="true" />
-                        </span>
                         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <span className="font-semibold text-fg">{t(`catalog.${report.key}.title`)}</span>
                           <span className="text-sm text-pretty text-muted">

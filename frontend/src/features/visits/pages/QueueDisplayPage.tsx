@@ -87,6 +87,7 @@ export function QueueDisplayPage() {
         <div
           role="alert"
           data-testid="display-offline"
+          // ui-allow: full-screen offline alert panel (functional state), not an icon tile
           className="m-4 flex flex-1 flex-col items-center justify-center gap-4 rounded-card border-4 border-danger-border bg-danger-bg p-8 text-center text-danger-fg md:m-8"
         >
           <WifiOff className="size-16 md:size-24" aria-hidden="true" />

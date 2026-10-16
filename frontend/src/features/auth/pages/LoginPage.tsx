@@ -67,10 +67,6 @@ export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
     <div className="grid min-h-dvh bg-bg lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       {/* Brand panel (desktop) */}
       <aside className="relative hidden overflow-hidden border-e border-border bg-primary-soft lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-14">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,var(--surface)_0%,transparent_55%),radial-gradient(circle_at_90%_90%,var(--bg)_0%,transparent_50%)] opacity-80"
-        />
         <div className="relative">
           <Brand />
         </div>
@@ -109,9 +105,7 @@ export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
         <main id="main" className="flex flex-1 items-start justify-center px-4 pt-4 pb-12 sm:items-center sm:pt-0">
           <div className="w-full max-w-sm">
             <div className="mb-6 text-center">
-              <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary-strong">
-                <LockKeyhole className="size-6" aria-hidden="true" />
-              </span>
+              <LockKeyhole className="mx-auto mb-4 size-7 text-primary-strong" aria-hidden="true" />
               <h1 className="text-2xl font-bold text-fg">{t("login.title")}</h1>
               <p className="mt-1 text-sm text-muted">{t("login.subtitle")}</p>
             </div>

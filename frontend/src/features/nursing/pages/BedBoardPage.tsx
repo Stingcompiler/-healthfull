@@ -119,9 +119,9 @@ export function BedBoardPage() {
         <EmptyState icon={<BedDouble />} title={t("beds.emptyTitle")} description={t("beds.emptyDescription")} />
       ) : (
         <>
-          <dl aria-label={t("beds.counts.label")} className="grid grid-cols-3 gap-3">
+          <dl aria-label={t("beds.counts.label")} className="card-surface flex divide-x divide-border overflow-hidden">
             {BED_STATUSES.map((s) => (
-              <div key={s} className="card-surface flex flex-col gap-1 p-3 md:p-4" data-testid={`bed-count-${s}`}>
+              <div key={s} className="flex min-w-0 flex-1 flex-col gap-1 p-3 md:p-4" data-testid={`bed-count-${s}`}>
                 <dt className="text-xs text-muted">{t(`beds.counts.${s}`)}</dt>
                 <dd className="tabular text-2xl font-semibold text-fg">{data.counts[s]}</dd>
               </div>
@@ -217,12 +217,7 @@ function BedCard({
       data-testid="bed-card"
       data-bed-code={bed.code}
       data-status={bed.status}
-      className={cn(
-        "card-surface flex h-full min-w-0 flex-col gap-3 border-s-4 p-4",
-        bed.status === "available" && "border-s-success",
-        bed.status === "occupied" && "border-s-info",
-        bed.status === "maintenance" && "border-s-border-strong",
-      )}
+      className={cn("card-surface flex h-full min-w-0 flex-col gap-3 p-4")}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">

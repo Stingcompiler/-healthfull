@@ -104,11 +104,30 @@ export function KpiCard({
  * One bordered surface holding a hero figure and the figures a step below it, separated by
  * hairlines (not a row of equal cards). Children are `<KpiCard bare>`.
  */
-export function KpiGroup({ children, className, ...props }: ComponentProps<"section">) {
+export function KpiGroup({
+  children,
+  className,
+  lead = false,
+  trio = false,
+  ...props
+}: ComponentProps<"section"> & {
+  /** Four figures led by a hero first child (wider cell), the last one spanning on phones. */
+  lead?: boolean;
+  /** Three figures led by a hero first child; the last spans the row on phones. */
+  trio?: boolean;
+}) {
   return (
     <section
       data-slot="kpi-group"
-      className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border", className)}
+      className={cn(
+        "grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border",
+        // ui-allow: hero-led track list (1.6fr then three), not equal columns
+        lead &&
+          "md:grid-cols-3 xl:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] [&>:first-child]:col-span-2 md:[&>:first-child]:col-span-3 xl:[&>:first-child]:col-span-1 [&>:last-child]:col-span-2 md:[&>:last-child]:col-span-1",
+        // ui-allow: hero-led three-figure group, not equal columns
+        trio && "sm:grid-cols-3 [&>:last-child]:col-span-2 sm:[&>:last-child]:col-span-1",
+        className,
+      )}
       {...props}
     >
       {children}

@@ -20,10 +20,7 @@ export function NotFoundPage() {
       </header>
       <main id="main" className="flex flex-1 items-center justify-center px-4 pb-16">
         <div className="flex max-w-md flex-col items-center text-center">
-          <p
-            className="bg-linear-to-b from-primary to-primary-strong bg-clip-text tabular text-7xl font-extrabold tracking-tight text-transparent md:text-8xl"
-            aria-hidden="true"
-          >
+          <p className="tabular text-7xl font-extrabold tracking-tight text-primary md:text-8xl" aria-hidden="true">
             {t("notFound.code")}
           </p>
           <h1 className="mt-4 text-2xl font-bold text-fg">{t("notFound.title")}</h1>

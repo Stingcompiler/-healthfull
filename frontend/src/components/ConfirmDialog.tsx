@@ -79,9 +79,7 @@ export function ConfirmDialog({
         <AlertDialogHeader>
           <div className="flex items-start gap-3">
             {destructive ? (
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-danger-bg text-danger-fg">
-                <TriangleAlert className="size-5" aria-hidden="true" />
-              </div>
+              <TriangleAlert className="mt-0.5 size-5 shrink-0 text-danger-fg" aria-hidden="true" />
             ) : null}
             <div className="grid gap-1.5">
               <AlertDialogTitle>{title ?? t("confirm.title")}</AlertDialogTitle>

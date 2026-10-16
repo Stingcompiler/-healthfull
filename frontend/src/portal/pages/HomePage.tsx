@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, FlaskConical, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,13 +15,11 @@ import { PortalPage, Pill, Row } from "../components/PortalPage";
 import { usePick } from "../lib/ui";
 
 function HomeCard({
-  icon,
   title,
   action,
   children,
   testId,
 }: {
-  icon: ReactNode;
   title: string;
   action?: ReactNode;
   children: ReactNode;
@@ -31,12 +28,7 @@ function HomeCard({
   return (
     <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid={testId}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
-          <span className="flex size-8 items-center justify-center rounded-control bg-primary-soft text-primary-strong [&_svg]:size-4">
-            {icon}
-          </span>
-          {title}
-        </h2>
+        <h2 className="text-base font-semibold text-fg">{title}</h2>
         {action}
       </div>
       {children}
@@ -77,7 +69,7 @@ export function HomePage() {
         </AlertCard>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          <HomeCard icon={<CalendarDays />} title={t("home.nextAppointment")} testId="home-appointment">
+          <HomeCard title={t("home.nextAppointment")} testId="home-appointment">
             {summary.data.next_appointment ? (
               <div className="flex flex-col gap-1">
                 <p className="text-base font-semibold text-fg">
@@ -106,7 +98,6 @@ export function HomePage() {
           </HomeCard>
 
           <HomeCard
-            icon={<FlaskConical />}
             title={t("home.latestResults")}
             testId="home-results"
             action={
@@ -151,7 +142,7 @@ export function HomePage() {
             )}
           </HomeCard>
 
-          <HomeCard icon={<Wallet />} title={t("home.balance")} testId="home-balance">
+          <HomeCard title={t("home.balance")} testId="home-balance">
             {summary.data.balance.outstanding === "0.00" ? (
               <p className="text-sm text-success-fg">{t("home.allPaid")}</p>
             ) : null}

@@ -97,9 +97,7 @@ export function ChangePasswordPage() {
   return (
     <AuthLayout>
       <div className="mb-6 text-center">
-        <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary-strong">
-          <KeyRound className="size-6" aria-hidden="true" />
-        </span>
+        <KeyRound className="mx-auto mb-4 size-7 text-primary-strong" aria-hidden="true" />
         <h1 className="text-2xl font-bold text-fg">{t("changePassword.title")}</h1>
         <p className="mt-1 text-sm text-muted">{t("changePassword.subtitle")}</p>
       </div>

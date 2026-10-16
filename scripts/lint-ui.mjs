@@ -24,7 +24,7 @@ const SRC = path.join(root, "frontend", "src");
 const args = new Set(process.argv.slice(2));
 const reportOnly = process.env.LINT_UI_REPORT_ONLY === "1";
 
-const TINT = String.raw`bg-(primary-soft|primary\/\d+|(success|warning|danger|info)-bg|state-\w+-bg|accent|subtle)\b|\btone(Classes)?\[|\btoneClass`;
+const TINT = String.raw`(?<![\w:-])bg-(primary-soft|primary\/\d+|(success|warning|danger|info)-bg|state-\w+-bg|accent|subtle)\b|\btone(Classes)?\[|\btoneClass`;
 
 /** One-line rules: [family, regex, message]. */
 const LINE_RULES = [
@@ -47,7 +47,6 @@ const LINE_RULES = [
   ["gradient", /\bbg-clip-text\b/, "gradient text"],
   ["animation", /\banimate-(pulse|bounce|ping)\b/, "continuous animation on a static element"],
   ["animation", /\banimation(-iteration-count)?:\s*[^;]*infinite|\binfinite\b.*\banimate-/, "infinite animation"],
-  ["equal-columns", /\bgrid-cols-(3|4)\b/, "equal 3-4 column grid"],
 ];
 
 /** Which `animate-pulse` uses are loading placeholders (a progress indicator, an allowed exception). */
@@ -124,7 +123,16 @@ for (const file of walk(SRC)) {
   });
 
   // KPI card per number: four or more KpiCard in one file.
-  const kpi = lines.map((l, i) => (/<KpiCard\b/.test(l) ? i : -1)).filter((i) => i >= 0);
+  // Cards inside a <KpiGroup> are the sanctioned composition (one surface, one hero) and do not count.
+  let inGroup = false;
+  const kpi = lines
+    .map((l, i) => {
+      if (/<KpiGroup\b/.test(l)) inGroup = true;
+      const hit = !inGroup && /<KpiCard\b/.test(l) ? i : -1;
+      if (/<\/KpiGroup>/.test(l)) inGroup = false;
+      return hit;
+    })
+    .filter((i) => i >= 0);
   if (kpi.length >= 4 && !kpi.some((i) => isWaived(lines, i))) {
     report("kpi-per-number", file, kpi[0] + 1, `${kpi.length} KpiCard in one file (a stat card per number)`, lines[kpi[0]]);
   }
@@ -139,6 +147,25 @@ for (const file of walk(SRC)) {
     if (/<PageHeader\b/.test(line)) {
       const tag = lines.slice(i, i + 12).join(" ").split(/\/>|<\/PageHeader>/)[0];
       if (/\bicon=\{/.test(tag)) report("heading-icon", file, i + 1, "icon prop on a page title", line);
+    }
+  });
+
+  // Equal-column grid OF CARDS (the "card per item" wall): an equal 3-4 column grid whose children
+  // include card-like elements. Form-field grids and key/value grids are legitimate and not matched.
+  lines.forEach((line, i) => {
+    if (!/\bgrid-cols-(3|4)\b/.test(line) || isWaived(lines, i)) return;
+    let j = i;
+    while (j >= 0 && !lines[j].trimStart().startsWith("<") && i - j < 8) j--;
+    if (j < 0 || !lines[j].trimStart().startsWith("<")) return;
+    const base = indentOf(lines[j]);
+    for (let k = i + 1; k < lines.length; k++) {
+      const l = lines[k];
+      if (l.trim() === "") continue;
+      if (indentOf(l) <= base) break;
+      if (CARD_NESTED.test(l) && !isWaived(lines, k)) {
+        report("equal-columns", file, i + 1, "equal 3-4 column grid of cards", line);
+        break;
+      }
     }
   });
 

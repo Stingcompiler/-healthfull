@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CircleCheck, Copy, Download, FileSpreadsheet, TriangleAlert, Upload } from "lucide-react";
+import { CircleCheck, Download, Upload } from "lucide-react";
 import { useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable } from "@/components/DataTable";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
-import { KpiCard } from "@/components/KpiCard";
+import { KpiCard, KpiGroup } from "@/components/KpiCard";
 import { MoneyText } from "@/components/MoneyText";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -341,12 +341,12 @@ export function ImportsPage() {
             </AlertCard>
           ) : null}
 
-          <section aria-label={t("imports.summary")} className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            <KpiCard label={t("imports.total")} value={n(job.total_rows)} icon={<FileSpreadsheet />} />
-            <KpiCard label={t("imports.valid")} value={n(job.valid_rows)} icon={<CircleCheck />} tone="success" />
-            <KpiCard label={t("imports.errors")} value={n(job.error_rows)} icon={<TriangleAlert />} tone="danger" />
-            <KpiCard label={t("imports.duplicates")} value={n(job.duplicate_rows)} icon={<Copy />} tone="warning" />
-          </section>
+          <KpiGroup lead aria-label={t("imports.summary")}>
+            <KpiCard bare hero label={t("imports.total")} value={n(job.total_rows)} />
+            <KpiCard bare label={t("imports.valid")} value={n(job.valid_rows)} />
+            <KpiCard bare label={t("imports.errors")} value={n(job.error_rows)} tone="danger" />
+            <KpiCard bare label={t("imports.duplicates")} value={n(job.duplicate_rows)} tone="warning" />
+          </KpiGroup>
 
           <Tabs
             value={filter}
