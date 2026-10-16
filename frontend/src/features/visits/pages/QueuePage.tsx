@@ -294,7 +294,7 @@ export function QueuePage() {
       <KpiGroup trio aria-label={t("board.summary")}>
         <KpiCard bare hero label={t("board.kpiWaiting")} value={n(waiting)} />
         <KpiCard bare label={t("board.kpiServing")} value={n(serving)} />
-        <KpiCard bare label={t("board.kpiUnpaid")} value={n(unpaid)} tone="warning" />
+        <KpiCard bare label={t("board.kpiUnpaid")} value={n(unpaid)} tone={unpaid > 0 ? "warning" : "primary"} />
       </KpiGroup>
 
       {board.isError ? (

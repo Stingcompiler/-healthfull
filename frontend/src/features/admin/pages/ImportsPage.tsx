@@ -344,8 +344,18 @@ export function ImportsPage() {
           <KpiGroup lead aria-label={t("imports.summary")}>
             <KpiCard bare hero label={t("imports.total")} value={n(job.total_rows)} />
             <KpiCard bare label={t("imports.valid")} value={n(job.valid_rows)} />
-            <KpiCard bare label={t("imports.errors")} value={n(job.error_rows)} tone="danger" />
-            <KpiCard bare label={t("imports.duplicates")} value={n(job.duplicate_rows)} tone="warning" />
+            <KpiCard
+              bare
+              label={t("imports.errors")}
+              value={n(job.error_rows)}
+              tone={job.error_rows > 0 ? "danger" : "primary"}
+            />
+            <KpiCard
+              bare
+              label={t("imports.duplicates")}
+              value={n(job.duplicate_rows)}
+              tone={job.duplicate_rows > 0 ? "warning" : "primary"}
+            />
           </KpiGroup>
 
           <Tabs

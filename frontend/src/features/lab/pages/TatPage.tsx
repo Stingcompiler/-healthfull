@@ -165,13 +165,7 @@ export function TatPage() {
               value={minutes(total?.median ?? null)}
               loading={report.isPending}
             />
-            <KpiCard
-              bare
-              label={t("tat.kpi.p90")}
-              value={minutes(total?.p90 ?? null)}
-              loading={report.isPending}
-              tone="warning"
-            />
+            <KpiCard bare label={t("tat.kpi.p90")} value={minutes(total?.p90 ?? null)} loading={report.isPending} />
             <KpiCard
               bare
               label={t("tat.kpi.within")}

@@ -140,7 +140,6 @@ export function ClaimsPage() {
               label={t("stages.claimed")}
               value={totals ? <MoneyText value={totals.claimed} /> : null}
               hint={t("receivables.claimedHint")}
-              tone="warning"
               loading={data.isPending}
             />
             <KpiCard
