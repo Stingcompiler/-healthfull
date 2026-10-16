@@ -1,4 +1,4 @@
-import { BedDouble, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -108,10 +108,7 @@ function AdmitForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <BedDouble className="size-5 text-muted" aria-hidden="true" />
-          {t("admit.title")}
-        </DialogTitle>
+        <DialogTitle className="flex items-center gap-2">{t("admit.title")}</DialogTitle>
         <DialogDescription>{t("admit.description")}</DialogDescription>
       </DialogHeader>
       <form

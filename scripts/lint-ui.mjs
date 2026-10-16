@@ -143,6 +143,18 @@ for (const file of walk(SRC)) {
     if (/<(h[1-6]|CardTitle|DialogTitle|SheetTitle)\b[^>]*>\s*<[A-Z][A-Za-z0-9]*\b[^>]*(aria-hidden|size-\d|className)/.test(line)) {
       report("heading-icon", file, i + 1, "icon placed in a heading", line);
     }
+    // Icon element alone on the line directly before or after a heading/title opening line.
+    if (/^\s*<[A-Z][A-Za-z0-9]*\b[^>]*aria-hidden[^>]*\/>\s*$/.test(line)) {
+      const prev = lines[i - 1] ?? "";
+      const next = lines[i + 1] ?? "";
+      const headOpen = /<(h[1-6]|CardTitle|DialogTitle|SheetTitle)\b[^>]*>\s*$/;
+      // A danger/warning-coloured icon in a title is a state signal (allergy override, cancel,
+      // duplicate), not decoration: only neutral icons are flagged.
+      const stateColored = /text-(danger|warning)/.test(line) || /text-(danger|warning)/.test(prev);
+      if (!stateColored && (headOpen.test(prev) || (/<h[1-6]\b/.test(next) && /^\s*<[A-Z]/.test(line) && /size-[45]\b[^"]*text-(muted|primary)/.test(line)))) {
+        report("heading-icon", file, i + 1, "icon placed in or next to a heading", line);
+      }
+    }
     if (/<PageHeader\b/.test(line)) {
       const tag = lines.slice(i, i + 12).join(" ").split(/\/>|<\/PageHeader>/)[0];
       if (/\bicon=\{/.test(tag)) report("heading-icon", file, i + 1, "icon prop on a page title", line);

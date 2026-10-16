@@ -54,7 +54,6 @@ export function ReferralSection({
   return (
     <section aria-labelledby="referral-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <Send className="size-4 text-muted" aria-hidden="true" />
         <h2 id="referral-heading" className="text-base font-semibold text-fg">
           {t("referral.title")}
         </h2>

@@ -1,4 +1,4 @@
-import { FileSignature, FileText, Save } from "lucide-react";
+import { FileSignature, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -108,7 +108,6 @@ export function NoteEditor({
   return (
     <section aria-labelledby="note-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <FileText className="size-4 text-muted" aria-hidden="true" />
         <h2 id="note-heading" className="text-base font-semibold text-fg">
           {t("note.title")}
         </h2>
