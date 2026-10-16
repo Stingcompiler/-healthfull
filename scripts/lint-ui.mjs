@@ -5,7 +5,7 @@
  *
  *   node scripts/lint-ui.mjs            print every hit, exit 1 when there is any, silent exit 0 otherwise
  *   node scripts/lint-ui.mjs --summary  also print counts per family
- *   LINT_UI_REPORT_ONLY=1 ...           always exit 0 (phase 1: a report, not a gate)
+ *   LINT_UI_REPORT_ONLY=1 ...           always exit 0 (a report, not a gate; for exploration only)
  *
  * A hit is waived by `ui-allow: <reason>` on the same line or the line above it, e.g.
  *   {/* ui-allow: active navigation indicator *\/}
@@ -60,8 +60,7 @@ function walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      // design/directions: the dev-only visual exploration (it renders the current patterns on purpose).
-      if (entry.name === "node_modules" || entry.name === "test" || entry.name === "directions") continue;
+      if (entry.name === "node_modules" || entry.name === "test") continue;
       out.push(...walk(full));
     } else if (/\.(tsx|jsx|css)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
       if (entry.name === "tokens.css") continue; // the one place raw color values (and shadows) live

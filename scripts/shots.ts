@@ -79,8 +79,6 @@ interface Screen {
   intercept?: (page: any) => Promise<void>;
   /** States are captured on a reduced matrix (light theme only) to keep the run short. */
   stateOnly?: boolean;
-  /** Only when ONLY names it (the dev-only direction exploration, not part of the regular run). */
-  optIn?: boolean;
 }
 
 const SCREENS: Screen[] = [
@@ -159,15 +157,6 @@ const SCREENS: Screen[] = [
       await page.locator('[data-slot="empty-state"]').waitFor();
     },
   },
-  ...["current", "calm", "flat", "tinted"].map(
-    (d): Screen => ({
-      id: `direction-${d}`,
-      role: "manager",
-      path: () => `/design/directions?d=${d}`,
-      ready: '[data-testid="directions"]',
-      optIn: true,
-    }),
-  ),
   ...(
     [
       ["claims", "manager", "/claims"],
@@ -227,7 +216,6 @@ async function json(ctx: any, url: string): Promise<any> {
 /** Looks up the demo records the screens need. Adjust here if the demo dataset changes. */
 async function findFacts(browser: any): Promise<Facts> {
   const facts: Facts = {};
-  if (ONLY?.every((o) => o.startsWith("direction"))) return facts; // static sample data, no records needed
 
   const cashier = await browser.newContext({ baseURL: BASE_URL });
   await staffLogin(cashier, USERNAME.cashier);
@@ -321,7 +309,7 @@ async function main(): Promise<void> {
   console.log("facts:", JSON.stringify({ ...facts, portal: facts.portal ? { ...facts.portal, code: "***" } : undefined }));
 
   const screens = SCREENS.filter((s) =>
-    ONLY ? ONLY.some((o) => s.id === o || s.id.startsWith(`${o}-`)) : !s.optIn,
+    ONLY ? ONLY.some((o) => s.id === o || s.id.startsWith(`${o}-`)) : true,
   );
   const roles = [...new Set(screens.map((s) => s.role))];
   const skipped: string[] = [];

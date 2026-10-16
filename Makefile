@@ -127,7 +127,7 @@ seed: migrate ## Load the demo dataset into the dev DB (seed_demo when present, 
 demo: ## Create demo_hospital (DEMO_DB_NAME), migrate, load seed_demo (DEMO_RESET=1 drops it first)
 	"$(SCRIPTS)/demo.sh"
 
-lint-ui: ## UI review text scan for the forbidden card patterns (docs/ui-profile.md); LINT_UI_REPORT_ONLY=1 never fails
+lint-ui: ## UI text scan for the forbidden card patterns (docs/ui-profile.md); part of make check; LINT_UI_REPORT_ONLY=1 never fails
 	node "$(SCRIPTS)/lint-ui.mjs" --summary
 
 shots: ## Screenshots of the representative screens: make shots LABEL=before (app on demo_hospital; see scripts/shots.ts)
@@ -135,6 +135,7 @@ shots: ## Screenshots of the representative screens: make shots LABEL=before (ap
 
 check: ## lint + typecheck + test + api drift. Must be green before any commit to main
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" lint
+	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" lint-ui
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" typecheck
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" test
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" api-check
