@@ -95,7 +95,6 @@ export function ItemsPage() {
       <PageHeader
         title={t("items.title")}
         description={t("items.description")}
-        icon={<Package />}
         actions={
           canManage ? (
             <Button

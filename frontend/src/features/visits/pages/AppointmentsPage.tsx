@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import {
   Ban,
   CalendarClock,
-  CalendarDays,
   CalendarPlus,
   CalendarX2,
   CheckCircle2,
@@ -101,7 +100,7 @@ export function AppointmentsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={<CalendarDays />} title={t("appointments.title")} description={t("appointments.description")} />
+      <PageHeader title={t("appointments.title")} description={t("appointments.description")} />
 
       <div className="flex flex-col gap-3 md:flex-row md:items-end">
         <div className="grid gap-1.5 md:w-72">

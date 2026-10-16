@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "@tanstack/react-router";
-import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -54,7 +54,6 @@ export function TestEditorPage() {
       <PageHeader
         title={test.data ? names.test(test.data) : t("catalog.title")}
         eyebrow={test.data ? <bdi>{test.data.code}</bdi> : undefined}
-        icon={<BookOpen />}
         actions={
           <Button asChild variant="outline">
             <Link to="/lab/catalog">

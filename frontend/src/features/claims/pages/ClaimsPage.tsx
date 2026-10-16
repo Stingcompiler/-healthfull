@@ -101,7 +101,6 @@ export function ClaimsPage() {
       <PageHeader
         title={t("receivables.title")}
         description={t("receivables.description")}
-        icon={<Scale />}
         actions={
           <Can permission="claims.manage">
             <Button asChild>

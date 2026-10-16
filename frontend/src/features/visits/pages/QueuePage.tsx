@@ -221,7 +221,6 @@ export function QueuePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={<ListOrdered />}
         title={t("queue.title")}
         description={t("queue.description")}
         actions={

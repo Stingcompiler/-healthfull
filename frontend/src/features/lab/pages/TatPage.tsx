@@ -113,7 +113,7 @@ export function TatPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("tat.title")} description={t("tat.description")} icon={<Timer />} />
+      <PageHeader title={t("tat.title")} description={t("tat.description")} />
       <LabNav />
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1.5">

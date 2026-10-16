@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Package, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, type Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -48,7 +48,6 @@ export function ItemPage() {
       <PageHeader
         title={title}
         description={item.data?.brand_name}
-        icon={<Package />}
         eyebrow={
           <Link
             to="/pharmacy/items"

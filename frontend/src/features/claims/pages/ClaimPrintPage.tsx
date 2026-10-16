@@ -1,7 +1,7 @@
 import "@/features/cashier/components/print.css";
 
 import { Link, useParams } from "@tanstack/react-router";
-import { FileText, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -195,7 +195,6 @@ export function ClaimPrintPage() {
       <PageHeader
         title={t("print.pageTitle")}
         description={t("print.pageDescription")}
-        icon={<FileText />}
         className="print:hidden"
         actions={
           <>

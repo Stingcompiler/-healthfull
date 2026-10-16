@@ -1,5 +1,4 @@
 import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { FileText } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -173,7 +172,6 @@ export function ResultPrintPage() {
       <PageHeader
         title={t("print.pageTitle")}
         description={t("print.pageDescription")}
-        icon={<FileText />}
         className="print:hidden"
         actions={
           <Button asChild variant="outline">

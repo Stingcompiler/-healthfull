@@ -106,7 +106,7 @@ export function ReviewPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("review.pageTitle")} description={t("review.pageDescription")} icon={<ClipboardCheck />} />
+      <PageHeader title={t("review.pageTitle")} description={t("review.pageDescription")} />
       <CashierNav />
       <IncomingHandovers handovers={current.data?.incoming_handovers ?? []} />
       <Tabs

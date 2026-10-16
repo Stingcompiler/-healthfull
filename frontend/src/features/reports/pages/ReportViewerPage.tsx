@@ -14,7 +14,7 @@ import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 
 import { exportUrl, useReport } from "../api";
-import { catalogEntry, isReportKey, type ReportKey } from "../catalog";
+import { isReportKey, type ReportKey } from "../catalog";
 import { ReportFiltersForm } from "../components/ReportFiltersForm";
 import { ReportMetrics } from "../components/ReportMetrics";
 import { ReportSectionTable } from "../components/ReportSectionTable";
@@ -32,7 +32,7 @@ function UnknownReport() {
   const { t } = useTranslation("reports");
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("viewer.unknownTitle")} icon={<FileQuestion />} />
+      <PageHeader title={t("viewer.unknownTitle")} />
       <EmptyState
         icon={<FileQuestion />}
         title={t("viewer.unknownTitle")}
@@ -54,8 +54,6 @@ function ReportView({ reportKey }: { reportKey: ReportKey }) {
   const search: ReportSearch = useSearch({ strict: false });
   const navigate = useNavigate();
   const report = useReport(reportKey, search);
-  const entry = catalogEntry(reportKey);
-  const Icon = entry?.icon ?? FileQuestion;
   const data = report.data;
   const title = data ? pickName(data.title, language) : t(`catalog.${reportKey}.title`);
 
@@ -68,7 +66,6 @@ function ReportView({ reportKey }: { reportKey: ReportKey }) {
       <PageHeader
         title={title}
         description={t(`catalog.${reportKey}.description`)}
-        icon={<Icon />}
         eyebrow={
           <Link to="/reports" className="inline-flex min-h-11 items-center gap-1 hover:text-fg md:min-h-6">
             <ArrowBack className="size-3.5" aria-hidden="true" />

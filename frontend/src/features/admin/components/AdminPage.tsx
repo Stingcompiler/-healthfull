@@ -31,14 +31,12 @@ export function AdminPage({ section, title, description, actions, documentTitle,
   const { t } = useTranslation("admin");
   const me = useCurrentUser();
   const def = adminSection(section);
-  const Icon = def.icon;
   const allowed = hasPermission(me, def.permission);
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <PageHeader
         title={title}
         description={description}
-        icon={<Icon />}
         actions={allowed ? actions : undefined}
         documentTitle={documentTitle}
       />

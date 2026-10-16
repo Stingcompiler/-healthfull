@@ -67,7 +67,6 @@ export function BedBoardPage() {
       <PageHeader
         title={t("beds.title")}
         description={t("beds.description")}
-        icon={<BedDouble />}
         actions={
           <>
             {canManage ? (

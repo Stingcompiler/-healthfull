@@ -153,7 +153,6 @@ export function AdjustmentsPage() {
       <PageHeader
         title={t("adjustments.title")}
         description={t("adjustments.description")}
-        icon={<SlidersHorizontal />}
         actions={
           canRequest ? (
             <Button

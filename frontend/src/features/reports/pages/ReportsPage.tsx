@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChartColumn, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -21,7 +21,7 @@ export function ReportsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <PageHeader title={t("title")} description={t("description")} icon={<ChartColumn />} />
+      <PageHeader title={t("title")} description={t("description")} />
       {visible.length === 0 ? (
         <EmptyState icon={<Lock />} title={t("empty.title")} description={t("empty.description")} />
       ) : (

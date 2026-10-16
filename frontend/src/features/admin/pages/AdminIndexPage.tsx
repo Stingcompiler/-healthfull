@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { ChevronNext } from "@/components/icons";
@@ -16,7 +15,7 @@ export function AdminIndexPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t("title")} description={t("description")} icon={<Settings2 />} />
+      <PageHeader title={t("title")} description={t("description")} />
       <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {sections.map((s) => {
           const Icon = s.icon;

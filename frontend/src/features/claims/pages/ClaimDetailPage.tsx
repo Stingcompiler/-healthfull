@@ -239,7 +239,6 @@ export function ClaimDetailPage() {
       <PageHeader
         title={data ? t("detail.title", { number: data.number }) : t("detail.loadingTitle")}
         description={data ? <ClaimHeaderLine claim={data} /> : null}
-        icon={<FileStack />}
         actions={
           <Button asChild variant="outline">
             <Link to="/claims/batches">

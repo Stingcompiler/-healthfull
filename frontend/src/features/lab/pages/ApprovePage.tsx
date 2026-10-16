@@ -104,7 +104,7 @@ export function ApprovePage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("approvals.title")} description={t("approvals.description")} icon={<ClipboardCheck />} />
+      <PageHeader title={t("approvals.title")} description={t("approvals.description")} />
       <LabNav />
       {approvals.isError ? (
         <AlertCard variant="danger" title={t("errors:title")}>

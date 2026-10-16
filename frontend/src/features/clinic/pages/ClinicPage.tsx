@@ -52,7 +52,6 @@ export function ClinicPage() {
       <PageHeader
         title={t("queue.title")}
         description={t("queue.description")}
-        icon={<Stethoscope />}
         actions={
           <Button onClick={onCallNext} loading={callNext.isPending} disabled={waiting === 0} data-testid="call-next">
             <Megaphone aria-hidden="true" />

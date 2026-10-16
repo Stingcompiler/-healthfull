@@ -1,5 +1,4 @@
 import { Link, useParams, useSearch } from "@tanstack/react-router";
-import { Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
@@ -73,7 +72,6 @@ export function LabelPage() {
       <PageHeader
         title={t("label.title")}
         description={t("label.description")}
-        icon={<Tag />}
         className="print:hidden"
         actions={
           <Button asChild variant="outline">

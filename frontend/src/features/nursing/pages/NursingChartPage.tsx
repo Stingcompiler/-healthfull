@@ -1,6 +1,6 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { BedDouble, ClipboardList, HeartPulse, ShieldAlert } from "lucide-react";
+import { BedDouble, ClipboardList, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -47,7 +47,6 @@ export function NursingChartPage() {
         eyebrow={t("chart.title")}
         description={data ? t("chart.visit", { number: data.visit.number }) : undefined}
         documentTitle={t("chart.title")}
-        icon={<HeartPulse />}
       />
       {chart.isError ? (
         <QueryError

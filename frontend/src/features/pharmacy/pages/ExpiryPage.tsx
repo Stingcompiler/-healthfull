@@ -78,7 +78,7 @@ export function ExpiryPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("expiry.title")} description={t("expiry.description")} icon={<CalendarClock />} />
+      <PageHeader title={t("expiry.title")} description={t("expiry.description")} />
       <PharmacyNav />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <Tabs

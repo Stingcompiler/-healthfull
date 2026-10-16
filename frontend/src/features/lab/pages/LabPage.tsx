@@ -156,7 +156,7 @@ function Worklist({ title }: { title: string }) {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={title} description={t("worklist.description")} icon={<FlaskConical />} />
+      <PageHeader title={title} description={t("worklist.description")} />
       <LabNav />
       <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="md:hidden">

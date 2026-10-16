@@ -10,15 +10,14 @@ import { Link } from "@tanstack/react-router";
 export interface UnderConstructionProps {
   title: ReactNode;
   description: ReactNode;
-  icon: ReactNode;
 }
 
 /** Placeholder page for a pre-registered module that is not built yet. */
-export function UnderConstruction({ title, description, icon }: UnderConstructionProps) {
+export function UnderConstruction({ title, description }: UnderConstructionProps) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={title} description={description} icon={icon} />
+      <PageHeader title={title} description={description} />
       <EmptyState
         icon={<Construction />}
         title={t("underConstruction.title")}

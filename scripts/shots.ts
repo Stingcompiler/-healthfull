@@ -168,6 +168,24 @@ const SCREENS: Screen[] = [
       optIn: true,
     }),
   ),
+  ...(
+    [
+      ["claims", "manager", "/claims"],
+      ["lab-tat", "manager", "/lab/tat"],
+      ["admin-system", "manager", "/administration/system"],
+      ["admin-imports", "manager", "/administration/imports"],
+      ["queue", "manager", "/queue"],
+      ["reports", "manager", "/reports"],
+      ["report-viewer", "manager", "/reports/revenue"],
+      ["bed-board", "manager", "/nursing/beds"],
+      ["price-list", "manager", "/administration/price-lists"],
+      ["shift", "cashier", "/cashier/shift"],
+      ["pharmacy-items", "pharmacist", "/pharmacy/items"],
+      ["pharmacy-low-stock", "pharmacist", "/pharmacy/low-stock"],
+    ] as const
+  ).map(
+    ([id, role, route]): Screen => ({ id, role, path: () => route, ready: "main h1" }),
+  ),
   {
     id: "portal-home",
     role: "portal",

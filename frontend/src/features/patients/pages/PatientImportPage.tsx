@@ -132,7 +132,6 @@ export function PatientImportPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={<FileSpreadsheet />}
         eyebrow={<Link to="/patients">{t("title")}</Link>}
         title={t("import.title")}
         description={t("import.description")}

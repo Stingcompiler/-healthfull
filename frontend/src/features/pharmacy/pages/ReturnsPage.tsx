@@ -61,7 +61,7 @@ export function ReturnsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("returns.title")} description={t("returns.description")} icon={<Undo2 />} />
+      <PageHeader title={t("returns.title")} description={t("returns.description")} />
       <PharmacyNav />
       <SearchInput
         label={t("returns.search")}

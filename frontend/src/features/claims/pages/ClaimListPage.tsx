@@ -100,7 +100,6 @@ export function ClaimListPage() {
       <PageHeader
         title={t("list.title")}
         description={t("list.description")}
-        icon={<FileStack />}
         actions={
           <Can permission="claims.manage">
             <Button asChild>

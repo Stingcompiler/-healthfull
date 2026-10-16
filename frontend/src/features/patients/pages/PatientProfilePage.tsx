@@ -72,7 +72,7 @@ export function PatientProfilePage() {
     const title = notFound ? t("profile.notFoundTitle") : t("profile.loadFailed");
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader icon={<UserRound />} title={title} />
+        <PageHeader title={title} />
         <EmptyState
           icon={<UserRound />}
           title={title}
@@ -108,7 +108,6 @@ export function PatientProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={<UserRound />}
         eyebrow={<Link to="/patients">{t("title")}</Link>}
         // On phones the identity card right below shows the name; the heading stays for readers.
         title={<span className="max-md:sr-only">{name}</span>}

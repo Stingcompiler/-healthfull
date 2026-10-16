@@ -83,7 +83,7 @@ export function BuildClaimPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("build.title")} description={t("build.description")} icon={<FilePlus2 />} />
+      <PageHeader title={t("build.title")} description={t("build.description")} />
       <ClaimsNav />
       <section className="card-surface grid gap-4 p-4 md:grid-cols-3 md:p-5" aria-label={t("build.criteria")}>
         <div className="grid gap-2">

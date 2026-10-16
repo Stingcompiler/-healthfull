@@ -31,12 +31,7 @@ export function NursingVisitsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader
-        title={t("visits.title")}
-        description={t("visits.description")}
-        icon={<HeartPulse />}
-        documentTitle={t("visits.title")}
-      />
+      <PageHeader title={t("visits.title")} description={t("visits.description")} documentTitle={t("visits.title")} />
       <NursingTabs current="visits" />
       <SearchInput
         label={t("visits.search")}

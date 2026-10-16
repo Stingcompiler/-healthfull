@@ -1,7 +1,7 @@
 import "@/features/cashier/components/print.css";
 
 import { Link, useParams, useSearch } from "@tanstack/react-router";
-import { FileQuestion, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -166,7 +166,7 @@ export function ReportPrintPage() {
 
 function PrintUnknown() {
   const { t } = useTranslation("reports");
-  return <PageHeader title={t("viewer.unknownTitle")} icon={<FileQuestion />} />;
+  return <PageHeader title={t("viewer.unknownTitle")} />;
 }
 
 function ReportPrint({ reportKey }: { reportKey: ReportKey }) {
@@ -180,7 +180,6 @@ function ReportPrint({ reportKey }: { reportKey: ReportKey }) {
       <PageHeader
         title={t("print.pageTitle")}
         description={t(`catalog.${reportKey}.title`)}
-        icon={<Printer />}
         className="print:hidden"
         actions={
           <>

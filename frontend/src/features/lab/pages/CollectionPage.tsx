@@ -97,7 +97,7 @@ export function CollectionPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("collection.title")} description={t("collection.description")} icon={<Droplet />} />
+      <PageHeader title={t("collection.title")} description={t("collection.description")} />
       <SearchInput
         label={t("worklist.search")}
         placeholder={t("worklist.searchPlaceholder")}

@@ -10,8 +10,6 @@ export interface PageHeaderProps {
   eyebrow?: ReactNode;
   /** Buttons aligned to the inline end; wrap under the title on phones. */
   actions?: ReactNode;
-  /** Kept for compatibility; no longer rendered (no icon on every heading). */
-  icon?: ReactNode;
   /** Browser tab title; defaults to `title` when that is a string. */
   documentTitle?: string;
   className?: string;
