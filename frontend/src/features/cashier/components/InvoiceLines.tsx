@@ -102,13 +102,19 @@ export function InvoiceLines({ lines, caption }: { lines: readonly InvoiceLineRo
                 )}
               >
                 <td className={cn(td, "col-span-2 min-w-0 md:w-full md:max-w-0 md:min-w-44 md:ps-4")}>
-                  <div className={cn("font-medium break-words text-fg", cancelled && "text-muted line-through")}>
-                    {line.name}
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className={cn("min-w-0 font-medium break-words text-fg", cancelled && "text-muted line-through")}
+                    >
+                      {line.name}
+                    </span>
+                    <StatusBadge status={line.status} size="sm" className="shrink-0 whitespace-nowrap" />
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted [&_[data-slot=badge]]:max-w-full [&_[data-slot=badge]]:shrink [&_[data-slot=badge]]:rounded-xl [&_[data-slot=badge]]:whitespace-normal">
-                    <StatusBadge status={line.status} size="sm" />
-                    {line.meta}
-                  </div>
+                  {line.meta ? (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted [&_[data-slot=badge]]:max-w-full [&_[data-slot=badge]]:shrink [&_[data-slot=badge]]:rounded-xl [&_[data-slot=badge]]:whitespace-normal">
+                      {line.meta}
+                    </div>
+                  ) : null}
                 </td>
                 <td className={cn(amount, "col-span-1")}>
                   <span className={label}>{t("invoice.qty")}</span>

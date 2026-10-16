@@ -142,6 +142,12 @@ export function InvoiceCard({
     return out;
   };
 
+  // The coverage payer is shown once, in the header. A line repeats a payer badge only when it
+  // differs from it (another payer, cash) or needs a decision (not covered, pre-approval).
+  const payerIds = new Set(invoice.lines.filter((l) => l.payer).map((l) => l.payer?.id));
+  const invoicePayer = payerIds.size === 1 ? (invoice.lines.find((l) => l.payer)?.payer ?? null) : null;
+  const mixedPayers = payerIds.size > 1;
+
   return (
     <section
       className="card-surface flex min-w-0 flex-col gap-4 overflow-hidden pt-4 md:pt-5"
@@ -167,6 +173,14 @@ export function InvoiceCard({
               <DateText value={invoice.created_at} format="datetime" />
             )}
           </span>
+          {invoice.lines.length > 0 && !mixedPayers ? (
+            <span className="flex flex-wrap items-center gap-1.5 text-sm text-muted" data-testid="invoice-payer">
+              {t("invoice.payer")}
+              <Badge variant={invoicePayer ? "info" : "neutral"}>
+                {invoicePayer ? names.name(invoicePayer) : t("invoice.cash")}
+              </Badge>
+            </span>
+          ) : null}
         </div>
         {approved ? (
           <div className="flex flex-wrap gap-2">
@@ -202,30 +216,35 @@ export function InvoiceCard({
       ) : (
         <InvoiceLines
           caption={t("invoice.linesCaption")}
-          lines={invoice.lines.map((line): InvoiceLineRow => ({
-            id: line.id,
-            name: names.name(line.service),
-            meta: (
-              <>
-                <Badge variant={line.payer ? "info" : "neutral"}>
-                  {line.payer ? names.name(line.payer) : t("invoice.cash")}
-                </Badge>
-                {line.excluded ? <Badge variant="warning">{t("invoice.excluded")}</Badge> : null}
-                {line.requires_pre_approval && !line.pre_approval_ref ? (
-                  <Badge variant="warning">{t("invoice.needsPreapproval")}</Badge>
-                ) : null}
-              </>
-            ),
-            quantity: line.quantity,
-            gross: line.gross,
-            discount: line.discount,
-            payerShare: line.payer_share,
-            patientShare: line.patient_share,
-            outstanding: approved ? line.outstanding : null,
-            status: line.state,
-            needsDecision: line.excluded || (line.requires_pre_approval && !line.pre_approval_ref),
-            actions: isDraft ? <LineActions actions={rowActions(line)} name={names.name(line.service)} /> : null,
-          }))}
+          lines={invoice.lines.map((line): InvoiceLineRow => {
+            const showPayer = mixedPayers || (invoicePayer !== null && line.payer?.id !== invoicePayer.id);
+            const needsPreapproval = line.requires_pre_approval && !line.pre_approval_ref;
+            return {
+              id: line.id,
+              name: names.name(line.service),
+              meta:
+                showPayer || line.excluded || needsPreapproval ? (
+                  <>
+                    {showPayer ? (
+                      <Badge variant={line.payer ? "info" : "neutral"}>
+                        {line.payer ? names.name(line.payer) : t("invoice.cash")}
+                      </Badge>
+                    ) : null}
+                    {line.excluded ? <Badge variant="warning">{t("invoice.excluded")}</Badge> : null}
+                    {needsPreapproval ? <Badge variant="warning">{t("invoice.needsPreapproval")}</Badge> : null}
+                  </>
+                ) : null,
+              quantity: line.quantity,
+              gross: line.gross,
+              discount: line.discount,
+              payerShare: line.payer_share,
+              patientShare: line.patient_share,
+              outstanding: approved ? line.outstanding : null,
+              status: line.state,
+              needsDecision: line.excluded || (line.requires_pre_approval && !line.pre_approval_ref),
+              actions: isDraft ? <LineActions actions={rowActions(line)} name={names.name(line.service)} /> : null,
+            };
+          })}
         />
       )}
 
