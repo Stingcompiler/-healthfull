@@ -33,7 +33,6 @@ export function PatientVisits({ patientId, onNewVisit }: { patientId: number; on
   return (
     <section aria-labelledby="visits-heading" className="flex flex-col gap-3">
       <h2 id="visits-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
-        <History className="size-5 text-muted" aria-hidden="true" />
         {t("profile.visits")}
       </h2>
       {visits.isError ? (

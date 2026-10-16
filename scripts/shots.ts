@@ -254,6 +254,8 @@ async function findFacts(browser: any): Promise<Facts> {
   const entries: any[] = Array.isArray(worklist) ? worklist : (worklist.entries ?? []);
   const open = entries.find((e: any) => e.status !== "done" && e.visit?.id) ?? entries.find((e: any) => e.visit?.id);
   if (open) facts.doctorVisit = open.visit.id;
+  // The demo month may leave no open worklist entry: the doctor can open any visit, so fall back to the cashier's.
+  else if (facts.cashierVisit) facts.doctorVisit = facts.cashierVisit;
   await doctor.close();
 
   // The portal needs a printed access code: issue one for a demo patient as the receptionist.

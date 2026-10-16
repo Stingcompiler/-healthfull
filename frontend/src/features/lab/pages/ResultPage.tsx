@@ -227,7 +227,6 @@ function Bench({ result }: { result: LabResult }) {
             data-testid="approval-panel"
           >
             <h2 className="flex items-center gap-2 text-base font-semibold">
-              <BadgeCheck className="size-4 text-muted" aria-hidden="true" />
               {draft.amends_version_no ? t("approve.amendTitle") : t("approve.title")}
             </h2>
             <p className="text-sm text-muted">{t("approve.hint")}</p>

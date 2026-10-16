@@ -1,5 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { Database, DatabaseBackup, HardDrive, History, RefreshCw, ShieldCheck } from "lucide-react";
+import { DatabaseBackup, RefreshCw } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -199,7 +199,6 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="card-surface flex flex-col gap-3 p-4 md:p-5" aria-labelledby="sys-disks">
           <h2 id="sys-disks" className="flex items-center gap-2 text-base font-semibold text-fg">
-            <HardDrive className="size-4 text-muted" aria-hidden="true" />
             {t("system.disks")}
           </h2>
           {status.disks.length === 0 ? (
@@ -241,7 +240,6 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
 
         <section className="card-surface flex flex-col gap-3 p-4 md:p-5" aria-labelledby="sys-migrations">
           <h2 id="sys-migrations" className="flex items-center gap-2 text-base font-semibold text-fg">
-            <Database className="size-4 text-muted" aria-hidden="true" />
             {t("system.migrations")}
           </h2>
           <p className="text-sm text-fg">
@@ -285,7 +283,6 @@ function IntegritySection({ run }: { run: IntegrityRun | null }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="sys-integrity" className="flex items-center gap-2 text-base font-semibold text-fg">
-          <ShieldCheck className="size-4 text-muted" aria-hidden="true" />
           {t("system.integrity.title")}
         </h2>
         {run ? (
@@ -391,7 +388,6 @@ function RunsSection({
   return (
     <section className="flex flex-col gap-3" aria-labelledby={id}>
       <h2 id={id} className="flex items-center gap-2 text-base font-semibold text-fg">
-        <History className="size-4 text-muted" aria-hidden="true" />
         {title}
       </h2>
       <DataTable

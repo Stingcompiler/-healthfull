@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { History, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { DateText } from "@/components/DateText";
@@ -30,10 +30,7 @@ export function VersionHistory({ result, showDraft = true }: { result: LabResult
   if (versions.length === 0) return null;
   return (
     <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="version-history">
-      <h2 className="flex items-center gap-2 text-base font-semibold">
-        <History className="size-4 text-muted" aria-hidden="true" />
-        {t("versions.title")}
-      </h2>
+      <h2 className="flex items-center gap-2 text-base font-semibold">{t("versions.title")}</h2>
       <ol className="flex flex-col gap-3">
         {versions.map((v) => (
           <li

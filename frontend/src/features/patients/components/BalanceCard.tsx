@@ -1,4 +1,3 @@
-import { Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { MoneyText } from "@/components/MoneyText";
@@ -23,7 +22,6 @@ export function BalanceCard({ patientId }: { patientId: number }) {
       data-testid="balance"
     >
       <h2 id="balance-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
-        <Wallet className="size-5 text-muted" aria-hidden="true" />
         {t("balance.title")}
       </h2>
       {balance.isError ? (

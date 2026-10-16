@@ -1,4 +1,4 @@
-import { Activity, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -113,7 +113,6 @@ export function VitalsPanel({ visitId, vitals, open }: { visitId: number; vitals
   return (
     <section aria-labelledby="nursing-vitals" className="card-surface flex flex-col gap-4 p-4 md:p-5">
       <h2 id="nursing-vitals" className="flex items-center gap-2 text-base font-semibold text-fg">
-        <Activity className="size-4 text-muted" aria-hidden="true" />
         {t("vitals.title")}
       </h2>
 
