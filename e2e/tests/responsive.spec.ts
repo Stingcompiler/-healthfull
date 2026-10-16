@@ -260,6 +260,8 @@ test("@responsive route registry covers every SPA route", () => {
     for (const match of source.matchAll(/\bpath:\s*"([^"]+)"/g)) {
       const declared = match[1] ?? "";
       if (declared === "/") continue; // index routes are covered by their parent
+      // Registered only by the Vite dev server (import.meta.env.DEV); production serves no such route.
+      if (declared === "/design/directions") continue;
       if (!registered.some((p) => p === declared || p.endsWith(declared))) {
         missing.push(`${path.relative(FRONTEND_DIR, file)}: ${declared}`);
       }
