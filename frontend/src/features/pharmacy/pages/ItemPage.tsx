@@ -80,7 +80,7 @@ function ItemBody({ item }: { item: StockItem }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <section
-        className="card-surface grid content-start gap-3 p-4 md:p-5"
+        className="card-surface grid content-start gap-3 p-4 md:p-(--d-card-pad)"
         aria-labelledby="item-summary"
         data-testid="item-summary"
       >
@@ -186,7 +186,7 @@ function EditItemForm({ item }: { item: StockItem }) {
   });
 
   return (
-    <section className="card-surface grid content-start gap-3 p-4 md:p-5" aria-labelledby="item-edit">
+    <section className="card-surface grid content-start gap-3 p-4 md:p-(--d-card-pad)" aria-labelledby="item-edit">
       <h2 id="item-edit" className="text-base font-semibold">
         {t("item.edit")}
       </h2>
@@ -341,7 +341,10 @@ function BatchesSection({ item }: { item: StockItem }) {
     [t, names, stores, unit],
   );
   return (
-    <section className="card-surface grid min-w-0 gap-3 p-4 md:p-5 lg:col-span-2" aria-labelledby="item-batches">
+    <section
+      className="card-surface grid min-w-0 gap-3 p-4 md:p-(--d-card-pad) lg:col-span-2"
+      aria-labelledby="item-batches"
+    >
       <h2 id="item-batches" className="text-base font-semibold">
         {t("item.batches")}
       </h2>
@@ -431,7 +434,10 @@ function StockCardSection({ item }: { item: StockItem }) {
     [t, names, unit],
   );
   return (
-    <section className="card-surface grid min-w-0 gap-3 p-4 md:p-5 lg:col-span-2" aria-labelledby="item-card">
+    <section
+      className="card-surface grid min-w-0 gap-3 p-4 md:p-(--d-card-pad) lg:col-span-2"
+      aria-labelledby="item-card"
+    >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h2 id="item-card" className="text-base font-semibold">
           {t("card.title")}

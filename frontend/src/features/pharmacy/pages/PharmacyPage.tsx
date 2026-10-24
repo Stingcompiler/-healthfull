@@ -4,6 +4,7 @@ import { useRef, useState, type SyntheticEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
+import { PosStatusBar } from "@/components/PosStatusBar";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -14,11 +15,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { usePermission } from "@/lib/auth/hooks";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { useShortcut } from "@/lib/hooks/use-shortcut";
 
 import { queueQuery, usePharmacyOptions, useQueue } from "../api";
 import { LabeledField, QtyText, StoreSelect } from "../components/common";
 import { DispenseDialog } from "../components/DispenseDialog";
 import { PharmacyNav } from "../components/PharmacyNav";
+import { ShortcutsDialog } from "../components/ShortcutsDialog";
+import { SEARCH_SHORTCUT, useReturnsShortcut } from "../lib/shortcuts";
 import { useNames } from "../lib/use-names";
 import type { QueueVisit } from "../types";
 
@@ -41,6 +45,16 @@ export function PharmacyPage() {
   // Type-ahead: the list narrows while typing.
   const query = useDebouncedValue(input.trim(), 350);
   const queue = useQueue(query);
+
+  useReturnsShortcut();
+  useShortcut(
+    SEARCH_SHORTCUT,
+    () => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    },
+    { enabled: canDispense, allowInInputs: true },
+  );
 
   /** Enter (what a scanner sends) searches now; a single match opens the prescription. */
   const onSubmit = async (e: SyntheticEvent) => {
@@ -69,7 +83,11 @@ export function PharmacyPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("queue.title")} description={t("queue.description")} />
+      <PageHeader
+        title={t("queue.title")}
+        description={t("queue.description")}
+        actions={<ShortcutsDialog withSearch />}
+      />
       <PharmacyNav />
       <div className="card-surface grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_16rem] md:items-end md:p-5">
         <form onSubmit={(e) => void onSubmit(e)} role="search" className="flex items-end gap-2">
@@ -143,6 +161,7 @@ export function PharmacyPage() {
           inputRef.current?.focus();
         }}
       />
+      <PosStatusBar />
     </div>
   );
 }

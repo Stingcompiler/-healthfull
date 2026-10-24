@@ -50,7 +50,7 @@ export function PortalCodePage() {
       {issue.isError ? <AlertCard variant="danger" title={translateError(issue.error)} live /> : null}
       {codes.data && !codes.data.has_phone ? <AlertCard variant="warning" title={t("staff.noPhone")} /> : null}
       {!slip ? (
-        <div className="card-surface flex flex-col items-start gap-3 p-4 md:p-5 print:hidden">
+        <div className="card-surface flex flex-col items-start gap-3 p-4 md:p-(--d-card-pad) print:hidden">
           <p className="text-sm text-pretty text-muted">
             {hasActive ? t("staff.replaceWarning") : t("code.description")}
           </p>

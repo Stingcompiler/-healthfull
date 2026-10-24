@@ -134,7 +134,7 @@ function CenterForm({
     toast.success(t("admin:settings.saved"));
   });
   return (
-    <section className="card-surface @container min-w-0 p-4 md:p-5" aria-labelledby="center-title">
+    <section className="card-surface @container min-w-0 p-4 md:p-(--d-card-pad)" aria-labelledby="center-title">
       <h2 id="center-title" className="mb-4 font-semibold text-fg">
         {t("admin:settings.centerTitle")}
       </h2>
@@ -189,7 +189,7 @@ function LogoCard({ profile }: { profile: CenterProfileOut }) {
   const input = useRef<HTMLInputElement>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   return (
-    <section className="card-surface flex flex-col gap-3 p-4 md:p-5" aria-labelledby="logo-title">
+    <section className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)" aria-labelledby="logo-title">
       <h2 id="logo-title" className="font-semibold text-fg">
         {t("settings.logo")}
       </h2>
@@ -283,7 +283,7 @@ function PrintTemplatesCard({ onDirtyChange }: { onDirtyChange: (dirty: boolean)
   const discard = useDiscardConfirm();
   const current = templates.data?.find((row) => row.document === document && row.paper === paper);
   return (
-    <section className="card-surface flex flex-col gap-4 p-4 md:p-5" aria-labelledby="print-title">
+    <section className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="print-title">
       <div>
         <h2 id="print-title" className="font-semibold text-fg">
           {t("settings.printTitle")}
@@ -455,7 +455,7 @@ function NumberingCard() {
   );
 
   return (
-    <section className="card-surface flex flex-col gap-4 p-4 md:p-5" aria-labelledby="numbering-title">
+    <section className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="numbering-title">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 id="numbering-title" className="font-semibold text-fg">

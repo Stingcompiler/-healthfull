@@ -121,7 +121,10 @@ function ChartBody({ data }: { data: NursingChart }) {
         </div>
         <div className="flex min-w-0 flex-col gap-5">
           {data.admission ? (
-            <section aria-labelledby="nursing-admission" className="card-surface flex flex-col gap-3 p-4 md:p-5">
+            <section
+              aria-labelledby="nursing-admission"
+              className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)"
+            >
               <h2 id="nursing-admission" className="flex items-center gap-2 text-base font-semibold text-fg">
                 {t("chart.admissionNumber", { number: data.admission.number })}
               </h2>
@@ -147,7 +150,10 @@ function ChartBody({ data }: { data: NursingChart }) {
               </dl>
             </section>
           ) : null}
-          <section aria-labelledby="nursing-procedures" className="card-surface flex flex-col gap-3 p-4 md:p-5">
+          <section
+            aria-labelledby="nursing-procedures"
+            className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)"
+          >
             <h2 id="nursing-procedures" className="flex items-center gap-2 text-base font-semibold text-fg">
               {t("chart.procedures")}
             </h2>

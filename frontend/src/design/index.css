@@ -176,6 +176,26 @@
   }
 }
 
+/*
+ * Density (Design Reference 2.2 section 5; tokens/density.tokens.json). --d-row-eff is the row
+ * height actually used: on touch devices it never drops under the 44px target, whatever the mode.
+ * --d-cell-y is the vertical padding that gives a one-line (20px) cell that row height. Both are
+ * declared on :root and on every [data-density] scope because they derive from --d-row, which a
+ * scope overrides.
+ */
+:root,
+[data-density] {
+  --d-row-eff: var(--d-row);
+  --d-cell-y: calc((var(--d-row-eff) - 1.25rem) / 2);
+}
+
+@media (pointer: coarse) {
+  :root,
+  [data-density] {
+    --d-row-eff: max(var(--d-row), 44px);
+  }
+}
+
 @layer components {
   /* The one shared surface (direction A, "calm and precise"): a single hairline border, no
      shadow, in every theme. Structure inside it comes from dividers, not nested cards. */

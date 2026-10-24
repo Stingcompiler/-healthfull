@@ -114,6 +114,7 @@ export function FormsSection() {
                   label={t("forms.notes")}
                   placeholder={t("forms.notesPlaceholder")}
                   rows={3}
+                  optional
                   className="sm:col-span-2"
                 />
                 <SwitchField

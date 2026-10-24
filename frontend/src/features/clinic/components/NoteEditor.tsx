@@ -106,7 +106,7 @@ export function NoteEditor({
   const empty = FIELDS.every((f) => !(watched[f] ?? "").trim());
 
   return (
-    <section aria-labelledby="note-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
+    <section aria-labelledby="note-heading" className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)">
       <div className="flex flex-wrap items-center gap-2">
         <h2 id="note-heading" className="text-base font-semibold text-fg">
           {t("note.title")}

@@ -224,7 +224,7 @@ export function PaymentPanel({ billing, shiftOpen }: { billing: VisitBilling; sh
   return (
     <section
       aria-labelledby="payment-title"
-      className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5"
+      className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-(--d-card-pad)"
       data-testid="payment-panel"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">

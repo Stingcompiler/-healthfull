@@ -119,7 +119,7 @@ function SettingsCard({ test }: { test: LabTest }) {
     }
   });
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="test-settings">
+    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)" data-testid="test-settings">
       <h2 className="text-base font-semibold">{t("catalog.settings")}</h2>
       <Form {...form}>
         <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4">
@@ -212,7 +212,7 @@ function ParametersCard({ test }: { test: LabTest }) {
   const [deleting, setDeleting] = useState<LabRange | null>(null);
 
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="test-parameters">
+    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)" data-testid="test-parameters">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold">{t("catalog.parameters")}</h2>
         <Button

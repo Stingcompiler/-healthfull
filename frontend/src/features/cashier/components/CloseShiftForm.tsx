@@ -44,7 +44,7 @@ export function CloseShiftForm({ report, onClosed }: { report: ShiftReport; onCl
   });
 
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5" aria-labelledby="close-title">
+    <section className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="close-title">
       <h2 id="close-title" className="text-base font-semibold">
         {t("close.title")}
       </h2>

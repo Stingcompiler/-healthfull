@@ -30,7 +30,8 @@
     "methods": "Payment method (Alt+1 to Alt+5)",
     "pay": "Take the payment",
     "close": "Close a dialog",
-    "help": "Show this list"
+    "help": "Show this list",
+    "returns": "Open refunds (returns)"
   },
   "shift": {
     "barLabel": "Current shift",

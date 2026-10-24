@@ -6,6 +6,7 @@ import { AlertCard } from "@/components/AlertCard";
 import { EmptyState } from "@/components/EmptyState";
 import { MoneyText } from "@/components/MoneyText";
 import { PageHeader } from "@/components/PageHeader";
+import { PosStatusBar } from "@/components/PosStatusBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,8 @@ import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useCreateSale, useSaleCustomers, useSaleServices } from "../api";
 import { ErrorAlert, LabeledField, QtyText } from "../components/common";
 import { PharmacyNav } from "../components/PharmacyNav";
+import { ShortcutsDialog } from "../components/ShortcutsDialog";
+import { useReturnsShortcut } from "../lib/shortcuts";
 import { SALE_MODES } from "../lib/constants";
 import { lineTotal, sumAmounts } from "../lib/money";
 import { parseWhole } from "../lib/qty";
@@ -37,12 +40,13 @@ interface BasketLine {
 export function SalePage() {
   const { t } = useTranslation(["pharmacy", "common"]);
   const canSell = usePermission("billing.pharmacy_sale");
+  useReturnsShortcut();
   const [done, setDone] = useState<SaleInvoice | null>(null);
   const [key, setKey] = useState(0);
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("sale.title")} description={t("sale.description")} />
+      <PageHeader title={t("sale.title")} description={t("sale.description")} actions={<ShortcutsDialog />} />
       <PharmacyNav />
       {!canSell ? (
         <AlertCard variant="info" title={t("sale.noAccessTitle")}>
@@ -59,6 +63,7 @@ export function SalePage() {
       ) : (
         <SaleForm key={key} onCreated={setDone} />
       )}
+      <PosStatusBar />
     </div>
   );
 }
@@ -121,7 +126,10 @@ function SaleForm({ onCreated }: { onCreated: (invoice: SaleInvoice) => void }) 
 
   return (
     <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <section className="card-surface grid content-start gap-3 p-4 md:p-5" aria-labelledby="sale-customer">
+      <section
+        className="card-surface grid content-start gap-3 p-4 md:p-(--d-card-pad)"
+        aria-labelledby="sale-customer"
+      >
         <h2 id="sale-customer" className="text-base font-semibold">
           {t("sale.customer")}
         </h2>
@@ -263,7 +271,7 @@ function SaleForm({ onCreated }: { onCreated: (invoice: SaleInvoice) => void }) 
         )}
       </section>
 
-      <section className="card-surface grid content-start gap-3 p-4 md:p-5" aria-labelledby="sale-items">
+      <section className="card-surface grid content-start gap-3 p-4 md:p-(--d-card-pad)" aria-labelledby="sale-items">
         <h2 id="sale-items" className="text-base font-semibold">
           {t("sale.items")}
         </h2>
@@ -445,7 +453,7 @@ function SaleDone({ invoice, onNew }: { invoice: SaleInvoice; onNew: () => void 
   const { t } = useTranslation(["pharmacy", "common"]);
   const names = useNames();
   return (
-    <section className="card-surface grid gap-4 p-4 md:p-5" data-testid="sale-done">
+    <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" data-testid="sale-done">
       <AlertCard variant="success" icon={<CheckCircle2 />} title={t("sale.doneTitle")} live>
         {t("sale.doneBody", { visit: invoice.visit_number, fileNo: invoice.patient.file_no })}
       </AlertCard>

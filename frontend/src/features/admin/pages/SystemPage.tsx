@@ -197,7 +197,7 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
       </KpiGroup>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="card-surface flex flex-col gap-3 p-4 md:p-5" aria-labelledby="sys-disks">
+        <section className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)" aria-labelledby="sys-disks">
           <h2 id="sys-disks" className="flex items-center gap-2 text-base font-semibold text-fg">
             {t("system.disks")}
           </h2>
@@ -238,7 +238,7 @@ function StatusBody({ status, openRequest }: { status: SystemStatus; openRequest
           )}
         </section>
 
-        <section className="card-surface flex flex-col gap-3 p-4 md:p-5" aria-labelledby="sys-migrations">
+        <section className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)" aria-labelledby="sys-migrations">
           <h2 id="sys-migrations" className="flex items-center gap-2 text-base font-semibold text-fg">
             {t("system.migrations")}
           </h2>
@@ -277,7 +277,7 @@ function IntegritySection({ run }: { run: IntegrityRun | null }) {
   const { t } = useTranslation("ops");
   return (
     <section
-      className="card-surface flex flex-col gap-3 p-4 md:p-5"
+      className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)"
       aria-labelledby="sys-integrity"
       data-testid="system-integrity"
     >

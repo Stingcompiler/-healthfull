@@ -109,7 +109,10 @@ export function HandoverPanel({ report }: { report: ShiftReport }) {
   });
 
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5" aria-labelledby="handover-title">
+    <section
+      className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-(--d-card-pad)"
+      aria-labelledby="handover-title"
+    >
       <h2 id="handover-title" className="text-base font-semibold">
         {t("handover.title")}
       </h2>
@@ -227,7 +230,10 @@ export function IncomingHandovers({ handovers }: { handovers: readonly Handover[
   const [error, setError] = useState<string | null>(null);
   if (handovers.length === 0) return null;
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="incoming-handovers">
+    <section
+      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)"
+      data-testid="incoming-handovers"
+    >
       <h2 className="text-base font-semibold">{t("handover.incomingTitle", { count: handovers.length })}</h2>
       <ul className="flex flex-col divide-y divide-border text-sm">
         {handovers.map((h) => (

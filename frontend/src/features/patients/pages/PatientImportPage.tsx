@@ -148,7 +148,7 @@ export function PatientImportPage() {
         }
       >
         {job === null ? (
-          <section aria-labelledby="import-upload" className="card-surface flex flex-col gap-4 p-4 md:p-5">
+          <section aria-labelledby="import-upload" className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)">
             <h2 id="import-upload" className="text-base font-semibold text-fg">
               {t("import.uploadTitle")}
             </h2>
@@ -291,7 +291,10 @@ export function PatientImportPage() {
             )}
 
             {confirmed ? null : (
-              <section className="card-surface flex flex-col gap-4 p-4 md:p-5" aria-labelledby="import-confirm">
+              <section
+                className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)"
+                aria-labelledby="import-confirm"
+              >
                 <h2 id="import-confirm" className="text-base font-semibold text-fg">
                   {t("import.confirmTitle")}
                 </h2>

@@ -60,7 +60,10 @@ export function CollectionChart({ trend }: { trend: readonly ReportTrendDay[] })
   const empty = data.every((d) => d.collected === 0 && d.pending === 0);
 
   return (
-    <figure className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="chart-collections">
+    <figure
+      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)"
+      data-testid="chart-collections"
+    >
       <figcaption className="flex flex-col gap-1">
         <h2 className="text-base font-semibold text-fg">{t("charts.collectionsTitle")}</h2>
         <span className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">

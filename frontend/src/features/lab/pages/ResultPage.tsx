@@ -208,14 +208,14 @@ function Bench({ result }: { result: LabResult }) {
         ) : null}
 
         {showForm ? (
-          <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5">
+          <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)">
             <h2 className="text-base font-semibold">
               {draft?.amends_version_no ? t("entry.amendTitle", { number: draft.version_no }) : t("entry.title")}
             </h2>
             <ResultEntryForm key={draft?.revision ?? "new"} result={result} onDirtyChange={setDirty} />
           </section>
         ) : draft && open ? (
-          <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5">
+          <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)">
             <h2 className="text-base font-semibold">{t("entry.title")}</h2>
             <ResultValues values={draft.values} />
           </section>
@@ -223,7 +223,7 @@ function Bench({ result }: { result: LabResult }) {
 
         {draft && result.stage === "to_approve" && canApprove ? (
           <section
-            className="card-surface flex min-w-0 flex-col gap-3 border-warning-border p-4 md:p-5"
+            className="card-surface flex min-w-0 flex-col gap-3 border-warning-border p-4 md:p-(--d-card-pad)"
             data-testid="approval-panel"
           >
             <h2 className="flex items-center gap-2 text-base font-semibold">
@@ -252,7 +252,10 @@ function Bench({ result }: { result: LabResult }) {
         ) : null}
 
         {current && result.stage !== "to_approve" ? (
-          <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="current-result">
+          <section
+            className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)"
+            data-testid="current-result"
+          >
             <h2 className="text-base font-semibold">{t("result.current")}</h2>
             <ResultValues values={current.values} />
             {current.comment ? <p className="text-sm text-fg-muted">{current.comment}</p> : null}

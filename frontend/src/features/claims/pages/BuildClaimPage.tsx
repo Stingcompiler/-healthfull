@@ -156,7 +156,10 @@ export function BuildClaimPage() {
       ) : items.length === 0 ? (
         <EmptyState icon={<FilePlus2 />} title={t("build.empty")} description={t("build.emptyHint")} />
       ) : (
-        <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" aria-labelledby={`${ids}-lines`}>
+        <section
+          className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)"
+          aria-labelledby={`${ids}-lines`}
+        >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id={`${ids}-lines`} className="text-base font-semibold">
               {t("build.lines", { count: items.length })}

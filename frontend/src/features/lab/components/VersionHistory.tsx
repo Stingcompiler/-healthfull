@@ -29,7 +29,7 @@ export function VersionHistory({ result, showDraft = true }: { result: LabResult
   const versions = [...result.versions].reverse().filter((v) => showDraft || v.status !== "draft");
   if (versions.length === 0) return null;
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="version-history">
+    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)" data-testid="version-history">
       <h2 className="flex items-center gap-2 text-base font-semibold">{t("versions.title")}</h2>
       <ol className="flex flex-col gap-3">
         {versions.map((v) => (

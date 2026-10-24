@@ -107,7 +107,7 @@ function ReviewForm({ report }: { report: ShiftReport }) {
   });
   return (
     <section
-      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5 print:hidden"
+      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad) print:hidden"
       aria-labelledby="review-title"
     >
       <h2 id="review-title" className="text-base font-semibold">

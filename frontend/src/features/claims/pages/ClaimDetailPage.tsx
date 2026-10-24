@@ -382,7 +382,10 @@ export function ClaimDetailPage() {
               </div>
             )}
           />
-          <section className="card-surface flex flex-col gap-2 p-4 md:p-5" aria-labelledby="claim-payments">
+          <section
+            className="card-surface flex flex-col gap-2 p-4 md:p-(--d-card-pad)"
+            aria-labelledby="claim-payments"
+          >
             <h2 id="claim-payments" className="text-base font-semibold">
               {t("detail.payments")}
             </h2>

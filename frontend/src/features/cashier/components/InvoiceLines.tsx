@@ -45,13 +45,17 @@ export function InvoiceLines({ lines, caption }: { lines: readonly InvoiceLineRo
 
   const th = "px-2.5 py-2 text-xs font-medium text-muted md:table-cell";
   const thNum = cn(th, "md:text-end");
-  const td = "md:table-cell md:px-2.5 md:py-3 md:align-middle";
+  const td = "md:table-cell md:px-2.5 md:py-(--d-cell-y) md:align-middle";
   const amount = cn(td, "col-span-2 flex items-baseline justify-between gap-3 md:text-end md:whitespace-nowrap");
   const label = "text-xs text-muted md:sr-only";
 
   return (
     <div className="overflow-x-auto">
-      <table aria-label={caption} className="block w-full border-collapse text-sm md:table" data-slot="invoice-lines">
+      <table
+        aria-label={caption}
+        className="block w-full border-collapse text-[length:var(--d-font)]/5 md:table"
+        data-slot="invoice-lines"
+      >
         <thead className="sr-only md:not-sr-only md:table-header-group">
           <tr className="md:table-row md:border-b md:border-border md:bg-subtle">
             <th scope="col" className={cn(th, "md:ps-4 md:text-start")}>

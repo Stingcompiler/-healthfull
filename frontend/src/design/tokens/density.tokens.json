@@ -1,0 +1,78 @@
+{
+  "$schema": "https://www.designtokens.org/schema/2025.10",
+  "$description": "Density modes (Design Reference 2.2 section 5). Leaf names are CSS custom properties. The default mode is :root; compact and comfortable are scoped with data-density on any element (route areas pick one in app/layouts, the portal and the waiting-room display set comfortable). Badges, validation messages, selects and date fields, charts and the 44px touch minimum do not follow density.",
+  "$extensions": {
+    "hospital-sys": {
+      "kind": "density"
+    }
+  },
+  "default": {
+    "$extensions": {
+      "hospital-sys": {
+        "selector": ":root"
+      }
+    },
+    "$type": "dimension",
+    "d-row": {
+      "$value": { "value": 44, "unit": "px" }
+    },
+    "d-pad": {
+      "$value": { "value": 12, "unit": "px" }
+    },
+    "d-gap": {
+      "$value": { "value": 16, "unit": "px" }
+    },
+    "d-card-pad": {
+      "$value": { "value": 20, "unit": "px" }
+    },
+    "d-font": {
+      "$value": { "value": 14, "unit": "px" }
+    }
+  },
+  "compact": {
+    "$extensions": {
+      "hospital-sys": {
+        "selector": "[data-density=\"compact\"]"
+      }
+    },
+    "$type": "dimension",
+    "d-row": {
+      "$value": { "value": 32, "unit": "px" }
+    },
+    "d-pad": {
+      "$value": { "value": 8, "unit": "px" }
+    },
+    "d-gap": {
+      "$value": { "value": 8, "unit": "px" }
+    },
+    "d-card-pad": {
+      "$value": { "value": 12, "unit": "px" }
+    },
+    "d-font": {
+      "$value": { "value": 13, "unit": "px" }
+    }
+  },
+  "comfortable": {
+    "$extensions": {
+      "hospital-sys": {
+        "selector": "[data-density=\"comfortable\"]"
+      }
+    },
+    "$type": "dimension",
+    "d-row": {
+      "$value": { "value": 52, "unit": "px" }
+    },
+    "d-pad": {
+      "$value": { "value": 20, "unit": "px" }
+    },
+    "d-gap": {
+      "$value": { "value": 24, "unit": "px" }
+    },
+    "d-card-pad": {
+      "$value": { "value": 24, "unit": "px" }
+    },
+    "d-font": {
+      "$value": { "value": 15, "unit": "px" }
+    }
+  }
+}

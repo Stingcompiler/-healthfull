@@ -184,7 +184,7 @@ export function ImportsPage() {
   return (
     <AdminPage section="imports" title={t("admin:sections.imports.title")} description={t("imports.description")}>
       {job === null ? (
-        <section aria-labelledby="import-setup" className="card-surface flex flex-col gap-5 p-4 md:p-5">
+        <section aria-labelledby="import-setup" className="card-surface flex flex-col gap-5 p-4 md:p-(--d-card-pad)">
           <h2 id="import-setup" className="text-base font-semibold text-fg">
             {t("imports.kindTitle")}
           </h2>
@@ -411,7 +411,10 @@ export function ImportsPage() {
           </QueryState>
 
           {confirmed ? null : (
-            <section className="card-surface flex flex-col gap-4 p-4 md:p-5" aria-labelledby="import-confirm">
+            <section
+              className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)"
+              aria-labelledby="import-confirm"
+            >
               <h2 id="import-confirm" className="text-base font-semibold text-fg">
                 {t("imports.confirmTitle")}
               </h2>

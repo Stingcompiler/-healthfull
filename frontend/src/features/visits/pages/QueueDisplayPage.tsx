@@ -1,11 +1,11 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { WifiOff } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatNumber } from "@/lib/format";
+import { useClock } from "@/lib/hooks/use-clock";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
@@ -48,7 +48,7 @@ export function QueueDisplayPage() {
   const n = (value: number) => formatNumber(value, language);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg text-fg" data-testid="queue-display">
+    <div className="flex min-h-dvh flex-col bg-bg text-fg" data-testid="queue-display" data-density="comfortable">
       <header className="flex flex-wrap items-center gap-3 border-b-2 border-border-strong bg-surface px-4 py-3 md:px-8">
         <h1 className="min-w-0 flex-1 text-2xl font-bold break-words md:text-4xl">
           {department ? pickName({ ar: department.name_ar, en: department.name_en }, language) : t("display.title")}
@@ -99,7 +99,7 @@ export function QueueDisplayPage() {
           {t("display.loading")}
         </p>
       ) : (
-        <div className="grid flex-1 content-start gap-4 p-4 md:grid-cols-[3fr_2fr] md:gap-6 md:p-8">
+        <div className="grid flex-1 content-start gap-4 p-4 md:grid-cols-[3fr_2fr] md:gap-(--d-gap) md:p-8">
           <section aria-labelledby="display-now" className="flex min-w-0 flex-col gap-4">
             <h2 id="display-now" className="flex items-center gap-2 text-xl font-bold md:text-3xl">
               {t("display.nowServing")}
@@ -188,18 +188,4 @@ function CalledCard({ entry, highlight = false }: { entry: DisplayEntry; highlig
       </span>
     </div>
   );
-}
-
-/** The wall clock, also used to notice a feed that stopped updating. */
-function useClock(): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setNow(new Date());
-    }, 5_000);
-    return () => {
-      window.clearInterval(id);
-    };
-  }, []);
-  return now;
 }

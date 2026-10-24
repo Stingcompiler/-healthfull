@@ -6,6 +6,7 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 ### Added
 - Design tokens single source: DTCG JSON in `frontend/src/design/tokens/` generates `tokens.css` via `scripts/build_tokens.py` (`make tokens`, `make tokens-check` in `make check` and CI); contrast pairs shared between `scripts/check_contrast.py` and vitest; `docs/DECISIONS.md` records deviations from Design Reference v2.2. Generated CSS is byte-identical to the previous hand-written declarations (no visual change).
 - Design tokens `chart-1..5`; neutral dashed `pending` and amber `attention` roles; `.num` utility on money, quantities, phones, barcodes and IDs; lint-ui `rtl-icon` rule (mirror whitelist from Design Reference 2.2 section 11).
+- Density modes as tokens (`compact` on cashier and pharmacy, `comfortable` on the portal and the queue display), a status bar (operator, shift, time, connection) and F10 returns shortcut on the cashier and pharmacy desks, a shared documented shortcuts dialog, and a connection banner with two states (server unreachable, restored) driven by a health probe. Decisions D-0013 to D-0016.
 - Project decision documents, architecture conventions, agent rules, ship-feature skill.
 - Phase 0 backend foundation: Django 5.2 + django-ninja, env-driven settings, pure `domain/` package
   (money, splits, lockout, numbering, permissions; Hypothesis-tested), custom User with 11 roles,

@@ -96,7 +96,7 @@ export function CoverageSection({ patientId, readOnly = false }: { patientId: nu
   const rows = coverages.data ?? [];
 
   return (
-    <section aria-labelledby="coverage-heading" className="card-surface flex flex-col gap-3 p-4 md:p-5">
+    <section aria-labelledby="coverage-heading" className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="coverage-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
           {t("coverage.title")}

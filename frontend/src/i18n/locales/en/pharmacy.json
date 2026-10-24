@@ -497,5 +497,14 @@
     "approverHint": "A cashier supervisor or manager confirms the units came back by entering their own username and password.",
     "confirm": "Return to stock",
     "savedToast": "Units returned to stock: {{count}}"
+  },
+  "shortcuts": {
+    "button": "Shortcuts",
+    "title": "Keyboard shortcuts",
+    "description": "The dispensing desk works without the mouse.",
+    "search": "Focus the scan or search box",
+    "returns": "Open dispense returns",
+    "close": "Close a dialog",
+    "help": "Show this list"
   }
 }

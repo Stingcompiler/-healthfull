@@ -57,7 +57,7 @@ export function ExportPage() {
 
   return (
     <AdminPage section="export" title={t("admin:sections.export.title")} description={t("export.description")}>
-      <section className="card-surface flex flex-col gap-4 p-4 md:p-5" aria-labelledby="export-what">
+      <section className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="export-what">
         <h2 id="export-what" className="text-base font-semibold text-fg">
           {t("export.whatTitle")}
         </h2>

@@ -128,7 +128,7 @@ function UnbilledLines({ billing }: { billing: VisitBilling }) {
   return (
     <section
       aria-labelledby="unbilled-title"
-      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5"
+      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)"
       data-testid="unbilled-lines"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">

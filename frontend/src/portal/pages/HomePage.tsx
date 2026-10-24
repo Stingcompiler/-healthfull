@@ -26,7 +26,7 @@ function HomeCard({
   testId: string;
 }) {
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid={testId}>
+    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)" data-testid={testId}>
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-fg">{title}</h2>
         {action}

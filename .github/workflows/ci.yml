@@ -118,10 +118,11 @@ jobs:
       - run: make api-check
 
   e2e:
-    # The full suite outgrew one 45-minute job (about 1,000 tests), so it runs in four shards.
+    # The full suite outgrew one 45-minute job (about 1,000 tests), so it runs in four shards. Shard 1 is the
+    # heaviest and runs 32 to 49 minutes depending on the runner, so the limit is 60.
     name: e2e (Playwright, chromium, shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
