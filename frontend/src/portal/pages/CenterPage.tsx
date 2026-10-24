@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { useCenterPage, type CenterPage as CenterPageData, type CenterToday } from "@/lib/center/api";
-import { useCenterName } from "@/lib/center/hooks";
+import { useCenterName, useTodayText } from "@/lib/center/hooks";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { formatClock, groupClinicDays, WEEK_ORDER, weekdayName } from "@/lib/weekdays";
@@ -37,17 +37,7 @@ function SignInAction({ className }: { className?: string }) {
 }
 
 function TodayStatus({ today }: { today: CenterToday }) {
-  const { t } = useTranslation("portal");
-  const language = useLanguage();
-  const time = (value: string | null) => (value ? formatClock(value, language) : "");
-  const text =
-    today.state === "open"
-      ? t("center.today.open", { time: time(today.closes) })
-      : today.state === "opens_later"
-        ? t("center.today.opensLater", { time: time(today.opens) })
-        : today.state === "closed_now"
-          ? t("center.today.closedNow")
-          : t("center.today.closedToday");
+  const text = useTodayText(today);
   return (
     <Pill tone={today.state === "open" ? "success" : "neutral"} testId="center-today">
       {text}

@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useRouter } from "@tanstack/react-router";
-import { ClipboardCheck, LockKeyhole, ShieldCheck, WifiOff } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,9 @@ import { z } from "zod";
 import { safeRedirectTarget } from "@/app/guards";
 import { AlertCard } from "@/components/AlertCard";
 import { CenterIdentity } from "@/components/CenterIdentity";
+import { useCenterPage } from "@/lib/center/api";
+import { useTodayText } from "@/lib/center/hooks";
+import { pickName } from "@/lib/names";
 import { Form, PasswordField, TextField } from "@/components/form";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -30,6 +33,59 @@ type LoginValues = z.infer<typeof loginSchema>;
 function lockedUntil(error: ApiError): string | null {
   const value = error.details.locked_until ?? error.details.until;
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null;
+}
+
+/**
+ * The side panel of the staff sign-in: the center's identity, today's date and opening
+ * status, and today's notices from the center page. Facts only, no product claims. Shown
+ * from lg; on phones and tablets the header carries the center's identity.
+ */
+function CenterPanel() {
+  const { t } = useTranslation(["auth", "common"]);
+  const language = useLanguage();
+  const center = useCenterPage();
+  const today = useTodayText(center.data?.today);
+  const notices = (center.data?.announcements ?? []).slice(0, 3);
+  return (
+    <aside
+      className="hidden min-w-0 border-e border-border bg-subtle lg:flex lg:flex-col lg:justify-between lg:gap-10 lg:p-10 xl:p-14"
+      data-testid="login-center-panel"
+    >
+      <CenterIdentity size="lg" subtitle={t("panel.staffArea")} nameClassName="text-lg" />
+      <div className="flex max-w-md flex-col gap-6">
+        <div>
+          <p className="text-sm text-muted">{t("panel.today")}</p>
+          {/* Not a heading: this panel precedes the page's h1 in the DOM (WCAG 1.3.1 order). */}
+          <p className="mt-1 text-2xl font-bold text-balance text-fg" data-testid="login-today">
+            {formatDate(new Date(), language, "long")}
+          </p>
+          {today ? <p className="mt-1 text-sm text-fg">{today}</p> : null}
+        </div>
+        {notices.length > 0 ? (
+          <section aria-labelledby="login-notices" className="card-surface p-4">
+            {/* A label, not a heading: the panel comes before the page's h1. */}
+            <p id="login-notices" className="text-sm font-semibold text-fg">
+              {t("panel.notices")}
+            </p>
+            <ul className="mt-2 flex flex-col divide-y divide-border">
+              {notices.map((n) => {
+                const body = pickName({ ar: n.body_ar, en: n.body_en }, language);
+                return (
+                  <li key={n.id} className="py-2 first:pt-0 last:pb-0">
+                    <p className="text-sm font-medium text-fg">
+                      {pickName({ ar: n.title_ar, en: n.title_en }, language)}
+                    </p>
+                    {body ? <p className="mt-0.5 text-sm text-pretty text-muted">{body}</p> : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+      </div>
+      <p className="text-xs text-muted">{t("common:appName")}</p>
+    </aside>
+  );
 }
 
 export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
@@ -64,33 +120,9 @@ export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
   const until = error && locked ? lockedUntil(error) : null;
 
   return (
-    <div className="grid min-h-dvh bg-bg lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      {/* Brand panel (desktop) */}
-      <aside className="relative hidden overflow-hidden border-e border-border bg-primary-soft lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-14">
-        <div className="relative">
-          <CenterIdentity />
-        </div>
-        <div className="relative max-w-lg">
-          {/* Not a heading: this panel precedes the page's h1 in the DOM (WCAG 1.3.1 order). */}
-          <p className="text-3xl leading-tight font-bold text-balance text-fg xl:text-4xl">{t("hero.title")}</p>
-          <p className="mt-4 text-base text-pretty text-muted">{t("hero.subtitle")}</p>
-          <ul className="mt-8 grid gap-4">
-            {[
-              { icon: WifiOff, text: t("hero.point1") },
-              { icon: ClipboardCheck, text: t("hero.point2") },
-              { icon: ShieldCheck, text: t("hero.point3") },
-            ].map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-surface text-primary-strong shadow-card">
-                  <Icon className="size-[18px]" aria-hidden="true" />
-                </span>
-                <span className="pt-1.5 text-sm font-medium text-fg">{text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="relative text-xs text-muted">{t("common:appName")}</p>
-      </aside>
+    <div className="grid min-h-dvh bg-bg lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      {/* Center panel (desktop): who this center is and what staff should know today. */}
+      <CenterPanel />
 
       {/* Form column */}
       <div className="flex min-w-0 flex-col">
