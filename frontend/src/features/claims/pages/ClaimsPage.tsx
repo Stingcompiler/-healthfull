@@ -75,7 +75,7 @@ export function ClaimsPage() {
           <span className="flex min-w-0 flex-col">
             <span className="font-medium">{names.name(row.original.payer)}</span>
             <span className="text-xs text-muted">
-              <bdi>{row.original.payer.code}</bdi>
+              <bdi className="num">{row.original.payer.code}</bdi>
             </span>
           </span>
         ),
@@ -172,7 +172,7 @@ export function ClaimsPage() {
                   <span className="flex min-w-0 flex-col">
                     <span className="font-semibold">{names.name(r.payer)}</span>
                     <span className="text-xs text-muted">
-                      <bdi>{r.payer.code}</bdi>
+                      <bdi className="num">{r.payer.code}</bdi>
                     </span>
                   </span>
                   {ctx.actions}
@@ -196,7 +196,7 @@ export function ClaimsPage() {
           />
           {totals ? (
             <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted" data-testid="resolved-totals">
-              <Undo2 className="size-4 shrink-0" aria-hidden="true" />
+              <Undo2 className="size-4 shrink-0 rtl:-scale-x-100" aria-hidden="true" />
               <span className="inline-flex items-center gap-1">
                 {t("stages.rebilled")}: <MoneyText value={totals.rebilled} />
               </span>

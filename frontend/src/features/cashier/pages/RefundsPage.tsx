@@ -88,7 +88,7 @@ export function RefundsPage() {
         meta: { label: t("refunds.columns.number") },
         cell: ({ row }) => (
           <span className="flex flex-col gap-1">
-            <bdi className="font-medium">{row.original.number}</bdi>
+            <bdi className="num font-medium">{row.original.number}</bdi>
             <Badge variant={STATUS_VARIANT[row.original.status]}>{t(`refunds.status.${row.original.status}`)}</Badge>
           </span>
         ),
@@ -103,7 +103,7 @@ export function RefundsPage() {
         id: "source",
         header: t("refunds.columns.creditNote"),
         meta: { label: t("refunds.columns.creditNote") },
-        cell: ({ row }) => <bdi>{row.original.credit_note_number ?? "—"}</bdi>,
+        cell: ({ row }) => <bdi className="num">{row.original.credit_note_number ?? "—"}</bdi>,
       },
       {
         id: "reason",
@@ -166,19 +166,26 @@ export function RefundsPage() {
             rowActions={actions}
             serverPagination={{ page, pageSize: PAGE_SIZE, count: refunds.data?.count ?? 0, onPageChange: setPage }}
             minTableWidth={820}
-            emptyState={<EmptyState bare size="compact" icon={<Undo2 />} title={t("refunds.empty")} />}
+            emptyState={
+              <EmptyState
+                bare
+                size="compact"
+                icon={<Undo2 className="rtl:-scale-x-100" />}
+                title={t("refunds.empty")}
+              />
+            }
             renderCard={(r, ctx) => (
               <div className="card-surface flex flex-col gap-2 p-4" data-testid="refund-row">
                 <div className="flex items-start justify-between gap-2">
                   <span className="flex min-w-0 flex-col gap-1">
-                    <bdi className="font-semibold">{r.number}</bdi>
+                    <bdi className="num font-semibold">{r.number}</bdi>
                     <Badge variant={STATUS_VARIANT[r.status]}>{t(`refunds.status.${r.status}`)}</Badge>
                   </span>
                   {ctx.actions}
                 </div>
                 <span className="text-sm">{names.patient(r.patient)}</span>
                 <span className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
-                  <bdi>{r.credit_note_number}</bdi>
+                  <bdi className="num">{r.credit_note_number}</bdi>
                   <span>{names.label(r.reason)}</span>
                   <span>{names.user(r.requested_by)}</span>
                 </span>

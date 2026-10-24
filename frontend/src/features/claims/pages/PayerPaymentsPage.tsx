@@ -88,7 +88,7 @@ export function PayerPaymentsPage() {
     if (row.standing !== "reversed" && row.standing !== "cash")
       out.push({
         label: t("payments.reverse"),
-        icon: <Undo2 />,
+        icon: <Undo2 className="rtl:-scale-x-100" />,
         destructive: true,
         onSelect: () => {
           setReversing(row);
@@ -105,7 +105,7 @@ export function PayerPaymentsPage() {
         meta: { label: t("payments.columns.number") },
         cell: ({ row }) => (
           <span className="flex flex-col gap-1">
-            <bdi className="font-medium">{row.original.number}</bdi>
+            <bdi className="num font-medium">{row.original.number}</bdi>
             <PaymentStandingBadge standing={row.original.standing} />
           </span>
         ),
@@ -231,7 +231,7 @@ export function PayerPaymentsPage() {
             <div className="card-surface flex flex-col gap-2 p-4" data-testid="payer-payment-row">
               <div className="flex items-start justify-between gap-2">
                 <span className="flex min-w-0 flex-col gap-1">
-                  <bdi className="font-semibold">{r.number}</bdi>
+                  <bdi className="num font-semibold">{r.number}</bdi>
                   <PaymentStandingBadge standing={r.standing} />
                 </span>
                 {ctx.actions}
@@ -294,12 +294,12 @@ function MethodCell({ payment }: { payment: ClaimPayerPayment }) {
       {payment.bank ? <span className="text-xs text-muted">{names.name(payment.bank)}</span> : null}
       {payment.reference ? (
         <span className="text-xs break-all text-muted">
-          <bdi>{payment.reference}</bdi>
+          <bdi className="num">{payment.reference}</bdi>
         </span>
       ) : null}
       {payment.shift ? (
         <span className="text-xs text-muted">
-          {t("payments.shift")}: <bdi>{payment.shift.number}</bdi>
+          {t("payments.shift")}: <bdi className="num">{payment.shift.number}</bdi>
         </span>
       ) : null}
     </span>

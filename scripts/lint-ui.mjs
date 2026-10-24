@@ -49,6 +49,24 @@ const LINE_RULES = [
   ["animation", /\banimation(-iteration-count)?:\s*[^;]*infinite|\binfinite\b.*\banimate-/, "infinite animation"],
 ];
 
+/*
+ * RTL icon mirroring (Design Reference 2.2 section 11, docs/DECISIONS.md D-0010). The whitelist of
+ * glyphs that MUST mirror in RTL is closed: arrow, chevron, reply, undo/redo, logout/login, bullet
+ * list (List, not ListOrdered/ListChecks, whose numerals and ticks never mirror), steps and the
+ * side-panel toggles; symmetric arrows (ArrowLeftRight) do not need it. Everything else must NOT mirror (clocks, calendars, checks,
+ * media, search, refresh, charts, currency, images). The decision is not left to the author:
+ *   rtl-icon   a whitelisted icon without an rtl flip, or a non-whitelisted icon with one
+ * An icon counts as flipped when its JSX element carries `rtl:-scale-x-100`, `rtl:rotate-180`
+ * or the `flipInRtl` constant. The direction-aware wrappers in components/icons.tsx (ChevronNext,
+ * ArrowBack...) flip internally and are not lucide names, so they are never flagged.
+ */
+const MIRRORED_ICON =
+  /^(Arrow(Big)?(Left|Right)|Arrow(Up|Down)(Left|Right)|Chevrons?(Left|Right)|Chevron(First|Last)|Reply|ReplyAll|Undo2?|Redo2?|LogOut|LogIn|List(Collapse|Indent\w*)?|PanelLeft\w*|PanelRight\w*|CornerUp(Left|Right)|CornerDown(Left|Right)|MoveLeft|MoveRight|StepBack|StepForward)$/;
+const NEVER_MIRRORED_ICON =
+  /^(Clock\d*|Calendar\w*|Timer\w*|History|Hourglass|Alarm\w*|Check\w*|Play|Pause|Square|Circle\w*|Skip\w*|Rewind|FastForward|Volume\w*|Mic\w*|Search\w*|Refresh\w*|Rotate\w*|\w*Chart\w*|Trending\w*|Banknote\w*|DollarSign|Euro|Coins?|Image\w*|Camera|Video|Music\w*|Phone\w*|Mail\w*|Printer|Download|Upload|X|Plus|Minus|Trash2?|Pencil|Save|Eye\w*|Lock\w*|Key\w*|Settings\w*|Bell\w*|Info|Triangle\w*|Wallet\w*|Stethoscope|Pill)$/;
+const FLIP_TOKEN = /rtl:-scale-x-100|rtl:rotate-180|flipInRtl/;
+const ICON_TAG = /<([A-Z][A-Za-z0-9]*)\b/g;
+
 /** Which `animate-pulse` uses are loading placeholders (a progress indicator, an allowed exception). */
 const ANIMATION_EXEMPT_FILES = [/components\/ui\/skeleton\.tsx$/];
 
@@ -103,6 +121,37 @@ for (const file of walk(SRC)) {
   });
 
   if (!isTsx) continue;
+
+  // RTL mirroring whitelist for icons (only names imported from lucide-react are judged).
+  {
+    const source = lines.join("\n");
+    const lucide = new Map(); // local name -> lucide export name
+    for (const m of source.matchAll(/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/g)) {
+      for (const part of m[1].split(",")) {
+        const [orig, alias] = part.trim().replace(/^type\s+/, "").split(/\s+as\s+/);
+        if (orig) lucide.set((alias ?? orig).trim(), orig.trim());
+      }
+    }
+    lines.forEach((line, i) => {
+      if (isWaived(lines, i)) return;
+      for (const m of line.matchAll(ICON_TAG)) {
+        const local = m[1];
+        if (!lucide.has(local)) continue;
+        const name = lucide.get(local).replace(/Icon$/, "");
+        const mirrored = MIRRORED_ICON.test(name);
+        const never = NEVER_MIRRORED_ICON.test(name);
+        if (!mirrored && !never) continue;
+        // The opening tag may span lines: read up to the line that closes it.
+        let tag = line.slice(m.index);
+        for (let k = i + 1; k < Math.min(lines.length, i + 8) && !/\/?>/.test(tag); k++) tag += " " + lines[k];
+        const end = tag.search(/\/>|>(?![^{]*\})/);
+        const open = end >= 0 ? tag.slice(0, end) : tag;
+        const flipped = FLIP_TOKEN.test(open);
+        if (mirrored && !flipped) report("rtl-icon", file, i + 1, `${name} must mirror in RTL (add rtl:-scale-x-100 or use the direction-aware wrapper)`, line);
+        if (never && flipped) report("rtl-icon", file, i + 1, `${name} must not mirror in RTL (clock, calendar, check, media, search, refresh, chart, currency, image)`, line);
+      }
+    });
+  }
 
   // Icon in a tinted tile: a small fixed-size, centered, rounded box with a tinted fill, in a
   // window of 4 lines (class lists are often split by prettier or by a tone map).

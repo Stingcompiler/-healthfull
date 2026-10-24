@@ -80,7 +80,7 @@ export function CreditNotesPage() {
     if (canRefund && cn.status === "approved" && isPositiveAmount(cn.refundable) && !openRefund)
       out.push({
         label: t("refunds.request"),
-        icon: <Undo2 />,
+        icon: <Undo2 className="rtl:-scale-x-100" />,
         onSelect: () => {
           setRefunding(cn);
         },
@@ -103,7 +103,7 @@ export function CreditNotesPage() {
         meta: { label: t("creditNotes.columns.number") },
         cell: ({ row }) => (
           <span className="flex flex-col gap-1">
-            <bdi className="font-medium">{row.original.number ?? t("creditNotes.draft")}</bdi>
+            <bdi className="num font-medium">{row.original.number ?? t("creditNotes.draft")}</bdi>
             <Badge variant={row.original.status === "approved" ? "success" : "warning"}>
               {t(`invoice.status.${row.original.status}`)}
             </Badge>
@@ -115,7 +115,7 @@ export function CreditNotesPage() {
         id: "invoice",
         header: t("creditNotes.columns.invoice"),
         meta: { label: t("creditNotes.columns.invoice") },
-        cell: ({ row }) => <bdi>{row.original.invoice_number}</bdi>,
+        cell: ({ row }) => <bdi className="num">{row.original.invoice_number}</bdi>,
       },
       {
         id: "patient",
@@ -182,7 +182,7 @@ export function CreditNotesPage() {
               <div className="card-surface flex flex-col gap-2 p-4" data-testid="credit-note-row">
                 <div className="flex items-start justify-between gap-2">
                   <span className="flex min-w-0 flex-col gap-1">
-                    <bdi className="font-semibold">{cn.number ?? t("creditNotes.draft")}</bdi>
+                    <bdi className="num font-semibold">{cn.number ?? t("creditNotes.draft")}</bdi>
                     <Badge variant={cn.status === "approved" ? "success" : "warning"}>
                       {t(`invoice.status.${cn.status}`)}
                     </Badge>
@@ -192,7 +192,7 @@ export function CreditNotesPage() {
                 </div>
                 <span className="text-sm">{names.patient(cn.patient)}</span>
                 <span className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
-                  <bdi>{cn.invoice_number}</bdi>
+                  <bdi className="num">{cn.invoice_number}</bdi>
                   <span>{names.label(cn.reason)}</span>
                   <DateText value={cn.created_at} format="datetime" />
                 </span>
