@@ -15,7 +15,8 @@ import { CashierNav } from "../components/CashierNav";
 import { LOOKUP_INPUT_ID, LOOKUP_SHORTCUT, LookupPanel } from "../components/LookupPanel";
 import { PaymentPanel } from "../components/PaymentPanel";
 import { ShiftBar } from "../components/ShiftBar";
-import { ShortcutsDialog } from "../components/ShortcutsDialog";
+import { CashierStatusBar } from "../components/CashierStatusBar";
+import { RETURNS_SHORTCUT, ShortcutsDialog } from "../components/ShortcutsDialog";
 import { isPositiveAmount } from "../lib/money";
 import { parseCashierSearch, type CashierSearch } from "../lib/search";
 
@@ -60,6 +61,16 @@ export function CashierPage() {
     { allowInInputs: true },
   );
 
+  // F10: returns (refunds), the same key on every point-of-service screen.
+  const canRefund = usePermission("payments.view");
+  useShortcut(
+    RETURNS_SHORTCUT,
+    () => {
+      void navigate({ to: "/cashier/refunds" });
+    },
+    { enabled: canRefund, allowInInputs: true },
+  );
+
   const setSearch = (next: CashierSearch) => {
     void navigate({ to: "/cashier", search: next, replace: true });
   };
@@ -99,6 +110,7 @@ export function CashierPage() {
           )}
         </div>
       </div>
+      <CashierStatusBar />
     </div>
   );
 }

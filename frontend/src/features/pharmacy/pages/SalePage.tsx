@@ -6,6 +6,7 @@ import { AlertCard } from "@/components/AlertCard";
 import { EmptyState } from "@/components/EmptyState";
 import { MoneyText } from "@/components/MoneyText";
 import { PageHeader } from "@/components/PageHeader";
+import { PosStatusBar } from "@/components/PosStatusBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,8 @@ import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useCreateSale, useSaleCustomers, useSaleServices } from "../api";
 import { ErrorAlert, LabeledField, QtyText } from "../components/common";
 import { PharmacyNav } from "../components/PharmacyNav";
+import { ShortcutsDialog } from "../components/ShortcutsDialog";
+import { useReturnsShortcut } from "../lib/shortcuts";
 import { SALE_MODES } from "../lib/constants";
 import { lineTotal, sumAmounts } from "../lib/money";
 import { parseWhole } from "../lib/qty";
@@ -37,12 +40,13 @@ interface BasketLine {
 export function SalePage() {
   const { t } = useTranslation(["pharmacy", "common"]);
   const canSell = usePermission("billing.pharmacy_sale");
+  useReturnsShortcut();
   const [done, setDone] = useState<SaleInvoice | null>(null);
   const [key, setKey] = useState(0);
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("sale.title")} description={t("sale.description")} />
+      <PageHeader title={t("sale.title")} description={t("sale.description")} actions={<ShortcutsDialog />} />
       <PharmacyNav />
       {!canSell ? (
         <AlertCard variant="info" title={t("sale.noAccessTitle")}>
@@ -59,6 +63,7 @@ export function SalePage() {
       ) : (
         <SaleForm key={key} onCreated={setDone} />
       )}
+      <PosStatusBar />
     </div>
   );
 }

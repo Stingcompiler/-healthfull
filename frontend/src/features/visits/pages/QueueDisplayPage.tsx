@@ -1,11 +1,11 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { WifiOff } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatNumber } from "@/lib/format";
+import { useClock } from "@/lib/hooks/use-clock";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
@@ -188,18 +188,4 @@ function CalledCard({ entry, highlight = false }: { entry: DisplayEntry; highlig
       </span>
     </div>
   );
-}
-
-/** The wall clock, also used to notice a feed that stopped updating. */
-function useClock(): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setNow(new Date());
-    }, 5_000);
-    return () => {
-      window.clearInterval(id);
-    };
-  }, []);
-  return now;
 }
