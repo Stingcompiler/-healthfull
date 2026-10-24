@@ -81,6 +81,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: node ../scripts/lint-ui.mjs --summary
+      # tokens.css is generated from tokens/*.tokens.json; fails when stale or when contrast fails.
+      - run: python3 ../scripts/build_tokens.py --check
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
