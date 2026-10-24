@@ -368,8 +368,8 @@ where ticked (ADRs 0021, 0022):
 Three sequential PRs. Frontend only: the seven invariants, money rules and the API are untouched.
 
 - [x] PR 1 (#10): tokens single source (DTCG JSON in `frontend/src/design/tokens/`, `scripts/build_tokens.py`, `make tokens` / `make tokens-check`, CI step), shared contrast pairs, `docs/DECISIONS.md` (D-0001 to D-0007). No visual change (declarations byte-identical).
-- [ ] PR 2: chart tokens, neutral `pending` vs amber `attention`, `.num`, lint-ui `rtl-icon`, one Plex font family (D-0008 to D-0012).
-- [ ] PR 3: density modes (D-0013), cashier/pharmacy status bar and F2/F10 shortcuts (D-0015), connection banner with two states (D-0014), forms and charts review (D-0016).
+- [x] PR 2 (#11): chart tokens, neutral `pending` vs amber `attention`, `.num`, lint-ui `rtl-icon`, one Plex font family (D-0008 to D-0012).
+- [x] PR 3 (#12): density modes (D-0013), cashier/pharmacy status bar and F2/F10 shortcuts (D-0015), connection banner with two states (D-0014), forms and charts review (D-0016).
 
 Follow-ups from the adoption (none are blocking): per-user density switch; one required/optional marker style across every form (visible text, not star only); `useForm({ mode: "onTouched" })` everywhere (validate on blur, section 15.3); zod messages that say how to fix; amount formatting on blur; task-named save buttons; chart titles that carry the takeaway, `.num` on chart axes, "try another period" and retry on chart empty/error states, last-updated time; F4/F8/F9 meaning differs from the reference (D-0015); offline sync states are deliberately not built (D-0014, needs its own ADR).
 
