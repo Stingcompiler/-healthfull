@@ -61,7 +61,7 @@ export function DecisionRow({ tone = "neutral", count, title, detail, action, cl
       <Icon className={cn("size-4 shrink-0", classes.icon)} aria-hidden="true" />
       <div className="min-w-0 flex-1 basis-40 text-sm leading-6 text-fg">
         {count !== undefined ? (
-          <span className={cn("me-1.5 tabular text-base font-bold", classes.count)}>{count}</span>
+          <span className={cn("me-1.5 num text-base font-bold", classes.count)}>{count}</span>
         ) : null}
         <span>{title}</span>
         {detail ? <span className="ms-2 text-muted">{detail}</span> : null}

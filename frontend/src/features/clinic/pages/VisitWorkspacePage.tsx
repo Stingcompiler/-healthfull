@@ -129,7 +129,7 @@ export function VisitWorkspacePage() {
         description={
           <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>
-              {t("workspace.visit")} <bdi className="tabular">{ws.visit.number}</bdi>
+              {t("workspace.visit")} <bdi className="num">{ws.visit.number}</bdi>
             </span>
             <span>{t(`visitType.${ws.visit.visit_type}`)}</span>
             {ws.queue_status ? <QueueStatusBadge status={ws.queue_status} /> : null}

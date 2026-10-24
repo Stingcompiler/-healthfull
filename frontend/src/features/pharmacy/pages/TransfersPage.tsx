@@ -101,7 +101,7 @@ export function TransfersPage() {
     tr.lines.map((ln) => (
       <span key={ln.id} className="flex flex-wrap gap-x-2">
         <span>{names.item(ln)}</span>
-        <bdi className="text-muted">{ln.batch_no}</bdi>
+        <bdi className="num text-muted">{ln.batch_no}</bdi>
         <bdi className="tabular">{formatNumber(ln.qty_base, names.language)}</bdi>
       </span>
     ));
@@ -114,7 +114,7 @@ export function TransfersPage() {
         meta: { label: t("transfers.columns.number") },
         cell: ({ row }) => (
           <span className="flex flex-col items-start gap-1">
-            <bdi className="font-medium">{row.original.number}</bdi>
+            <bdi className="num font-medium">{row.original.number}</bdi>
             <DocStatusBadge status={row.original.status} kind="transfer" />
           </span>
         ),
@@ -202,7 +202,7 @@ export function TransfersPage() {
             <div className="card-surface flex flex-col gap-2 p-4" data-testid="transfer-row">
               <div className="flex items-start justify-between gap-2">
                 <span className="flex min-w-0 flex-col items-start gap-1">
-                  <bdi className="font-semibold">{tr.number}</bdi>
+                  <bdi className="num font-semibold">{tr.number}</bdi>
                   <DocStatusBadge status={tr.status} kind="transfer" />
                 </span>
                 {ctx.actions}
@@ -504,7 +504,7 @@ function ReceiveDialogOpen({ transfer, onClose }: { transfer: StockTransfer; onC
                 <span className="grid gap-0.5 text-sm">
                   <span className="font-medium">{names.item(line)}</span>
                   <span className="text-muted">
-                    <bdi>{line.batch_no}</bdi> ·{" "}
+                    <bdi className="num">{line.batch_no}</bdi> ·{" "}
                     {t("transfers.sent", { qty: formatNumber(line.qty_base, names.language) })}
                   </span>
                 </span>

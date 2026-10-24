@@ -86,9 +86,9 @@ function Header({ result }: { result: LabResult }) {
       documentTitle={`${names.test(result.test)} · ${names.patient(result.patient)}`}
       eyebrow={
         <span className="flex flex-wrap items-center gap-2">
-          <bdi>{result.test.code}</bdi>
+          <bdi className="num">{result.test.code}</bdi>
           <span aria-hidden="true">·</span>
-          <bdi>{result.line.visit_number}</bdi>
+          <bdi className="num">{result.line.visit_number}</bdi>
         </span>
       }
       actions={

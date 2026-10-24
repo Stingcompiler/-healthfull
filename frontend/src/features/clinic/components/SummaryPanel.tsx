@@ -109,7 +109,7 @@ export function SummaryPanel({ workspace }: { workspace: Workspace }) {
               <ul className="flex flex-wrap gap-1.5">
                 {data.conditions.map((c) => (
                   <li key={c.id} className="rounded-full bg-subtle px-2.5 py-1 text-xs font-medium text-fg">
-                    {c.icd10 ? <bdi className="me-1 tabular text-muted">{c.icd10.code}</bdi> : null}
+                    {c.icd10 ? <bdi className="me-1 num text-muted">{c.icd10.code}</bdi> : null}
                     {c.name || (c.icd10 ? pickName({ ar: c.icd10.title_ar, en: c.icd10.title_en }, language) : "")}
                   </li>
                 ))}

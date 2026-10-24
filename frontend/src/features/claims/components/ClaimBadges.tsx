@@ -4,18 +4,18 @@ import { Badge } from "@/components/ui/badge";
 
 import type { ClaimLineStage, ClaimStatus, PayerPaymentStanding } from "../types";
 
-type Variant = "neutral" | "info" | "warning" | "success" | "danger" | "outline" | "soft";
+type Variant = "neutral" | "info" | "warning" | "success" | "danger" | "outline" | "soft" | "pending";
 
 const CLAIM_VARIANT: Record<ClaimStatus, Variant> = {
   draft: "neutral",
-  submitted: "info",
+  submitted: "pending",
   responded: "warning",
   closed: "success",
   void: "outline",
 };
 
 const STAGE_VARIANT: Record<ClaimLineStage, Variant> = {
-  claimed: "info",
+  claimed: "pending",
   accepted: "soft",
   partially_accepted: "warning",
   rejected: "danger",
@@ -28,7 +28,7 @@ const STAGE_VARIANT: Record<ClaimLineStage, Variant> = {
 const STANDING_VARIANT: Record<PayerPaymentStanding, Variant> = {
   bank: "success",
   cash: "success",
-  cheque_pending: "warning",
+  cheque_pending: "pending",
   cheque_cleared: "success",
   reversed: "danger",
 };

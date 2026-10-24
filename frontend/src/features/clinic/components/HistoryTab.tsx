@@ -70,7 +70,7 @@ export function HistoryTab({
                 {diagnoses.map((d) => (
                   <li key={d.id}>
                     <Badge variant="soft">
-                      {d.icd10 ? <bdi className="tabular">{d.icd10.code}</bdi> : null}
+                      {d.icd10 ? <bdi className="num">{d.icd10.code}</bdi> : null}
                       {d.icd10 ? pickName({ ar: d.icd10.title_ar, en: d.icd10.title_en }, language) : d.text}
                     </Badge>
                   </li>

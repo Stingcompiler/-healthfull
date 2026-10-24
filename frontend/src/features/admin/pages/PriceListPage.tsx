@@ -592,7 +592,7 @@ function RemoveCell({ item }: { item: PriceItemOut }) {
         }
       }}
     >
-      {removed ? <Undo2 /> : <Trash2 />}
+      {removed ? <Undo2 className="rtl:-scale-x-100" /> : <Trash2 />}
     </Button>
   );
 }

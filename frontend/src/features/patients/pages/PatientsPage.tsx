@@ -67,7 +67,7 @@ export function PatientsPage() {
         header: t("list.fileNo"),
         meta: { label: t("list.fileNo") },
         accessorKey: "file_no",
-        cell: ({ row }) => <bdi className="tabular">{row.original.file_no}</bdi>,
+        cell: ({ row }) => <bdi className="num">{row.original.file_no}</bdi>,
       },
       {
         id: "sex_age",
@@ -86,7 +86,7 @@ export function PatientsPage() {
         meta: { label: t("list.phone") },
         accessorKey: "phone",
         enableSorting: false,
-        cell: ({ row }) => <bdi className="tabular">{row.original.phone}</bdi>,
+        cell: ({ row }) => <bdi className="num">{row.original.phone}</bdi>,
       },
       {
         id: "coverage",
@@ -195,9 +195,9 @@ export function PatientsPage() {
                 </DataTableOpenButton>
               ) : null}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-                <bdi className="tabular font-semibold text-fg">{p.file_no}</bdi>
+                <bdi className="num font-semibold text-fg">{p.file_no}</bdi>
                 <span>{[t(`common:sex.${p.sex}`), ageText(p)].filter(Boolean).join(" · ")}</span>
-                {p.phone ? <bdi className="tabular">{p.phone}</bdi> : null}
+                {p.phone ? <bdi className="num">{p.phone}</bdi> : null}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <CoverageBadge patient={p} />

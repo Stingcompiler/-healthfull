@@ -42,6 +42,7 @@
     "text": "Text & lines",
     "brand": "Brand & neutral",
     "semantic": "Semantic",
+    "charts": "Chart series (in order)",
     "states": "Service line states",
     "sample": "Text"
   },
@@ -87,7 +88,8 @@
     "success": "Success",
     "warning": "Warning",
     "danger": "Danger",
-    "info": "Info"
+    "info": "Info",
+    "pending": "Pending (nobody to act)"
   },
   "cards": {
     "kpi": "KPI cards",

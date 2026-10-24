@@ -118,7 +118,7 @@ export function InvoiceLines({ lines, caption }: { lines: readonly InvoiceLineRo
                 </td>
                 <td className={cn(amount, "col-span-1")}>
                   <span className={label}>{t("invoice.qty")}</span>
-                  <span className="tabular">{formatNumber(line.quantity, language)}</span>
+                  <span className="num">{formatNumber(line.quantity, language)}</span>
                 </td>
                 <td className={cn(amount, "col-span-1")}>
                   <span className={label}>{t("invoice.gross")}</span>

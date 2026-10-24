@@ -87,7 +87,7 @@ function VisitItem({ visit, onCancel }: { visit: Visit; onCancel: (v: CancelVisi
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-2 font-medium text-fg">
-            <bdi className="tabular">{visit.number}</bdi>
+            <bdi className="num">{visit.number}</bdi>
             <Badge variant={STATUS_VARIANT[visit.status]}>{t(`visits:visitStatus.${visit.status}`)}</Badge>
             <Badge variant="neutral">{t(`visits:visitType.${visit.visit_type}`)}</Badge>
           </p>

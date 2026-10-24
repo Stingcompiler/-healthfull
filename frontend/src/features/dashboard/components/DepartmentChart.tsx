@@ -44,7 +44,7 @@ export function DepartmentChart({ departments }: { departments: ReportDashboard[
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-subtle" aria-hidden="true">
                 <div
-                  className="h-full rounded-full bg-primary"
+                  className="h-full rounded-full bg-chart-1"
                   style={{ width: `${String(max > 0 ? Math.max(2, (row.net / max) * 100) : 0)}%` }}
                 />
               </div>

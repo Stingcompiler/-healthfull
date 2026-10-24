@@ -86,7 +86,7 @@ export function ReceiptsPage() {
         meta: { label: t("receipts.columns.number") },
         cell: ({ row }) => (
           <span className="flex flex-col items-start gap-1">
-            <bdi className="font-medium">{row.original.number}</bdi>
+            <bdi className="num font-medium">{row.original.number}</bdi>
             <DocStatusBadge status={row.original.status} kind="receipt" />
           </span>
         ),
@@ -99,7 +99,7 @@ export function ReceiptsPage() {
           <span className="flex flex-col">
             <span>{names.name(row.original.supplier)}</span>
             {row.original.supplier_invoice_no ? (
-              <bdi className="text-xs text-muted">{row.original.supplier_invoice_no}</bdi>
+              <bdi className="num text-xs text-muted">{row.original.supplier_invoice_no}</bdi>
             ) : null}
           </span>
         ),
@@ -189,7 +189,7 @@ export function ReceiptsPage() {
                 <span className="flex min-w-0 flex-col items-start gap-1">
                   {ctx.open ? (
                     <DataTableOpenButton onOpen={ctx.open} label={ctx.openLabel} className="font-semibold">
-                      <bdi>{r.number}</bdi>
+                      <bdi className="num">{r.number}</bdi>
                     </DataTableOpenButton>
                   ) : null}
                   <DocStatusBadge status={r.status} kind="receipt" />
@@ -265,7 +265,7 @@ function ReceiptDialog({
           <>
             <DialogHeader>
               <DialogTitle className="flex flex-wrap items-center gap-2">
-                <bdi>{receipt.number}</bdi>
+                <bdi className="num">{receipt.number}</bdi>
                 <DocStatusBadge status={receipt.status} kind="receipt" />
               </DialogTitle>
               <DialogDescription>
@@ -273,7 +273,7 @@ function ReceiptDialog({
                 {receipt.supplier_invoice_no ? (
                   <>
                     {" · "}
-                    <bdi>{receipt.supplier_invoice_no}</bdi>
+                    <bdi className="num">{receipt.supplier_invoice_no}</bdi>
                   </>
                 ) : null}
               </DialogDescription>
@@ -287,7 +287,7 @@ function ReceiptDialog({
                   </span>
                   <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted">
                     <span>
-                      {t("batch.number")} <bdi>{ln.batch_no}</bdi>
+                      {t("batch.number")} <bdi className="num">{ln.batch_no}</bdi>
                     </span>
                     <span>
                       {t("batch.expiry")} <DateText value={ln.expiry_date} />

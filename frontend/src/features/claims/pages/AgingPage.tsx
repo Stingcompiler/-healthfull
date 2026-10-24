@@ -43,7 +43,7 @@ export function AgingPage() {
           <span className="flex min-w-0 flex-col">
             <span className="font-medium">{names.name(row.original.payer)}</span>
             <span className="text-xs text-muted">
-              <bdi>{row.original.payer.code}</bdi>
+              <bdi className="num">{row.original.payer.code}</bdi>
             </span>
           </span>
         ),
@@ -111,7 +111,7 @@ export function AgingPage() {
                   <span className="flex min-w-0 flex-col">
                     <span className="font-semibold">{names.name(r.payer)}</span>
                     <span className="text-xs text-muted">
-                      <bdi>{r.payer.code}</bdi>
+                      <bdi className="num">{r.payer.code}</bdi>
                     </span>
                   </span>
                   <MoneyText value={r.aging.total} className="text-base font-semibold" />

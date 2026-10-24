@@ -83,7 +83,11 @@ export function ReturnsPage() {
           <Skeleton className="h-32" />
         </div>
       ) : data.items.length === 0 ? (
-        <EmptyState icon={<Undo2 />} title={t("returns.empty")} description={t("returns.emptyHint")} />
+        <EmptyState
+          icon={<Undo2 className="rtl:-scale-x-100" />}
+          title={t("returns.empty")}
+          description={t("returns.emptyHint")}
+        />
       ) : (
         <>
           <ul className="grid gap-3">
@@ -96,8 +100,8 @@ export function ReturnsPage() {
                         {names.person(d.patient)}
                       </h2>
                       <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
-                        <bdi className="tabular font-semibold text-fg">{d.patient.file_no}</bdi>
-                        <bdi className="tabular">{d.number}</bdi>
+                        <bdi className="num font-semibold text-fg">{d.patient.file_no}</bdi>
+                        <bdi className="num">{d.number}</bdi>
                         <DateText value={d.dispensed_at} format="datetime" />
                       </p>
                     </div>
@@ -115,7 +119,7 @@ export function ReturnsPage() {
                           <p className="font-medium text-pretty break-words text-fg">{names.name(line.service)}</p>
                           <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
                             <span>
-                              {t("batch.number")}: <bdi>{line.batch_no}</bdi>
+                              {t("batch.number")}: <bdi className="num">{line.batch_no}</bdi>
                             </span>
                             <span>{t("returns.given", { count: line.qty_base })}</span>
                             <span data-testid="line-returned">{t("returns.returned", { count: line.returned })}</span>

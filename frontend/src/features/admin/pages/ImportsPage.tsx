@@ -150,7 +150,7 @@ export function ImportsPage() {
         header: t("imports.row"),
         meta: { label: t("imports.row"), className: "w-16" },
         accessorKey: "row_no",
-        cell: ({ row }) => <span className="tabular">{n(row.original.row_no)}</span>,
+        cell: ({ row }) => <span className="num">{n(row.original.row_no)}</span>,
       },
       {
         id: "record",

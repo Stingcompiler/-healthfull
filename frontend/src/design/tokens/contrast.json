@@ -53,6 +53,18 @@
     ["ring", "surface-raised", 3],
     ["primary-strong", "primary-soft", 4.5],
     ["danger", "danger-bg", 3],
-    ["danger-fg", "danger-bg", 4.5]
+    ["danger-fg", "danger-bg", 4.5],
+    ["state-attention-fg", "state-attention-bg", 4.5],
+    ["state-pending-border", "surface", 3],
+    ["chart-1", "surface", 3],
+    ["chart-2", "surface", 3],
+    ["chart-3", "surface", 3],
+    ["chart-4", "surface", 3],
+    ["chart-5", "surface", 3],
+    ["chart-1", "surface-raised", 3],
+    ["chart-2", "surface-raised", 3],
+    ["chart-3", "surface-raised", 3],
+    ["chart-4", "surface-raised", 3],
+    ["chart-5", "surface-raised", 3]
   ]
 }

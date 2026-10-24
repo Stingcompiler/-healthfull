@@ -48,6 +48,14 @@ const SEMANTIC: Swatch[] = [
   { token: "--info-bg", className: "bg-info-bg", textClassName: "text-info-fg" },
 ];
 
+const CHARTS: Swatch[] = [
+  { token: "--chart-1", className: "bg-chart-1" },
+  { token: "--chart-2", className: "bg-chart-2" },
+  { token: "--chart-3", className: "bg-chart-3" },
+  { token: "--chart-4", className: "bg-chart-4" },
+  { token: "--chart-5", className: "bg-chart-5" },
+];
+
 function SwatchGrid({ swatches }: { swatches: Swatch[] }) {
   const { t } = useTranslation("design");
   return (
@@ -81,6 +89,9 @@ export function ColorsSection() {
       </Demo>
       <Demo label={t("colors.semantic")}>
         <SwatchGrid swatches={SEMANTIC} />
+      </Demo>
+      <Demo label={t("colors.charts")}>
+        <SwatchGrid swatches={CHARTS} />
       </Demo>
       <Demo label={t("colors.states")} className="flex flex-wrap gap-2">
         {STATUSES.map((status) => (

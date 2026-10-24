@@ -72,7 +72,7 @@ export function Icd10Picker({
       {value ? (
         <div className="flex min-w-0 items-center gap-2 rounded-control border border-primary bg-primary-soft py-1 ps-3 pe-1 text-sm text-primary-strong">
           <Check className="size-4 shrink-0" aria-hidden="true" />
-          <bdi className="tabular font-semibold">{value.code}</bdi>
+          <bdi className="num font-semibold">{value.code}</bdi>
           <span className="min-w-0 truncate">{pickName({ ar: value.title_ar, en: value.title_en }, language)}</span>
           <Button
             type="button"
@@ -112,7 +112,7 @@ export function Icd10Picker({
                 )}
                 data-highlighted={highlighted ? "true" : undefined}
               >
-                <bdi className="w-14 shrink-0 tabular font-semibold">{code.code}</bdi>
+                <bdi className="w-14 shrink-0 num font-semibold">{code.code}</bdi>
                 <span className="min-w-0 break-words">
                   {pickName({ ar: code.title_ar, en: code.title_en }, language)}
                 </span>

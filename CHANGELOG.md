@@ -5,6 +5,7 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 ## [Unreleased]
 ### Added
 - Design tokens single source: DTCG JSON in `frontend/src/design/tokens/` generates `tokens.css` via `scripts/build_tokens.py` (`make tokens`, `make tokens-check` in `make check` and CI); contrast pairs shared between `scripts/check_contrast.py` and vitest; `docs/DECISIONS.md` records deviations from Design Reference v2.2. Generated CSS is byte-identical to the previous hand-written declarations (no visual change).
+- Design tokens `chart-1..5`; neutral dashed `pending` and amber `attention` roles; `.num` utility on money, quantities, phones, barcodes and IDs; lint-ui `rtl-icon` rule (mirror whitelist from Design Reference 2.2 section 11).
 - Project decision documents, architecture conventions, agent rules, ship-feature skill.
 - Phase 0 backend foundation: Django 5.2 + django-ninja, env-driven settings, pure `domain/` package
   (money, splits, lockout, numbering, permissions; Hypothesis-tested), custom User with 11 roles,
@@ -246,6 +247,7 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
   `PUBLIC` loses `CONNECT`/`TEMP` on the database and `CREATE` on schema `public`.
 
 ### Changed
+- UI: dashboard charts use the categorical chart tokens (hatched pending series); claim and receipt waiting states are neutral `pending` while states needing staff action stay amber; one font family (IBM Plex Sans Arabic + IBM Plex Sans) replaces Inter.
 - Report permissions are one `reports.view_<area>` code per area (finance, exceptions, stock,
   visits, lab, dashboard); the unused Phase 0 codes (`reports.view`, `reports.financial`,
   `reports.operational`, `reports.stock`, `reports.lab`, `reports.dashboard`,

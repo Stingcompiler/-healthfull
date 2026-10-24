@@ -98,7 +98,7 @@ export function PatientImportPage() {
         header: t("import.row"),
         meta: { label: t("import.row"), className: "w-16" },
         accessorKey: "row_no",
-        cell: ({ row }) => <span className="tabular">{n(row.original.row_no)}</span>,
+        cell: ({ row }) => <span className="num">{n(row.original.row_no)}</span>,
       },
       {
         id: "name",

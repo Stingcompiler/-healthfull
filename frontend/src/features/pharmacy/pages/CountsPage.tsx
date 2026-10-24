@@ -58,7 +58,7 @@ export function CountsPage() {
         meta: { label: t("counts.columns.number") },
         cell: ({ row }) => (
           <span className="flex flex-col items-start gap-1">
-            <bdi className="font-medium">{row.original.number}</bdi>
+            <bdi className="num font-medium">{row.original.number}</bdi>
             <DocStatusBadge status={row.original.status} kind="count" />
           </span>
         ),
@@ -156,7 +156,7 @@ export function CountsPage() {
               <div className="flex items-start justify-between gap-2">
                 {ctx.open ? (
                   <DataTableOpenButton onOpen={ctx.open} label={ctx.openLabel} className="font-semibold">
-                    <bdi>{c.number}</bdi>
+                    <bdi className="num">{c.number}</bdi>
                   </DataTableOpenButton>
                 ) : null}
                 <DocStatusBadge status={c.status} kind="count" />

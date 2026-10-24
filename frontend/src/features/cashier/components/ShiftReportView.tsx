@@ -58,7 +58,7 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
     <div className="flex min-w-0 flex-col gap-4" data-testid="shift-report" data-frozen={report.frozen}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
         <span className="flex items-center gap-2 text-base font-semibold text-fg">
-          <bdi>{s.number}</bdi>
+          <bdi className="num">{s.number}</bdi>
           <Badge variant={closed ? "neutral" : "success"}>{t(`shift.status.${s.status}`)}</Badge>
           {s.review ? (
             <Badge variant={s.review.outcome === "approved" ? "success" : "danger"}>
@@ -162,10 +162,10 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
             {report.pending.map((p) => (
               <li key={p.payment_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className="flex flex-wrap items-center gap-2">
-                  <bdi className="font-medium">{p.number}</bdi>
+                  <bdi className="num font-medium">{p.number}</bdi>
                   <StatusBadge status="pending_verification" size="sm" />
                   <span className="text-muted">
-                    <bdi>{p.bank}</bdi> · <bdi>{p.reference}</bdi>
+                    <bdi>{p.bank}</bdi> · <bdi className="num">{p.reference}</bdi>
                   </span>
                   {p.age_days !== null ? (
                     <span className="text-muted">{t("report.ageDays", { count: p.age_days })}</span>
@@ -187,9 +187,9 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
               {report.confirmed_transfers.map((p) => (
                 <li key={p.payment_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                   <span className="flex flex-wrap items-center gap-2">
-                    <bdi>{p.number}</bdi>
+                    <bdi className="num">{p.number}</bdi>
                     <span className="text-muted">
-                      <bdi>{p.bank}</bdi> · <bdi>{p.reference}</bdi>
+                      <bdi>{p.bank}</bdi> · <bdi className="num">{p.reference}</bdi>
                     </span>
                   </span>
                   <MoneyText value={p.amount} />
@@ -275,9 +275,9 @@ export function ShiftReportView({ report }: { report: ShiftReport }) {
             {report.handovers.map((h) => (
               <li key={h.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className="flex flex-wrap items-center gap-2">
-                  <bdi>{h.number}</bdi>
+                  <bdi className="num">{h.number}</bdi>
                   <span>{t(`handover.destination.${h.destination}`)}</span>
-                  {h.to_shift_number ? <bdi className="text-muted">{h.to_shift_number}</bdi> : null}
+                  {h.to_shift_number ? <bdi className="num text-muted">{h.to_shift_number}</bdi> : null}
                   {h.to_user && h.destination !== "next_shift" ? (
                     <span className="text-muted">{names.user(h.to_user)}</span>
                   ) : null}

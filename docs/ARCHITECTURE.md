@@ -223,9 +223,9 @@ Postings (each a balanced JournalEntry with `source_type`, `source_id` and, when
 | `--fg` | `#0F172A` | `#E2E8F0` | `#1C1917` |
 
 Semantic: success emerald, warning amber, danger rose, info sky, each with `-bg`/`-fg` pairs per theme meeting WCAG AA.
-Service line state colors (`--state-*`): requested slate, invoiced blue, paid light green, performed dark green, cancelled rose, pending-verification amber.
+Service line state colors (`--state-*`): requested slate, invoiced blue, paid light green, performed dark green, cancelled rose, attention amber (a person must act, e.g. a transfer awaiting verification), pending neutral with a dashed border (waiting, nobody to act). Chart series use `--chart-1..5` in order, never status colors (docs/DECISIONS.md D-0009, D-0011).
 
-- Typography: IBM Plex Sans Arabic (Arabic) and Inter variable (Latin) from `@fontsource` packages, bundled. Tabular numerals (`font-variant-numeric: tabular-nums`) in money and tables.
+- Typography: one family, IBM Plex Sans Arabic (Arabic) + IBM Plex Sans (Latin and digits), from `@fontsource` packages, bundled (`--font-ui`). Money, quantities, phones, barcodes and IDs use the `.num` utility (tabular, ltr, bidi-isolated); a money string that carries the currency symbol keeps `tabular` only.
 - Radius 12px cards, 8px inputs/buttons. Card padding 16px mobile / 20px ≥md. Light theme: soft shadow; dark: 1px border, no shadow.
 
 ### 5.2 Direction and language

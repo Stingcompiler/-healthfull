@@ -389,11 +389,11 @@ function AppointmentRow({
           <span className="font-semibold break-words text-fg">{name}</span>
         )}
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-          {a.patient ? <bdi className="tabular">{a.patient.file_no}</bdi> : <span>{t("appointments.noFile")}</span>}
+          {a.patient ? <bdi className="num">{a.patient.file_no}</bdi> : <span>{t("appointments.noFile")}</span>}
           {phone ? (
             <span className="inline-flex items-center gap-1">
               <Phone className="size-3.5" aria-hidden="true" />
-              <bdi className="tabular">{phone}</bdi>
+              <bdi className="num">{phone}</bdi>
             </span>
           ) : null}
         </span>

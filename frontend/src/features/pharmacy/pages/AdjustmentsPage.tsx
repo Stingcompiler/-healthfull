@@ -79,7 +79,7 @@ export function AdjustmentsPage() {
     a.lines.map((ln) => (
       <span key={ln.id} className="flex flex-wrap gap-x-2">
         <span>{names.item(ln)}</span>
-        <bdi className="text-muted">{ln.batch_no}</bdi>
+        <bdi className="num text-muted">{ln.batch_no}</bdi>
         <bdi className={ln.qty_base < 0 ? "tabular text-danger-fg" : "tabular text-success-fg"}>
           {(ln.qty_base > 0 ? "+" : "") + formatNumber(ln.qty_base, names.language)}
         </bdi>
@@ -94,7 +94,7 @@ export function AdjustmentsPage() {
         meta: { label: t("adjustments.columns.number") },
         cell: ({ row }) => (
           <span className="flex flex-col items-start gap-1">
-            <bdi className="font-medium">{row.original.number}</bdi>
+            <bdi className="num font-medium">{row.original.number}</bdi>
             <DocStatusBadge status={row.original.status} kind="adjustment" />
           </span>
         ),
@@ -207,7 +207,7 @@ export function AdjustmentsPage() {
             <div className="card-surface flex flex-col gap-2 p-4" data-testid="adjustment-row">
               <div className="flex items-start justify-between gap-2">
                 <span className="flex min-w-0 flex-col items-start gap-1">
-                  <bdi className="font-semibold">{a.number}</bdi>
+                  <bdi className="num font-semibold">{a.number}</bdi>
                   <DocStatusBadge status={a.status} kind="adjustment" />
                 </span>
                 {ctx.actions}

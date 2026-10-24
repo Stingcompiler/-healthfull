@@ -113,7 +113,7 @@ function SlipBody({ slip }: { slip: TokenSlip }) {
       {centerName ? <p className="text-sm font-semibold">{centerName}</p> : null}
       <p className="text-sm">{pickName({ ar: entry.department.name_ar, en: entry.department.name_en }, language)}</p>
       <p className="text-xs">{t("token.number")}</p>
-      <p className="tabular text-6xl leading-none font-bold" data-testid="token-number">
+      <p className="num text-6xl leading-none font-bold" data-testid="token-number">
         {formatNumber(entry.token_no, language)}
       </p>
       {entry.doctor ? (
@@ -121,9 +121,9 @@ function SlipBody({ slip }: { slip: TokenSlip }) {
       ) : null}
       <p className="mt-1 text-sm font-medium break-words">{patientName(entry.patient, language)}</p>
       <p className="text-xs">
-        <bdi className="tabular">{entry.patient.file_no}</bdi>
+        <bdi className="num">{entry.patient.file_no}</bdi>
         {" · "}
-        <bdi className="tabular">{entry.visit_number}</bdi>
+        <bdi className="num">{entry.visit_number}</bdi>
       </p>
       <p className="text-xs">{t("token.ahead", { count: slip.ahead })}</p>
       <p className="text-xs">

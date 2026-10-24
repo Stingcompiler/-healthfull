@@ -54,7 +54,7 @@ export function CatalogPage() {
         cell: ({ row }) => (
           <span className="flex flex-col">
             <span className="font-medium">{names.test(row.original)}</span>
-            <bdi className="text-xs text-muted">{row.original.code}</bdi>
+            <bdi className="num text-xs text-muted">{row.original.code}</bdi>
           </span>
         ),
       },
@@ -68,7 +68,7 @@ export function CatalogPage() {
         id: "params",
         header: t("catalog.columns.parameters"),
         meta: { label: t("catalog.columns.parameters"), align: "end" },
-        cell: ({ row }) => <span className="tabular">{formatNumber(row.original.parameter_count, language)}</span>,
+        cell: ({ row }) => <span className="num">{formatNumber(row.original.parameter_count, language)}</span>,
       },
       {
         id: "tat",
@@ -138,7 +138,7 @@ export function CatalogPage() {
                 {r.active ? null : <Badge variant="neutral">{t("catalog.inactive")}</Badge>}
               </span>
               <span className="flex flex-wrap gap-x-3 text-xs text-muted">
-                <bdi>{r.code}</bdi>
+                <bdi className="num">{r.code}</bdi>
                 <span>{t(`sampleType.${r.sample_type}`)}</span>
                 <span>{t("catalog.parameterCount", { count: r.parameter_count })}</span>
               </span>

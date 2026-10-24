@@ -34,7 +34,7 @@ export function OrderLineCard({ line, onWithdraw }: { line: DoctorLine; onWithdr
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span>
-                <bdi>{line.service_code}</bdi>
+                <bdi className="num">{line.service_code}</bdi>
                 {" · "}
                 {t(`kind.${line.kind}`)}
               </span>
@@ -85,7 +85,7 @@ export function OrderLineCard({ line, onWithdraw }: { line: DoctorLine; onWithdr
         actions={
           onWithdraw && line.can_withdraw ? (
             <Button size="sm" variant="ghost" onClick={() => onWithdraw(line)}>
-              <Undo2 aria-hidden="true" />
+              <Undo2 aria-hidden="true" className="rtl:-scale-x-100" />
               {t("orders.withdraw")}
             </Button>
           ) : undefined

@@ -140,7 +140,7 @@ function ChartBody({ data }: { data: NursingChart }) {
                   <>
                     <dt className="text-muted">{t("chart.bed")}</dt>
                     <dd className="text-fg">
-                      <bdi>{data.admission.bed.code}</bdi> · {nameOf(data.admission.bed, language)}
+                      <bdi className="num">{data.admission.bed.code}</bdi> · {nameOf(data.admission.bed, language)}
                     </dd>
                   </>
                 ) : null}

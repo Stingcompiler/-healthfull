@@ -78,7 +78,7 @@ for (const lang of ["ar", "en"] as const satisfies readonly Lang[]) {
       };
     });
     expect(fonts.failed, "font faces that failed to load").toEqual([]);
-    const expectedFamily = lang === "ar" ? "IBM Plex Sans Arabic" : "Inter Variable";
+    const expectedFamily = lang === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans";
     expect(fonts.loadedFamilies.map((f) => f.replace(/["']/g, ""))).toContain(expectedFamily);
 
     await logout(page);

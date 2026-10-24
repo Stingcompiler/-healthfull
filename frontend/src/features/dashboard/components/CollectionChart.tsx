@@ -9,7 +9,7 @@ import { useDirection, useLanguage } from "@/lib/i18n-hooks";
 
 import type { ReportTrendDay } from "@/features/reports/types";
 
-import { CHART_COLORS, compactNumber } from "../lib/chart";
+import { CHART_COLORS, PENDING_PATTERN_ID, compactNumber } from "../lib/chart";
 
 interface Point {
   date: string;
@@ -29,11 +29,11 @@ function TooltipBox({ active, payload }: { active?: boolean; payload?: readonly 
     <div dir={direction} className="card-surface flex flex-col gap-1 p-3 text-xs shadow-raised">
       <span className="font-semibold text-fg">{point.label}</span>
       <span className="flex items-center gap-2">
-        <span className="size-2.5 rounded-full bg-success" aria-hidden="true" />
+        <span className="size-2.5 rounded-full bg-chart-1" aria-hidden="true" />
         {t("charts.collected")}: <MoneyText value={point.collectedText} currency={false} />
       </span>
       <span className="flex items-center gap-2">
-        <span className="size-2.5 rounded-full bg-warning" aria-hidden="true" />
+        <span className="size-2.5 rounded-full border-2 border-chart-2" aria-hidden="true" />
         {t("charts.pending")}: <MoneyText value={point.pendingText} currency={false} />
       </span>
     </div>
@@ -65,11 +65,11 @@ export function CollectionChart({ trend }: { trend: readonly ReportTrendDay[] })
         <h2 className="text-base font-semibold text-fg">{t("charts.collectionsTitle")}</h2>
         <span className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
           <span className="inline-flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-success" aria-hidden="true" />
+            <span className="size-2.5 rounded-full bg-chart-1" aria-hidden="true" />
             {t("charts.collected")}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-warning" aria-hidden="true" />
+            <span className="size-2.5 rounded-full border-2 border-chart-2" aria-hidden="true" />
             {t("charts.pending")}
           </span>
         </span>
@@ -98,12 +98,25 @@ export function CollectionChart({ trend }: { trend: readonly ReportTrendDay[] })
                 axisLine={false}
                 width={44}
               />
+              <defs>
+                <pattern
+                  id={PENDING_PATTERN_ID}
+                  width="6"
+                  height="6"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(45)"
+                >
+                  <rect width="6" height="6" fill={CHART_COLORS.pending} fillOpacity="0.28" />
+                  <rect width="2" height="6" fill={CHART_COLORS.pending} />
+                </pattern>
+              </defs>
               <Tooltip content={<TooltipBox />} cursor={{ fill: CHART_COLORS.cursor }} />
               <Bar dataKey="collected" stackId="day" fill={CHART_COLORS.collected} isAnimationActive={false} />
               <Bar
                 dataKey="pending"
                 stackId="day"
-                fill={CHART_COLORS.pending}
+                fill={`url(#${PENDING_PATTERN_ID})`}
+                stroke={CHART_COLORS.pending}
                 radius={[4, 4, 0, 0]}
                 isAnimationActive={false}
               />

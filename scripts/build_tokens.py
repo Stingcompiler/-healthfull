@@ -51,10 +51,13 @@ HEADER = """\
  *   status        --{success,warning,danger,info}: solid, -contrast (text on
  *                 solid), -bg (soft fill), -fg (text on soft fill or surface),
  *                 -border
- *   service line  --state-{requested,invoiced,paid,performed,cancelled,pending}
- *                 solid (dots/borders), -bg, -fg
+ *   service line  --state-{requested,invoiced,paid,performed,cancelled,pending,attention}
+ *                 solid (dots/borders), -bg, -fg; pending is neutral (+ -border, drawn
+ *                 dashed) = waiting with nobody to act; attention is amber = staff must act
  *   elevation     --elevation-card --elevation-raised --elevation-overlay --overlay
+ *   chart series  --chart-1 .. --chart-5 (categorical, in order; never status colors)
  *   shape         --card-radius --control-radius
+ *   type          --font-ui (one family: Plex Sans Arabic + Plex Sans)
  */
 """
 
@@ -116,6 +119,17 @@ def css_shadow(layers: list[dict[str, Any]]) -> str:
     return ", ".join(out)
 
 
+_GENERIC_FAMILIES = {"serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-sans-serif", "ui-monospace"}
+
+
+def css_font_family(names: list[str]) -> str:
+    out = []
+    for name in names:
+        bare = name in _GENERIC_FAMILIES or name.startswith("-") or re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", name)
+        out.append(name if bare else f'"{name}"')
+    return ", ".join(out)
+
+
 def css_value(token: dict[str, Any], inherited: str | None) -> str:
     kind = token.get("$type", inherited)
     value = token["$value"]
@@ -125,6 +139,8 @@ def css_value(token: dict[str, Any], inherited: str | None) -> str:
         return css_shadow(value)
     if kind == "dimension":
         return _px(value)
+    if kind == "fontFamily":
+        return css_font_family(value)
     raise ValueError(f"unsupported token type {kind!r}")
 
 
@@ -179,7 +195,7 @@ def render() -> str:
     parts = [HEADER]
 
     base = load_json(TOKENS_DIR / "base.tokens.json")
-    parts.append(":root {\n" + "\n".join(_declarations(base, None)) + "\n}\n")
+    parts.append(":root {\n" + "\n\n".join(_declarations(base, None)) + "\n}\n")
 
     names_by_theme: dict[str, set[str]] = {}
     for theme in THEMES:

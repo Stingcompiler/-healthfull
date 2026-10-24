@@ -53,7 +53,7 @@ export function TestEditorPage() {
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title={test.data ? names.test(test.data) : t("catalog.title")}
-        eyebrow={test.data ? <bdi>{test.data.code}</bdi> : undefined}
+        eyebrow={test.data ? <bdi className="num">{test.data.code}</bdi> : undefined}
         actions={
           <Button asChild variant="outline">
             <Link to="/lab/catalog">
@@ -246,7 +246,7 @@ function ParametersCard({ test }: { test: LabTest }) {
                   ) : null}
                 </span>
                 <span className="text-xs text-muted">
-                  <bdi>{p.code}</bdi> · {t(`valueType.${p.value_type}`)}
+                  <bdi className="num">{p.code}</bdi> · {t(`valueType.${p.value_type}`)}
                   {p.value_type === "choice" ? (
                     <>
                       {" · "}

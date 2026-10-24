@@ -86,7 +86,7 @@ function RefundRequestDialogOpen({
         </DialogHeader>
         {creditNote ? (
           <p className="flex flex-wrap items-center justify-between gap-2 rounded-control bg-subtle px-3 py-2 text-sm">
-            <bdi>{creditNote.number}</bdi>
+            <bdi className="num">{creditNote.number}</bdi>
             <span>
               {t("creditNotes.refundable")} <MoneyText value={creditNote.refundable} />
             </span>

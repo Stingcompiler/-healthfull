@@ -202,7 +202,7 @@ function ReceiveDialog({ result, onClose }: { result: LabResult; onClose: () => 
           <li className="flex items-center gap-2 rounded-control bg-subtle px-3 py-2">
             <Checkbox checked disabled aria-label={names.test(result.test)} />
             <span className="font-medium">{names.test(result.test)}</span>
-            <bdi className="ms-auto text-xs text-muted">{result.test.code}</bdi>
+            <bdi className="ms-auto num text-xs text-muted">{result.test.code}</bdi>
           </li>
           {result.companions.map((c) => {
             const id = `companion-${String(c.line_id)}`;
@@ -218,7 +218,7 @@ function ReceiveDialog({ result, onClose }: { result: LabResult; onClose: () => 
                 <Label htmlFor={id} className="font-normal">
                   {names.test(c.test)}
                 </Label>
-                <bdi className="ms-auto text-xs text-muted">{c.test.code}</bdi>
+                <bdi className="ms-auto num text-xs text-muted">{c.test.code}</bdi>
               </li>
             );
           })}

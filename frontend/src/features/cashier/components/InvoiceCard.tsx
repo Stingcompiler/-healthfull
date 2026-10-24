@@ -158,7 +158,13 @@ export function InvoiceCard({
       <header className="flex flex-wrap items-start justify-between gap-3 px-4 md:px-5">
         <div className="flex min-w-0 flex-col gap-1">
           <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold">
-            {invoice.number ? <bdi data-testid="invoice-number">{invoice.number}</bdi> : t("invoice.draft")}
+            {invoice.number ? (
+              <bdi data-testid="invoice-number" className="num">
+                {invoice.number}
+              </bdi>
+            ) : (
+              t("invoice.draft")
+            )}
             <Badge variant={isDraft ? "warning" : invoice.status === "void" ? "neutral" : "success"}>
               {t(`invoice.status.${invoice.status}`)}
             </Badge>
@@ -270,7 +276,7 @@ export function InvoiceCard({
             {invoice.payments.map((p) => (
               <li key={p.payment_id} className="flex flex-wrap items-center justify-between gap-2">
                 <span className="flex min-w-0 flex-wrap items-center gap-2">
-                  <bdi>{p.number}</bdi>
+                  <bdi className="num">{p.number}</bdi>
                   <span className="text-muted">{t(`payment.method.${p.method as PaymentMethod}`)}</span>
                   <StatusBadge
                     size="sm"
@@ -297,7 +303,7 @@ export function InvoiceCard({
             {invoice.credit_notes.map((cn) => (
               <li key={cn.id} className="flex flex-wrap items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
-                  <bdi>{cn.number ?? t("creditNotes.draft")}</bdi>
+                  <bdi className="num">{cn.number ?? t("creditNotes.draft")}</bdi>
                   <Badge variant={cn.status === "approved" ? "success" : "warning"}>
                     {t(`invoice.status.${cn.status}`)}
                   </Badge>

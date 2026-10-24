@@ -165,7 +165,7 @@ export function QtyText({ value, unit, className }: { value: number; unit: strin
   const names = useNames();
   return (
     <span className={cn("tabular whitespace-nowrap", className)}>
-      <bdi>{formatNumber(value, names.language)}</bdi> {unit}
+      <bdi className="num">{formatNumber(value, names.language)}</bdi> {unit}
     </span>
   );
 }

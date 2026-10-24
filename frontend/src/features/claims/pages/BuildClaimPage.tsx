@@ -195,17 +195,17 @@ export function BuildClaimPage() {
                       <span className="font-medium">{names.text(line.description_ar, line.description_en)}</span>
                       <span className="text-sm">{names.person(line.patient)}</span>
                       <span className="flex flex-wrap gap-x-3 text-xs text-muted">
-                        <bdi>{line.patient.file_no}</bdi>
+                        <bdi className="num">{line.patient.file_no}</bdi>
                         {line.card_number ? (
                           <span>
-                            {t("build.card")}: <bdi>{line.card_number}</bdi>
+                            {t("build.card")}: <bdi className="num">{line.card_number}</bdi>
                           </span>
                         ) : null}
-                        <bdi>{line.invoice_number}</bdi>
+                        <bdi className="num">{line.invoice_number}</bdi>
                         <DateText value={line.approved_on} />
                         {line.pre_approval_ref ? (
                           <span>
-                            {t("build.preApproval")}: <bdi>{line.pre_approval_ref}</bdi>
+                            {t("build.preApproval")}: <bdi className="num">{line.pre_approval_ref}</bdi>
                           </span>
                         ) : null}
                       </span>

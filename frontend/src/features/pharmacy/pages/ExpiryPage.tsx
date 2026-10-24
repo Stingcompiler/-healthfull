@@ -41,7 +41,7 @@ export function ExpiryPage() {
         id: "batch",
         header: t("batch.number"),
         meta: { label: t("batch.number") },
-        cell: ({ row }) => <bdi>{row.original.batch_no}</bdi>,
+        cell: ({ row }) => <bdi className="num">{row.original.batch_no}</bdi>,
       },
       {
         id: "expiry",
@@ -125,7 +125,7 @@ export function ExpiryPage() {
                 <ExpiryBadge daysLeft={r.days_left} />
               </span>
               <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted">
-                <bdi>{r.batch_no}</bdi>
+                <bdi className="num">{r.batch_no}</bdi>
                 <DateText value={r.expiry_date} />
                 <span>{names.name(r.store)}</span>
               </span>

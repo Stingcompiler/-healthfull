@@ -56,7 +56,7 @@ export function CancelVisitDialog({ visit, onOpenChange }: CancelVisitDialogProp
           <DialogHeader>
             <DialogTitle>{t("cancel.title")}</DialogTitle>
             <DialogDescription>
-              {t("cancel.visit")} <bdi className="tabular font-semibold text-fg">{visit.number}</bdi>
+              {t("cancel.visit")} <bdi className="num font-semibold text-fg">{visit.number}</bdi>
             </DialogDescription>
           </DialogHeader>
           <AlertCard variant="warning" title={t("cancel.needsSupervisorTitle")}>
@@ -90,7 +90,7 @@ export function CancelVisitDialog({ visit, onOpenChange }: CancelVisitDialogProp
     >
       {visit ? (
         <p className="text-sm text-muted">
-          {t("cancel.visit")} <bdi className="tabular font-semibold text-fg">{visit.number}</bdi>
+          {t("cancel.visit")} <bdi className="num font-semibold text-fg">{visit.number}</bdi>
         </p>
       ) : null}
     </ReasonDialog>

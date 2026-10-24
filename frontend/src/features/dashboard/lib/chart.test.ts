@@ -5,8 +5,15 @@ import { CHART_COLORS, compactNumber } from "./chart";
 describe("chart colors", () => {
   it("are theme tokens only, never raw colors", () => {
     for (const value of Object.values(CHART_COLORS)) {
-      expect(value).toMatch(/^var\(--[a-z-]+\)$/);
+      expect(value).toMatch(/^var\(--[a-z0-9-]+\)$/);
     }
+  });
+
+  it("series use the categorical chart tokens, never a status color (Design Reference 16.4)", () => {
+    for (const series of [CHART_COLORS.collected, CHART_COLORS.pending, CHART_COLORS.revenue]) {
+      expect(series).toMatch(/^var\(--chart-[1-5]\)$/);
+    }
+    expect(CHART_COLORS.collected).not.toBe(CHART_COLORS.pending);
   });
 
   it("formats axis numbers compactly", () => {

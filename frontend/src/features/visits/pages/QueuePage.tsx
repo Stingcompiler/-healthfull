@@ -158,7 +158,7 @@ export function QueuePage() {
         header: t("board.token"),
         meta: { label: t("board.token"), className: "w-20" },
         accessorKey: "token_no",
-        cell: ({ row }) => <span className="tabular text-lg font-bold text-fg">{n(row.original.token_no)}</span>,
+        cell: ({ row }) => <span className="num text-lg font-bold text-fg">{n(row.original.token_no)}</span>,
       },
       {
         id: "patient",
@@ -168,7 +168,7 @@ export function QueuePage() {
         cell: ({ row }) => (
           <span className="flex min-w-0 flex-col">
             <span className="font-medium break-words">{patientName(row.original.patient, language)}</span>
-            <bdi className="tabular text-xs text-muted">{row.original.patient.file_no}</bdi>
+            <bdi className="num text-xs text-muted">{row.original.patient.file_no}</bdi>
           </span>
         ),
       },
@@ -320,7 +320,7 @@ export function QueuePage() {
           minTableWidth={820}
           renderCard={(r, { actions }) => (
             <div className="card-surface relative flex items-start gap-3 p-4" data-testid="queue-card">
-              <span className="w-10 shrink-0 text-center tabular text-2xl font-bold text-fg">{n(r.token_no)}</span>
+              <span className="w-10 shrink-0 num text-center text-2xl font-bold text-fg">{n(r.token_no)}</span>
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <DataTableOpenButton
                   onOpen={() => {

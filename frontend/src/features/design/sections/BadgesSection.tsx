@@ -34,6 +34,7 @@ export function BadgesSection() {
         <Badge variant="warning">{t("badges.warning")}</Badge>
         <Badge variant="danger">{t("badges.danger")}</Badge>
         <Badge variant="info">{t("badges.info")}</Badge>
+        <Badge variant="pending">{t("badges.pending")}</Badge>
       </Demo>
     </Section>
   );

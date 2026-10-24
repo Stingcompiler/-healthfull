@@ -143,7 +143,7 @@ export function ItemPicker({
         <span className="flex flex-col">
           <span className="font-medium">{itemLabel(it)}</span>
           <span className="text-xs text-muted">
-            <bdi>{it.service.code}</bdi>
+            <bdi className="num">{it.service.code}</bdi>
             {it.brand_name ? ` · ${it.brand_name}` : ""}
           </span>
         </span>
@@ -193,7 +193,7 @@ export function BatchPicker({
         <span className="flex flex-col">
           <span className="font-medium">{names.item(b)}</span>
           <span className="flex flex-wrap gap-x-2 text-xs text-muted">
-            <bdi>{b.batch_no}</bdi>
+            <bdi className="num">{b.batch_no}</bdi>
             <DateText value={b.expiry_date} />
             <QtyText value={b.on_hand} unit={names.baseUnit(b)} />
           </span>
@@ -203,7 +203,7 @@ export function BatchPicker({
         value ? (
           <span className="flex flex-wrap gap-x-2">
             <span className="font-medium">{names.item(value)}</span>
-            <bdi>{value.batch_no}</bdi>
+            <bdi className="num">{value.batch_no}</bdi>
             <QtyText value={value.on_hand} unit={names.baseUnit(value)} className="text-muted" />
           </span>
         ) : null

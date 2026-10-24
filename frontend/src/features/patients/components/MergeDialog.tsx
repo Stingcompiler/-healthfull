@@ -116,13 +116,13 @@ function MergeFlow({ target, open, onOpenChange }: MergeDialogProps) {
             <p>
               <span className="text-muted">{t("merge.from")} </span>
               <span className="font-semibold break-words">{patientName(duplicate, language)}</span>{" "}
-              <bdi className="tabular text-muted">{duplicate.file_no}</bdi>
+              <bdi className="num text-muted">{duplicate.file_no}</bdi>
             </p>
             <ArrowDown className="size-4 text-muted" aria-hidden="true" />
             <p>
               <span className="text-muted">{t("merge.into")} </span>
               <span className="font-semibold break-words">{patientName(target, language)}</span>{" "}
-              <bdi className="tabular text-muted">{target.file_no}</bdi>
+              <bdi className="num text-muted">{target.file_no}</bdi>
             </p>
           </div>
         ) : null}

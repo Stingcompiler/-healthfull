@@ -54,4 +54,13 @@ describe("MoneyText", () => {
     const { container } = render(<MoneyText value="-1.00" />);
     expect(container.querySelector("bdi")).not.toHaveClass("text-danger-fg");
   });
+
+  it("a bare amount is a .num (tabular, ltr, isolated); with the currency it keeps bidi auto", async () => {
+    await i18n.changeLanguage("ar");
+    const bare = render(<MoneyText value="1500.00" currency={false} />);
+    expect(bare.container.querySelector("bdi")).toHaveClass("num");
+    const withSymbol = render(<MoneyText value="1500.00" />);
+    expect(withSymbol.container.querySelector("bdi")).toHaveClass("tabular");
+    expect(withSymbol.container.querySelector("bdi")).not.toHaveClass("num");
+  });
 });

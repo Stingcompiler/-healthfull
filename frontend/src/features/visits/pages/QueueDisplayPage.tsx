@@ -136,7 +136,7 @@ export function QueueDisplayPage() {
                     className="flex min-w-0 flex-col items-center rounded-card border-2 border-border-strong bg-surface p-3"
                     data-testid="display-waiting-tile"
                   >
-                    <span className="tabular text-3xl font-bold md:text-5xl">{n(e.token_no)}</span>
+                    <span className="num text-3xl font-bold md:text-5xl">{n(e.token_no)}</span>
                     <span className="text-center text-base break-words md:text-xl">
                       {language === "ar" ? e.name_ar : e.name_en}
                     </span>
@@ -175,9 +175,7 @@ function CalledCard({ entry, highlight = false }: { entry: DisplayEntry; highlig
         highlight ? "border-primary bg-primary text-primary-fg" : "border-border-strong bg-surface text-fg",
       )}
     >
-      <span
-        className={cn("tabular leading-none font-black", highlight ? "text-7xl md:text-9xl" : "text-4xl md:text-6xl")}
-      >
+      <span className={cn("num leading-none font-black", highlight ? "text-7xl md:text-9xl" : "text-4xl md:text-6xl")}>
         {formatNumber(entry.token_no, language)}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">

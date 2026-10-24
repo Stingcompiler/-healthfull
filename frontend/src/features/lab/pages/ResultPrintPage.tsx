@@ -53,7 +53,9 @@ function ReportBody({ data, lang }: { data: LabPrint; lang: Lang }) {
         {data.center.address ? <p>{data.center.address}</p> : null}
         {data.center.phone ? (
           <p>
-            <bdi dir="ltr">{data.center.phone}</bdi>
+            <bdi dir="ltr" className="num">
+              {data.center.phone}
+            </bdi>
           </p>
         ) : null}
         <p className="mt-1 text-base font-semibold">{t("print.heading")}</p>
@@ -69,7 +71,9 @@ function ReportBody({ data, lang }: { data: LabPrint; lang: Lang }) {
       <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
         <Field label={t("print.patient")}>{names.patient(p)}</Field>
         <Field label={t("print.fileNo")}>
-          <bdi dir="ltr">{p.file_no}</bdi>
+          <bdi dir="ltr" className="num">
+            {p.file_no}
+          </bdi>
         </Field>
         <Field label={t("print.sexAge")}>
           {t(`sex.${p.sex === "male" || p.sex === "female" ? p.sex : "any"}`)}
@@ -78,13 +82,17 @@ function ReportBody({ data, lang }: { data: LabPrint; lang: Lang }) {
             : ""}
         </Field>
         <Field label={t("print.visit")}>
-          <bdi dir="ltr">{data.visit_number}</bdi>
+          <bdi dir="ltr" className="num">
+            {data.visit_number}
+          </bdi>
         </Field>
         {data.ordered_by ? <Field label={t("print.orderedBy")}>{names.user(data.ordered_by)}</Field> : null}
         {data.sample ? (
           <>
             <Field label={t("print.accession")}>
-              <bdi dir="ltr">{data.sample.accession_no}</bdi>
+              <bdi dir="ltr" className="num">
+                {data.sample.accession_no}
+              </bdi>
             </Field>
             <Field label={t("print.collected")}>{when(data.sample.collected_at)}</Field>
             {data.sample.received_at ? (

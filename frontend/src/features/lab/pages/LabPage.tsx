@@ -100,7 +100,8 @@ function Worklist({ title }: { title: string }) {
           <span className="flex min-w-0 flex-col">
             <span className="font-medium">{names.patient(row.original.patient)}</span>
             <span className="text-xs text-muted">
-              <bdi>{row.original.patient.file_no}</bdi> · <bdi>{row.original.visit_number}</bdi>
+              <bdi className="num">{row.original.patient.file_no}</bdi> ·{" "}
+              <bdi className="num">{row.original.visit_number}</bdi>
             </span>
           </span>
         ),
@@ -113,7 +114,7 @@ function Worklist({ title }: { title: string }) {
           <span className="flex min-w-0 flex-col gap-1">
             <span>{names.test(row.original.test)}</span>
             <span className="text-xs text-muted">
-              <bdi>{row.original.test.code}</bdi> · {t(`sampleType.${row.original.test.sample_type}`)}
+              <bdi className="num">{row.original.test.code}</bdi> · {t(`sampleType.${row.original.test.sample_type}`)}
             </span>
             <RowMarks row={row.original} />
           </span>
@@ -257,9 +258,13 @@ function Worklist({ title }: { title: string }) {
                 <StageBadge stage={r.stage} />
               </div>
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-                <bdi>{r.patient.file_no}</bdi>
-                <bdi>{r.visit_number}</bdi>
-                {r.sample ? <bdi data-testid="row-accession">{r.sample.accession_no}</bdi> : null}
+                <bdi className="num">{r.patient.file_no}</bdi>
+                <bdi className="num">{r.visit_number}</bdi>
+                {r.sample ? (
+                  <bdi data-testid="row-accession" className="num">
+                    {r.sample.accession_no}
+                  </bdi>
+                ) : null}
                 <span>{t(`sampleType.${r.test.sample_type}`)}</span>
                 {r.due_at ? (
                   <span>

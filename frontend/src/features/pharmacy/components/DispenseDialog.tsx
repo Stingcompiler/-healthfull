@@ -220,8 +220,8 @@ function DispenseDialogOpen({
             {data ? (
               <span className="flex flex-wrap gap-x-3 gap-y-1">
                 <span className="font-medium text-fg">{patientName}</span>
-                <bdi>{data.patient.file_no}</bdi>
-                <bdi>{data.visit_number}</bdi>
+                <bdi className="num">{data.patient.file_no}</bdi>
+                <bdi className="num">{data.visit_number}</bdi>
                 <span>{names.name(data.store)}</span>
               </span>
             ) : (
@@ -507,7 +507,7 @@ function DispenseLineEditor({
                       data-expired={bt.expired ? "true" : "false"}
                     >
                       <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
-                        <bdi className="font-medium">{bt.batch_no}</bdi>
+                        <bdi className="num font-medium">{bt.batch_no}</bdi>
                         <span className="text-muted">
                           {t("dispense.expires")} <DateText value={bt.expiry_date} />
                         </span>
@@ -645,8 +645,10 @@ function DispenseDone({ result, onClose }: { result: Dispense; onClose: () => vo
           >
             <span className="min-w-0 break-words">{names.name(ln.service)}</span>
             <span className="flex flex-wrap items-center gap-2 text-muted">
-              <bdi data-testid="dispensed-batch">{ln.batch_no}</bdi>
-              <span className="tabular">{formatNumber(ln.qty_base, names.language)}</span>
+              <bdi data-testid="dispensed-batch" className="num">
+                {ln.batch_no}
+              </bdi>
+              <span className="num">{formatNumber(ln.qty_base, names.language)}</span>
               {ln.batch_override ? <Badge variant="warning">{t("dispense.overridden")}</Badge> : null}
             </span>
           </li>

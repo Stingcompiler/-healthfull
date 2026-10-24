@@ -230,7 +230,7 @@ function RecordPaymentDialogOpen({ payerId, onOpenChange, onRecorded }: RecordPa
                         className="flex flex-col gap-2 rounded-control border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <label htmlFor={id} className="flex min-w-0 flex-col text-sm">
-                          <bdi className="font-medium">{c.number}</bdi>
+                          <bdi className="num font-medium">{c.number}</bdi>
                           <span className="text-xs text-muted">
                             <Period start={c.period_start} end={c.period_end} />
                           </span>

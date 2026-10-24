@@ -81,11 +81,11 @@ export function PatientPicker({
         <div className="min-w-0 flex-1">
           <p className="font-semibold break-words text-fg">{patientName(value, language)}</p>
           <p className="text-xs text-muted">
-            <bdi className="tabular">{value.file_no}</bdi>
+            <bdi className="num">{value.file_no}</bdi>
             {value.phone ? (
               <>
                 {" · "}
-                <bdi className="tabular">{value.phone}</bdi>
+                <bdi className="num">{value.phone}</bdi>
               </>
             ) : null}
           </p>
@@ -135,11 +135,11 @@ export function PatientPicker({
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium break-words">{patientName(p, language)}</span>
                     <span className="block text-xs text-muted">
-                      <bdi className="tabular">{p.file_no}</bdi>
+                      <bdi className="num">{p.file_no}</bdi>
                       {p.phone ? (
                         <>
                           {" · "}
-                          <bdi className="tabular">{p.phone}</bdi>
+                          <bdi className="num">{p.phone}</bdi>
                         </>
                       ) : null}
                     </span>

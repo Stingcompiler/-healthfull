@@ -84,7 +84,7 @@ export function LookupPanel({
             <li key={item.patient.id} className="flex min-w-0 flex-col gap-2 rounded-control border border-border p-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="min-w-0 font-medium break-words">{names.patient(item.patient)}</span>
-                <bdi className="tabular text-sm text-muted">{item.patient.file_no}</bdi>
+                <bdi className="num text-sm text-muted">{item.patient.file_no}</bdi>
               </div>
               {item.balance.outstanding !== "0.00" || item.balance.credit !== "0.00" ? (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
@@ -142,7 +142,7 @@ function VisitButton({ visit, selected, onSelect }: { visit: LookupVisit; select
     >
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
-          <bdi>{visit.number}</bdi>
+          <bdi className="num">{visit.number}</bdi>
           {visit.department ? <span className="text-muted">{names.name(visit.department)}</span> : null}
         </span>
         <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
