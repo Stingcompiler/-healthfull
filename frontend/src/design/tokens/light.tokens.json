@@ -467,7 +467,7 @@
         "hex": "#9f1239"
       }
     },
-    "state-pending": {
+    "state-attention": {
       "$type": "color",
       "$value": {
         "colorSpace": "srgb",
@@ -475,7 +475,7 @@
         "hex": "#d97706"
       }
     },
-    "state-pending-bg": {
+    "state-attention-bg": {
       "$type": "color",
       "$value": {
         "colorSpace": "srgb",
@@ -483,12 +483,86 @@
         "hex": "#fef3c7"
       }
     },
-    "state-pending-fg": {
+    "state-attention-fg": {
       "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [0.5725, 0.251, 0.0549],
         "hex": "#92400e"
+      }
+    },
+    "state-pending": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.4431, 0.4431, 0.4784],
+        "hex": "#71717a"
+      }
+    },
+    "state-pending-bg": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.9569, 0.9569, 0.9608],
+        "hex": "#f4f4f5"
+      }
+    },
+    "state-pending-fg": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.2471, 0.2471, 0.2745],
+        "hex": "#3f3f46"
+      }
+    },
+    "state-pending-border": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.549, 0.549, 0.5882],
+        "hex": "#8c8c96"
+      }
+    }
+  },
+  "chart": {
+    "chart-1": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.051, 0.5804, 0.5333],
+        "hex": "#0d9488"
+      }
+    },
+    "chart-2": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.3098, 0.2745, 0.898],
+        "hex": "#4f46e5"
+      }
+    },
+    "chart-3": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.7451, 0.0941, 0.3647],
+        "hex": "#be185d"
+      }
+    },
+    "chart-4": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.4863, 0.2275, 0.9294],
+        "hex": "#7c3aed"
+      }
+    },
+    "chart-5": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [0.0549, 0.4549, 0.5647],
+        "hex": "#0e7490"
       }
     }
   },

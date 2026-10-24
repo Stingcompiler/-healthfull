@@ -91,6 +91,16 @@
   --color-state-pending: var(--state-pending);
   --color-state-pending-bg: var(--state-pending-bg);
   --color-state-pending-fg: var(--state-pending-fg);
+  --color-state-pending-border: var(--state-pending-border);
+  --color-state-attention: var(--state-attention);
+  --color-state-attention-bg: var(--state-attention-bg);
+  --color-state-attention-fg: var(--state-attention-fg);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 
   --color-overlay: var(--overlay);
 
@@ -105,15 +115,6 @@
 }
 
 @layer base {
-  :root {
-    --font-latin: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --font-arabic: "IBM Plex Sans Arabic", "Inter Variable", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
-    --font-ui: var(--font-arabic);
-  }
-  :root:lang(en) {
-    --font-ui: var(--font-latin);
-  }
-
   *,
   ::before,
   ::after {
@@ -129,14 +130,22 @@
   body {
     @apply bg-bg font-sans text-fg antialiased;
     min-height: 100dvh;
-    font-feature-settings: "cv11", "ss01";
     text-rendering: optimizeLegibility;
   }
 
   :root:lang(ar) body {
     /* Plex Arabic reads better with slightly more line height. */
     line-height: 1.6;
-    font-feature-settings: normal;
+  }
+
+  /* Design Reference 2.2 section 2: numbers, codes, phones and IDs are tabular and keep their
+     own direction inside Arabic text. Same rule as the .num utility; [data-num] is for markup
+     that cannot take a class. */
+  [data-num] {
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: match-parent;
   }
 
   ::selection {
@@ -208,6 +217,20 @@
 @utility ltr-nums {
   direction: ltr;
   unicode-bidi: isolate;
+}
+
+/*
+ * .num (Design Reference 2.2 section 2): money, quantities, phones, barcodes and IDs. Tabular
+ * figures, left-to-right and isolated from the surrounding text. match-parent keeps text-start /
+ * text-end meaning the page's start / end even though the element itself is ltr, so a number
+ * cell in an Arabic table still aligns to the page's end.
+ */
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: match-parent;
 }
 
 @utility scrollbar-thin {

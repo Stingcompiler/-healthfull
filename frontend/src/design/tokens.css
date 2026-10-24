@@ -22,15 +22,20 @@
  *   status        --{success,warning,danger,info}: solid, -contrast (text on
  *                 solid), -bg (soft fill), -fg (text on soft fill or surface),
  *                 -border
- *   service line  --state-{requested,invoiced,paid,performed,cancelled,pending}
- *                 solid (dots/borders), -bg, -fg
+ *   service line  --state-{requested,invoiced,paid,performed,cancelled,pending,attention}
+ *                 solid (dots/borders), -bg, -fg; pending is neutral (+ -border, drawn
+ *                 dashed) = waiting with nobody to act; attention is amber = staff must act
  *   elevation     --elevation-card --elevation-raised --elevation-overlay --overlay
+ *   chart series  --chart-1 .. --chart-5 (categorical, in order; never status colors)
  *   shape         --card-radius --control-radius
+ *   type          --font-ui (one family: Plex Sans Arabic + Plex Sans)
  */
 
 :root {
   --card-radius: 12px;
   --control-radius: 8px;
+
+  --font-ui: "IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
 }
 
 /* ---------------------------------------------------------------- light */
@@ -102,9 +107,19 @@
   --state-cancelled: #e11d48;
   --state-cancelled-bg: #ffe4e6;
   --state-cancelled-fg: #9f1239;
-  --state-pending: #d97706;
-  --state-pending-bg: #fef3c7;
-  --state-pending-fg: #92400e;
+  --state-attention: #d97706;
+  --state-attention-bg: #fef3c7;
+  --state-attention-fg: #92400e;
+  --state-pending: #71717a;
+  --state-pending-bg: #f4f4f5;
+  --state-pending-fg: #3f3f46;
+  --state-pending-border: #8c8c96;
+
+  --chart-1: #0d9488;
+  --chart-2: #4f46e5;
+  --chart-3: #be185d;
+  --chart-4: #7c3aed;
+  --chart-5: #0e7490;
 
   --overlay: rgb(15 23 42 / 0.45);
   --elevation-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
@@ -180,9 +195,19 @@
   --state-cancelled: #fb7185;
   --state-cancelled-bg: #3f0b1b;
   --state-cancelled-fg: #fecdd3;
-  --state-pending: #fbbf24;
-  --state-pending-bg: #3a2306;
-  --state-pending-fg: #fde68a;
+  --state-attention: #fbbf24;
+  --state-attention-bg: #3a2306;
+  --state-attention-fg: #fde68a;
+  --state-pending: #94a3b8;
+  --state-pending-bg: #1c2333;
+  --state-pending-fg: #c9cdd6;
+  --state-pending-border: #6b7a93;
+
+  --chart-1: #2dd4bf;
+  --chart-2: #818cf8;
+  --chart-3: #f472b6;
+  --chart-4: #c084fc;
+  --chart-5: #22d3ee;
 
   --overlay: rgb(2 6 23 / 0.7);
   --elevation-card: none;
@@ -258,9 +283,19 @@
   --state-cancelled: #e11d48;
   --state-cancelled-bg: #fde4e7;
   --state-cancelled-fg: #9f1239;
-  --state-pending: #d97706;
-  --state-pending-bg: #fdf1cd;
-  --state-pending-fg: #8a3c0c;
+  --state-attention: #d97706;
+  --state-attention-bg: #fdf1cd;
+  --state-attention-fg: #8a3c0c;
+  --state-pending: #78716c;
+  --state-pending-bg: #f5f2ee;
+  --state-pending-fg: #44403c;
+  --state-pending-border: #8f8880;
+
+  --chart-1: #4f46e5;
+  --chart-2: #0d9488;
+  --chart-3: #be185d;
+  --chart-4: #7c3aed;
+  --chart-5: #0e7490;
 
   --overlay: rgb(28 25 23 / 0.45);
   --elevation-card: 0 1px 2px rgb(28 25 23 / 0.04), 0 4px 16px -4px rgb(68 52 34 / 0.09);

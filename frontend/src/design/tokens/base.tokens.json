@@ -9,5 +9,20 @@
     "control-radius": {
       "$value": { "value": 8, "unit": "px" }
     }
+  },
+  "font": {
+    "$type": "fontFamily",
+    "font-ui": {
+      "$value": [
+        "IBM Plex Sans Arabic",
+        "IBM Plex Sans",
+        "system-ui",
+        "-apple-system",
+        "Segoe UI",
+        "Tahoma",
+        "sans-serif"
+      ],
+      "$description": "One family for Arabic, Latin and numerals (Design Reference section 2): Plex Sans Arabic draws Arabic, Plex Sans draws Latin and digits. Bundled by src/design/fonts.ts; no CDN."
+    }
   }
 }
