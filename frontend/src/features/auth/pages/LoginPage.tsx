@@ -8,7 +8,7 @@ import { z } from "zod";
 
 import { safeRedirectTarget } from "@/app/guards";
 import { AlertCard } from "@/components/AlertCard";
-import { Brand } from "@/components/BrandMark";
+import { CenterIdentity } from "@/components/CenterIdentity";
 import { Form, PasswordField, TextField } from "@/components/form";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -68,7 +68,7 @@ export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
       {/* Brand panel (desktop) */}
       <aside className="relative hidden overflow-hidden border-e border-border bg-primary-soft lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-14">
         <div className="relative">
-          <Brand />
+          <CenterIdentity />
         </div>
         <div className="relative max-w-lg">
           {/* Not a heading: this panel precedes the page's h1 in the DOM (WCAG 1.3.1 order). */}
@@ -95,7 +95,7 @@ export function LoginPage({ redirectTo }: { redirectTo?: string | undefined }) {
       {/* Form column */}
       <div className="flex min-w-0 flex-col">
         <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
-          <Brand className="lg:invisible" />
+          <CenterIdentity className="lg:invisible" />
           <div className="flex items-center gap-1" aria-label={t("login.preferences")} role="group">
             <LanguageSwitcher />
             <ThemeSwitcher />

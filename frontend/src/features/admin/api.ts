@@ -7,9 +7,13 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey 
 
 import { api, unwrap } from "@/lib/api/client";
 import { authKeys } from "@/lib/auth/api";
+import { centerPageKey } from "@/lib/center/api";
 
 import type {
+  AnnouncementIn,
+  AnnouncementPatch,
   BulkUpdateIn,
+  CenterPageIn,
   CenterProfileIn,
   CoveragePreviewIn,
   CoverageRuleIn,
@@ -49,6 +53,8 @@ export const adminKeys = {
   roles: ["admin", "roles"] as const,
   matrix: ["admin", "matrix"] as const,
   center: ["admin", "center"] as const,
+  centerPage: ["admin", "center-page"] as const,
+  announcements: ["admin", "announcements"] as const,
   policy: ["admin", "policy"] as const,
   departments: ["admin", "departments"] as const,
   banks: ["admin", "banks"] as const,
@@ -176,6 +182,39 @@ export function useUploadLogo() {
 
 export function useDeleteLogo() {
   return useAdminMutation(() => unwrap(api.DELETE("/api/core/center/logo")), [adminKeys.center]);
+}
+
+// --- Public center page (portal) ----------------------------------------------------------
+
+export function useCenterPageSettings() {
+  return useQuery({ queryKey: adminKeys.centerPage, queryFn: () => unwrap(api.GET("/api/core/center-page")) });
+}
+
+export function useUpdateCenterPage() {
+  return useAdminMutation(
+    (body: CenterPageIn) => unwrap(api.PUT("/api/core/center-page", { body })),
+    // The public page itself is cached under its own key.
+    [adminKeys.centerPage, centerPageKey],
+  );
+}
+
+export function useAnnouncements() {
+  return useQuery({ queryKey: adminKeys.announcements, queryFn: () => unwrap(api.GET("/api/core/announcements")) });
+}
+
+export function useSaveAnnouncement() {
+  return useAdminMutation(
+    ({ id, body }: { id?: number; body: AnnouncementIn | AnnouncementPatch }) =>
+      id === undefined
+        ? unwrap(api.POST("/api/core/announcements", { body: body as AnnouncementIn }))
+        : unwrap(
+            api.PATCH("/api/core/announcements/{announcement_id}", {
+              params: { path: { announcement_id: id } },
+              body,
+            }),
+          ),
+    [adminKeys.announcements, centerPageKey],
+  );
 }
 
 export function usePolicy() {

@@ -1,6 +1,6 @@
 # دليل بوابة المرضى
 
-> **English summary:** For patients, in plain Arabic. The patient portal (`/portal`) works on a phone connected to the center's network. Patients sign in with their file number, the phone number on file and the 8-digit code printed on a receipt or a reception slip, then see their appointments (and book or cancel), approved lab results, prescriptions with instructions, and their bills and receipts. Anyone can check that a receipt is genuine by scanning its QR code (`/verify/...`). A lost code is cancelled and replaced at reception; five wrong tries lock sign-in for 15 minutes.
+> **English summary:** For patients, in plain Arabic. The patient portal (`/portal`) works on a phone connected to the center's network. It opens on the center page (hours, doctors and clinic days, notices, contact); "Sign in to your file" leads to `/portal/sign-in`. Patients sign in with their file number, the phone number on file and the 8-digit code printed on a receipt or a reception slip, then see their appointments (and book or cancel), approved lab results, prescriptions with instructions, and their bills and receipts. Anyone can check that a receipt is genuine by scanning its QR code (`/verify/...`). A lost code is cancelled and replaced at reception; five wrong tries lock sign-in for 15 minutes.
 
 بوابة المرضى صفحة على هاتفك. ترى فيها مواعيدك ونتائجك وأدويتك وفواتيرك.
 
@@ -18,7 +18,7 @@
 ## الدخول
 
 1. افتح العنوان المكتوب على القسيمة، وهو ينتهي بـ `/portal`.
-2. تظهر صفحة «الدخول إلى ملفك».
+2. تظهر صفحة المركز: ساعات العمل والأطباء والإعلانات وطرق التواصل. اضغط «الدخول إلى ملفك».
 3. اكتب «رقم الملف».
 4. اكتب «رقم الهاتف».
 5. اكتب «رمز الدخول» (8 أرقام).

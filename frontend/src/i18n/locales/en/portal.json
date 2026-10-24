@@ -248,5 +248,31 @@
     "issueNow": "Issue a new code",
     "replaceTitle": "Replace the active code?",
     "replaceWarning": "This file already has an active code. A new code ends it and signs out anyone using it."
+  },
+  "center": {
+    "signIn": "Sign in to your file",
+    "signInShort": "Sign in",
+    "openFile": "Open your file",
+    "signInHint": "You need your file number, your phone number and the code on your receipt.",
+    "endPrompt": "See your results, appointments and bills.",
+    "unavailable": "The center's details could not be loaded.",
+    "today": {
+      "open": "Open now, until {{time}}",
+      "opensLater": "Opens today at {{time}}",
+      "closedNow": "Closed now",
+      "closedToday": "Closed today"
+    },
+    "todayLabel": "Today",
+    "hours": "Opening hours",
+    "closed": "Closed",
+    "span": "{{from}} – {{to}}",
+    "listJoin": ", ",
+    "announcements": "Notices",
+    "until": "Until",
+    "doctors": "Doctors and clinic days",
+    "departments": "Departments",
+    "contact": "Contact and address",
+    "call": "Call",
+    "whatsapp": "WhatsApp"
   }
 }

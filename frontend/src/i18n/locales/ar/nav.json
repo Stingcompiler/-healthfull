@@ -39,7 +39,8 @@
     "adminDepartments": "الأقسام والأطباء",
     "adminReasonCodes": "قوائم الأسباب",
     "adminExport": "تصدير البيانات",
-    "adminAudit": "سجل التدقيق"
+    "adminAudit": "سجل التدقيق",
+    "adminCenterPage": "صفحة المركز"
   },
   "short": {
     "dashboard": "الرئيسية",
@@ -72,7 +73,8 @@
     "adminDepartments": "الأطباء",
     "adminReasonCodes": "الأسباب",
     "adminExport": "تصدير",
-    "adminAudit": "التدقيق"
+    "adminAudit": "التدقيق",
+    "adminCenterPage": "الصفحة"
   },
   "shell": {
     "menu": "القائمة",

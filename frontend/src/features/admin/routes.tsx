@@ -5,6 +5,7 @@ import { AdminIndexPage } from "./pages/AdminIndexPage";
 import { AuditPage } from "./pages/AuditPage";
 import { BanksPage } from "./pages/BanksPage";
 import { CatalogPage } from "./pages/CatalogPage";
+import { CenterPageSettingsPage } from "./pages/CenterPageSettingsPage";
 import { DepartmentsPage } from "./pages/DepartmentsPage";
 import { ExportPage } from "./pages/ExportPage";
 import { ImportsPage } from "./pages/ImportsPage";
@@ -30,6 +31,11 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
   const users = createRoute({ getParentRoute: () => admin, path: "/users", component: UsersPage });
   const roles = createRoute({ getParentRoute: () => admin, path: "/roles", component: RolesPage });
   const settings = createRoute({ getParentRoute: () => admin, path: "/settings", component: SettingsPage });
+  const centerPage = createRoute({
+    getParentRoute: () => admin,
+    path: "/center-page",
+    component: CenterPageSettingsPage,
+  });
   const policies = createRoute({ getParentRoute: () => admin, path: "/policies", component: PoliciesPage });
   const departments = createRoute({ getParentRoute: () => admin, path: "/departments", component: DepartmentsPage });
   const reasonCodes = createRoute({ getParentRoute: () => admin, path: "/reason-codes", component: ReasonCodesPage });
@@ -53,6 +59,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
       users,
       roles,
       settings,
+      centerPage,
       policies,
       departments,
       reasonCodes,

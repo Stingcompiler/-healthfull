@@ -56,7 +56,7 @@ Several checkouts (git worktrees) may run at once. Never hardcode DB names or po
 
 | App | Owns |
 |---|---|
-| `core` | User (custom, AbstractUser), Role, RolePermission matrix, permission registry, CenterProfile, Policy (singleton settings), Sequence (document numbering), ReasonCode, Department, Room, DoctorProfile, Notification |
+| `core` | User (custom, AbstractUser), Role, RolePermission matrix, permission registry, CenterProfile, CenterPage and Announcement (public center page of the portal, ADR 0023), Policy (singleton settings), Sequence (document numbering), ReasonCode, Department, Room, DoctorProfile, Notification |
 | `patients` | Patient, PatientCoverage, merge history |
 | `visits` | Visit, QueueEntry, Appointment, DoctorSchedule |
 | `catalog` | Service (kinds: consultation, lab, procedure, drug, consumable, bed), PriceList, PriceListVersion, PriceItem, Payer, CoverageRule, Exclusion |

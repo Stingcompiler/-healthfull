@@ -43,6 +43,9 @@ UNGUARDED_STAFF = {
     "portal_login",
     "portal_logout",
     "portal_verify_receipt",
+    # The public center page and its logo (ADR 0023): no session of any kind.
+    "portal_get_center_page",
+    "portal_get_center_logo",
 }
 
 PORTAL_PATIENT_PREFIX = "/api/portal/"

@@ -27,7 +27,7 @@ test.describe("@portal sign-in", () => {
     await cashierContext.close();
 
     const page = await phonePage(browser);
-    await page.goto("/portal");
+    await page.goto("/portal/sign-in");
     await fillSignIn(page, who.patient.file_no, who.patient.phone, code);
     await expect(page).toHaveURL(/\/portal\/home$/);
     await expect(page.getByTestId("home-balance")).toBeVisible();
@@ -42,7 +42,7 @@ test.describe("@portal sign-in", () => {
   test("wrong codes lock the file number out", async ({ browser }) => {
     const who = await portalPatient();
     const page = await phonePage(browser);
-    await page.goto("/portal");
+    await page.goto("/portal/sign-in");
     for (let attempt = 1; attempt <= 5; attempt++) {
       await fillSignIn(page, who.patient.file_no, who.patient.phone, "1111 1111");
       await expect(page.getByText(t("errors:PORTAL_INVALID_CREDENTIALS"))).toBeVisible();
@@ -50,7 +50,7 @@ test.describe("@portal sign-in", () => {
     // The sixth attempt is refused even with the right code.
     await fillSignIn(page, who.patient.file_no, who.patient.phone, who.code ?? "");
     await expect(page.getByText(t("errors:PORTAL_LOCKED"))).toBeVisible();
-    await expect(page).toHaveURL(/\/portal\/?$/);
+    await expect(page).toHaveURL(/\/portal\/sign-in$/);
   });
 
   test("signing out ends the session", async ({ browser }) => {

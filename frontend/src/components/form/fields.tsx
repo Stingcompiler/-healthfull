@@ -196,6 +196,8 @@ export interface TextareaFieldProps<T extends FieldValues> extends BaseFieldProp
   placeholder?: string;
   rows?: number;
   maxLength?: number;
+  /** Fix the direction of a field whose language is known (an English text in an Arabic page). */
+  dir?: "ltr" | "rtl" | "auto";
 }
 
 export function TextareaField<T extends FieldValues>({
