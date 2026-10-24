@@ -102,6 +102,7 @@ def _announce(author: User, **fields: Any) -> Announcement:
 
 @pytest.fixture
 def author(seeded: None) -> User:
+    Announcement.objects.all().delete()  # the seed's sample notice
     return User.objects.filter(is_active=True).order_by("pk").first()  # type: ignore[return-value]
 
 

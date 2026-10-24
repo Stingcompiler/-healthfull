@@ -30,6 +30,7 @@ from django.db import transaction
 from apps.core import roles
 from apps.core.e2e.catalog import DEPARTMENTS, EXTRA_DOCTORS, GENERAL_DOCTOR, seed_catalog
 from apps.core.e2e.catalog import seed_departments as _seed_departments
+from apps.core.e2e.center_page import seed_center_page
 from apps.core.e2e.guard import TEST_DB_NAME, require_test_database
 from apps.core.models import (
     CenterProfile,
@@ -111,6 +112,7 @@ class Command(BaseCommand):
             created = self._seed_users()
             doctors_created = self._seed_doctor_users()
             self._seed_superuser()
+            seed_center_page(User.objects.get(username="admin"))
             doctors = {
                 u.username: u
                 for u in User.objects.filter(

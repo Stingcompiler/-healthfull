@@ -21,6 +21,7 @@ from apps.catalog import services as catalog_services
 from apps.catalog.models import Payer, PriceList, PriceListVersion, Service, ServiceCategory
 from apps.core import roles
 from apps.core.demo import data
+from apps.core.e2e.center_page import seed_center_page
 from apps.core.models import (
     CenterProfile,
     Department,
@@ -576,6 +577,7 @@ def seed_catalog(*, on: date, rng: random.Random) -> Catalog:
     _center()
     _people(cat)
     admin = cat.users["admin"]
+    seed_center_page(admin)
     rooms = _places(cat)
     defs = _services(cat, admin)
     _doctors(cat, rooms)
