@@ -27,7 +27,7 @@ E2E_GREP ?=
         test test-backend test-frontend \
         lint lint-backend lint-frontend lint-shell \
         typecheck typecheck-backend typecheck-frontend typecheck-e2e \
-        api api-check e2e seed demo lint-ui shots check clean distclean \
+        api api-check e2e seed demo lint-ui tokens tokens-check shots check clean distclean \
         agent-setup agent-test agent-lint infra-test ports repo-hash
 
 help: ## List targets
@@ -130,12 +130,19 @@ demo: ## Create demo_hospital (DEMO_DB_NAME), migrate, load seed_demo (DEMO_RESE
 lint-ui: ## UI text scan for the forbidden card patterns (docs/ui-profile.md); part of make check; LINT_UI_REPORT_ONLY=1 never fails
 	node "$(SCRIPTS)/lint-ui.mjs" --summary
 
+tokens: ## Regenerate frontend/src/design/tokens.css from the DTCG token JSON, then check contrast
+	python3 "$(SCRIPTS)/build_tokens.py"
+
+tokens-check: ## Fail if tokens.css is stale versus the token JSON, or any contrast pair fails (CI and make check)
+	python3 "$(SCRIPTS)/build_tokens.py" --check
+
 shots: ## Screenshots of the representative screens: make shots LABEL=before (app on demo_hospital; see scripts/shots.ts)
 	cd "$(E2E)" && node "$(SCRIPTS)/shots.ts" "$(or $(LABEL),current)"
 
 check: ## lint + typecheck + test + api drift. Must be green before any commit to main
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" lint
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" lint-ui
+	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" tokens-check
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" typecheck
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" test
 	@$(MAKE) --no-print-directory -f "$(ROOT)/Makefile" api-check

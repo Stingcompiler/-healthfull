@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { AA_NON_TEXT, AA_TEXT, blend, contrastRatio, parseThemes, type ThemeName } from "./contrast";
+import { AA_NON_TEXT, blend, contrastRatio, parseThemes, type ThemeName } from "./contrast";
 import tokensCss from "./tokens.css?raw";
+import contrast from "./tokens/contrast.json";
+import darkTokens from "./tokens/dark.tokens.json";
+import lightTokens from "./tokens/light.tokens.json";
+import warmTokens from "./tokens/warm.tokens.json";
 
 /** Every component source, to check the classes actually used (not just the tokens). */
 const SOURCES = import.meta.glob<string>(["../**/*.tsx", "!../**/*.test.tsx"], {
@@ -13,55 +17,13 @@ const SOURCES = import.meta.glob<string>(["../**/*.tsx", "!../**/*.test.tsx"], {
 const themes = parseThemes(tokensCss);
 const THEMES: ThemeName[] = ["light", "dark", "warm"];
 
-/** [foreground, background, minimum ratio] */
+/**
+ * [foreground, background, minimum ratio]. The pairs live in tokens/contrast.json so that
+ * scripts/check_contrast.py (make tokens, make tokens-check, CI) checks exactly the same list.
+ */
 type Pair = readonly [string, string, number];
 
-const SURFACES = ["bg", "surface", "surface-raised", "subtle"] as const;
-const STATUSES = ["success", "warning", "danger", "info"] as const;
-const STATES = ["requested", "invoiced", "paid", "performed", "cancelled", "pending"] as const;
-
-const PAIRS: Pair[] = [
-  // Body and secondary text on every surface.
-  ...SURFACES.flatMap((s): Pair[] => [
-    ["fg", s, AA_TEXT],
-    ["fg-muted", s, AA_TEXT],
-    ["primary-strong", s, AA_TEXT],
-  ]),
-  ["fg", "accent", AA_TEXT],
-  ["fg-muted", "accent", AA_TEXT],
-  // Filled controls.
-  ["primary-fg", "primary", AA_TEXT],
-  ["primary-fg", "primary-hover", AA_TEXT],
-  ["primary-strong", "primary-soft", AA_TEXT],
-  ["secondary-fg", "secondary", AA_TEXT],
-  ["secondary-fg", "secondary-hover", AA_TEXT],
-  ["accent-fg", "accent", AA_TEXT],
-  // Semantic colors: text on soft fill, text on surfaces, text on solid fill.
-  ...STATUSES.flatMap((k): Pair[] => [
-    [`${k}-fg`, `${k}-bg`, AA_TEXT],
-    [`${k}-fg`, "surface", AA_TEXT],
-    [`${k}-contrast`, k, AA_TEXT],
-  ]),
-  // Service-line state badges.
-  ...STATES.map((k): Pair => [`state-${k}-fg`, `state-${k}-bg`, AA_TEXT]),
-  // Non-text UI (1.4.11). Control borders and the off switch track use --border-strong at full
-  // strength, on every surface a control can sit on (popovers are surface-raised).
-  ...SURFACES.map((s): Pair => ["border-strong", s, AA_NON_TEXT]),
-  // White switch thumb on the off track.
-  ["surface", "border-strong", AA_NON_TEXT],
-  // Focus outline (focus-ring utilities) on every surface, on the active nav item
-  // (primary-soft), on hovered rows (accent) and around filled buttons.
-  ...SURFACES.map((s): Pair => ["ring", s, AA_NON_TEXT]),
-  ["ring", "primary-soft", AA_NON_TEXT],
-  ["ring", "accent", AA_NON_TEXT],
-  // Highlighted menu / select / command item: the start-edge bar in --ring must stand out
-  // from the popover and from the item's own tint; its text stays AA on the tint.
-  ["ring", "surface-raised", AA_NON_TEXT],
-  ["primary-strong", "primary-soft", AA_TEXT],
-  // Destructive menu item highlight.
-  ["danger", "danger-bg", AA_NON_TEXT],
-  ["danger-fg", "danger-bg", AA_TEXT],
-];
+const PAIRS = contrast.pairs as unknown as Pair[];
 
 describe("design tokens", () => {
   it.each(THEMES)("%s theme defines the brand values from ARCHITECTURE 5.1", (theme) => {
@@ -79,6 +41,25 @@ describe("design tokens", () => {
     const names = (t: ThemeName) => Object.keys(themes[t]).sort();
     expect(names("dark")).toEqual(names("light"));
     expect(names("warm")).toEqual(names("light"));
+  });
+
+  it.each(THEMES)("%s: tokens.css carries exactly the values in the DTCG source", (theme) => {
+    // tokens.css is generated; this fails if it was edited by hand or not regenerated.
+    const source = { light: lightTokens, dark: darkTokens, warm: warmTokens }[theme] as Record<string, unknown>;
+    const fromJson: Record<string, string> = {};
+    for (const group of Object.values(source)) {
+      if (typeof group !== "object" || group === null) continue;
+      for (const [name, token] of Object.entries(
+        group as Record<string, { $type?: string; $value?: { hex?: string } }>,
+      )) {
+        if (token.$type === "color" && token.$value?.hex && !("alpha" in token.$value))
+          fromJson[name] = token.$value.hex;
+      }
+    }
+    expect(Object.keys(fromJson).length).toBeGreaterThan(40);
+    for (const [name, hex] of Object.entries(fromJson)) {
+      expect(themes[theme][name]?.toLowerCase(), `${theme} --${name}`).toBe(hex.toLowerCase());
+    }
   });
 
   describe.each(THEMES)("%s theme meets WCAG AA", (theme) => {
