@@ -53,7 +53,7 @@ export function ProcedureCard({
       data-file-no={line.patient.file_no}
       aria-busy={saving || undefined}
       className={cn(
-        "card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5",
+        "card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)",
         waiting && "border-success-border bg-success-bg/40",
       )}
     >

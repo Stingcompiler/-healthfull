@@ -52,7 +52,7 @@ export function ReferralSection({
   const cancel = useCancelReferral(visitId);
 
   return (
-    <section aria-labelledby="referral-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
+    <section aria-labelledby="referral-heading" className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)">
       <div className="flex flex-wrap items-center gap-2">
         <h2 id="referral-heading" className="text-base font-semibold text-fg">
           {t("referral.title")}

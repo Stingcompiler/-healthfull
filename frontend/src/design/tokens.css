@@ -29,6 +29,8 @@
  *   chart series  --chart-1 .. --chart-5 (categorical, in order; never status colors)
  *   shape         --card-radius --control-radius
  *   type          --font-ui (one family: Plex Sans Arabic + Plex Sans)
+ *   density       --d-row --d-pad --d-gap --d-card-pad --d-font (default on :root;
+ *                 [data-density=compact|comfortable] override them)
  */
 
 :root {
@@ -36,6 +38,33 @@
   --control-radius: 8px;
 
   --font-ui: "IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+}
+
+/* density: default */
+:root {
+  --d-row: 44px;
+  --d-pad: 12px;
+  --d-gap: 16px;
+  --d-card-pad: 20px;
+  --d-font: 14px;
+}
+
+/* density: compact */
+[data-density="compact"] {
+  --d-row: 32px;
+  --d-pad: 8px;
+  --d-gap: 8px;
+  --d-card-pad: 12px;
+  --d-font: 13px;
+}
+
+/* density: comfortable */
+[data-density="comfortable"] {
+  --d-row: 52px;
+  --d-pad: 20px;
+  --d-gap: 24px;
+  --d-card-pad: 24px;
+  --d-font: 15px;
 }
 
 /* ---------------------------------------------------------------- light */

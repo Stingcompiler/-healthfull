@@ -40,7 +40,7 @@ export function PortalLayout() {
   const signedIn = Boolean(me.data);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg">
+    <div className="flex min-h-dvh flex-col bg-bg" data-density="comfortable">
       <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur print:hidden">
         <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between gap-2 px-4 md:max-w-2xl">
           <Link

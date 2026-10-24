@@ -68,7 +68,7 @@ export function KpiCard({
       data-slot="kpi-card"
       data-hero={hero || undefined}
       className={cn(
-        "@container flex min-w-0 flex-col gap-1.5 p-4 md:p-5",
+        "@container flex min-w-0 flex-col gap-1.5 p-4 md:p-(--d-card-pad)",
         bare ? "bg-surface" : "card-surface",
         className,
       )}

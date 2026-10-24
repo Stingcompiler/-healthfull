@@ -58,7 +58,7 @@ export function NursingNotesPanel({
   };
 
   return (
-    <section aria-labelledby="nursing-notes" className="card-surface flex flex-col gap-4 p-4 md:p-5">
+    <section aria-labelledby="nursing-notes" className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)">
       <h2 id="nursing-notes" className="flex items-center gap-2 text-base font-semibold text-fg">
         {t("notes.title")}
       </h2>

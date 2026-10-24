@@ -9,6 +9,7 @@ import { AppShell } from "@/components/AppShell";
 import { NotificationBell } from "@/features/notifications/NotificationBell";
 import { usePatientQuickSearch } from "@/features/patients/quick-search";
 import { useMe } from "@/lib/auth/hooks";
+import { densityAttribute, densityForPath } from "@/lib/density";
 
 /**
  * Keeps the authenticated area consistent after the initial route guard:
@@ -53,10 +54,14 @@ export function AppLayout() {
   const { data: me } = useMe();
   const nav = useMemo(() => visibleNav(me ?? null), [me]);
   const quickSearch = usePatientQuickSearch();
+  const density = densityAttribute(densityForPath(useLocation({ select: (l) => l.pathname })));
   return (
     <AuthGuard>
       <AppShell nav={nav} quickSearch={quickSearch} actions={<NotificationBell />}>
-        <Outlet />
+        {/* display: contents keeps the layout as it was; only the density tokens are scoped here. */}
+        <div data-density={density} className="contents">
+          <Outlet />
+        </div>
       </AppShell>
     </AuthGuard>
   );

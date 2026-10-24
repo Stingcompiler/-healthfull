@@ -111,7 +111,7 @@ export function VitalsPanel({ visitId, vitals, open }: { visitId: number; vitals
   };
 
   return (
-    <section aria-labelledby="nursing-vitals" className="card-surface flex flex-col gap-4 p-4 md:p-5">
+    <section aria-labelledby="nursing-vitals" className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)">
       <h2 id="nursing-vitals" className="flex items-center gap-2 text-base font-semibold text-fg">
         {t("vitals.title")}
       </h2>

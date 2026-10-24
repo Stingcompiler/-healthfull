@@ -59,7 +59,10 @@ export function PortalSection({
   testId?: string;
 }) {
   return (
-    <section className={cn("card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5", className)} data-testid={testId}>
+    <section
+      className={cn("card-surface flex min-w-0 flex-col gap-3 p-(--d-card-pad)", className)}
+      data-testid={testId}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-fg">{title}</h2>
         {action}

@@ -215,7 +215,10 @@ export function PatientProfilePage() {
         {canSeeBalance ? <BalanceCard patientId={id} /> : null}
         {active ? <PortalAccessCard patientId={id} /> : null}
         {hasUpcoming ? (
-          <section aria-labelledby="upcoming-heading" className="card-surface flex flex-col gap-3 p-4 md:p-5">
+          <section
+            aria-labelledby="upcoming-heading"
+            className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)"
+          >
             <h2 id="upcoming-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
               {t("profile.upcoming")}
             </h2>
@@ -249,7 +252,7 @@ export function PatientProfilePage() {
       {(merges.data ?? []).length > 0 ? (
         <section
           aria-labelledby="merges-heading"
-          className="card-surface flex flex-col gap-3 p-4 md:p-5"
+          className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)"
           data-testid="merge-history"
         >
           <h2 id="merges-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
@@ -321,7 +324,7 @@ function DetailsCard({
   return (
     <section
       aria-labelledby="details-heading"
-      className={cn("card-surface flex flex-col gap-3 p-4 md:p-5", wide && "lg:col-span-2")}
+      className={cn("card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)", wide && "lg:col-span-2")}
     >
       <h2 id="details-heading" className="text-base font-semibold text-fg">
         {t("profile.details")}

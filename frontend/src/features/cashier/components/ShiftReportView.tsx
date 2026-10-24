@@ -34,7 +34,7 @@ function Row({
 
 function Block({ title, children, testId }: { title: ReactNode; children: ReactNode; testId?: string }) {
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-2 p-4 md:p-5" data-testid={testId}>
+    <section className="card-surface flex min-w-0 flex-col gap-2 p-4 md:p-(--d-card-pad)" data-testid={testId}>
       <h3 className="text-base font-semibold">{title}</h3>
       {children}
     </section>

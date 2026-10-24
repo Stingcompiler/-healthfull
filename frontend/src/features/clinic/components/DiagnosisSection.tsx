@@ -65,7 +65,7 @@ export function DiagnosisSection({
   };
 
   return (
-    <section aria-labelledby="dx-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
+    <section aria-labelledby="dx-heading" className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)">
       <div className="flex items-center gap-2">
         <h2 id="dx-heading" className="text-base font-semibold text-fg">
           {t("diagnosis.title")}

@@ -192,7 +192,7 @@ function ContractForm({ payer, onDirtyChange }: { payer: PayerOut; onDirtyChange
   ];
   return (
     <Form {...form}>
-      <form onSubmit={(e) => void submit(e)} noValidate className="card-surface grid gap-4 p-4 md:p-5">
+      <form onSubmit={(e) => void submit(e)} noValidate className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)">
         {save.error ? (
           <AlertCard variant="danger" title={t("errors:title")} live>
             {translateError(save.error)}

@@ -60,7 +60,7 @@ export function ResultPage() {
         <AlertCard variant="danger" title={translateError(result.error)} live />
       ) : (
         <article
-          className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5 print:border-0 print:shadow-none"
+          className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-(--d-card-pad) print:border-0 print:shadow-none"
           data-testid="result-report"
         >
           <header className="flex flex-col gap-0.5 border-b border-border pb-3">

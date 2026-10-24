@@ -130,7 +130,10 @@ function AuthorizeForm({ data }: { data: PerformFirstVisit }) {
   });
 
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-5" data-testid="perform-first-form">
+    <section
+      className="card-surface flex min-w-0 flex-col gap-4 p-4 md:p-(--d-card-pad)"
+      data-testid="perform-first-form"
+    >
       <VisitPatientCard
         patient={data.patient}
         visitNumber={data.visit.number}
@@ -250,7 +253,10 @@ function AuthorizationList() {
   const items = list.data?.items ?? [];
 
   return (
-    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" aria-labelledby="auth-list-title">
+    <section
+      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)"
+      aria-labelledby="auth-list-title"
+    >
       <h2 id="auth-list-title" className="text-base font-semibold">
         {t("performFirst.activeTitle")}
       </h2>

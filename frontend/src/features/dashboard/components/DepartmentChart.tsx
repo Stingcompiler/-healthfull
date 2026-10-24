@@ -27,7 +27,10 @@ export function DepartmentChart({ departments }: { departments: ReportDashboard[
   const max = Math.max(...rows.map((r) => r.net), 0);
 
   return (
-    <figure className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5" data-testid="chart-departments">
+    <figure
+      className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)"
+      data-testid="chart-departments"
+    >
       <figcaption className="flex flex-col gap-1">
         <h2 className="text-base font-semibold text-fg">{t("charts.departmentsTitle")}</h2>
         <span className="text-xs text-muted">{t("charts.departmentsHint")}</span>

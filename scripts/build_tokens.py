@@ -2,7 +2,8 @@
 """Generates frontend/src/design/tokens.css from the DTCG token files (single source of truth).
 
 Sources (frontend/src/design/tokens/):
-    base.tokens.json    theme-independent tokens (radii)
+    base.tokens.json    theme-independent tokens (radii, font stack)
+    density.tokens.json density modes: default, compact, comfortable
     light|dark|warm.tokens.json   one file per theme; each top-level group becomes one blank-line
                         block in the CSS, and each leaf name IS the CSS custom property name
     contrast.json       foreground/background pairs checked by scripts/check_contrast.py
@@ -58,6 +59,8 @@ HEADER = """\
  *   chart series  --chart-1 .. --chart-5 (categorical, in order; never status colors)
  *   shape         --card-radius --control-radius
  *   type          --font-ui (one family: Plex Sans Arabic + Plex Sans)
+ *   density       --d-row --d-pad --d-gap --d-card-pad --d-font (default on :root;
+ *                 [data-density=compact|comfortable] override them)
  */
 """
 
@@ -191,11 +194,24 @@ def _declarations(doc: dict[str, Any], scheme: str | None) -> list[str]:
     return blocks
 
 
+def render_density() -> str:
+    """One block per density mode: `:root` for the default and a data-density scope for the rest."""
+    doc = load_json(TOKENS_DIR / "density.tokens.json")
+    blocks = []
+    for mode, group in groups(doc):
+        selector = group["$extensions"]["hospital-sys"]["selector"]
+        lines = [f"  --{name}: {css_value(token, kind)};" for name, token, kind in leaves(group)]
+        blocks.append(f"/* density: {mode} */\n{selector} {{\n" + "\n".join(lines) + "\n}\n")
+    return "\n".join(blocks)
+
+
 def render() -> str:
     parts = [HEADER]
 
     base = load_json(TOKENS_DIR / "base.tokens.json")
     parts.append(":root {\n" + "\n\n".join(_declarations(base, None)) + "\n}\n")
+
+    parts.append(render_density())
 
     names_by_theme: dict[str, set[str]] = {}
     for theme in THEMES:

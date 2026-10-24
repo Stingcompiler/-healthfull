@@ -111,7 +111,7 @@ export function VitalsSection({
   };
 
   return (
-    <section aria-labelledby="vitals-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
+    <section aria-labelledby="vitals-heading" className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)">
       <div className="flex items-center gap-2">
         <h2 id="vitals-heading" className="text-base font-semibold text-fg">
           {t("vitals.title")}

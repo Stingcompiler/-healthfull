@@ -59,7 +59,11 @@ export function PatientCard({ patient, actions, children, compact = false, class
   return (
     <article
       data-slot="patient-card"
-      className={cn("card-surface flex min-w-0 flex-col", compact ? "gap-3 p-3 md:p-4" : "gap-4 p-4 md:p-5", className)}
+      className={cn(
+        "card-surface flex min-w-0 flex-col",
+        compact ? "gap-3 p-3 md:p-4" : "gap-4 p-4 md:p-(--d-card-pad)",
+        className,
+      )}
     >
       {/* Wraps on phones: the actions take their own row instead of squeezing the name. */}
       <div className="flex min-w-0 flex-wrap items-start gap-3 sm:flex-nowrap">

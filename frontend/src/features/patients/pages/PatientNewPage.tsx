@@ -90,7 +90,7 @@ export function PatientNewPage() {
         description={t("new.description")}
       />
       <Form {...form}>
-        <form onSubmit={(e) => void submit(e)} noValidate className="card-surface grid gap-5 p-4 md:p-5">
+        <form onSubmit={(e) => void submit(e)} noValidate className="card-surface grid gap-5 p-4 md:p-(--d-card-pad)">
           <PatientFormFields form={form} />
           {candidates.length > 0 ? (
             <AlertCard

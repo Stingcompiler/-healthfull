@@ -75,7 +75,7 @@ function CountSheet({ count }: { count: StockCount }) {
 
   return (
     <div className="grid gap-4">
-      <section className="card-surface grid gap-3 p-4 md:p-5" data-testid="count-summary">
+      <section className="card-surface grid gap-3 p-4 md:p-(--d-card-pad)" data-testid="count-summary">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <DocStatusBadge status={count.status} kind="count" />

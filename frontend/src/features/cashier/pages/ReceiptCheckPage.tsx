@@ -48,7 +48,10 @@ function CheckResult({ check }: { check: ReceiptCheck }) {
           number: p.reversal_number ?? p.reversal_of_number ?? "",
         })}
       </AlertCard>
-      <section className="card-surface flex min-w-0 flex-col gap-2 p-4 md:p-5" aria-labelledby="receipt-check-title">
+      <section
+        className="card-surface flex min-w-0 flex-col gap-2 p-4 md:p-(--d-card-pad)"
+        aria-labelledby="receipt-check-title"
+      >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="receipt-check-title" className="text-base font-semibold">
             {t("receipt.number")} <bdi className="num">{p.number}</bdi>
@@ -116,7 +119,7 @@ export function ReceiptCheckPage() {
       <PageHeader title={t("receiptCheck.title")} description={t("receiptCheck.description")} />
       <CashierNav />
       <form
-        className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-5"
+        className="card-surface flex min-w-0 flex-col gap-3 p-4 md:p-(--d-card-pad)"
         onSubmit={(e) => {
           e.preventDefault();
           const next = draft.trim();

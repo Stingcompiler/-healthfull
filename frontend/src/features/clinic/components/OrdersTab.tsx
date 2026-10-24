@@ -124,7 +124,10 @@ export function OrdersTab({
   return (
     <div className="@container flex flex-col gap-4">
       {canOrder ? (
-        <section aria-labelledby="new-order-heading" className="card-surface flex flex-col gap-4 p-4 md:p-5">
+        <section
+          aria-labelledby="new-order-heading"
+          className="card-surface flex flex-col gap-4 p-4 md:p-(--d-card-pad)"
+        >
           <div className="flex items-center gap-2">
             <h2 id="new-order-heading" className="text-base font-semibold text-fg">
               {t("orders.newOrder")}

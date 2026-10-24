@@ -18,7 +18,7 @@ export function BalanceCard({ patientId }: { patientId: number }) {
   return (
     <section
       aria-labelledby="balance-heading"
-      className="card-surface flex flex-col gap-3 p-4 md:p-5"
+      className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)"
       data-testid="balance"
     >
       <h2 id="balance-heading" className="flex items-center gap-2 text-base font-semibold text-fg">

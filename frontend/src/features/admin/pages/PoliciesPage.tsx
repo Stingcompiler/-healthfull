@@ -135,7 +135,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
           </AlertCard>
         ) : null}
 
-        <section className="card-surface grid gap-4 p-4 md:p-5" aria-labelledby="pol-billing">
+        <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="pol-billing">
           <h2 id="pol-billing" className="font-semibold text-fg">
             {t("admin:policies.billing")}
           </h2>
@@ -191,7 +191,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
           />
         </section>
 
-        <section className="card-surface grid gap-4 p-4 md:p-5" aria-labelledby="pol-discounts">
+        <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="pol-discounts">
           <div>
             <h2 id="pol-discounts" className="font-semibold text-fg">
               {t("admin:policies.discountLimits")}
@@ -218,7 +218,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
           </div>
         </section>
 
-        <section className="card-surface grid gap-4 p-4 md:p-5" aria-labelledby="pol-perform">
+        <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="pol-perform">
           <div>
             <h2 id="pol-perform" className="font-semibold text-fg">
               {t("admin:policies.performFirst")}
@@ -252,7 +252,7 @@ function PolicyForm({ policy }: { policy: PolicyOut }) {
           />
         </section>
 
-        <section className="card-surface grid gap-4 p-4 md:p-5" aria-labelledby="pol-ops">
+        <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="pol-ops">
           <h2 id="pol-ops" className="font-semibold text-fg">
             {t("admin:policies.operations")}
           </h2>

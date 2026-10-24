@@ -121,7 +121,10 @@ function SaleForm({ onCreated }: { onCreated: (invoice: SaleInvoice) => void }) 
 
   return (
     <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <section className="card-surface grid content-start gap-3 p-4 md:p-5" aria-labelledby="sale-customer">
+      <section
+        className="card-surface grid content-start gap-3 p-4 md:p-(--d-card-pad)"
+        aria-labelledby="sale-customer"
+      >
         <h2 id="sale-customer" className="text-base font-semibold">
           {t("sale.customer")}
         </h2>
@@ -263,7 +266,7 @@ function SaleForm({ onCreated }: { onCreated: (invoice: SaleInvoice) => void }) 
         )}
       </section>
 
-      <section className="card-surface grid content-start gap-3 p-4 md:p-5" aria-labelledby="sale-items">
+      <section className="card-surface grid content-start gap-3 p-4 md:p-(--d-card-pad)" aria-labelledby="sale-items">
         <h2 id="sale-items" className="text-base font-semibold">
           {t("sale.items")}
         </h2>
@@ -445,7 +448,7 @@ function SaleDone({ invoice, onNew }: { invoice: SaleInvoice; onNew: () => void 
   const { t } = useTranslation(["pharmacy", "common"]);
   const names = useNames();
   return (
-    <section className="card-surface grid gap-4 p-4 md:p-5" data-testid="sale-done">
+    <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" data-testid="sale-done">
       <AlertCard variant="success" icon={<CheckCircle2 />} title={t("sale.doneTitle")} live>
         {t("sale.doneBody", { visit: invoice.visit_number, fileNo: invoice.patient.file_no })}
       </AlertCard>

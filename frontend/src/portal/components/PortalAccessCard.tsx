@@ -42,7 +42,7 @@ function PortalAccessBody({ patientId }: { patientId: number }) {
   return (
     <section
       aria-labelledby="portal-access-heading"
-      className="card-surface flex flex-col gap-3 p-4 md:p-5"
+      className="card-surface flex flex-col gap-3 p-4 md:p-(--d-card-pad)"
       data-testid="portal-access-card"
     >
       <h2 id="portal-access-heading" className="flex items-center gap-2 text-base font-semibold text-fg">
