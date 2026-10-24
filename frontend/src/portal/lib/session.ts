@@ -17,7 +17,7 @@ export function useSignOut(): (reason: "expired" | "signed-out") => Promise<void
       }
       queryClient.removeQueries({ queryKey: portalKeys.all });
       queryClient.setQueryData(portalKeys.me, null);
-      await navigate({ to: "/portal", search: { reason } });
+      await navigate({ to: "/portal/sign-in", search: { reason } });
     },
     [queryClient, navigate],
   );

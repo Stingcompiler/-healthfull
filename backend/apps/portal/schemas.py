@@ -98,6 +98,77 @@ class PortalCenterOut(Schema):
     phone: str
 
 
+class PortalHoursOut(Schema):
+    weekday: int = Field(..., description="0 = Monday ... 6 = Sunday")
+    closed: bool
+    opens: str | None = Field(..., description="HH:MM")
+    closes: str | None = Field(..., description="HH:MM")
+
+
+class PortalTodayOut(Schema):
+    weekday: int
+    state: Literal["open", "opens_later", "closed_now", "closed_today"]
+    opens: str | None
+    closes: str | None
+
+
+class PortalPublicDepartmentOut(Schema):
+    id: int
+    name_ar: str
+    name_en: str
+
+
+class PortalClinicDayOut(Schema):
+    weekday: int
+    starts: str = Field(..., description="HH:MM")
+    ends: str = Field(..., description="HH:MM")
+
+
+class PortalPublicDoctorOut(Schema):
+    id: int
+    name_ar: str
+    name_en: str
+    specialty_ar: str
+    specialty_en: str
+    department_id: int
+    department_ar: str
+    department_en: str
+    clinic_days: list[PortalClinicDayOut]
+
+
+class PortalAnnouncementOut(Schema):
+    id: int
+    title_ar: str
+    title_en: str
+    body_ar: str
+    body_en: str
+    starts_on: date | None
+    ends_on: date | None
+
+
+class PortalCenterPageOut(Schema):
+    """The public center page: identity and the sections the center chose to show. A hidden
+    or empty section comes back empty. Never prices, never staff other than the doctors."""
+
+    name_ar: str
+    name_en: str
+    logo_url: str | None = Field(..., description="Public logo, changes with the logo")
+    about_ar: str
+    about_en: str
+    hours: list[PortalHoursOut]
+    today: PortalTodayOut | None
+    departments: list[PortalPublicDepartmentOut]
+    doctors: list[PortalPublicDoctorOut]
+    announcements: list[PortalAnnouncementOut]
+    phone: str
+    phone_uri: str = Field(..., description="tel: link of the phone, or empty")
+    whatsapp: str = Field(..., description="International digits for https://wa.me/<digits>")
+    email: str
+    address: str
+    directions_ar: str
+    directions_en: str
+
+
 class PortalPatientHeadOut(Schema):
     file_no: str
     full_name_ar: str

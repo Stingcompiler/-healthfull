@@ -11,7 +11,9 @@ from django.http import HttpRequest
 from django.template.response import TemplateResponse
 
 from apps.core.models import (
+    Announcement,
     AuthEvent,
+    CenterPage,
     CenterProfile,
     Department,
     DoctorProfile,
@@ -133,7 +135,7 @@ class RoleAdmin(admin.ModelAdmin[Role]):
         return False
 
 
-class SingletonAdmin[M: CenterProfile | Policy](admin.ModelAdmin[M]):
+class SingletonAdmin[M: CenterProfile | CenterPage | Policy](admin.ModelAdmin[M]):
     def has_add_permission(self, request: HttpRequest) -> bool:
         return not self.model._default_manager.exists()
 
@@ -144,6 +146,23 @@ class SingletonAdmin[M: CenterProfile | Policy](admin.ModelAdmin[M]):
 @admin.register(CenterProfile)
 class CenterProfileAdmin(SingletonAdmin[CenterProfile]):
     list_display = ("name_ar", "name_en", "phone", "digits", "updated_at")
+
+
+@admin.register(CenterPage)
+class CenterPageAdmin(SingletonAdmin[CenterPage]):
+    list_display = ("show_hours", "show_doctors", "show_announcements", "updated_at")
+
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin[Announcement]):
+    list_display = ("title_ar", "title_en", "starts_on", "ends_on", "active", "sort_order")
+    list_filter = ("active",)
+    readonly_fields = ("created_by", "created_at", "updated_at")
+
+    def save_model(self, request: HttpRequest, obj: Announcement, form: Any, change: bool) -> None:
+        if not change:
+            obj.created_by = request.user  # type: ignore[assignment]
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Policy)

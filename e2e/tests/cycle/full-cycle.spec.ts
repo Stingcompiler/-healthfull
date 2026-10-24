@@ -839,7 +839,7 @@ test.describe("@cycle full cycle", () => {
 
     await test.step("14. the patient signs in to the portal with the receipt's code and reads the result", async () => {
       const page = await watch.phone();
-      await page.goto("/portal");
+      await page.goto("/portal/sign-in");
       await fillSignIn(page, patient.file_no, patient.phone, portalCode);
       await expect(page).toHaveURL(/\/portal\/home$/);
       await expect(page.getByText(patient.file_no)).toBeVisible();

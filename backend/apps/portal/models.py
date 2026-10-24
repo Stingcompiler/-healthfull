@@ -131,6 +131,7 @@ class PortalThrottleScope(models.TextChoices):
     IP = "ip", "Failed portal sign-ins per client address"
     FILE = "file", "Failed portal sign-ins per file number (known or not)"
     VERIFY_IP = "verify_ip", "Public receipt checks per client address"
+    PAGE_IP = "page_ip", "Public center page reads per client address"
 
 
 class PortalThrottle(models.Model):
@@ -140,6 +141,7 @@ class PortalThrottle(models.Model):
     * ``file``: the lockout state (``domain.lockout``) of a typed file number, whether a file
       has it or not, so a locked answer never tells which file numbers exist.
     * ``verify_ip``: public receipt checks per address in a fixed window: 429.
+    * ``page_ip``: public center page and logo reads per address in a fixed window: 429.
 
     Bookkeeping, not audit (that is ``PortalEvent``).
     """
@@ -175,6 +177,7 @@ class PortalEventKind(models.TextChoices):
     CODE_LOCKED = "code_locked", "Access code locked after repeated wrong codes"
     LOGOUT = "logout", "Signed out"
     VERIFY_THROTTLED = "verify_throttled", "Receipt check refused: too many from this address"
+    PAGE_THROTTLED = "page_throttled", "Center page refused: too many reads from this address"
 
 
 class PortalEvent(models.Model):

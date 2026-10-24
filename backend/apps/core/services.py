@@ -31,8 +31,10 @@ from django.utils import timezone, translation
 
 from apps.core import roles
 from apps.core.models import (
+    Announcement,
     AuthEvent,
     AuthEventKind,
+    CenterPage,
     CenterProfile,
     Department,
     DoctorProfile,
@@ -59,6 +61,7 @@ from apps.core.permissions import (
     role_permissions,
     roles_holding,
 )
+from domain import center_page as center_rules
 from domain.errors import DomainError
 from domain.lockout import (
     LockState,
@@ -1173,6 +1176,115 @@ def center_logo() -> tuple[bytes, str]:
     if kind is None:
         raise CenterProfile.DoesNotExist("Logo file is not an image")
     return data, kind[1]
+
+
+# --- Center page of the patient portal ----------------------------------------------------
+
+_CENTER_PAGE_TEXT = {"about_ar", "about_en", "email", "directions_ar", "directions_en"}
+_CENTER_PAGE_SWITCHES = {
+    "show_about",
+    "show_hours",
+    "show_departments",
+    "show_doctors",
+    "show_announcements",
+    "show_contact",
+    "show_address",
+}
+_CENTER_PAGE_FIELDS = (
+    _CENTER_PAGE_TEXT
+    | _CENTER_PAGE_SWITCHES
+    | {
+        "hours",
+        "whatsapp",
+        "hidden_department_ids",
+        "hidden_doctor_ids",
+    }
+)
+
+
+def center_page() -> CenterPage:
+    return CenterPage.load()
+
+
+def _known_ids(ids: Iterable[int], model: type[Department] | type[DoctorProfile]) -> list[int]:
+    wanted = sorted(set(ids))
+    found = set(model.objects.filter(pk__in=wanted).values_list("pk", flat=True))
+    missing = [i for i in wanted if i not in found]
+    if missing:
+        raise DomainError("CENTER_PAGE_UNKNOWN_ITEM", "No such department or doctor", ids=missing)
+    return wanted
+
+
+def update_center_page(actor: User, **fields: Any) -> CenterPage:
+    """Save the public center page's sections (texts, hours, contact, visibility).
+
+    Raises:
+        DomainError: ``CENTER_HOURS_INVALID``, ``CENTER_WHATSAPP_INVALID``,
+            ``CENTER_PAGE_UNKNOWN_ITEM`` (a hidden department or doctor that does not exist).
+        ValidationError: a malformed e-mail or a text over its length (HTTP 422).
+    """
+    _check_fields(fields, _CENTER_PAGE_FIELDS, "center page")
+    if "hours" in fields:
+        fields["hours"] = center_rules.hours_json(center_rules.parse_hours(fields["hours"]))
+    if "whatsapp" in fields:
+        fields["whatsapp"] = center_rules.whatsapp_number(fields["whatsapp"])
+    if "hidden_department_ids" in fields:
+        fields["hidden_department_ids"] = _known_ids(fields["hidden_department_ids"], Department)
+    if "hidden_doctor_ids" in fields:
+        fields["hidden_doctor_ids"] = _known_ids(fields["hidden_doctor_ids"], DoctorProfile)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="center page"):
+        CenterPage.load()
+        page = CenterPage.objects.select_for_update().get(pk=CenterPage.SINGLETON_PK)
+        for attr, value in fields.items():
+            setattr(page, attr, _clean(value))
+        page.full_clean()
+        page.save()
+    return page
+
+
+def list_announcements() -> QuerySet[Announcement]:
+    return Announcement.objects.select_related("created_by").all()
+
+
+_ANNOUNCEMENT_FIELDS = {
+    "title_ar",
+    "title_en",
+    "body_ar",
+    "body_en",
+    "starts_on",
+    "ends_on",
+    "active",
+    "sort_order",
+}
+
+
+def _check_announcement(row: Announcement) -> None:
+    if not row.title_ar and not row.title_en:
+        raise DomainError("ANNOUNCEMENT_TITLE_REQUIRED", "Give a title in Arabic or English")
+    center_rules.validate_announcement_dates(row.starts_on, row.ends_on)
+    row.full_clean()
+
+
+def create_announcement(actor: User, **fields: Any) -> Announcement:
+    """Raises ``ANNOUNCEMENT_TITLE_REQUIRED``, ``ANNOUNCEMENT_DATES_INVALID``."""
+    _check_fields(fields, _ANNOUNCEMENT_FIELDS, "announcement")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="create announcement"):
+        row = Announcement(created_by=actor, **{k: _clean(v) for k, v in fields.items()})
+        _check_announcement(row)
+        row.save()
+    return list_announcements().get(pk=row.pk)
+
+
+def update_announcement(actor: User, announcement_id: int, **fields: Any) -> Announcement:
+    """Raises ``ANNOUNCEMENT_TITLE_REQUIRED``, ``ANNOUNCEMENT_DATES_INVALID``."""
+    _check_fields(fields, _ANNOUNCEMENT_FIELDS, "announcement")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="edit announcement"):
+        row = Announcement.objects.select_for_update().get(pk=announcement_id)
+        for attr, value in fields.items():
+            setattr(row, attr, _clean(value))
+        _check_announcement(row)
+        row.save()
+    return list_announcements().get(pk=announcement_id)
 
 
 # --- Policy (FEATURES 13.4) ---------------------------------------------------------------

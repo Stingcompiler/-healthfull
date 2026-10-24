@@ -20,6 +20,7 @@ const CORE_ROUTES: readonly AppRoute[] = [
   // Public and auth screens (features/auth, portal, root not-found)
   { name: "login", path: "/login", auth: false, ready: loginSubmit },
   appRoute("change-password", "/change-password"),
+  // The public center page at the portal's door (sign-in is /portal/sign-in).
   { name: "portal", path: "/portal", auth: false, ready: pageHeading },
   { name: "not-found", path: "/this-page-does-not-exist", auth: false, ready: pageHeading },
 

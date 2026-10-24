@@ -24,9 +24,23 @@ from api.ping import add_ping
 from api.schemas import ERROR_RESPONSES, ErrorOut, Page
 from api.security import session_auth_pending_ok
 from apps.core import services
-from apps.core.models import CenterProfile, DoctorProfile, Policy, ReasonCode, Room, User
+from apps.core.models import (
+    Announcement,
+    CenterPage,
+    CenterProfile,
+    DoctorProfile,
+    Policy,
+    ReasonCode,
+    Room,
+    User,
+)
 from apps.core.ops_api import audit_router, notifications_router
 from apps.core.schemas import (
+    AnnouncementIn,
+    AnnouncementOut,
+    AnnouncementPatch,
+    CenterPageIn,
+    CenterPageOut,
     CenterProfileIn,
     CenterProfileOut,
     ChangePasswordIn,
@@ -389,6 +403,74 @@ def get_center_logo(request: HttpRequest) -> HttpResponse:
     response["Cache-Control"] = "private, max-age=86400"
     response["X-Content-Type-Options"] = "nosniff"
     return response
+
+
+# --- Center page of the patient portal ----------------------------------------------------
+
+
+@core_router.get(
+    "/center-page",
+    response={200: CenterPageOut, **_READ},
+    operation_id="core_get_center_page",
+    summary="The public center page's sections (hours, contact, texts, what shows)",
+)
+@require_perm("core.manage_settings")
+def get_center_page(request: HttpRequest) -> CenterPage:
+    return services.center_page()
+
+
+@core_router.put(
+    "/center-page",
+    response={200: CenterPageOut, **_WRITE},
+    operation_id="core_update_center_page",
+    summary="Save the public center page's sections",
+    description=(
+        "409 CENTER_HOURS_INVALID, CENTER_WHATSAPP_INVALID, CENTER_PAGE_UNKNOWN_ITEM; 422 for a "
+        "malformed e-mail."
+    ),
+)
+@require_perm("core.manage_settings")
+def update_center_page(request: HttpRequest, payload: CenterPageIn) -> CenterPage:
+    return services.update_center_page(_current_user(request), **payload.dict())
+
+
+@core_router.get(
+    "/announcements",
+    response={200: list[AnnouncementOut], **_READ},
+    operation_id="core_list_announcements",
+    summary="Announcements of the center page, shown or not",
+)
+@require_perm("core.manage_settings")
+def list_announcements(request: HttpRequest) -> list[Announcement]:
+    return list(services.list_announcements())
+
+
+@core_router.post(
+    "/announcements",
+    response={201: AnnouncementOut, **_WRITE},
+    operation_id="core_create_announcement",
+    summary="Add an announcement to the center page",
+    description="409 ANNOUNCEMENT_TITLE_REQUIRED, ANNOUNCEMENT_DATES_INVALID.",
+)
+@require_perm("core.manage_settings")
+def create_announcement(request: HttpRequest, payload: AnnouncementIn) -> Status[Announcement]:
+    return Status(201, services.create_announcement(_current_user(request), **payload.dict()))
+
+
+@core_router.patch(
+    "/announcements/{announcement_id}",
+    response={200: AnnouncementOut, **_WRITE},
+    operation_id="core_update_announcement",
+    summary="Edit, reorder, end or hide an announcement",
+    description="409 ANNOUNCEMENT_TITLE_REQUIRED, ANNOUNCEMENT_DATES_INVALID.",
+)
+@require_perm("core.manage_settings")
+def update_announcement(
+    request: HttpRequest, announcement_id: int, payload: AnnouncementPatch
+) -> Announcement:
+    return services.update_announcement(
+        _current_user(request), announcement_id, **payload.changes()
+    )
 
 
 # --- Policy -------------------------------------------------------------------------------

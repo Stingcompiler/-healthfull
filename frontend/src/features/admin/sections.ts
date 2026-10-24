@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Globe,
   Landmark,
   Building2,
   FileDown,
@@ -22,6 +23,7 @@ export type AdminSectionId =
   | "users"
   | "roles"
   | "settings"
+  | "centerPage"
   | "policies"
   | "departments"
   | "reasonCodes"
@@ -63,6 +65,13 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     icon: Hospital,
     permission: "core.manage_settings",
     navKey: "adminSettings",
+  },
+  {
+    id: "centerPage",
+    to: "/administration/center-page",
+    icon: Globe,
+    permission: "core.manage_settings",
+    navKey: "adminCenterPage",
   },
   {
     id: "policies",

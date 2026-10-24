@@ -201,6 +201,8 @@ OPEN_OPERATIONS = frozenset(
         "portal_login",
         "portal_logout",
         "portal_verify_receipt",
+        "portal_get_center_page",
+        "portal_get_center_logo",
     }
 )
 
@@ -249,6 +251,9 @@ def test_only_whitelisted_operations_are_public(schema: dict[str, Any]) -> None:
         "portal_login",
         "portal_logout",
         "portal_verify_receipt",
+        # The public center page and logo (ADR 0023).
+        "portal_get_center_page",
+        "portal_get_center_logo",
     }
 
 

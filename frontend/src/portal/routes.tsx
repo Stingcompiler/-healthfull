@@ -5,6 +5,7 @@ import type { RouterContext } from "@/app/router-context";
 import { portalMeQuery } from "./api";
 import { AppointmentsPage } from "./pages/AppointmentsPage";
 import { BookAppointmentPage } from "./pages/BookAppointmentPage";
+import { CenterPage } from "./pages/CenterPage";
 import { HomePage } from "./pages/HomePage";
 import { InvoicePage } from "./pages/InvoicePage";
 import { InvoicesPage } from "./pages/InvoicesPage";
@@ -29,7 +30,8 @@ export interface VerifySearch {
 
 /**
  * Patient portal (FEATURES 15.2): public, mobile-first, its own layout under /portal and its
- * own session (never the staff one). /verify/$token is the public receipt check behind the QR
+ * own session (never the staff one). /portal is the public center page; /portal/sign-in the
+ * patient sign-in. /verify/$token is the public receipt check behind the QR
  * printed on every receipt (FEATURES 15.1).
  */
 export function routes<TParent extends AnyRoute>(parent: TParent) {
@@ -39,9 +41,12 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     component: PortalLayout,
   });
 
+  // The portal's door: the public center page, open with or without a session.
+  const center = createRoute({ getParentRoute: () => portal, path: "/", component: CenterPage });
+
   const login = createRoute({
     getParentRoute: () => portal,
-    path: "/",
+    path: "/sign-in",
     validateSearch: (search: Record<string, unknown>): PortalLoginSearch =>
       search.reason === "expired" || search.reason === "signed-out" ? { reason: search.reason } : {},
     beforeLoad: async ({ context }) => {
@@ -58,7 +63,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     beforeLoad: async ({ context }) => {
       const me = await (context as RouterContext).queryClient.query({ ...portalMeQuery, staleTime: 30_000 });
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
-      if (!me) throw redirect({ to: "/portal", search: { reason: "expired" } });
+      if (!me) throw redirect({ to: "/portal/sign-in", search: { reason: "expired" } });
       return { portalMe: me };
     },
     component: PortalAuthedLayout,
@@ -104,6 +109,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
 
   return [
     portal.addChildren([
+      center,
       login,
       authed.addChildren([home, appointments, book, results, result, prescriptions, invoices, invoice, receipt]),
     ]),

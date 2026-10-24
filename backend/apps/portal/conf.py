@@ -58,6 +58,14 @@ def verify_rule() -> tuple[int, timedelta]:
     )
 
 
+def page_rule() -> tuple[int, timedelta]:
+    """Public center page and logo reads per client address in a window before 429."""
+    return (
+        _int("PORTAL_PAGE_IP_MAX", 300),
+        timedelta(seconds=_int("PORTAL_PAGE_IP_WINDOW_SECONDS", 10 * 60)),
+    )
+
+
 def booking_rules() -> BookingRules:
     return BookingRules(
         lead=timedelta(minutes=_int("PORTAL_BOOKING_LEAD_MINUTES", 60)),

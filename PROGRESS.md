@@ -371,6 +371,9 @@ Three sequential PRs. Frontend only: the seven invariants, money rules and the A
 - [x] PR 2 (#11): chart tokens, neutral `pending` vs amber `attention`, `.num`, lint-ui `rtl-icon`, one Plex font family (D-0008 to D-0012).
 - [x] PR 3 (#12): density modes (D-0013), cashier/pharmacy status bar and F2/F10 shortcuts (D-0015), connection banner with two states (D-0014), forms and charts review (D-0016).
 
+- [x] PR A: public center page in the patient portal (ADR 0023, D-0017): `CenterPage` and `Announcement` (core), public `/api/portal/center-page` and `/center-logo`, settings screen `/administration/center-page`, `/portal` is the center page and sign-in is `/portal/sign-in`; center logo and name on the staff sign-in and the portal header.
+- [ ] PR B: staff sign-in side panel and patient portal redesign per v2.2.
+
 Follow-ups from the adoption (none are blocking): per-user density switch; one required/optional marker style across every form (visible text, not star only); `useForm({ mode: "onTouched" })` everywhere (validate on blur, section 15.3); zod messages that say how to fix; amount formatting on blur; task-named save buttons; chart titles that carry the takeaway, `.num` on chart axes, "try another period" and retry on chart empty/error states, last-updated time; F4/F8/F9 meaning differs from the reference (D-0015); offline sync states are deliberately not built (D-0014, needs its own ADR).
 
 ## Next: finish Phase 8 on `phase/8`

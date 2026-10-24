@@ -10,7 +10,15 @@ from apps.portal.api import PATIENT_OPERATIONS
 from apps.portal.security import PortalAuth
 from conftest import router_operations
 
-PUBLIC = {"portal_get_session", "portal_login", "portal_logout", "portal_verify_receipt"}
+PUBLIC = {
+    "portal_get_session",
+    "portal_login",
+    "portal_logout",
+    "portal_verify_receipt",
+    # The public center page and its logo (no sign-in, public fields only).
+    "portal_get_center_page",
+    "portal_get_center_logo",
+}
 STAFF = {
     "portal_get_ping": None,
     "portal_issue_access_code": "portal.issue_access_code",
