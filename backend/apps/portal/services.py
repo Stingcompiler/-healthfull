@@ -73,6 +73,7 @@ __all__ = [
     "book_appointment",
     "bookable_doctor",
     "cancel_appointment",
+    "check_public_page_rate",
     "issue_access_code",
     "issue_access_code_for_patient",
     "issue_slip_for_patient",
@@ -673,7 +674,13 @@ def purge_stale(now: datetime | None = None) -> tuple[int, int]:
     ended = PortalSession.objects.filter(
         Q(last_seen_at__lte=idle_cut) | Q(created_at__lte=absolute_cut), ended_at__isnull=True
     ).update(ended_at=now, end_reason="expired")
-    longest = max(conf.ip_rule()[1], conf.verify_rule()[1], conf.file_lock()[1], timedelta(hours=1))
+    longest = max(
+        conf.ip_rule()[1],
+        conf.verify_rule()[1],
+        conf.page_rule()[1],
+        conf.file_lock()[1],
+        timedelta(hours=1),
+    )
     removed, _ = (
         PortalThrottle.objects.filter(updated_at__lt=now - longest)
         .filter(Q(locked_until__isnull=True) | Q(locked_until__lt=now))
@@ -708,6 +715,32 @@ def _verify_limited(request: HttpRequest, now: datetime) -> DomainError | None:
     row.count, row.window_started_at = state.count, state.window_started_at
     row.save(update_fields=["count", "window_started_at", "updated_at"])
     return None
+
+
+def check_public_page_rate(request: HttpRequest) -> None:
+    """Count one public read (center page or logo) against the client address.
+
+    Raises:
+        DomainError: ``RATE_LIMITED`` (429) after too many reads in the window.
+    """
+    ip = client_ip(request)
+    if not ip:
+        return
+    now = timezone.now()
+    limit, window = conf.page_rule()
+    with transaction.atomic():
+        row = _locked_throttle(PortalThrottleScope.PAGE_IP, ip)
+        if is_limited(_window(row), now, limit=limit, window=window):
+            retry = retry_after_seconds(_window(row), now, window=window)
+            _event(PortalEventKind.PAGE_THROTTLED, request, retry_after_seconds=retry)
+            limited = _rate_limited(retry, "Too many page reads from this address; try later")
+        else:
+            limited = None
+            state = hit(_window(row), now, window=window)
+            row.count, row.window_started_at = state.count, state.window_started_at
+            row.save(update_fields=["count", "window_started_at", "updated_at"])
+    if limited is not None:
+        raise limited
 
 
 def verify_receipt(request: HttpRequest, *, number: str, token: str) -> dict[str, Any]:

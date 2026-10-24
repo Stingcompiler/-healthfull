@@ -414,5 +414,10 @@
   "APPROVER_NOT_PERMITTED": "The approver you entered is not allowed to approve this action.",
   "ADMISSION_NIGHTS_INVOICED": "{{count}} bed night(s) of this admission are already invoiced. Ask the cashier to credit them first, then cancel the admission.",
   "LINE_NOT_VOIDABLE": "Only a line given under a perform-first authorization and not yet invoiced can be voided.",
-  "PORTAL_CODE_ALREADY_REVOKED": "This portal code is already revoked."
+  "PORTAL_CODE_ALREADY_REVOKED": "This portal code is already revoked.",
+  "CENTER_HOURS_INVALID": "Check the opening hours: give every day, open or closed, and a closing time after the opening time.",
+  "CENTER_WHATSAPP_INVALID": "Give a WhatsApp number like 0912 345 678 or +249 912 345 678.",
+  "CENTER_PAGE_UNKNOWN_ITEM": "A department or doctor in the hidden list no longer exists. Reload the page and try again.",
+  "ANNOUNCEMENT_TITLE_REQUIRED": "Give the announcement a title in Arabic or English.",
+  "ANNOUNCEMENT_DATES_INVALID": "The end date cannot be before the start date."
 }

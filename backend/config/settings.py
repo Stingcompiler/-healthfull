@@ -165,6 +165,10 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGIN_IP_MAX_FAILURES = env_int("LOGIN_IP_MAX_FAILURES", 30)
 LOGIN_IP_WINDOW_SECONDS = env_int("LOGIN_IP_WINDOW_SECONDS", 15 * 60)
 
+#: Public center page and logo reads per client address per window before 429 (portal).
+PORTAL_PAGE_IP_MAX = env_int("PORTAL_PAGE_IP_MAX", 300)
+PORTAL_PAGE_IP_WINDOW_SECONDS = env_int("PORTAL_PAGE_IP_WINDOW_SECONDS", 10 * 60)
+
 # Idle timeout: the cookie age is refreshed on every request, so a session dies after
 # SESSION_COOKIE_AGE of inactivity. Login narrows it to Policy.session_idle_minutes.
 SESSION_COOKIE_AGE = env_int("SESSION_IDLE_SECONDS", 8 * 60 * 60)

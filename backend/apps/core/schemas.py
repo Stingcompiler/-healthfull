@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Annotated, Any, ClassVar, Literal
 
 from django.utils import timezone
 from ninja import Field, Schema
+
+from domain.center_page import announcement_visible
 
 LanguageCode = Literal["ar", "en"]
 ThemeCode = Literal["light", "dark", "warm"]
@@ -242,6 +244,103 @@ class CenterProfileIn(Schema):
     registration_no: str = Field("", max_length=100)
     tax_no: str = Field("", max_length=100)
     digits: Literal["latin", "arabic"] = "latin"
+
+
+HHMM = Annotated[str, Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$", examples=["08:00"])]
+
+
+class CenterDayHours(Schema):
+    weekday: int = Field(..., ge=0, le=6, description="0 = Monday ... 6 = Sunday")
+    closed: bool
+    opens: HHMM | None = None
+    closes: HHMM | None = None
+
+
+class CenterPageOut(Schema):
+    about_ar: str
+    about_en: str
+    hours: list[CenterDayHours] = Field(..., description="Seven days, or empty: not published")
+    whatsapp: str = Field(..., description="International digits for a wa.me link")
+    email: str
+    directions_ar: str
+    directions_en: str
+    show_about: bool
+    show_hours: bool
+    show_departments: bool
+    show_doctors: bool
+    show_announcements: bool
+    show_contact: bool
+    show_address: bool
+    hidden_department_ids: list[int]
+    hidden_doctor_ids: list[int]
+    updated_at: datetime | None
+
+
+class CenterPageIn(Schema):
+    about_ar: str = Field("", max_length=600)
+    about_en: str = Field("", max_length=600)
+    hours: list[CenterDayHours] = Field(default_factory=list, max_length=7)
+    whatsapp: str = Field("", max_length=30)
+    email: str = Field("", max_length=120)
+    directions_ar: str = Field("", max_length=400)
+    directions_en: str = Field("", max_length=400)
+    show_about: bool = True
+    show_hours: bool = True
+    show_departments: bool = True
+    show_doctors: bool = True
+    show_announcements: bool = True
+    show_contact: bool = True
+    show_address: bool = True
+    hidden_department_ids: list[int] = Field(default_factory=list, max_length=500)
+    hidden_doctor_ids: list[int] = Field(default_factory=list, max_length=500)
+
+
+class AnnouncementOut(Schema):
+    id: int
+    title_ar: str
+    title_en: str
+    body_ar: str
+    body_en: str
+    starts_on: date | None
+    ends_on: date | None
+    active: bool
+    sort_order: int
+    shown_today: bool = Field(..., description="Public on the center page today")
+    created_at: datetime
+    updated_at: datetime
+
+    @staticmethod
+    def resolve_shown_today(obj: Any) -> bool:
+        return announcement_visible(
+            active=obj.active,
+            starts_on=obj.starts_on,
+            ends_on=obj.ends_on,
+            today=timezone.localdate(),
+        )
+
+
+class AnnouncementIn(Schema):
+    title_ar: str = Field("", max_length=120)
+    title_en: str = Field("", max_length=120)
+    body_ar: str = Field("", max_length=600)
+    body_en: str = Field("", max_length=600)
+    starts_on: date | None = None
+    ends_on: date | None = None
+    active: bool = True
+    sort_order: int = Field(0, ge=0, le=32767)
+
+
+class AnnouncementPatch(PatchSchema):
+    NULLABLE: ClassVar[frozenset[str]] = frozenset({"starts_on", "ends_on"})
+
+    title_ar: str | None = Field(None, max_length=120)
+    title_en: str | None = Field(None, max_length=120)
+    body_ar: str | None = Field(None, max_length=600)
+    body_en: str | None = Field(None, max_length=600)
+    starts_on: date | None = None
+    ends_on: date | None = None
+    active: bool | None = None
+    sort_order: int | None = Field(None, ge=0, le=32767)
 
 
 Percent = Annotated[int, Field(ge=0, le=100)]

@@ -85,6 +85,9 @@ export DB_NAME="$DB"
 export E2E_DB_NAME="$DB"
 # seed_e2e refuses to run without DEBUG; this database is throwaway by construction.
 export DJANGO_DEBUG=1
+# Every spec opens the sign-in pages from 127.0.0.1, which read the public center page; the
+# per-address cap (backend tests cover it) would otherwise refuse later specs.
+export PORTAL_PAGE_IP_MAX="${PORTAL_PAGE_IP_MAX:-1000000}"
 
 log "worktree $HASH  db=$DB_NAME  backend=127.0.0.1:$BACKEND_PORT  frontend=127.0.0.1:$FRONTEND_PORT"
 

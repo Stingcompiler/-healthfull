@@ -25,6 +25,7 @@ from api.permissions import require_perm
 from api.ping import add_ping
 from api.schemas import ErrorOut
 from api.security import session_auth
+from apps.core import services as core
 from apps.portal import conf, queries, services
 from apps.portal.schemas import (
     PortalAccessCodesOut,
@@ -32,6 +33,7 @@ from apps.portal.schemas import (
     PortalAppointmentsOut,
     PortalBalanceOut,
     PortalBookIn,
+    PortalCenterPageOut,
     PortalCodeSlipOut,
     PortalDoctorOut,
     PortalInvoiceDetailOut,
@@ -63,7 +65,9 @@ def _no_store(run: Callable[..., HttpResponseBase]) -> Callable[..., HttpRespons
     @functools.wraps(run)
     def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         response = run(request, *args, **kwargs)
-        response["Cache-Control"] = "no-store"
+        # Only the public logo sets its own (public, short) caching; everything else, no-store.
+        if "Cache-Control" not in response:
+            response["Cache-Control"] = "no-store"
         return response
 
     return wrapper
@@ -178,6 +182,48 @@ def verify_receipt(
     token: str = Query(..., min_length=1, max_length=64),
 ) -> Any:
     return services.verify_receipt(request, number=receipt, token=token)
+
+
+@portal_router.get(
+    "/center-page",
+    auth=None,
+    response={200: PortalCenterPageOut, 429: ErrorOut},
+    operation_id="portal_get_center_page",
+    summary="The public center page: identity, hours, departments, doctors, notices, contact",
+    description=(
+        "No sign-in. Only public fields: never prices and never staff other than the doctors "
+        "shown. Hidden or empty sections come back empty. 429 after too many reads from one "
+        "address."
+    ),
+)
+def get_center_page(request: HttpRequest) -> Any:
+    services.check_public_page_rate(request)
+    return queries.center_page()
+
+
+@portal_router.get(
+    "/center-logo",
+    auth=None,
+    response={200: None, 404: ErrorOut, 429: ErrorOut},
+    operation_id="portal_get_center_logo",
+    summary="The center logo for the public pages (portal and staff sign-in)",
+    openapi_extra={
+        "responses": {
+            200: {
+                "description": "The logo image",
+                "content": {"image/*": {"schema": {"type": "string", "format": "binary"}}},
+            }
+        }
+    },
+)
+def get_center_logo(request: HttpRequest) -> HttpResponse:
+    services.check_public_page_rate(request)
+    data, content_type = core.center_logo()
+    response = HttpResponse(data, content_type=content_type)
+    # The URL carries the logo's version, so a short public cache is safe.
+    response["Cache-Control"] = "public, max-age=3600"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 # --- staff: issue an access code -----------------------------------------------------------

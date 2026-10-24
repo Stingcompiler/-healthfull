@@ -17,6 +17,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import F, Q
 from django.utils import timezone
 
 from apps.core.roles import ROLE_CODES
@@ -211,6 +212,81 @@ class CenterProfile(SingletonModel):
 
     def __str__(self) -> str:
         return self.name_en or self.name_ar or "Center profile"
+
+
+@pghistory.track(pghistory.InsertEvent(), pghistory.UpdateEvent())
+class CenterPage(SingletonModel):
+    """The fixed sections of the public center page in the patient portal (not a CMS).
+
+    Identity (name, logo), address and the main phone come from :class:`CenterProfile`;
+    departments and doctors with their clinic days are read from ``Department``,
+    ``DoctorProfile`` and the doctors' weekly schedules. This row holds only what has no
+    other home: a short text, opening hours (``domain.center_page``), extra contact
+    channels, directions, which sections show, and which departments or doctors are kept
+    off the page. Never prices.
+    """
+
+    about_ar = models.TextField(max_length=600, blank=True)
+    about_en = models.TextField(max_length=600, blank=True)
+    #: Seven ``{weekday, closed, opens, closes}`` rows (``domain.center_page.parse_hours``),
+    #: or empty while the center has not published its hours.
+    hours = models.JSONField(default=list, blank=True)
+    #: International digits for a wa.me link (``domain.center_page.whatsapp_number``).
+    whatsapp = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(max_length=120, blank=True)
+    directions_ar = models.TextField(max_length=400, blank=True)
+    directions_en = models.TextField(max_length=400, blank=True)
+    show_about = models.BooleanField(default=True)
+    show_hours = models.BooleanField(default=True)
+    show_departments = models.BooleanField(default=True)
+    show_doctors = models.BooleanField(default=True)
+    show_announcements = models.BooleanField(default=True)
+    show_contact = models.BooleanField(default=True)
+    show_address = models.BooleanField(default=True)
+    hidden_department_ids = models.JSONField(default=list, blank=True)
+    hidden_doctor_ids = models.JSONField(default=list, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta(SingletonModel.Meta):
+        verbose_name = "center page"
+
+    def __str__(self) -> str:
+        return "Center page"
+
+
+@pghistory.track(*_full_history())
+class Announcement(models.Model):
+    """A notice on the public center page, shown while active and inside its dates."""
+
+    title_ar = models.CharField(max_length=120, blank=True)
+    title_en = models.CharField(max_length=120, blank=True)
+    body_ar = models.TextField(max_length=600, blank=True)
+    body_en = models.TextField(max_length=600, blank=True)
+    starts_on = models.DateField(null=True, blank=True)
+    ends_on = models.DateField(null=True, blank=True)
+    active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering: ClassVar[list[str]] = ["sort_order", "-starts_on", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(starts_on__isnull=True)
+                | Q(ends_on__isnull=True)
+                | Q(ends_on__gte=F("starts_on")),
+                name="core_announcement_dates_ordered",
+            ),
+            models.CheckConstraint(
+                condition=~Q(title_ar="") | ~Q(title_en=""),
+                name="core_announcement_has_title",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.title_en or self.title_ar
 
 
 class PrintDocument(models.TextChoices):

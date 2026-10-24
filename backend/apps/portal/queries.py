@@ -20,7 +20,8 @@ from django.utils import timezone
 
 from apps.billing import services as billing
 from apps.billing.models import DocumentStatus, Invoice
-from apps.core.models import CenterProfile, DoctorProfile, User
+from apps.core import services as core
+from apps.core.models import CenterProfile, Department, DoctorProfile, User
 from apps.lab.models import LabTest, ResultStatus, ResultValue, ResultVersion
 from apps.orders.models import FulfilmentStatus, ServiceLine
 from apps.patients.models import Patient
@@ -30,6 +31,7 @@ from apps.portal import conf
 from apps.portal.services import PortalPrincipal, bookable_doctor
 from apps.visits import services as visits
 from apps.visits.models import Appointment, AppointmentStatus, DoctorSchedule
+from domain import center_page as dcenter
 from domain import portal as dportal
 from domain.money import ZERO, money
 from domain.payments import Verification
@@ -520,4 +522,133 @@ def balance(principal: PortalPrincipal) -> dict[str, Any]:
         "credit": _m(b.spendable),
         "pending": _m(b.pending),
         "open_invoices": len(b.invoices),
+    }
+
+
+# --- public center page --------------------------------------------------------------------
+
+
+def _hhmm(value: Any) -> str:
+    return f"{value:%H:%M}"
+
+
+def public_logo_url(profile: CenterProfile) -> str | None:
+    if not profile.logo.name:
+        return None
+    version = profile.updated_at.strftime("%Y%m%d%H%M%S%f") if profile.updated_at else "0"
+    return f"/api/portal/center-logo?v={version}"
+
+
+def center_page() -> dict[str, Any]:
+    """The public center page (no sign-in): identity always, then only the sections the
+    center shows. Departments, doctors and clinic days are read from the same rows reception
+    and booking use; a hidden department hides its doctors too. Never prices or other staff.
+    """
+    profile = core.center_profile()
+    page = core.center_page()
+    today = timezone.localdate()
+    hours = dcenter.parse_hours(page.hours) if page.show_hours else []
+    status = dcenter.today_status(hours, timezone.localtime().replace(tzinfo=None))
+
+    hidden_departments = set(page.hidden_department_ids)
+    departments = [
+        d
+        for d in Department.objects.filter(active=True).order_by("sort_order", "code")
+        if d.pk not in hidden_departments
+    ]
+    shown_departments = {d.pk for d in departments}
+
+    doctors: list[dict[str, Any]] = []
+    if page.show_doctors:
+        current = (
+            DoctorSchedule.objects.filter(active=True)
+            .exclude(valid_from__gt=today)
+            .exclude(valid_to__lt=today)
+            .order_by("weekday", "start_time")
+        )
+        rows = (
+            DoctorProfile.objects.filter(
+                active=True,
+                user__is_active=True,
+                department_id__in=shown_departments,
+                schedules__in=current,
+            )
+            .exclude(pk__in=page.hidden_doctor_ids)
+            .select_related("user", "department")
+            .prefetch_related(Prefetch("schedules", queryset=current, to_attr="current"))
+            .distinct()
+            .order_by("department__sort_order", "department__code", "user__username")
+        )
+        for doctor in rows:
+            doctors.append(
+                {
+                    "id": doctor.pk,
+                    "name_ar": doctor.user.display_name_ar,
+                    "name_en": doctor.user.display_name_en,
+                    "specialty_ar": doctor.specialty_ar,
+                    "specialty_en": doctor.specialty_en,
+                    "department_id": doctor.department_id,
+                    "department_ar": doctor.department.name_ar,
+                    "department_en": doctor.department.name_en,
+                    "clinic_days": [
+                        {
+                            "weekday": s.weekday,
+                            "starts": _hhmm(s.start_time),
+                            "ends": _hhmm(s.end_time),
+                        }
+                        for s in doctor.current
+                    ],
+                }
+            )
+
+    announcements = []
+    if page.show_announcements:
+        announcements = [
+            {
+                "id": a.pk,
+                "title_ar": a.title_ar,
+                "title_en": a.title_en,
+                "body_ar": a.body_ar,
+                "body_en": a.body_en,
+                "starts_on": a.starts_on,
+                "ends_on": a.ends_on,
+            }
+            for a in core.list_announcements()
+            if dcenter.announcement_visible(
+                active=a.active, starts_on=a.starts_on, ends_on=a.ends_on, today=today
+            )
+        ]
+
+    contact = page.show_contact
+    return {
+        "name_ar": profile.name_ar,
+        "name_en": profile.name_en,
+        "logo_url": public_logo_url(profile),
+        "about_ar": page.about_ar if page.show_about else "",
+        "about_en": page.about_en if page.show_about else "",
+        "hours": dcenter.hours_json(hours),
+        "today": (
+            {
+                "weekday": status.weekday,
+                "state": status.state,
+                "opens": _hhmm(status.opens) if status.opens else None,
+                "closes": _hhmm(status.closes) if status.closes else None,
+            }
+            if status is not None
+            else None
+        ),
+        "departments": (
+            [{"id": d.pk, "name_ar": d.name_ar, "name_en": d.name_en} for d in departments]
+            if page.show_departments
+            else []
+        ),
+        "doctors": doctors,
+        "announcements": announcements,
+        "phone": profile.phone if contact else "",
+        "phone_uri": dcenter.tel_uri(profile.phone) if contact else "",
+        "whatsapp": page.whatsapp if contact else "",
+        "email": page.email if contact else "",
+        "address": profile.address if page.show_address else "",
+        "directions_ar": page.directions_ar if page.show_address else "",
+        "directions_en": page.directions_en if page.show_address else "",
     }

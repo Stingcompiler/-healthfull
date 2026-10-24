@@ -1787,6 +1787,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/announcements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Announcements of the center page, shown or not */
+        get: operations["core_list_announcements"];
+        put?: never;
+        /**
+         * Add an announcement to the center page
+         * @description 409 ANNOUNCEMENT_TITLE_REQUIRED, ANNOUNCEMENT_DATES_INVALID.
+         */
+        post: operations["core_create_announcement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/announcements/{announcement_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit, reorder, end or hide an announcement
+         * @description 409 ANNOUNCEMENT_TITLE_REQUIRED, ANNOUNCEMENT_DATES_INVALID.
+         */
+        patch: operations["core_update_announcement"];
+        trace?: never;
+    };
     "/api/core/audit/events": {
         parameters: {
             query?: never;
@@ -1835,6 +1876,27 @@ export interface paths {
         get: operations["core_get_center_profile"];
         /** Save the center profile printed on documents */
         put: operations["core_update_center_profile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center-page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The public center page's sections (hours, contact, texts, what shows) */
+        get: operations["core_get_center_page"];
+        /**
+         * Save the public center page's sections
+         * @description 409 CENTER_HOURS_INVALID, CENTER_WHATSAPP_INVALID, CENTER_PAGE_UNKNOWN_ITEM; 422 for a malformed e-mail.
+         */
+        put: operations["core_update_center_page"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4823,6 +4885,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/center-logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The center logo for the public pages (portal and staff sign-in) */
+        get: operations["portal_get_center_logo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/center-page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The public center page: identity, hours, departments, doctors, notices, contact
+         * @description No sign-in. Only public fields: never prices and never staff other than the doctors shown. Hidden or empty sections come back empty. 429 after too many reads from one address.
+         */
+        get: operations["portal_get_center_page"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/doctors": {
         parameters: {
             query?: never;
@@ -6370,6 +6469,98 @@ export interface components {
             /** Kind */
             kind: string;
         };
+        /** AnnouncementIn */
+        AnnouncementIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Body Ar
+             * @default
+             */
+            body_ar: string;
+            /**
+             * Body En
+             * @default
+             */
+            body_en: string;
+            /** Ends On */
+            ends_on?: string | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /** Starts On */
+            starts_on?: string | null;
+            /**
+             * Title Ar
+             * @default
+             */
+            title_ar: string;
+            /**
+             * Title En
+             * @default
+             */
+            title_en: string;
+        };
+        /** AnnouncementOut */
+        AnnouncementOut: {
+            /** Active */
+            active: boolean;
+            /** Body Ar */
+            body_ar: string;
+            /** Body En */
+            body_en: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Ends On */
+            ends_on: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Shown Today
+             * @description Public on the center page today
+             */
+            shown_today: boolean;
+            /** Sort Order */
+            sort_order: number;
+            /** Starts On */
+            starts_on: string | null;
+            /** Title Ar */
+            title_ar: string;
+            /** Title En */
+            title_en: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** AnnouncementPatch */
+        AnnouncementPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Body Ar */
+            body_ar?: string | null;
+            /** Body En */
+            body_en?: string | null;
+            /** Ends On */
+            ends_on?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Starts On */
+            starts_on?: string | null;
+            /** Title Ar */
+            title_ar?: string | null;
+            /** Title En */
+            title_en?: string | null;
+        };
         /**
          * AppointmentCancelIn
          * @description Cancel with an ``appointment_cancel`` reason code (invariant 4) and the caller's words.
@@ -7076,6 +7267,20 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /** CenterDayHours */
+        CenterDayHours: {
+            /** Closed */
+            closed: boolean;
+            /** Closes */
+            closes?: string | null;
+            /** Opens */
+            opens?: string | null;
+            /**
+             * Weekday
+             * @description 0 = Monday ... 6 = Sunday
+             */
+            weekday: number;
+        };
         /** CenterOut */
         CenterOut: {
             /** Name Ar */
@@ -7084,6 +7289,123 @@ export interface components {
             name_en: string;
             /** Phone */
             phone: string;
+        };
+        /** CenterPageIn */
+        CenterPageIn: {
+            /**
+             * About Ar
+             * @default
+             */
+            about_ar: string;
+            /**
+             * About En
+             * @default
+             */
+            about_en: string;
+            /**
+             * Directions Ar
+             * @default
+             */
+            directions_ar: string;
+            /**
+             * Directions En
+             * @default
+             */
+            directions_en: string;
+            /**
+             * Email
+             * @default
+             */
+            email: string;
+            /** Hidden Department Ids */
+            hidden_department_ids?: number[];
+            /** Hidden Doctor Ids */
+            hidden_doctor_ids?: number[];
+            /** Hours */
+            hours?: components["schemas"]["CenterDayHours"][];
+            /**
+             * Show About
+             * @default true
+             */
+            show_about: boolean;
+            /**
+             * Show Address
+             * @default true
+             */
+            show_address: boolean;
+            /**
+             * Show Announcements
+             * @default true
+             */
+            show_announcements: boolean;
+            /**
+             * Show Contact
+             * @default true
+             */
+            show_contact: boolean;
+            /**
+             * Show Departments
+             * @default true
+             */
+            show_departments: boolean;
+            /**
+             * Show Doctors
+             * @default true
+             */
+            show_doctors: boolean;
+            /**
+             * Show Hours
+             * @default true
+             */
+            show_hours: boolean;
+            /**
+             * Whatsapp
+             * @default
+             */
+            whatsapp: string;
+        };
+        /** CenterPageOut */
+        CenterPageOut: {
+            /** About Ar */
+            about_ar: string;
+            /** About En */
+            about_en: string;
+            /** Directions Ar */
+            directions_ar: string;
+            /** Directions En */
+            directions_en: string;
+            /** Email */
+            email: string;
+            /** Hidden Department Ids */
+            hidden_department_ids: number[];
+            /** Hidden Doctor Ids */
+            hidden_doctor_ids: number[];
+            /**
+             * Hours
+             * @description Seven days, or empty: not published
+             */
+            hours: components["schemas"]["CenterDayHours"][];
+            /** Show About */
+            show_about: boolean;
+            /** Show Address */
+            show_address: boolean;
+            /** Show Announcements */
+            show_announcements: boolean;
+            /** Show Contact */
+            show_contact: boolean;
+            /** Show Departments */
+            show_departments: boolean;
+            /** Show Doctors */
+            show_doctors: boolean;
+            /** Show Hours */
+            show_hours: boolean;
+            /** Updated At */
+            updated_at: string | null;
+            /**
+             * Whatsapp
+             * @description International digits for a wa.me link
+             */
+            whatsapp: string;
         };
         /** CenterProfileIn */
         CenterProfileIn: {
@@ -13417,6 +13739,23 @@ export interface components {
              */
             patient_id: number;
         };
+        /** PortalAnnouncementOut */
+        PortalAnnouncementOut: {
+            /** Body Ar */
+            body_ar: string;
+            /** Body En */
+            body_en: string;
+            /** Ends On */
+            ends_on: string | null;
+            /** Id */
+            id: number;
+            /** Starts On */
+            starts_on: string | null;
+            /** Title Ar */
+            title_ar: string;
+            /** Title En */
+            title_en: string;
+        };
         /** PortalAppointmentOut */
         PortalAppointmentOut: {
             /** Can Cancel */
@@ -13503,6 +13842,70 @@ export interface components {
             phone: string;
         };
         /**
+         * PortalCenterPageOut
+         * @description The public center page: identity and the sections the center chose to show. A hidden
+         *     or empty section comes back empty. Never prices, never staff other than the doctors.
+         */
+        PortalCenterPageOut: {
+            /** About Ar */
+            about_ar: string;
+            /** About En */
+            about_en: string;
+            /** Address */
+            address: string;
+            /** Announcements */
+            announcements: components["schemas"]["PortalAnnouncementOut"][];
+            /** Departments */
+            departments: components["schemas"]["PortalPublicDepartmentOut"][];
+            /** Directions Ar */
+            directions_ar: string;
+            /** Directions En */
+            directions_en: string;
+            /** Doctors */
+            doctors: components["schemas"]["PortalPublicDoctorOut"][];
+            /** Email */
+            email: string;
+            /** Hours */
+            hours: components["schemas"]["PortalHoursOut"][];
+            /**
+             * Logo Url
+             * @description Public logo, changes with the logo
+             */
+            logo_url: string | null;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+            /**
+             * Phone Uri
+             * @description tel: link of the phone, or empty
+             */
+            phone_uri: string;
+            today: components["schemas"]["PortalTodayOut"] | null;
+            /**
+             * Whatsapp
+             * @description International digits for https://wa.me/<digits>
+             */
+            whatsapp: string;
+        };
+        /** PortalClinicDayOut */
+        PortalClinicDayOut: {
+            /**
+             * Ends
+             * @description HH:MM
+             */
+            ends: string;
+            /**
+             * Starts
+             * @description HH:MM
+             */
+            starts: string;
+            /** Weekday */
+            weekday: number;
+        };
+        /**
          * PortalCodeSlipOut
          * @description A code issued at reception for the printed slip (shown once).
          */
@@ -13540,6 +13943,26 @@ export interface components {
             specialty_ar: string;
             /** Specialty En */
             specialty_en: string;
+        };
+        /** PortalHoursOut */
+        PortalHoursOut: {
+            /** Closed */
+            closed: boolean;
+            /**
+             * Closes
+             * @description HH:MM
+             */
+            closes: string | null;
+            /**
+             * Opens
+             * @description HH:MM
+             */
+            opens: string | null;
+            /**
+             * Weekday
+             * @description 0 = Monday ... 6 = Sunday
+             */
+            weekday: number;
         };
         /** PortalInvoiceDetailOut */
         PortalInvoiceDetailOut: {
@@ -13768,6 +14191,36 @@ export interface components {
             /** Visits */
             visits: components["schemas"]["PortalPrescriptionVisitOut"][];
         };
+        /** PortalPublicDepartmentOut */
+        PortalPublicDepartmentOut: {
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** PortalPublicDoctorOut */
+        PortalPublicDoctorOut: {
+            /** Clinic Days */
+            clinic_days: components["schemas"]["PortalClinicDayOut"][];
+            /** Department Ar */
+            department_ar: string;
+            /** Department En */
+            department_en: string;
+            /** Department Id */
+            department_id: number;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Specialty Ar */
+            specialty_ar: string;
+            /** Specialty En */
+            specialty_en: string;
+        };
         /** PortalReceiptDetailOut */
         PortalReceiptDetailOut: {
             /**
@@ -13965,6 +14418,20 @@ export interface components {
             /** Latest Results */
             latest_results: components["schemas"]["PortalResultSummaryOut"][];
             next_appointment: components["schemas"]["PortalAppointmentOut"] | null;
+        };
+        /** PortalTodayOut */
+        PortalTodayOut: {
+            /** Closes */
+            closes: string | null;
+            /** Opens */
+            opens: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "open" | "opens_later" | "closed_now" | "closed_today";
+            /** Weekday */
+            weekday: number;
         };
         /**
          * PortalVerifyOut
@@ -24367,6 +24834,202 @@ export interface operations {
             };
         };
     };
+    core_list_announcements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnouncementOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_create_announcement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnouncementIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnouncementOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_announcement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                announcement_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnouncementPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnouncementOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     core_list_audit_events: {
         parameters: {
             query?: {
@@ -24575,6 +25238,131 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CenterProfileOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_get_center_page: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterPageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_center_page: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterPageIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterPageOut"];
                 };
             };
             /** @description Unauthorized */
@@ -37385,6 +38173,73 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_center_logo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The logo image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": string;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_center_page: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalCenterPageOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
