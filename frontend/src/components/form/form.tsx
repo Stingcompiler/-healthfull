@@ -75,9 +75,10 @@ function FormItem({ className, ...props }: React.ComponentProps<"div">) {
 function FormLabel({
   className,
   required,
+  optional,
   children,
   ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root> & { required?: boolean }) {
+}: React.ComponentProps<typeof LabelPrimitive.Root> & { required?: boolean; optional?: boolean }) {
   const { error, formItemId } = useFormField();
   const { t } = useTranslation();
   return (
@@ -95,6 +96,7 @@ function FormLabel({
         </span>
       ) : null}
       {required ? <span className="sr-only">({t("required")})</span> : null}
+      {optional && !required ? <span className="ms-1.5 font-normal text-muted">({t("optional")})</span> : null}
     </Label>
   );
 }

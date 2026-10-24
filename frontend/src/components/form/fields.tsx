@@ -23,6 +23,8 @@ interface BaseFieldProps<T extends FieldValues> {
   label: ReactNode;
   description?: ReactNode;
   required?: boolean;
+  /** Show a visible "(optional)" after the label (section 15.2: use it where most fields are required). */
+  optional?: boolean;
   disabled?: boolean;
   className?: string;
 }
@@ -44,6 +46,7 @@ export function TextField<T extends FieldValues>({
   label,
   description,
   required,
+  optional,
   disabled,
   className,
   type = "text",
@@ -55,7 +58,9 @@ export function TextField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel required={required}>{label}</FormLabel>
+          <FormLabel required={required} optional={optional}>
+            {label}
+          </FormLabel>
           <FormControl>
             <Input type={type} disabled={disabled} {...inputProps} {...field} value={field.value ?? ""} />
           </FormControl>
@@ -78,6 +83,7 @@ export function PasswordField<T extends FieldValues>({
   label,
   description,
   required,
+  optional,
   disabled,
   className,
   autoComplete = "current-password",
@@ -91,7 +97,9 @@ export function PasswordField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel required={required}>{label}</FormLabel>
+          <FormLabel required={required} optional={optional}>
+            {label}
+          </FormLabel>
           {/* Passwords are always LTR; the wrapper shares that direction so the
               toggle sits at the input's inline end in Arabic pages too. */}
           <div className="relative" dir="ltr">
@@ -147,6 +155,7 @@ export function SelectField<T extends FieldValues>({
   label,
   description,
   required,
+  optional,
   disabled,
   className,
   options,
@@ -158,7 +167,9 @@ export function SelectField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel required={required}>{label}</FormLabel>
+          <FormLabel required={required} optional={optional}>
+            {label}
+          </FormLabel>
           <Select value={field.value ?? ""} onValueChange={field.onChange} disabled={disabled} name={field.name}>
             <FormControl>
               <SelectTrigger ref={field.ref} onBlur={field.onBlur}>
@@ -193,6 +204,7 @@ export function TextareaField<T extends FieldValues>({
   label,
   description,
   required,
+  optional,
   disabled,
   className,
   ...textareaProps
@@ -203,7 +215,9 @@ export function TextareaField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel required={required}>{label}</FormLabel>
+          <FormLabel required={required} optional={optional}>
+            {label}
+          </FormLabel>
           <FormControl>
             <Textarea disabled={disabled} {...textareaProps} {...field} value={field.value ?? ""} />
           </FormControl>
@@ -221,6 +235,7 @@ export function CheckboxField<T extends FieldValues>({
   label,
   description,
   required,
+  optional,
   disabled,
   className,
 }: BaseFieldProps<T>) {
@@ -243,7 +258,7 @@ export function CheckboxField<T extends FieldValues>({
             />
           </FormControl>
           <div className="grid gap-1.5">
-            <FormLabel required={required} className="leading-snug font-normal">
+            <FormLabel required={required} optional={optional} className="leading-snug font-normal">
               {label}
             </FormLabel>
             {description ? <FormDescription>{description}</FormDescription> : null}
@@ -304,6 +319,7 @@ export function RadioGroupField<T extends FieldValues>({
   label,
   description,
   required,
+  optional,
   disabled,
   className,
   options,
@@ -316,7 +332,9 @@ export function RadioGroupField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel required={required}>{label}</FormLabel>
+          <FormLabel required={required} optional={optional}>
+            {label}
+          </FormLabel>
           <FormControl>
             <RadioGroup
               value={field.value ?? ""}
