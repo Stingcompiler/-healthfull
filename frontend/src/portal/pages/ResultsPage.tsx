@@ -10,7 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
 
 import { useResults } from "../api";
-import { PortalPage, Pill } from "../components/PortalPage";
+import { PortalPage } from "../components/PortalPage";
+import { ResultStatus } from "../components/ResultStatus";
 import { usePick } from "../lib/ui";
 
 /** Approved lab results only, newest first (FEATURES 9.4, 15.2). */
@@ -49,9 +50,8 @@ export function ResultsPage() {
                     </span>
                   ) : null}
                 </span>
-                <span className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                  {r.amended ? <Pill tone="info">{t("results.amended")}</Pill> : null}
-                  {r.abnormal ? <Pill tone="warning">{t("results.abnormal")}</Pill> : null}
+                <span className="flex shrink-0 items-center gap-1">
+                  <ResultStatus abnormal={r.abnormal} amended={r.amended} />
                   <ChevronNext className="size-4 text-muted" aria-hidden="true" />
                 </span>
               </Link>

@@ -24,13 +24,14 @@
     "submit": "Sign in",
     "expired": "Your session ended. Please sign in again.",
     "signedOut": "You have signed out.",
-    "help": "No code? Ask reception, the cashier or the lab supervisor to print one for you."
-  },
-  "features": {
-    "title": "What you will find here",
-    "results": "Approved lab results",
-    "appointments": "Your appointments and new bookings",
-    "receipts": "Invoices and receipts, with verification"
+    "help": "No code? Ask reception, the cashier or the lab supervisor to print one for you.",
+    "centerLink": "Center page",
+    "guide": {
+      "title": "Where to find these",
+      "file": "File number: in the box “Patient portal access” at the bottom of your receipt or slip. It starts with PT.",
+      "phone": "Phone number: the number you gave at reception.",
+      "code": "Access code: the 8 digits under “Access code” in the same box. It works for 30 days."
+    }
   },
   "home": {
     "title": "Home",
@@ -46,7 +47,14 @@
     "outstanding": "To pay",
     "credit": "Credit",
     "pending": "Awaiting bank confirmation",
-    "allPaid": "Nothing to pay. Thank you."
+    "allPaid": "Nothing to pay. Thank you.",
+    "actionTitle": "Needs your attention",
+    "toPay": "To pay:",
+    "howToPay": "Pay at the center's cashier, in cash or by bank transfer quoting your file number.",
+    "seeBills": "See bills",
+    "abnormalHint": "Outside the normal range. Discuss it with your doctor.",
+    "openResult": "Open",
+    "nothingToDo": "Nothing needs your attention now."
   },
   "appointments": {
     "title": "Appointments",
@@ -119,7 +127,8 @@
       "critical_high": "Very high",
       "abnormal": "Abnormal"
     },
-    "disclaimer": "Discuss your results with your doctor."
+    "disclaimer": "Discuss your results with your doctor.",
+    "withinRange": "Within range"
   },
   "prescriptions": {
     "title": "Medicines and instructions",

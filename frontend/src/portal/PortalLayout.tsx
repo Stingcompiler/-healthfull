@@ -7,6 +7,7 @@ import { CenterIdentity } from "@/components/CenterIdentity";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { usePortalMe } from "./api";
 import { useSignOut } from "./lib/session";
@@ -88,9 +89,15 @@ export function PortalLayout() {
         <Outlet />
       </main>
       <footer
-        className={`mx-auto w-full max-w-md px-4 safe-bottom text-center text-xs text-muted md:max-w-2xl print:hidden ${
-          signedIn ? "pb-24 md:pb-6" : "pb-6"
-        }`}
+        // The fixed phone tab bar (signed in) sits over the page's end: leave its height plus the
+        // device's safe area free, so the last card is never under it. (`safe-bottom` alone set
+        // padding-bottom to the inset and cancelled the tab-bar room.)
+        className={cn(
+          "mx-auto w-full max-w-md px-4 text-center text-xs text-muted md:max-w-2xl print:hidden",
+          signedIn
+            ? "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6"
+            : "pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
+        )}
       >
         <p>{t("privacy")}</p>
         {signedIn ? null : (

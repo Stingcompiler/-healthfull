@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import { CalendarCheck, FlaskConical, ReceiptText, Smartphone } from "lucide-react";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -9,6 +8,7 @@ import { z } from "zod";
 
 import { AlertCard } from "@/components/AlertCard";
 import { Form, TextField } from "@/components/form";
+import { ArrowBack } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -69,72 +69,103 @@ export function PortalLoginPage() {
     search.reason === "expired" ? t("login.expired") : search.reason === "signed-out" ? t("login.signedOut") : null;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="text-center">
-        <Smartphone className="mx-auto mb-3 size-7 text-primary-strong" aria-hidden="true" />
-        <h1 className="text-xl font-bold text-fg">{t("login.title")}</h1>
+    <div className="flex flex-col gap-5">
+      <Link
+        to="/portal"
+        className="-ms-2 inline-flex min-h-11 w-fit items-center gap-1.5 rounded-control px-2 text-sm font-medium text-primary-strong focus-ring"
+        data-testid="login-center-link"
+      >
+        <ArrowBack className="size-4" aria-hidden="true" />
+        {t("login.centerLink")}
+      </Link>
+      <div>
+        <h1 className="text-2xl font-bold text-fg">{t("login.title")}</h1>
         <p className="mt-1 text-sm text-pretty text-muted">{t("login.subtitle")}</p>
       </div>
 
-      <div className="card-surface grid gap-4 p-5">
-        {notice && !error ? <AlertCard variant="info" title={notice} live /> : null}
-        {error ? <AlertCard variant="danger" title={translateError(error)} live /> : null}
-        <Form {...form}>
-          <form onSubmit={(e) => void onSubmit(e)} noValidate className="grid gap-4" data-testid="portal-login">
-            <TextField
-              control={form.control}
-              name="fileNo"
-              label={t("login.fileNo")}
-              description={t("login.fileNoHint")}
-              autoComplete="username"
-              dir="ltr"
-              required
-            />
-            <TextField
-              control={form.control}
-              name="phone"
-              label={t("login.phone")}
-              description={t("login.phoneHint")}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              dir="ltr"
-              required
-            />
-            <TextField
-              control={form.control}
-              name="code"
-              label={t("login.code")}
-              description={t("login.codeHint")}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={12}
-              dir="ltr"
-              required
-            />
-            <Button type="submit" size="lg" className="w-full" loading={form.formState.isSubmitting}>
-              {t("login.submit")}
-            </Button>
-          </form>
-        </Form>
-        <p className="text-center text-xs text-muted">{t("login.help")}</p>
-      </div>
+      <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] md:items-start">
+        <div className="card-surface grid gap-4 p-(--d-card-pad)">
+          {notice && !error ? <AlertCard variant="info" title={notice} live /> : null}
+          {error ? <AlertCard variant="danger" title={translateError(error)} live /> : null}
+          <Form {...form}>
+            <form onSubmit={(e) => void onSubmit(e)} noValidate className="grid gap-4" data-testid="portal-login">
+              <TextField
+                control={form.control}
+                name="fileNo"
+                label={t("login.fileNo")}
+                description={t("login.fileNoHint")}
+                autoComplete="username"
+                dir="ltr"
+                required
+              />
+              <TextField
+                control={form.control}
+                name="phone"
+                label={t("login.phone")}
+                description={t("login.phoneHint")}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                dir="ltr"
+                required
+              />
+              <TextField
+                control={form.control}
+                name="code"
+                label={t("login.code")}
+                description={t("login.codeHint")}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={12}
+                dir="ltr"
+                required
+              />
+              <Button type="submit" size="lg" className="w-full" loading={form.formState.isSubmitting}>
+                {t("login.submit")}
+              </Button>
+            </form>
+          </Form>
+        </div>
 
-      <section className="grid gap-3">
-        <h2 className="text-sm font-semibold text-fg">{t("features.title")}</h2>
-        <ul className="grid gap-2">
-          {[
-            { icon: FlaskConical, text: t("features.results") },
-            { icon: CalendarCheck, text: t("features.appointments") },
-            { icon: ReceiptText, text: t("features.receipts") },
-          ].map(({ icon: Icon, text }) => (
-            <li key={text} className="card-surface flex items-center gap-3 p-3">
-              <Icon className="size-[18px] shrink-0 text-primary-strong" aria-hidden="true" />
-              <span className="text-sm text-fg">{text}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <ReceiptGuide />
+      </div>
     </div>
+  );
+}
+
+/** Sample values in the receipt outline (shapes only, not anyone's data). */
+const SAMPLE_FILE_NO = "PT-2026-000123";
+const SAMPLE_CODE = "1234 5678";
+const GUIDE_STEPS = ["file", "phone", "code"] as const;
+
+/**
+ * Where each detail is printed: a plain outline of the receipt's portal box (not a picture,
+ * so it costs nothing on a slow network) and three numbered steps.
+ */
+function ReceiptGuide() {
+  const { t } = useTranslation("portal");
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="receipt-guide" data-testid="receipt-guide">
+      <h2 id="receipt-guide" className="text-base font-semibold text-fg">
+        {t("login.guide.title")}
+      </h2>
+      <div className="rounded-card border border-dashed border-border-strong bg-surface p-4 text-sm" aria-hidden="true">
+        <p className="font-semibold text-fg">{t("code.title")}</p>
+        <p className="mt-1 text-muted">
+          {t("code.fileNo")}: <bdi className="num text-fg">{SAMPLE_FILE_NO}</bdi>
+        </p>
+        <p className="mt-2 text-xs text-muted">{t("code.code")}</p>
+        <p className="num text-lg font-bold tracking-widest text-fg">{SAMPLE_CODE}</p>
+      </div>
+      <ol className="flex flex-col gap-2 text-sm text-fg">
+        {GUIDE_STEPS.map((step, index) => (
+          <li key={step} className="flex gap-2">
+            <span className="shrink-0 num font-semibold text-muted">{index + 1}.</span>
+            <span className="text-pretty">{t(`login.guide.${step}`)}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="text-xs text-pretty text-muted">{t("login.help")}</p>
+    </section>
   );
 }

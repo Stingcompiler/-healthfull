@@ -3,6 +3,9 @@
 All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
+### Changed
+- Patient portal home leads with what needs action (amount to pay and how to pay, results outside the normal range), then the next appointment, latest results and balance; each result names its status; the last card no longer sits under the phone tab bar. Portal sign-in links back to the center page and shows where the file number and code are printed on the receipt. The staff sign-in side panel shows the center's identity, today's date and opening status and today's notices instead of product claims (D-0018).
+
 ### Added
 - Public center page at the patient portal's door (`/portal`, ADR 0023): center identity, today's status and opening hours, doctors with clinic days (read from their weekly schedules), departments, active notices, contact (tel, WhatsApp, e-mail as plain links) and address, with one repeated "Sign in to your file" action; patient sign-in moved to `/portal/sign-in`. Kept from "Center page" (`/administration/center-page`, `core.manage_settings`) with fixed sections, visibility switches, hidden departments or doctors, and notices; `GET /api/portal/center-page` and `/center-logo` need no session, return only public fields and are limited per address. The staff sign-in and the portal header show the center's logo and name.
 - Design tokens single source: DTCG JSON in `frontend/src/design/tokens/` generates `tokens.css` via `scripts/build_tokens.py` (`make tokens`, `make tokens-check` in `make check` and CI); contrast pairs shared between `scripts/check_contrast.py` and vitest; `docs/DECISIONS.md` records deviations from Design Reference v2.2. Generated CSS is byte-identical to the previous hand-written declarations (no visual change).
