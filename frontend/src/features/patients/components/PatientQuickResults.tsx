@@ -51,11 +51,11 @@ export function PatientQuickResults({ query, onDone }: { query: string; onDone: 
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="break-words">{patientName(p, language)}</span>
             <span className="text-xs text-muted">
-              <bdi className="tabular">{p.file_no}</bdi>
+              <bdi className="num">{p.file_no}</bdi>
               {p.phone ? (
                 <>
                   {" · "}
-                  <bdi className="tabular">{p.phone}</bdi>
+                  <bdi className="num">{p.phone}</bdi>
                 </>
               ) : null}
             </span>

@@ -49,11 +49,11 @@ export function DuplicateDialog({ open, onOpenChange, candidates, onConfirm, pen
               <div className="min-w-0 flex-1">
                 <p className="font-semibold break-words text-fg">{patientName(c.patient, language)}</p>
                 <p className="text-xs text-muted">
-                  <bdi className="tabular">{c.patient.file_no}</bdi>
+                  <bdi className="num">{c.patient.file_no}</bdi>
                   {c.patient.phone ? (
                     <>
                       {" · "}
-                      <bdi className="tabular">{c.patient.phone}</bdi>
+                      <bdi className="num">{c.patient.phone}</bdi>
                     </>
                   ) : null}
                 </p>

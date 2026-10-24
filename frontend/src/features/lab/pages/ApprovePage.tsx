@@ -76,11 +76,11 @@ export function ApprovePage() {
           <span className="flex min-w-0 flex-col">
             <span>{names.patient(row.original.patient)}</span>
             <span className="text-xs text-muted">
-              <bdi>{row.original.patient.file_no}</bdi>
+              <bdi className="num">{row.original.patient.file_no}</bdi>
               {row.original.accession_no ? (
                 <>
                   {" · "}
-                  <bdi>{row.original.accession_no}</bdi>
+                  <bdi className="num">{row.original.accession_no}</bdi>
                 </>
               ) : null}
             </span>
@@ -137,8 +137,8 @@ export function ApprovePage() {
               )}
               <span className="text-sm">{names.patient(r.patient)}</span>
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-                <bdi>{r.patient.file_no}</bdi>
-                {r.accession_no ? <bdi>{r.accession_no}</bdi> : null}
+                <bdi className="num">{r.patient.file_no}</bdi>
+                {r.accession_no ? <bdi className="num">{r.accession_no}</bdi> : null}
                 <span>{names.user(r.entered_by)}</span>
                 <DateText value={r.entered_at} format="datetime" />
               </span>

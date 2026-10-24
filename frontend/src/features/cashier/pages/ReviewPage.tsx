@@ -44,7 +44,7 @@ export function ReviewPage() {
         id: "number",
         header: t("review.columns.shift"),
         meta: { label: t("review.columns.shift") },
-        cell: ({ row }) => <bdi>{row.original.shift.number}</bdi>,
+        cell: ({ row }) => <bdi className="num">{row.original.shift.number}</bdi>,
       },
       {
         id: "cashier",
@@ -143,7 +143,7 @@ export function ReviewPage() {
                 <div className="flex items-center justify-between gap-2">
                   {ctx.open ? (
                     <DataTableOpenButton onOpen={ctx.open} label={ctx.openLabel} className="font-semibold">
-                      <bdi>{r.shift.number}</bdi>
+                      <bdi className="num">{r.shift.number}</bdi>
                     </DataTableOpenButton>
                   ) : null}
                   {r.shift.review ? (

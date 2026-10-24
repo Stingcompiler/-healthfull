@@ -85,7 +85,7 @@ export function ProcedureCard({
         <p className="text-base font-semibold text-pretty break-words text-fg">{who}</p>
         <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
           <span>
-            {tc("patient.fileNo")} <bdi className="tabular font-semibold text-fg">{line.patient.file_no}</bdi>
+            {tc("patient.fileNo")} <bdi className="num font-semibold text-fg">{line.patient.file_no}</bdi>
           </span>
           {age ? (
             <span>

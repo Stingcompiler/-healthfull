@@ -84,7 +84,7 @@ export function ConditionManager({
                 key={c.id}
                 className="flex min-w-0 flex-wrap items-center gap-2 rounded-control border border-border px-3 py-2 text-sm"
               >
-                {c.icd10 ? <bdi className="tabular font-semibold">{c.icd10.code}</bdi> : null}
+                {c.icd10 ? <bdi className="num font-semibold">{c.icd10.code}</bdi> : null}
                 <span
                   className={cn(
                     "min-w-0 flex-1 break-words",

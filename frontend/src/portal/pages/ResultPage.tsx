@@ -73,10 +73,10 @@ export function ResultPage() {
               {pick(result.data.patient.full_name_ar, result.data.patient.full_name_en)}
             </Row>
             <Row label={t("results.fileNo")}>
-              <bdi>{result.data.patient.file_no}</bdi>
+              <bdi className="num">{result.data.patient.file_no}</bdi>
             </Row>
             <Row label={t("results.visit")}>
-              <bdi>{result.data.visit_number}</bdi>
+              <bdi className="num">{result.data.visit_number}</bdi>
             </Row>
             <Row label={t("results.orderedOn")}>
               <DateText value={result.data.ordered_at} />

@@ -69,7 +69,7 @@ export function DraftItemEditor({
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold break-words text-fg">{name}</div>
           <div className="text-xs text-muted">
-            <bdi>{item.code}</bdi>
+            <bdi className="num">{item.code}</bdi>
             {" · "}
             {t(`kind.${item.kind}`)}
           </div>
@@ -202,7 +202,7 @@ function PrescriptionFields({
             <SelectContent>
               {(frequencies.data ?? []).map((f) => (
                 <SelectItem key={f.code} value={f.code} data-testid={`rx-frequency-${f.code}`}>
-                  <bdi className="tabular font-semibold">{f.code}</bdi> ·{" "}
+                  <bdi className="num font-semibold">{f.code}</bdi> ·{" "}
                   {t(`frequency.${f.code}`, { defaultValue: f.code })}
                 </SelectItem>
               ))}

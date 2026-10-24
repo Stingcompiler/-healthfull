@@ -33,7 +33,7 @@ export function TableSection() {
         accessorKey: "fileNo",
         header: t("table.fileNo"),
         meta: { label: t("table.fileNo") },
-        cell: ({ row }) => <bdi className="tabular font-medium">{row.original.fileNo}</bdi>,
+        cell: ({ row }) => <bdi className="num font-medium">{row.original.fileNo}</bdi>,
       },
       {
         id: "patient",
@@ -127,7 +127,7 @@ export function TableSection() {
               <div className="min-w-0">
                 <div className="truncate font-semibold text-fg">{pickName(row.service, language)}</div>
                 <div className="mt-0.5 truncate text-sm text-muted">
-                  {pickName(row.patient, language)} · <bdi className="tabular">{row.fileNo}</bdi>
+                  {pickName(row.patient, language)} · <bdi className="num">{row.fileNo}</bdi>
                 </div>
               </div>
               {actions}

@@ -51,7 +51,7 @@ export function InvoicePage() {
                 </Row>
               ) : null}
               <Row label={t("bills.visit")}>
-                <bdi>{invoice.data.visit_number}</bdi>
+                <bdi className="num">{invoice.data.visit_number}</bdi>
               </Row>
             </dl>
             <h3 className="text-sm font-semibold text-fg">{t("bills.lines")}</h3>
@@ -87,7 +87,7 @@ export function InvoicePage() {
                       params={{ paymentId: String(r.id) }}
                       className="flex min-h-11 items-center justify-between gap-3 py-2 text-sm focus-ring-inset"
                     >
-                      <bdi className="whitespace-nowrap text-primary-strong">{r.number}</bdi>
+                      <bdi className="num whitespace-nowrap text-primary-strong">{r.number}</bdi>
                       <MoneyText value={r.amount} />
                     </Link>
                   </li>

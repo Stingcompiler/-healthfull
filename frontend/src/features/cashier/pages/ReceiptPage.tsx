@@ -34,7 +34,9 @@ export function DocHeader({ center, title, format }: { center: Center; title: Re
       {center.address ? <p>{center.address}</p> : null}
       {center.phone ? (
         <p>
-          <bdi dir="ltr">{center.phone}</bdi>
+          <bdi dir="ltr" className="num">
+            {center.phone}
+          </bdi>
         </p>
       ) : null}
       <p className={cn("mt-1 font-semibold", format === "thermal" ? "" : "text-base")}>{title}</p>
@@ -99,20 +101,27 @@ function ReceiptBody({ receipt, format }: { receipt: Receipt; format: PrintForma
     <div className="flex flex-col gap-3" data-testid="receipt">
       <DocHeader center={receipt.center} title={t("receipt.title")} format={format} />
       <dl className="grid gap-0.5">
-        <Line label={t("receipt.number")} value={<bdi data-testid="receipt-number">{p.number}</bdi>} />
+        <Line
+          label={t("receipt.number")}
+          value={
+            <bdi data-testid="receipt-number" className="num">
+              {p.number}
+            </bdi>
+          }
+        />
         <Line label={t("receipt.date")} value={<DateText value={p.created_at} format="datetime" />} />
         <Line label={t("receipt.patient")} value={names.patient(p.patient)} />
-        <Line label={t("common:patient.fileNo")} value={<bdi>{p.patient.file_no}</bdi>} />
+        <Line label={t("common:patient.fileNo")} value={<bdi className="num">{p.patient.file_no}</bdi>} />
         <Line label={t("receipt.method")} value={t(`payment.method.${p.method}`)} />
         {p.bank ? <Line label={t("payment.bank")} value={names.name(p.bank)} /> : null}
-        {p.reference ? <Line label={t("payment.reference")} value={<bdi>{p.reference}</bdi>} /> : null}
+        {p.reference ? <Line label={t("payment.reference")} value={<bdi className="num">{p.reference}</bdi>} /> : null}
         <Line label={t("receipt.cashier")} value={names.user(receipt.cashier)} />
       </dl>
       <PaymentStandingNote payment={p} />
       {receipt.invoices.map((inv) => (
         <section key={inv.id} className="flex flex-col gap-1 border-t border-border pt-2">
           <p className="font-semibold">
-            {t("receipt.invoice")} <bdi>{inv.number}</bdi>
+            {t("receipt.invoice")} <bdi className="num">{inv.number}</bdi>
           </p>
           <ul className="flex flex-col gap-0.5">
             {inv.lines.map((l, i) => (

@@ -194,7 +194,7 @@ export function NursingPage() {
                     {nameOf(line.service, language)}
                   </p>
                   <p className="text-xs text-pretty break-words text-muted">
-                    {patientName(line.patient, language)} · <bdi>{line.patient.file_no}</bdi>
+                    {patientName(line.patient, language)} · <bdi className="num">{line.patient.file_no}</bdi>
                     {line.performed_note ? ` · ${t("procedures.doneNote", { note: line.performed_note })}` : ""}
                   </p>
                 </div>

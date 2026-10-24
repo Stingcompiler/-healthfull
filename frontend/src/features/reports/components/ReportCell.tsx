@@ -35,13 +35,13 @@ export function ReportCell({
     case "money":
       return <MoneyText value={String(value)} currency={false} toneNegative className={className} />;
     case "int":
-      return <span className={cn("tabular", className)}>{formatNumber(Number(value), language)}</span>;
+      return <span className={cn("num", className)}>{formatNumber(Number(value), language)}</span>;
     case "days":
       return <span className={cn("tabular", className)}>{t("units.days", { count: Number(value) })}</span>;
     case "minutes":
       return <span className={cn("tabular", className)}>{t("units.minutes", { count: Number(value) })}</span>;
     case "percent":
-      return <span className={cn("tabular", className)}>{formatPercent(String(value), language)}</span>;
+      return <span className={cn("num", className)}>{formatPercent(String(value), language)}</span>;
     case "date":
       return <DateText value={String(value)} className={className} />;
     case "datetime":

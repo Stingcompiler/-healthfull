@@ -128,7 +128,7 @@ function AdmitForm({
                   {patientName(patient, language)}
                 </p>
                 <p className="text-xs text-muted">
-                  <bdi>{patient.file_no}</bdi>
+                  <bdi className="num">{patient.file_no}</bdi>
                 </p>
               </div>
               <Button
@@ -174,7 +174,7 @@ function AdmitForm({
                           {patientName(p, language)}
                         </span>
                         <span className="text-xs text-muted">
-                          <bdi>{p.file_no}</bdi>
+                          <bdi className="num">{p.file_no}</bdi>
                         </span>
                       </button>
                     </li>

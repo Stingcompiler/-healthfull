@@ -47,7 +47,7 @@ export function ClaimListPage() {
         id: "number",
         header: t("list.columns.number"),
         meta: { label: t("list.columns.number") },
-        cell: ({ row }) => <bdi className="font-medium">{row.original.number}</bdi>,
+        cell: ({ row }) => <bdi className="num font-medium">{row.original.number}</bdi>,
       },
       {
         id: "payer",
@@ -191,10 +191,10 @@ export function ClaimListPage() {
               <div className="flex items-start justify-between gap-2">
                 {ctx.open ? (
                   <DataTableOpenButton onOpen={ctx.open} label={ctx.openLabel}>
-                    <bdi className="font-semibold">{r.number}</bdi>
+                    <bdi className="num font-semibold">{r.number}</bdi>
                   </DataTableOpenButton>
                 ) : (
-                  <bdi className="font-semibold">{r.number}</bdi>
+                  <bdi className="num font-semibold">{r.number}</bdi>
                 )}
                 <ClaimStatusBadge status={r.status} />
               </div>

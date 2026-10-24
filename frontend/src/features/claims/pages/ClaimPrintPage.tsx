@@ -47,7 +47,9 @@ function ClaimDocument({ data }: { data: ClaimPrint }) {
         {center.address ? <p>{center.address}</p> : null}
         {center.phone ? (
           <p>
-            <bdi dir="ltr">{center.phone}</bdi>
+            <bdi dir="ltr" className="num">
+              {center.phone}
+            </bdi>
           </p>
         ) : null}
         {center.registration_no ? (
@@ -64,7 +66,7 @@ function ClaimDocument({ data }: { data: ClaimPrint }) {
           </Field>
           {payer.contract_no ? (
             <Field label={t("print.contract")}>
-              <bdi>{payer.contract_no}</bdi>
+              <bdi className="num">{payer.contract_no}</bdi>
             </Field>
           ) : null}
           {payer.address ? <Field label={t("print.address")}>{payer.address}</Field> : null}
@@ -72,7 +74,7 @@ function ClaimDocument({ data }: { data: ClaimPrint }) {
         </dl>
         <dl className="grid gap-0.5">
           <Field label={t("print.number")}>
-            <bdi className="font-medium">{claim.number}</bdi>
+            <bdi className="num font-medium">{claim.number}</bdi>
           </Field>
           <Field label={t("print.period")}>
             <Period start={claim.period_start} end={claim.period_end} />
@@ -110,13 +112,13 @@ function ClaimDocument({ data }: { data: ClaimPrint }) {
                 <td className="py-1 pe-2 tabular">{index + 1}</td>
                 <td className="py-1 pe-2">
                   {names.person(l.patient)}
-                  <bdi className="block text-muted">{l.patient.file_no}</bdi>
+                  <bdi className="block num text-muted">{l.patient.file_no}</bdi>
                 </td>
                 <td className="py-1 pe-2">
-                  <bdi>{l.card_number}</bdi>
+                  <bdi className="num">{l.card_number}</bdi>
                 </td>
                 <td className="py-1 pe-2">
-                  <bdi>{l.invoice_number}</bdi>
+                  <bdi className="num">{l.invoice_number}</bdi>
                   <span className="block text-muted">
                     <DateText value={l.approved_on} />
                   </span>
@@ -125,7 +127,7 @@ function ClaimDocument({ data }: { data: ClaimPrint }) {
                   {names.text(l.description_ar, l.description_en)}
                   {l.pre_approval_ref ? (
                     <span className="block text-muted">
-                      {t("build.preApproval")}: <bdi>{l.pre_approval_ref}</bdi>
+                      {t("build.preApproval")}: <bdi className="num">{l.pre_approval_ref}</bdi>
                     </span>
                   ) : null}
                 </td>

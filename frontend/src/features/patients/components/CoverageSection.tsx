@@ -141,7 +141,7 @@ export function CoverageSection({ patientId, readOnly = false }: { patientId: nu
                 <p className="text-xs text-muted">
                   {c.card_number ? (
                     <>
-                      {t("coverage.card")} <bdi className="tabular">{c.card_number}</bdi>
+                      {t("coverage.card")} <bdi className="num">{c.card_number}</bdi>
                     </>
                   ) : (
                     t("coverage.noCard")

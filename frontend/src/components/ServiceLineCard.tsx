@@ -63,7 +63,7 @@ export function ServiceLineCard({
         <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
           <div className="flex gap-1">
             <dt>{t("serviceLine.qty")}</dt>
-            <dd className="tabular font-semibold text-fg">{formatNumber(quantity, language)}</dd>
+            <dd className="num font-semibold text-fg">{formatNumber(quantity, language)}</dd>
           </div>
           {unitPrice !== undefined ? (
             <div className="flex gap-1">

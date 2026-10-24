@@ -63,13 +63,13 @@ function LineIdentity({ line }: { line: ClaimLine }) {
       <span className="font-medium">{names.text(line.description_ar, line.description_en)}</span>
       <span className="text-sm">{names.person(line.patient)}</span>
       <span className="flex flex-wrap gap-x-3 text-xs text-muted">
-        <bdi>{line.patient.file_no}</bdi>
+        <bdi className="num">{line.patient.file_no}</bdi>
         {line.card_number ? (
           <span>
-            {t("build.card")}: <bdi>{line.card_number}</bdi>
+            {t("build.card")}: <bdi className="num">{line.card_number}</bdi>
           </span>
         ) : null}
-        <bdi>{line.invoice_number}</bdi>
+        <bdi className="num">{line.invoice_number}</bdi>
         <DateText value={line.approved_on} />
       </span>
     </span>
@@ -339,7 +339,7 @@ export function ClaimDetailPage() {
                 key: "receivable",
                 label: t("detail.columns.receivable"),
                 value: data.receivable,
-                tone: "warning",
+                tone: "primary",
                 strong: true,
               },
             ]}
@@ -393,7 +393,7 @@ export function ClaimDetailPage() {
                 {data.payments.map((p) => (
                   <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                     <span className="flex flex-wrap items-center gap-x-3">
-                      <bdi className="font-medium">{p.number}</bdi>
+                      <bdi className="num font-medium">{p.number}</bdi>
                       <DateText value={p.received_on} />
                       <span className="text-muted">{t(`method.${p.method}`)}</span>
                       {p.reversed ? <span className="text-danger-fg">{t("standing.reversed")}</span> : null}

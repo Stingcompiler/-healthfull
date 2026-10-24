@@ -66,7 +66,7 @@ export function ItemsPage() {
         id: "code",
         header: t("items.columns.code"),
         meta: { label: t("items.columns.code") },
-        cell: ({ row }) => <bdi>{row.original.service.code}</bdi>,
+        cell: ({ row }) => <bdi className="num">{row.original.service.code}</bdi>,
       },
       {
         id: "onHand",
@@ -166,7 +166,7 @@ export function ItemsPage() {
               </div>
               <span className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
                 <span>{t(`forms.${r.form}`)}</span>
-                <bdi>{r.service.code}</bdi>
+                <bdi className="num">{r.service.code}</bdi>
                 <span>
                   {t("items.columns.onHand")}:{" "}
                   <QtyText value={r.on_hand} unit={names.baseUnit(r)} className="text-fg" />

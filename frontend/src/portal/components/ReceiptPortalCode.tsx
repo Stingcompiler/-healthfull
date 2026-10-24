@@ -33,7 +33,7 @@ export function ReceiptPortalCode({ paymentId, compact = false }: { paymentId: n
           <div className="flex flex-col items-center gap-1 text-center" data-testid="receipt-portal-code">
             <p className="font-semibold">{t("code.title")}</p>
             <p className="text-xs">
-              {t("code.fileNo")}: <bdi>{issued.file_no}</bdi>
+              {t("code.fileNo")}: <bdi className="num">{issued.file_no}</bdi>
             </p>
             <p className="text-xs">{t("code.code")}</p>
             <bdi

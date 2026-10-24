@@ -109,7 +109,7 @@ export function PrescriptionsPage() {
                           </Row>
                         ) : null}
                         <Row label={t("prescriptions.quantity")}>
-                          <bdi className="tabular">{item.quantity}</bdi>
+                          <bdi className="num">{item.quantity}</bdi>
                         </Row>
                       </dl>
                       {item.as_needed ? <p className="text-sm text-warning-fg">{t("prescriptions.asNeeded")}</p> : null}

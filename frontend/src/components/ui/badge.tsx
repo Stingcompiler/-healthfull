@@ -22,6 +22,10 @@ const badgeVariants = cva(
         warning: "border-warning-border bg-warning-bg text-warning-fg",
         danger: "border-danger-border bg-danger-bg text-danger-fg",
         info: "border-info-border bg-info-bg text-info-fg",
+        // Waiting, and nobody has to act (a claim with the payer, a cheque still clearing). Neutral
+        // with a dashed border so it differs from "done" by shape as well as color. Items that need
+        // a person to act use `warning`.
+        pending: "border-dashed border-state-pending-border bg-state-pending-bg text-state-pending-fg",
       },
     },
     defaultVariants: {

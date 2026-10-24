@@ -82,7 +82,7 @@ export function TransfersPage() {
         meta: { label: t("transfers.columns.payment") },
         cell: ({ row }) => (
           <span className="flex flex-col gap-1">
-            <bdi className="font-medium">{row.original.payment.number}</bdi>
+            <bdi className="num font-medium">{row.original.payment.number}</bdi>
             <StatusBadge status={verificationStatus(row.original.payment.verification)} size="sm" />
           </span>
         ),
@@ -94,7 +94,7 @@ export function TransfersPage() {
         cell: ({ row }) => (
           <span className="flex flex-col">
             <span>{names.patient(row.original.payment.patient)}</span>
-            <bdi className="text-xs text-muted">{row.original.payment.patient.file_no}</bdi>
+            <bdi className="num text-xs text-muted">{row.original.payment.patient.file_no}</bdi>
           </span>
         ),
       },
@@ -198,7 +198,7 @@ export function TransfersPage() {
               <div className="card-surface flex flex-col gap-2 p-4" data-testid="transfer-row">
                 <div className="flex items-start justify-between gap-2">
                   <span className="flex min-w-0 flex-col gap-1">
-                    <bdi className="font-semibold">{r.payment.number}</bdi>
+                    <bdi className="num font-semibold">{r.payment.number}</bdi>
                     <StatusBadge status={verificationStatus(r.payment.verification)} size="sm" />
                   </span>
                   {ctx.actions}
@@ -206,7 +206,9 @@ export function TransfersPage() {
                 <span className="text-sm">{names.patient(r.payment.patient)}</span>
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
                   <span>{names.name(r.payment.bank)}</span>
-                  <bdi data-testid="transfer-reference">{r.payment.reference}</bdi>
+                  <bdi data-testid="transfer-reference" className="num">
+                    {r.payment.reference}
+                  </bdi>
                   <span>
                     {t("transfers.columns.age")}: {t("report.ageDays", { count: r.payment.age_days })}
                   </span>
@@ -235,7 +237,7 @@ export function TransfersPage() {
         {confirming ? (
           <p className="flex flex-wrap items-center justify-between gap-2 rounded-control bg-subtle px-3 py-2 text-sm">
             <span>
-              {names.name(confirming.payment.bank)} · <bdi>{confirming.payment.reference}</bdi>
+              {names.name(confirming.payment.bank)} · <bdi className="num">{confirming.payment.reference}</bdi>
             </span>
             <MoneyText value={confirming.payment.amount} />
           </p>
@@ -270,7 +272,7 @@ function ShiftCell({ transfer }: { transfer: Transfer }) {
   return (
     <span className="flex min-w-0 flex-col gap-1 text-sm">
       <span>{names.user(transfer.cashier)}</span>
-      <bdi className="text-xs text-muted">{p.shift_number}</bdi>
+      <bdi className="num text-xs text-muted">{p.shift_number}</bdi>
       {p.shift_status === "closed" ? (
         <span>
           <Badge variant="neutral">{t("shift.status.closed")}</Badge>

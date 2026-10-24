@@ -36,7 +36,9 @@ function LabelBody({ label }: { label: LabLabel }) {
           {names.patient(label.patient)}
         </bdi>
         <span>
-          <bdi dir="ltr">{label.patient.file_no}</bdi>
+          <bdi dir="ltr" className="num">
+            {label.patient.file_no}
+          </bdi>
           {label.patient.date_of_birth ? (
             <>
               {" · "}

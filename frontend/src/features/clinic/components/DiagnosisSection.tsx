@@ -79,7 +79,7 @@ export function DiagnosisSection({
               key={d.id}
               className="flex min-w-0 flex-wrap items-center gap-2 rounded-control border border-border px-3 py-2 text-sm"
             >
-              {d.icd10 ? <bdi className="tabular font-semibold">{d.icd10.code}</bdi> : null}
+              {d.icd10 ? <bdi className="num font-semibold">{d.icd10.code}</bdi> : null}
               <span className="min-w-0 flex-1 break-words text-fg">
                 {d.icd10 ? pickName({ ar: d.icd10.title_ar, en: d.icd10.title_en }, language) : null}
                 {d.icd10 && d.text ? " · " : null}
@@ -123,7 +123,7 @@ export function DiagnosisSection({
       >
         {removing ? (
           <p className="rounded-control bg-subtle px-3 py-2 text-sm break-words text-fg">
-            {removing.icd10 ? <bdi className="tabular font-semibold">{removing.icd10.code}</bdi> : null}
+            {removing.icd10 ? <bdi className="num font-semibold">{removing.icd10.code}</bdi> : null}
             {removing.icd10 ? " " : null}
             {removing.icd10 ? pickName({ ar: removing.icd10.title_ar, en: removing.icd10.title_en }, language) : null}
             {removing.icd10 && removing.text ? " · " : null}

@@ -181,7 +181,7 @@ export function HandoverPanel({ report }: { report: ShiftReport }) {
             {outgoing.map((h) => (
               <li key={h.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className="flex min-w-0 flex-wrap items-center gap-2">
-                  <bdi>{h.number}</bdi>
+                  <bdi className="num">{h.number}</bdi>
                   <span className="text-muted">{recipient(h)}</span>
                   {/* Cash leaving this drawer: a minus, as in the shift report. */}
                   <MoneyText value={negate(h.amount)} toneNegative />
@@ -233,9 +233,9 @@ export function IncomingHandovers({ handovers }: { handovers: readonly Handover[
         {handovers.map((h) => (
           <li key={h.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
             <span className="flex flex-wrap items-center gap-2">
-              <bdi>{h.number}</bdi>
+              <bdi className="num">{h.number}</bdi>
               <span className="text-muted">
-                {names.user(h.handed_by)} · <bdi>{h.shift_number}</bdi>
+                {names.user(h.handed_by)} · <bdi className="num">{h.shift_number}</bdi>
               </span>
               <span className="text-muted">{recipient(h)}</span>
               <DateText value={h.handed_at} format="time" />

@@ -106,7 +106,7 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
           {KNOWN.has(event.kind) ? translateKey(t, `visits:timeline.kind.${event.kind}`) : event.kind}
         </span>
         {service ? <span className="text-sm break-words text-fg">{service}</span> : null}
-        {number ? <bdi className="tabular text-sm text-muted">{number}</bdi> : null}
+        {number ? <bdi className="num text-sm text-muted">{number}</bdi> : null}
         {amount ? <MoneyText value={amount} className="text-sm" /> : null}
       </div>
       <p className="text-xs text-muted">

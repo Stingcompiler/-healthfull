@@ -81,7 +81,7 @@ export function PatientCard({ patient, actions, children, compact = false, class
             <div className="flex items-center gap-1">
               <dt>{t("patient.fileNo")}</dt>
               <dd className="tabular font-semibold text-fg">
-                <bdi>{patient.fileNo}</bdi>
+                <bdi className="num">{patient.fileNo}</bdi>
               </dd>
             </div>
             {ageText ? (
@@ -101,7 +101,9 @@ export function PatientCard({ patient, actions, children, compact = false, class
                   <span className="sr-only">{t("patient.phone")}</span>
                 </dt>
                 <dd className="tabular">
-                  <bdi dir="ltr">{patient.phone}</bdi>
+                  <bdi dir="ltr" className="num">
+                    {patient.phone}
+                  </bdi>
                 </dd>
               </div>
             ) : null}

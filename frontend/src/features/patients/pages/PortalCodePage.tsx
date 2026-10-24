@@ -82,7 +82,7 @@ export function PortalCodePage() {
                 {pickName({ ar: slip.full_name_ar, en: slip.full_name_en }, language)}
               </p>
               <p>
-                {t("code.fileNo")}: <bdi>{slip.file_no}</bdi>
+                {t("code.fileNo")}: <bdi className="num">{slip.file_no}</bdi>
               </p>
               <p className="text-xs">{t("code.code")}</p>
               <bdi dir="ltr" className="tabular text-2xl font-bold tracking-widest" data-testid="portal-slip-code">

@@ -66,7 +66,7 @@ export function InvoicesPage() {
                   className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 focus-ring-inset md:px-5"
                 >
                   <span className="min-w-0">
-                    <bdi className="block font-medium whitespace-nowrap text-fg">{inv.number}</bdi>
+                    <bdi className="block num font-medium whitespace-nowrap text-fg">{inv.number}</bdi>
                     {inv.date ? (
                       <span className="text-xs text-muted">
                         <DateText value={inv.date} />
@@ -109,7 +109,7 @@ export function InvoicesPage() {
                   className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 focus-ring-inset md:px-5"
                 >
                   <span className="min-w-0">
-                    <bdi className="block font-medium whitespace-nowrap text-fg">{r.number}</bdi>
+                    <bdi className="block num font-medium whitespace-nowrap text-fg">{r.number}</bdi>
                     <span className="text-xs text-muted">
                       <DateText value={r.date} />
                       {" · "}

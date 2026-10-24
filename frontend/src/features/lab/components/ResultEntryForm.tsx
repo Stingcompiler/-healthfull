@@ -128,7 +128,10 @@ export function ResultEntryForm({
                 </Label>
                 {reference ? (
                   <span className="text-xs text-muted">
-                    {t("entry.reference")}: <bdi dir="ltr">{reference}</bdi>
+                    {t("entry.reference")}:{" "}
+                    <bdi dir="ltr" className="num">
+                      {reference}
+                    </bdi>
                   </span>
                 ) : null}
               </div>

@@ -200,7 +200,7 @@ function SaleForm({ onCreated }: { onCreated: (invoice: SaleInvoice) => void }) 
           <div className="flex items-center justify-between gap-2 rounded-control border border-border-strong bg-subtle px-3 py-2">
             <span className="grid min-w-0 text-sm" data-testid="sale-customer-selected">
               <span className="font-medium">{names.person(customer)}</span>
-              <bdi className="text-muted">{customer.file_no}</bdi>
+              <bdi className="num text-muted">{customer.file_no}</bdi>
             </span>
             <Button
               type="button"
@@ -251,7 +251,7 @@ function SaleForm({ onCreated }: { onCreated: (invoice: SaleInvoice) => void }) 
                       >
                         <span className="font-medium">{names.person(c)}</span>
                         <span className="text-muted">
-                          <bdi>{c.file_no}</bdi> {c.phone ? <bdi>{c.phone}</bdi> : null}
+                          <bdi className="num">{c.file_no}</bdi> {c.phone ? <bdi className="num">{c.phone}</bdi> : null}
                         </span>
                       </button>
                     </li>
@@ -306,7 +306,7 @@ function SaleForm({ onCreated }: { onCreated: (invoice: SaleInvoice) => void }) 
                     <span className="grid">
                       <span className="font-medium">{names.name(s)}</span>
                       <span className="text-xs text-muted">
-                        <bdi>{s.code}</bdi> ·{" "}
+                        <bdi className="num">{s.code}</bdi> ·{" "}
                         {s.item_id !== null ? (
                           <>
                             {t("sale.inStock")} <QtyText value={s.on_hand} unit={names.baseUnit(s)} />
@@ -457,13 +457,17 @@ function SaleDone({ invoice, onNew }: { invoice: SaleInvoice; onNew: () => void 
         <div>
           <dt className="text-muted">{t("sale.fileNo")}</dt>
           <dd>
-            <bdi data-testid="sale-file-no">{invoice.patient.file_no}</bdi>
+            <bdi data-testid="sale-file-no" className="num">
+              {invoice.patient.file_no}
+            </bdi>
           </dd>
         </div>
         <div>
           <dt className="text-muted">{t("sale.visitNo")}</dt>
           <dd>
-            <bdi data-testid="sale-visit-no">{invoice.visit_number}</bdi>
+            <bdi data-testid="sale-visit-no" className="num">
+              {invoice.visit_number}
+            </bdi>
           </dd>
         </div>
         <div>

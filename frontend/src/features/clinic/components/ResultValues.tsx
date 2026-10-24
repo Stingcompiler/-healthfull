@@ -42,7 +42,7 @@ export function ResultValues({ values, compact = false }: { values: readonly Val
               {flagged ? <span className="sr-only">{t(`resultFlag.${flagKey(v.flag)}`)}</span> : null}
               {v.reference && !compact ? (
                 <span className="text-xs font-normal text-muted">
-                  (<bdi>{v.reference}</bdi>)
+                  (<bdi className="num">{v.reference}</bdi>)
                 </span>
               ) : null}
             </dd>

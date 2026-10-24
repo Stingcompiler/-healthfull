@@ -123,7 +123,7 @@ export function BedBoardPage() {
             {BED_STATUSES.map((s) => (
               <div key={s} className="flex min-w-0 flex-1 flex-col gap-1 p-3 md:p-4" data-testid={`bed-count-${s}`}>
                 <dt className="text-xs text-muted">{t(`beds.counts.${s}`)}</dt>
-                <dd className="tabular text-2xl font-semibold text-fg">{data.counts[s]}</dd>
+                <dd className="num text-2xl font-semibold text-fg">{data.counts[s]}</dd>
               </div>
             ))}
           </dl>
@@ -222,7 +222,7 @@ function BedCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-fg">
-            <bdi>{bed.code}</bdi>
+            <bdi className="num">{bed.code}</bdi>
           </h3>
           <p className="text-xs text-pretty break-words text-muted">{nameOf(bed, language)}</p>
         </div>
@@ -238,7 +238,7 @@ function BedCard({
             {patientName(occupant.patient, language)}
           </p>
           <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
-            <bdi className="tabular font-semibold text-fg">{occupant.patient.file_no}</bdi>
+            <bdi className="num font-semibold text-fg">{occupant.patient.file_no}</bdi>
             <span>
               <CalendarClock className="me-1 inline size-3.5 align-[-2px]" aria-hidden="true" />
               {t("beds.admittedAt")} <DateText value={occupant.admitted_at} format="date" />

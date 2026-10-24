@@ -40,7 +40,7 @@ export function LowStockPage() {
             >
               {names.item(row.original)}
             </Link>
-            <bdi className="text-xs text-muted">{row.original.service_code}</bdi>
+            <bdi className="num text-xs text-muted">{row.original.service_code}</bdi>
           </span>
         ),
       },

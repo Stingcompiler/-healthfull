@@ -197,7 +197,7 @@ function CountLineRow({ count, line, editable }: { count: StockCount; line: Stoc
         <p className="font-medium break-words">{names.item(line)}</p>
         <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
           <span>
-            {t("batch.number")} <bdi>{line.batch_no}</bdi>
+            {t("batch.number")} <bdi className="num">{line.batch_no}</bdi>
           </span>
           <span>
             {t("batch.expiry")} <DateText value={line.expiry_date} />

@@ -39,7 +39,10 @@ export function ResultValues({ values }: { values: readonly ResultValue[] }) {
             {v.flag !== "none" && v.flag !== "normal" ? <FlagBadge flag={v.flag} /> : null}
             {reference ? (
               <span className="w-full text-xs text-muted sm:w-auto">
-                {t("entry.reference")}: <bdi dir="ltr">{reference}</bdi>
+                {t("entry.reference")}:{" "}
+                <bdi dir="ltr" className="num">
+                  {reference}
+                </bdi>
               </span>
             ) : null}
           </li>

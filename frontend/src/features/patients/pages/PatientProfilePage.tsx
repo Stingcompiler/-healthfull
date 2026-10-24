@@ -259,9 +259,9 @@ export function PatientProfilePage() {
             {(merges.data ?? []).map((m) => (
               <li key={m.id} className="flex flex-col gap-0.5">
                 <span>
-                  <bdi className="tabular">{m.source.file_no}</bdi>{" "}
+                  <bdi className="num">{m.source.file_no}</bdi>{" "}
                   <ArrowNext className="inline size-3.5" aria-hidden="true" />{" "}
-                  <bdi className="tabular">{m.target.file_no}</bdi>
+                  <bdi className="num">{m.target.file_no}</bdi>
                   {" · "}
                   {m.reason
                     ? pickName({ ar: m.reason.label_ar, en: m.reason.label_en }, language)

@@ -156,8 +156,8 @@ function QueueCard({ visit, onOpen }: { visit: QueueVisit; onOpen: () => void })
         <div className="grid min-w-0 gap-1">
           <p className="text-base font-semibold break-words">{names.person(visit.patient)}</p>
           <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
-            <bdi>{visit.patient.file_no}</bdi>
-            <bdi>{visit.visit_number}</bdi>
+            <bdi className="num">{visit.patient.file_no}</bdi>
+            <bdi className="num">{visit.visit_number}</bdi>
             <DateText value={visit.created_at} format="datetime" />
             {visit.visit_type === "pharmacy_sale" ? <Badge variant="info">{t("queue.walkIn")}</Badge> : null}
           </p>

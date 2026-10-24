@@ -265,7 +265,7 @@ function AuthorizationList() {
               <div className="flex min-w-0 flex-col gap-1">
                 <span className="flex flex-wrap items-center gap-2 font-medium">
                   {names.patient(a.patient)}
-                  <bdi className="text-muted">{a.visit_number}</bdi>
+                  <bdi className="num text-muted">{a.visit_number}</bdi>
                   <Badge variant="soft">{t(`performFirst.kinds.${a.kind}`)}</Badge>
                 </span>
                 <span className="text-muted">

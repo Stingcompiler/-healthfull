@@ -103,7 +103,7 @@ function ItemBody({ item }: { item: StockItem }) {
           </dd>
           <dt className="text-muted">{t("items.columns.code")}</dt>
           <dd>
-            <bdi>{item.service.code}</bdi>
+            <bdi className="num">{item.service.code}</bdi>
           </dd>
           <dt className="text-muted">{t("items.fields.form")}</dt>
           <dd>{t(`forms.${item.form}`)}</dd>
@@ -111,7 +111,7 @@ function ItemBody({ item }: { item: StockItem }) {
           <dd>{t(`storage.${item.storage}`)}</dd>
           <dt className="text-muted">{t("items.fields.barcode")}</dt>
           <dd>
-            <bdi>{item.barcode || "—"}</bdi>
+            <bdi className="num">{item.barcode || "—"}</bdi>
           </dd>
         </dl>
         <h3 className="mt-2 text-sm font-semibold">{t("item.units")}</h3>
@@ -123,7 +123,7 @@ function ItemBody({ item }: { item: StockItem }) {
           {item.units.map((u) => (
             <li key={u.id} className="flex flex-wrap justify-between gap-2">
               <span>
-                {names.name(u)} <bdi className="text-muted">{u.barcode}</bdi>
+                {names.name(u)} <bdi className="num text-muted">{u.barcode}</bdi>
               </span>
               <span className="text-muted">
                 {t("item.unitFactor", { factor: formatNumber(u.factor, names.language), unit })}
@@ -312,7 +312,7 @@ function BatchesSection({ item }: { item: StockItem }) {
         id: "batch",
         header: t("batch.number"),
         meta: { label: t("batch.number") },
-        cell: ({ row }) => <bdi className="font-medium">{row.original.batch_no}</bdi>,
+        cell: ({ row }) => <bdi className="num font-medium">{row.original.batch_no}</bdi>,
       },
       {
         id: "expiry",
@@ -355,7 +355,7 @@ function BatchesSection({ item }: { item: StockItem }) {
         renderCard={(r) => (
           <div className="flex flex-col gap-1 rounded-control border border-border p-3 text-sm" data-testid="batch-row">
             <span className="flex flex-wrap items-center justify-between gap-2">
-              <bdi className="font-semibold">{r.batch_no}</bdi>
+              <bdi className="num font-semibold">{r.batch_no}</bdi>
               <ExpiryBadge daysLeft={r.days_left} />
             </span>
             <span className="text-muted">
@@ -395,7 +395,7 @@ function StockCardSection({ item }: { item: StockItem }) {
         id: "batch",
         header: t("batch.number"),
         meta: { label: t("batch.number") },
-        cell: ({ row }) => <bdi>{row.original.batch_no}</bdi>,
+        cell: ({ row }) => <bdi className="num">{row.original.batch_no}</bdi>,
       },
       {
         id: "store",
@@ -409,7 +409,9 @@ function StockCardSection({ item }: { item: StockItem }) {
         meta: { label: t("card.change"), align: "end" },
         cell: ({ row }) => (
           <span className={row.original.qty_base < 0 ? "tabular text-danger-fg" : "tabular text-success-fg"}>
-            <bdi>{(row.original.qty_base > 0 ? "+" : "") + formatNumber(row.original.qty_base, names.language)}</bdi>
+            <bdi className="num">
+              {(row.original.qty_base > 0 ? "+" : "") + formatNumber(row.original.qty_base, names.language)}
+            </bdi>
           </span>
         ),
       },
@@ -463,11 +465,12 @@ function StockCardSection({ item }: { item: StockItem }) {
               <span className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium">{t(`moves.${r.kind}`)}</span>
                 <span className={r.qty_base < 0 ? "tabular text-danger-fg" : "tabular text-success-fg"}>
-                  <bdi>{(r.qty_base > 0 ? "+" : "") + formatNumber(r.qty_base, names.language)}</bdi>
+                  <bdi className="num">{(r.qty_base > 0 ? "+" : "") + formatNumber(r.qty_base, names.language)}</bdi>
                 </span>
               </span>
               <span className="text-muted">
-                <DateText value={r.moved_at} format="datetime" /> · <bdi>{r.batch_no}</bdi> · {names.name(r.store)}
+                <DateText value={r.moved_at} format="datetime" /> · <bdi className="num">{r.batch_no}</bdi> ·{" "}
+                {names.name(r.store)}
               </span>
               <span>
                 {t("card.balance")}: <QtyText value={r.balance} unit={unit} />

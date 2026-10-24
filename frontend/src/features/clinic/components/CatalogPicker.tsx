@@ -144,7 +144,7 @@ export function CatalogPicker({
                     {pickName({ ar: service.name_ar, en: service.name_en }, language)}
                   </span>
                   <span className="block text-xs text-muted">
-                    <bdi>{service.code}</bdi>
+                    <bdi className="num">{service.code}</bdi>
                     {service.drug
                       ? ` · ${[service.drug.generic_name, service.drug.strength].filter(Boolean).join(" ")}`
                       : ""}

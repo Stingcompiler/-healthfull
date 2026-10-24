@@ -41,7 +41,7 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
         <div className="flex justify-between gap-2">
           <dt className="text-muted">{t("invoicePrint.number")}</dt>
           <dd>
-            <bdi>{inv.number}</bdi>
+            <bdi className="num">{inv.number}</bdi>
           </dd>
         </div>
         {inv.approved_at ? (
@@ -59,13 +59,13 @@ function InvoiceBody({ data, format }: { data: InvoicePrint; format: PrintFormat
         <div className="flex justify-between gap-2">
           <dt className="text-muted">{t("common:patient.fileNo")}</dt>
           <dd>
-            <bdi>{inv.patient.file_no}</bdi>
+            <bdi className="num">{inv.patient.file_no}</bdi>
           </dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt className="text-muted">{t("billing.visit")}</dt>
           <dd>
-            <bdi>{inv.visit_number}</bdi>
+            <bdi className="num">{inv.visit_number}</bdi>
           </dd>
         </div>
       </dl>

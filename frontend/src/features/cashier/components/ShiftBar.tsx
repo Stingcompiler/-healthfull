@@ -40,7 +40,9 @@ export function ShiftBar() {
           <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
             <span className="flex items-center gap-2 font-semibold">
               <Clock3 className="size-4 text-primary-strong" aria-hidden="true" />
-              <bdi data-testid="shift-number">{report.shift.number}</bdi>
+              <bdi data-testid="shift-number" className="num">
+                {report.shift.number}
+              </bdi>
               <Badge variant="success">{t("shift.status.open")}</Badge>
             </span>
             <span className="text-sm text-muted">

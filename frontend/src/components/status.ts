@@ -51,10 +51,12 @@ export const STATUS_STYLES: Record<Status, StatusStyle> = {
     className: "bg-state-cancelled-bg text-state-cancelled-fg",
     dotClassName: "bg-state-cancelled",
   },
+  // A transfer waits for a cashier to confirm it against the bank: staff must act, so this is
+  // the amber "attention" role, not the neutral "pending" one (docs/DECISIONS.md D-0009).
   pending_verification: {
     icon: Clock3,
-    className: "bg-state-pending-bg text-state-pending-fg",
-    dotClassName: "bg-state-pending",
+    className: "bg-state-attention-bg text-state-attention-fg",
+    dotClassName: "bg-state-attention",
   },
   confirmed: { icon: BadgeCheck, className: "bg-success-bg text-success-fg", dotClassName: "bg-success" },
   rejected: { icon: Ban, className: "bg-danger-bg text-danger-fg", dotClassName: "bg-danger" },

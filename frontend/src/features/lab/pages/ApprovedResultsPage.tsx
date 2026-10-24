@@ -45,7 +45,7 @@ export function ApprovedResultsPage() {
         cell: ({ row }) => (
           <span className="flex min-w-0 flex-col">
             <span>{names.patient(row.original.patient)}</span>
-            <bdi className="text-xs text-muted">{row.original.patient.file_no}</bdi>
+            <bdi className="num text-xs text-muted">{row.original.patient.file_no}</bdi>
           </span>
         ),
       },
@@ -104,7 +104,7 @@ export function ApprovedResultsPage() {
               <span className="font-semibold">{names.test(r.test)}</span>
               <span className="text-sm">{names.patient(r.patient)}</span>
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-                <bdi>{r.patient.file_no}</bdi>
+                <bdi className="num">{r.patient.file_no}</bdi>
                 {r.approved_at ? <DateText value={r.approved_at} format="datetime" /> : null}
               </span>
               <div className="flex justify-end">

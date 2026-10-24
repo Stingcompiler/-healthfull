@@ -78,7 +78,7 @@ export function BalanceCard({ patientId }: { patientId: number }) {
             <ul className="grid gap-1 text-sm" aria-label={t("balance.openInvoices")}>
               {b.invoices.map((inv) => (
                 <li key={inv.invoice_id} className="flex justify-between gap-2">
-                  <bdi className="tabular text-muted">{inv.number}</bdi>
+                  <bdi className="num text-muted">{inv.number}</bdi>
                   <MoneyText value={inv.outstanding} />
                 </li>
               ))}

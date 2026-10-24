@@ -140,7 +140,7 @@ function QueueCard({ entry }: { entry: QueueEntry }) {
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="inline-flex min-w-10 items-center justify-center rounded-control bg-primary-soft px-2 py-1 tabular font-bold text-primary-strong">
           <span className="sr-only">{t("queue.token")} </span>
-          <bdi>{entry.token_no}</bdi>
+          <bdi className="num">{entry.token_no}</bdi>
         </span>
         <QueueStatusBadge status={entry.status} />
         <span className="text-xs text-muted">{t(`visitType.${entry.visit.visit_type}`)}</span>

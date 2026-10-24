@@ -17,7 +17,10 @@ export interface MoneyTextProps {
 /**
  * Money in SDG, formatted with Intl for the current language, tabular
  * digits, isolated from surrounding bidi text so "10,000.00 ج.س." never
- * gets reordered inside Arabic sentences. Never does arithmetic.
+ * gets reordered inside Arabic sentences. A bare amount (currency={false})
+ * is a `.num`; with the currency attached the string keeps bidi auto
+ * direction so the symbol sits where Arabic readers expect it. Never does
+ * arithmetic.
  */
 export function MoneyText({ value, currency = true, signed = false, toneNegative = false, className }: MoneyTextProps) {
   const language = useLanguage();
@@ -27,7 +30,12 @@ export function MoneyText({ value, currency = true, signed = false, toneNegative
     <bdi
       data-slot="money"
       data-negative={negative || undefined}
-      className={cn("tabular font-medium whitespace-nowrap", toneNegative && negative && "text-danger-fg", className)}
+      className={cn(
+        currency ? "tabular" : "num",
+        "font-medium whitespace-nowrap",
+        toneNegative && negative && "text-danger-fg",
+        className,
+      )}
     >
       {text}
     </bdi>

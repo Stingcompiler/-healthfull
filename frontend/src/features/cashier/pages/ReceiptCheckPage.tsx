@@ -51,7 +51,7 @@ function CheckResult({ check }: { check: ReceiptCheck }) {
       <section className="card-surface flex min-w-0 flex-col gap-2 p-4 md:p-5" aria-labelledby="receipt-check-title">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="receipt-check-title" className="text-base font-semibold">
-            {t("receipt.number")} <bdi>{p.number}</bdi>
+            {t("receipt.number")} <bdi className="num">{p.number}</bdi>
           </h2>
           <Button asChild variant="outline" size="sm">
             <Link to="/cashier/receipts/$paymentId" params={{ paymentId: String(p.id) }}>
@@ -81,16 +81,16 @@ function CheckResult({ check }: { check: ReceiptCheck }) {
           ) : null}
           <Row label={t("receipt.patient")}>{names.patient(p.patient)}</Row>
           <Row label={t("common:patient.fileNo")}>
-            <bdi>{p.patient.file_no}</bdi>
+            <bdi className="num">{p.patient.file_no}</bdi>
           </Row>
           <Row label={t("receipt.method")}>{t(`payment.method.${p.method}`)}</Row>
           {p.bank ? (
             <Row label={t("payment.bank")}>
-              {names.name(p.bank)} · <bdi>{p.reference}</bdi>
+              {names.name(p.bank)} · <bdi className="num">{p.reference}</bdi>
             </Row>
           ) : null}
           <Row label={t("receipt.cashier")}>
-            {names.user(p.created_by)} · <bdi>{p.shift_number}</bdi>
+            {names.user(p.created_by)} · <bdi className="num">{p.shift_number}</bdi>
           </Row>
         </dl>
       </section>

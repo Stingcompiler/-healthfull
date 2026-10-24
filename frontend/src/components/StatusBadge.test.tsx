@@ -38,7 +38,7 @@ describe("StatusBadge", () => {
     for (const s of SERVICE_LINE_STATES) {
       expect(STATUS_STYLES[s].className).toContain(`bg-state-${s}-bg`);
     }
-    expect(STATUS_STYLES.pending_verification.className).toContain("bg-state-pending-bg");
+    expect(STATUS_STYLES.pending_verification.className).toContain("bg-state-attention-bg");
   });
 
   it("translates to Arabic", async () => {

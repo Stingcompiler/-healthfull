@@ -69,7 +69,7 @@ export function TatPage() {
         id: "count",
         header: t("tat.columns.count"),
         meta: { label: t("tat.columns.count"), align: "end" },
-        cell: ({ row }) => <span className="tabular">{formatNumber(row.original.stats.count, language)}</span>,
+        cell: ({ row }) => <span className="num">{formatNumber(row.original.stats.count, language)}</span>,
       },
       {
         id: "median",
