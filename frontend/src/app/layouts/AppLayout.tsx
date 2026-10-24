@@ -6,9 +6,11 @@ import { useTranslation } from "react-i18next";
 import { safeRedirectTarget } from "@/app/guards";
 import { visibleNav } from "@/app/nav";
 import { AppShell } from "@/components/AppShell";
+import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { NotificationBell } from "@/features/notifications/NotificationBell";
 import { usePatientQuickSearch } from "@/features/patients/quick-search";
 import { useMe } from "@/lib/auth/hooks";
+import { ConnectionProvider } from "@/lib/hooks/use-server-connection";
 import { densityAttribute, densityForPath } from "@/lib/density";
 
 /**
@@ -57,12 +59,15 @@ export function AppLayout() {
   const density = densityAttribute(densityForPath(useLocation({ select: (l) => l.pathname })));
   return (
     <AuthGuard>
-      <AppShell nav={nav} quickSearch={quickSearch} actions={<NotificationBell />}>
-        {/* display: contents keeps the layout as it was; only the density tokens are scoped here. */}
-        <div data-density={density} className="contents">
-          <Outlet />
-        </div>
-      </AppShell>
+      <ConnectionProvider>
+        <AppShell nav={nav} quickSearch={quickSearch} actions={<NotificationBell />}>
+          {/* display: contents keeps the layout as it was; only the density tokens are scoped here. */}
+          <div data-density={density} className="contents">
+            <ConnectionBanner />
+            <Outlet />
+          </div>
+        </AppShell>
+      </ConnectionProvider>
     </AuthGuard>
   );
 }

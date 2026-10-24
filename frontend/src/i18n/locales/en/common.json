@@ -232,5 +232,20 @@
     "username": "Approver's username",
     "password": "Approver's password",
     "toggle": "Another person approves now"
+  },
+  "connection": {
+    "unreachableTitle": "Can't reach the server",
+    "unreachableBody": "New changes are not saved until the connection is back. What you typed on this screen stays, and we keep retrying.",
+    "restoredTitle": "Connection restored",
+    "restoredBody": "You can carry on. Refresh the page if the data looks out of date."
+  },
+  "statusBar": {
+    "label": "Status bar",
+    "operator": "Operator",
+    "shift": "Shift",
+    "noShift": "No open shift",
+    "time": "Time",
+    "connected": "Connected",
+    "unreachable": "Server unreachable"
   }
 }
