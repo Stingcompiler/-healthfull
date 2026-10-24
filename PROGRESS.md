@@ -363,6 +363,14 @@ where ticked (ADRs 0021, 0022):
 - e2e has no Prettier config of its own; specs were formatted with `frontend/.prettierrc.json`
   only where touched.
 
+## UI: Design Reference v2.2 adoption (`docs/DECISIONS.md` is the register)
+
+Three sequential PRs. Frontend only: the seven invariants, money rules and the API are untouched.
+
+- [x] PR 1 (#10): tokens single source (DTCG JSON in `frontend/src/design/tokens/`, `scripts/build_tokens.py`, `make tokens` / `make tokens-check`, CI step), shared contrast pairs, `docs/DECISIONS.md` (D-0001 to D-0007). No visual change (declarations byte-identical).
+- [ ] PR 2: chart tokens, neutral `pending` vs amber `attention`, `.num`, lint-ui `rtl-icon`, one Plex font family (D-0008 to D-0012).
+- [ ] PR 3: density modes, cashier/pharmacy status bar and shortcuts, connection banner (two states), forms and charts review.
+
 ## Next: finish Phase 8 on `phase/8`
 
 Wave c is on `main` (PR #7, `39dd731`) and merged into `phase/8`. `feat/8-followups` and
