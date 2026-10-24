@@ -63,9 +63,10 @@ function CenterPanel() {
         </div>
         {notices.length > 0 ? (
           <section aria-labelledby="login-notices" className="card-surface p-4">
-            <h2 id="login-notices" className="text-sm font-semibold text-fg">
+            {/* A label, not a heading: the panel comes before the page's h1. */}
+            <p id="login-notices" className="text-sm font-semibold text-fg">
               {t("panel.notices")}
-            </h2>
+            </p>
             <ul className="mt-2 flex flex-col divide-y divide-border">
               {notices.map((n) => {
                 const body = pickName({ ar: n.body_ar, en: n.body_en }, language);
