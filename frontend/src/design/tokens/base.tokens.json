@@ -1,0 +1,13 @@
+{
+  "$schema": "https://www.designtokens.org/schema/2025.10",
+  "$description": "Theme-independent tokens. Leaf names are the CSS custom property names.",
+  "radius": {
+    "$type": "dimension",
+    "card-radius": {
+      "$value": { "value": 12, "unit": "px" }
+    },
+    "control-radius": {
+      "$value": { "value": 8, "unit": "px" }
+    }
+  }
+}
