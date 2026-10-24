@@ -212,7 +212,7 @@ Postings (each a balanced JournalEntry with `source_type`, `source_id` and, when
 
 ### 5.1 Design tokens and themes
 
-- All colors are CSS variables in `src/design/tokens.css`, mapped into Tailwind v4 `@theme`. Components use semantic utilities only (`bg-surface`, `text-fg`, `text-muted`, `border-border`, `bg-primary`, `text-primary-fg`, status colors). No raw hex or Tailwind palette colors in components.
+- All colors are CSS variables in `src/design/tokens.css`, which is **generated** from the DTCG files in `src/design/tokens/*.tokens.json` by `scripts/build_tokens.py` (`make tokens`; `make tokens-check` runs in `make check` and CI, and also checks the contrast pairs in `tokens/contrast.json`). Never edit `tokens.css` by hand. Deviations from the design reference are recorded in `docs/DECISIONS.md`. The variables are mapped into Tailwind v4 `@theme`. Components use semantic utilities only (`bg-surface`, `text-fg`, `text-muted`, `border-border`, `bg-primary`, `text-primary-fg`, status colors). No raw hex or Tailwind palette colors in components.
 - Themes via `<html data-theme="light|dark|warm">`, persisted per user (server profile) with localStorage as first-paint cache. Respect `prefers-color-scheme` only when the user has no saved choice.
 
 | Token | light | dark | warm |

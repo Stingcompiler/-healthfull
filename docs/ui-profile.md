@@ -1,6 +1,6 @@
 # ملحق الواجهة (Part B) — hospital-sys
 
-هذا ملحق المشروع الخاص بوثيقة مراجعة الكروت والواجهات (الجزء أ: القواعد العامة). ما يُحسم هنا لا يُعاد استنتاجه. يُقرأ مع `docs/ARCHITECTURE.md` القسم 5 و`frontend/src/design/tokens.css`.
+هذا ملحق المشروع الخاص بوثيقة مراجعة الكروت والواجهات (الجزء أ: القواعد العامة). ما يُحسم هنا لا يُعاد استنتاجه. يُقرأ مع `docs/ARCHITECTURE.md` القسم 5 و`frontend/src/design/tokens/*.tokens.json` (المصدر؛ `tokens.css` مولَّد منه بـ`make tokens`) و`docs/DECISIONS.md` (سجل الخروج عن المرجع العام Design Reference v2.2).
 
 **اسم المشروع:** hospital-sys
 
@@ -25,7 +25,7 @@
 
 **أوضاع الألوان:** ثلاثة: فاتح (`light`) وداكن (`dark`) ودافئ (`warm`) عبر `html[data-theme]`. أي وضع غير هذه غير مدعوم.
 
-**المكتبة ونظام التصميم:** React 19 + Vite + TypeScript + Tailwind v4 + shadcn/ui (`frontend/src/components/ui`). الرموز في `frontend/src/design/tokens.css` وتُربط بـ`@theme` في `frontend/src/design/index.css`. فئات دلالية فقط (`bg-surface`, `text-fg`, `border-border`, `bg-primary`, ألوان الحالة `state-*`)؛ لا ألوان خام (eslint يفرض). خصائص منطقية فقط (`ms-/me-/ps-/pe-/start-/end-`). كل نص عبر i18next بمفاتيح ar/en متطابقة. لا مكتبات جديدة.
+**المكتبة ونظام التصميم:** React 19 + Vite + TypeScript + Tailwind v4 + shadcn/ui (`frontend/src/components/ui`). الرموز مصدرها `frontend/src/design/tokens/*.tokens.json` ويُولَّد منها `tokens.css` (لا يُعدَّل يدويًا) وتُربط بـ`@theme` في `frontend/src/design/index.css`. فئات دلالية فقط (`bg-surface`, `text-fg`, `border-border`, `bg-primary`, ألوان الحالة `state-*`)؛ لا ألوان خام (eslint يفرض). خصائص منطقية فقط (`ms-/me-/ps-/pe-/start-/end-`). كل نص عبر i18next بمفاتيح ar/en متطابقة. لا مكتبات جديدة.
 
 **المكونات المشتركة الموجودة التي يجب البناء عليها:**
 `KpiCard`, `PatientCard`, `ServiceLineCard`, `AlertCard`, `EmptyState`, `StatusBadge`, `MoneyText`, `DateText`, `DataTable` (جدول من md فما فوق وكروت تحت md), `PageHeader`, `AppShell`, `ReasonDialog`, `ConfirmDialog`, `SearchInput`, وأوليات shadcn. فئة السطح المشتركة `card-surface` (نصف قطر 12px، ظل ناعم في الفاتح/الدافئ، حد 1px في الداكن).
