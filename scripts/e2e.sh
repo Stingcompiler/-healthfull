@@ -9,7 +9,7 @@
 #
 # Environment:
 #   E2E_GREP            passed to Playwright as --grep
-#   E2E_SHARD           passed to Playwright as --shard (e.g. 2/4); CI runs four shards
+#   E2E_SHARD           passed to Playwright as --shard (e.g. 2/8); CI runs eight shards
 #   E2E_DB_NAME         e2e database (default e2e_hospital_<hash>). It is DROPPED and recreated,
 #                       so it must be e2e_hospital_<this worktree's hash>, unless
 #   E2E_ALLOW_FOREIGN_DB=1  allows another e2e_hospital_* name (e.g. a CI-specific one)
