@@ -391,7 +391,7 @@ sequential PRs, each merged before the next:
   F09 this file; F10 SECRET_KEY rotation runbook; F11 accountant discount (ADR 0025).
 - [x] PR 2, F02: one permission sweep over every OpenAPI operation and all 12 roles
   (`api/tests/test_permission_sweep.py`). It found no gap: every staff operation refuses every
-  role lacking its code (3,208 refusals checked), 401 for anonymous and across portal/staff
+  role lacking its code (2,968 refusals checked), 401 for anonymous and across portal/staff
   sessions, 404 for another patient's invoice, receipt, result and appointment.
 - [ ] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
   sign-out and design-guide link by role; deterministic restart spec branches.
