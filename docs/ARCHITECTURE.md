@@ -183,7 +183,7 @@ Postings (each a balanced JournalEntry with `source_type`, `source_id` and, when
 - `django-pgtrigger` guards (each raises `<CODE>: <message>`):
   - Append-only: JournalEntry/Line, Allocation, StockMove, Dispense/DispenseLine/DispenseReturn, PayerPaymentAllocation, ShiftReview, PatientMerge, AuthEvent.
   - Frozen by status: approved Invoice/InvoiceLine and CreditNote/CreditNoteLine (lines only under a draft parent), closed Shift, final Refund and rejected Payment, money fields of Payment and PayerPayment, approved/amended ResultVersion and its values, closed/void Claim, posted stock documents, PriceListVersion/PriceItem once a frozen line used them.
-  - Transition guards: `line_guard` (4.4), `claim_line_guard` (claim line edges, never claims more than accrued), `dispense_line_eligible` (4.8), `authorization_guard`, `payment_verification_forward`, `refund_forward`, `handover_guard`, `version_guard`.
+  - Transition guards: `line_guard` (4.4), `claim_line_guard` (claim line edges, never claims more than accrued), `dispense_line_eligible` (4.8), `dispense_batch_not_expired` (a batch leaves through its expiry date, judged on the center's day of the dispense), `authorization_guard`, `payment_verification_forward`, `refund_forward`, `handover_guard`, `version_guard`.
   - `shift_must_be_open` on every row that names a shift; the deferred balance trigger on journal entries.
   - `truncate_guard` on the 22 money, claim, service-line, stock and lab result tables: `TRUNCATE` is refused unless the session role is a member of the table owner.
   - `pgtrigger`'s ignore switch is replaced after every `migrate` by a function that never ignores a trigger.
@@ -204,7 +204,7 @@ Postings (each a balanced JournalEntry with `source_type`, `source_id` and, when
 - Auth: Django session cookie + CSRF (`X-CSRFToken` header from `csrftoken` cookie). `GET /api/auth/csrf` sets the cookie. Portal uses its own session key and router auth.
 - Schemas: Pydantic via ninja `Schema`. Names `<Thing>In`, `<Thing>Out`, `<Thing>Patch`. Operation ids `<app>_<verb>_<thing>` (stable; they become frontend function names).
 - Lists: `?page=1&page_size=25&q=...` → `{items, count, page, page_size}`.
-- Errors: JSON `{code, message, details}`. 400/422 validation, 401 unauthenticated, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 domain rule violation (`code` from DomainError, e.g. `INVOICE_FROZEN`, `SHIFT_NOT_OPEN`, `DUPLICATE_REFERENCE`, `STOCK_INSUFFICIENT`). Frontend maps `code` to translated text via the `errors` namespace.
+- Errors: JSON `{code, message, details}`. 400/422 validation, 401 unauthenticated, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 domain rule violation (`code` from DomainError, e.g. `INVOICE_FROZEN`, `SHIFT_NOT_OPEN`, `DUPLICATE_REFERENCE`, `STOCK_INSUFFICIENT`). Frontend maps `code` to translated text via the `errors` namespace. A database guard's `<CODE>: ...` answers 409 with the code from `api.errors.DB_GUARD_CODES` (every code the schema's triggers raise; a test reads them from `pg_proc`), never the SQL text; an unknown database error stays 500 `INTERNAL_ERROR`.
 - Bilingual data fields are `name_ar` and `name_en`; the UI picks by current language with fallback.
 - OpenAPI exported by `manage.py export_openapi` to `frontend/openapi.json` (committed). CI fails if it drifts.
 
