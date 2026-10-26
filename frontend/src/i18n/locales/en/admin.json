@@ -218,7 +218,8 @@
       "prescription": "Prescription",
       "lab_result": "Lab result",
       "claim_export": "Claim export",
-      "shift_report": "Shift report"
+      "shift_report": "Shift report",
+      "referral": "Referral letter"
     },
     "papers": {
       "a4": "A4",

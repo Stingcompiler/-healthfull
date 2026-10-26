@@ -19,8 +19,8 @@ from api.errors import PermissionRequired
 from api.permissions import require_perm
 from api.ping import add_ping
 from api.schemas import ERROR_RESPONSES, ErrorOut
+from apps.clinical import prints, services
 from apps.clinical import schemas as s
-from apps.clinical import services
 from apps.clinical.models import (
     Allergy,
     ChronicCondition,
@@ -494,6 +494,34 @@ def cancel_referral(request: HttpRequest, referral_id: int, payload: s.ReferralC
     referral = get_object_or_404(Referral, pk=referral_id)
     cancelled = services.cancel_referral(referral, actor=_actor(request), reason=payload.reason)
     return s.referral_out(cancelled)
+
+
+# --- printed prescription and referral letter (F03) ------------------------------------------
+
+
+@clinical_router.get(
+    "/visits/{visit_id}/prescription/print",
+    response={200: s.PrescriptionPrintOut, **_READ, 409: ErrorOut},
+    operation_id="clinical_get_prescription_print",
+    summary="The visit's prescription for A4 printing: center header, patient, drugs and how "
+    "to take them; no prices",
+    description="409 NO_PRESCRIPTION when the visit has no prescribed drug.",
+)
+@require_perm("clinical.view")
+def get_prescription_print(request: HttpRequest, visit_id: int) -> Any:
+    return prints.prescription_print(get_object_or_404(Visit, pk=visit_id).pk)
+
+
+@clinical_router.get(
+    "/referrals/{referral_id}/print",
+    response={200: s.ReferralPrintOut, **_READ, 409: ErrorOut},
+    operation_id="clinical_get_referral_print",
+    summary="A referral letter for A4 printing: center header, patient, reason and summary",
+    description="409 REFERRAL_CLOSED for a cancelled referral.",
+)
+@require_perm("clinical.view")
+def get_referral_print(request: HttpRequest, referral_id: int) -> Any:
+    return prints.referral_print(get_object_or_404(Referral, pk=referral_id).pk)
 
 
 # --- order sets and favorites ---------------------------------------------------------------

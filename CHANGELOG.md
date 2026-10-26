@@ -4,6 +4,7 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
 ### Fixed (pre-trial, inspection of October 2026)
+- Printed prescription and referral letter from the clinic: A4, Arabic or English paper, the center's identity and the document's print template (new template document "Referral letter"), patient, allergies and diagnoses; never a price (F03).
 - An ended session no longer throws away unsaved work: the page stays (hidden) behind a sign-in dialog; the same user carries on with the draft, another user never sees it (ADR 0026, F06).
 - The waiting-room kiosk can be signed out (with a confirmation); the design guide shows in the user menu of system administrators only (F12).
 - The restart e2e spec kills the server before and after the payment commit on every run, at a sync point instead of a fixed sleep, and asserts no duplicate payment in both.

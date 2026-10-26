@@ -1,4 +1,5 @@
-import { ClipboardList, Send, Star } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ClipboardList, Printer, Send, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -198,9 +199,23 @@ export function OrdersTab({
       ) : null}
 
       <section aria-labelledby="orders-heading" className="flex flex-col gap-3">
-        <h2 id="orders-heading" className="text-sm font-semibold text-fg-muted">
-          {t("orders.current")}
-        </h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 id="orders-heading" className="text-sm font-semibold text-fg-muted">
+            {t("orders.current")}
+          </h2>
+          {lines.data?.some((line) => line.prescription && line.status !== "cancelled") ? (
+            <Button size="sm" variant="outline" className="ms-auto" asChild>
+              <Link
+                to="/clinic/visits/$visitId/prescription/print"
+                params={{ visitId: String(visitId) }}
+                data-testid="prescription-print-link"
+              >
+                <Printer aria-hidden="true" />
+                {t("print.printPrescription")}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
         {lines.isError ? (
           <QueryError
             title={t("orders.loadError")}

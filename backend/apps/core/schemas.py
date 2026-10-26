@@ -44,7 +44,7 @@ ReasonCategoryCode = Literal[
     "admission_cancel",
 ]
 PrintDocumentCode = Literal[
-    "invoice", "receipt", "prescription", "lab_result", "claim_export", "shift_report"
+    "invoice", "receipt", "prescription", "referral", "lab_result", "claim_export", "shift_report"
 ]
 PaperCode = Literal["a4", "thermal_80"]
 

@@ -470,3 +470,25 @@ export function useEstimate(visitId: number) {
       unwrap(api.POST("/api/orders/visits/{visit_id}/estimate", { params: { path: { visit_id: visitId } }, body })),
   });
 }
+
+/** The visit's prescription for A4 printing (F03). */
+export function usePrescriptionPrint(visitId: number) {
+  return useQuery({
+    queryKey: [...clinicKeys.all, "print", "prescription", visitId] as const,
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/clinical/visits/{visit_id}/prescription/print", { params: { path: { visit_id: visitId } } }),
+      ),
+    enabled: Number.isInteger(visitId) && visitId > 0,
+  });
+}
+
+/** A referral letter for A4 printing (F03). */
+export function useReferralPrint(referralId: number) {
+  return useQuery({
+    queryKey: [...clinicKeys.all, "print", "referral", referralId] as const,
+    queryFn: () =>
+      unwrap(api.GET("/api/clinical/referrals/{referral_id}/print", { params: { path: { referral_id: referralId } } })),
+    enabled: Number.isInteger(referralId) && referralId > 0,
+  });
+}

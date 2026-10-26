@@ -1630,6 +1630,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clinical/referrals/{referral_id}/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A referral letter for A4 printing: center header, patient, reason and summary
+         * @description 409 REFERRAL_CLOSED for a cancelled referral.
+         */
+        get: operations["clinical_get_referral_print"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clinical/visits/{visit_id}/diagnoses": {
         parameters: {
             query?: never;
@@ -1664,6 +1684,26 @@ export interface paths {
          * @description 409 VISIT_NOT_OPEN.
          */
         post: operations["clinical_create_note"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clinical/visits/{visit_id}/prescription/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The visit's prescription for A4 printing: center header, patient, drugs and how to take them; no prices
+         * @description 409 NO_PRESCRIPTION when the visit has no prescribed drug.
+         */
+        get: operations["clinical_get_prescription_print"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -14507,6 +14547,31 @@ export interface components {
              */
             route: "oral" | "iv" | "im" | "sc" | "topical" | "inhaled" | "rectal" | "ophthalmic" | "otic" | "nasal" | "other";
         };
+        /** PrescriptionItemOut */
+        PrescriptionItemOut: {
+            /** As Needed */
+            as_needed: boolean;
+            /** Dose */
+            dose: string;
+            /** Duration Days */
+            duration_days: number | null;
+            /** Frequency Code */
+            frequency_code: string;
+            /** Frequency Per Day */
+            frequency_per_day: string | null;
+            /** Instructions */
+            instructions: string;
+            /** Line Id */
+            line_id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Quantity */
+            quantity: number;
+            /** Route */
+            route: string;
+        };
         /** PrescriptionOut */
         PrescriptionOut: {
             /** As Needed */
@@ -14554,6 +14619,33 @@ export interface components {
             frequency_per_day: string | null;
             /** Quantity */
             quantity: number | null;
+        };
+        /** PrescriptionPrintOut */
+        PrescriptionPrintOut: {
+            /** Allergies */
+            allergies: components["schemas"]["AllergyChipOut"][];
+            center: components["schemas"]["PrintCenterOut"];
+            department: components["schemas"]["DepartmentRefOut"] | null;
+            /** Diagnoses */
+            diagnoses: components["schemas"]["DiagnosisOut"][];
+            doctor: components["schemas"]["DoctorRefOut"] | null;
+            /** Items */
+            items: components["schemas"]["PrescriptionItemOut"][];
+            patient: components["schemas"]["PrintPatientOut"];
+            prescriber: components["schemas"]["ClinicUserRefOut"] | null;
+            /**
+             * Printed At
+             * Format: date-time
+             */
+            printed_at: string;
+            template: components["schemas"]["PrintTemplateBlockOut"];
+            /**
+             * Visit Date
+             * Format: date
+             */
+            visit_date: string;
+            /** Visit Number */
+            visit_number: string;
         };
         /** PriceChangeIn */
         PriceChangeIn: {
@@ -14653,6 +14745,53 @@ export interface components {
             /** Name En */
             name_en?: string | null;
         };
+        /** PrintCenterOut */
+        PrintCenterOut: {
+            /** Address */
+            address: string;
+            /** Has Logo */
+            has_logo: boolean;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Phone */
+            phone: string;
+        };
+        /** PrintPatientOut */
+        PrintPatientOut: {
+            /** Date Of Birth */
+            date_of_birth: string | null;
+            /** Dob Is Estimated */
+            dob_is_estimated: boolean;
+            /** File No */
+            file_no: string;
+            /** Full Name Ar */
+            full_name_ar: string;
+            /** Full Name En */
+            full_name_en: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "male" | "female" | "unknown";
+        };
+        /**
+         * PrintTemplateBlockOut
+         * @description The document's header, footer and logo switch (Administration > Print templates).
+         */
+        PrintTemplateBlockOut: {
+            /** Footer Ar */
+            footer_ar: string;
+            /** Footer En */
+            footer_en: string;
+            /** Header Ar */
+            header_ar: string;
+            /** Header En */
+            header_en: string;
+            /** Show Logo */
+            show_logo: boolean;
+        };
         /** PrintTemplateIn */
         PrintTemplateIn: {
             /**
@@ -14694,7 +14833,7 @@ export interface components {
              * Document
              * @enum {string}
              */
-            document: "invoice" | "receipt" | "prescription" | "lab_result" | "claim_export" | "shift_report";
+            document: "invoice" | "receipt" | "prescription" | "referral" | "lab_result" | "claim_export" | "shift_report";
             /** Footer Ar */
             footer_ar: string;
             /** Footer En */
@@ -15163,6 +15302,31 @@ export interface components {
              * @enum {string}
              */
             urgency: "routine" | "urgent" | "emergency";
+        };
+        /** ReferralPrintOut */
+        ReferralPrintOut: {
+            /** Allergies */
+            allergies: components["schemas"]["AllergyChipOut"][];
+            center: components["schemas"]["PrintCenterOut"];
+            department: components["schemas"]["DepartmentRefOut"] | null;
+            /** Diagnoses */
+            diagnoses: components["schemas"]["DiagnosisOut"][];
+            doctor: components["schemas"]["DoctorRefOut"] | null;
+            patient: components["schemas"]["PrintPatientOut"];
+            /**
+             * Printed At
+             * Format: date-time
+             */
+            printed_at: string;
+            referral: components["schemas"]["ReferralOut"];
+            template: components["schemas"]["PrintTemplateBlockOut"];
+            /**
+             * Visit Date
+             * Format: date
+             */
+            visit_date: string;
+            /** Visit Number */
+            visit_number: string;
         };
         /** ReferralTargetsOut */
         ReferralTargetsOut: {
@@ -24300,6 +24464,73 @@ export interface operations {
             };
         };
     };
+    clinical_get_referral_print: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                referral_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralPrintOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     clinical_create_diagnosis: {
         parameters: {
             query?: never;
@@ -24393,6 +24624,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NoteOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    clinical_get_prescription_print: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrescriptionPrintOut"];
                 };
             };
             /** @description Unauthorized */
@@ -26722,7 +27020,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                document: "invoice" | "receipt" | "prescription" | "lab_result" | "claim_export" | "shift_report";
+                document: "invoice" | "receipt" | "prescription" | "referral" | "lab_result" | "claim_export" | "shift_report";
                 paper: "a4" | "thermal_80";
             };
             cookie?: never;
