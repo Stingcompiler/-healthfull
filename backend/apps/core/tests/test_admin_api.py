@@ -639,7 +639,7 @@ def test_sequences_view(client: ApiClient) -> None:
 
 def test_print_templates(client: ApiClient, cashier_client: ApiClient) -> None:
     rows = client.get("/api/core/print-templates").json()
-    assert len(rows) == 12
+    assert len(rows) == 14  # 7 documents (referral letter since F03) x 2 papers
     assert all(not r["saved"] for r in rows)
     saved = _put(
         client,
