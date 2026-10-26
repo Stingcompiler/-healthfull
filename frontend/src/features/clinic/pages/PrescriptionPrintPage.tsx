@@ -41,7 +41,10 @@ function PrescriptionBody({ data, lang }: { data: PrescriptionPrint; lang: Print
             data-testid="print-rx-item"
           >
             <p className="font-semibold">
-              <span className="num">{index + 1}.</span> {pickName({ ar: item.name_ar, en: item.name_en }, lang)}
+              <bdi dir="ltr" className="num">
+                {index + 1}.
+              </bdi>{" "}
+              {pickName({ ar: item.name_ar, en: item.name_en }, lang)}
             </p>
             <p>{how(item)}</p>
             <p className="text-muted">
