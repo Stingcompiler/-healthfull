@@ -5,8 +5,11 @@
  * second Django server on its own free port against the same e2e database, drives a visit
  * through its API (patient -> visit -> drug and test orders -> invoices -> cash and a bank
  * transfer), SIGKILLs the whole process group right after the transfer is answered, starts a new
- * server on the same port and carries on (dispense). Then it kills the server again while a cash
- * payment is in flight and proves the payment is all or nothing.
+ * server on the same port and carries on (dispense). Then it kills the server twice while a cash
+ * payment is in flight, each time at a known moment (a sync point the server signals, never a
+ * sleep): before the payment's transaction commits (nothing is recorded; the cashier takes it
+ * once) and after it commits but before the answer (recorded once; the cashier, seeing the
+ * invoice paid, takes nothing). Both branches run on every run and neither duplicates a payment.
  *
  * What must hold after every restart: each payment exists exactly once (re-posting the transfer
  * reference is refused as DUPLICATE_REFERENCE), invoice outstanding is right, the shift's
@@ -17,7 +20,10 @@ import { expect, test } from "@playwright/test";
 
 import { USERS } from "../../fixtures/users";
 import { closeShift, disposeApiClients, FixtureError, openShift, seededCatalog, type CatalogRef } from "../../helpers";
-import { Backend, freePort, letters, ServerApi, uniquePhone } from "./kit";
+import path from "node:path";
+
+import { LOGS_DIR } from "../../env";
+import { Backend, freePort, letters, reached, ServerApi, uniquePhone } from "./kit";
 
 interface LineOut {
   id: number;
@@ -70,6 +76,7 @@ const CONSULTATION = "15000.00"; // CONS-GEN, cash patient
 const DRUG_QTY = 10;
 const DRUG = "500.00"; // DRG-PARA500 x 10 at 50
 const TEST = "4000.00"; // LAB-FBS
+const CBC = "12000.00"; // LAB-CBC
 
 function metric(body: { metrics: Metric[] }, key: string): number {
   return Number(body.metrics.find((m) => m.key === key)?.value ?? Number.NaN);
@@ -103,9 +110,11 @@ test.describe("@cycle @restart server restart", () => {
     const catalog: CatalogRef = await seededCatalog();
     const drugService = catalog.services["DRG-PARA500"];
     const testService = catalog.services["LAB-FBS"];
+    const cbcService = catalog.services["LAB-CBC"];
     const item = catalog.items["DRG-PARA500"];
     const pha = catalog.stores.PHA;
-    if (!drugService || !testService || !item || pha === undefined) throw new Error("seed catalog incomplete");
+    if (!drugService || !testService || !cbcService || !item || pha === undefined)
+      throw new Error("seed catalog incomplete");
     await noShift();
 
     const server = new Backend(await freePort());
@@ -153,7 +162,11 @@ test.describe("@cycle @restart server restart", () => {
       use_default_coverage: true,
     });
     await doctor.post(`/api/orders/visits/${String(visit.id)}/lines`, {
-      items: [{ service_id: drugService.id, quantity: DRUG_QTY }, { service_id: testService.id }],
+      items: [
+        { service_id: drugService.id, quantity: DRUG_QTY },
+        { service_id: testService.id },
+        { service_id: cbcService.id },
+      ],
     });
 
     await cashier.post("/api/payments/shifts", { opening_float: FLOAT });
@@ -260,60 +273,78 @@ test.describe("@cycle @restart server restart", () => {
     expect(twice.status, `a second dispense of the same line: ${JSON.stringify(twice.body)}`).toBe(409);
     expect(await stock(), "stock moved exactly once").toBe(stockAtStart - DRUG_QTY);
 
-    // ---- power cut while a cash payment is in flight ----------------------------------------
+    // ---- power cuts while a cash payment is in flight, at two known moments ---------------
+    const syncRoot = path.join(LOGS_DIR, `restart-sync-${String(server.port)}-${String(Date.now())}`);
+    /** Restarts the server paused at `moment`, posts a cash payment, kills it there, restarts. */
+    const cutAt = async (moment: "before_commit" | "after_commit", amount: string) => {
+      const dir = path.join(syncRoot, moment);
+      await server.kill();
+      await server.start({ E2E_PAYMENT_PAUSE: moment, E2E_SYNC_DIR: dir });
+      const inFlight = cashier
+        .send<PaymentOut>(
+          "POST",
+          "/api/payments/payments",
+          { patient_id: patient.id, method: "cash", amount, auto: true, visit_id: visit.id },
+          120_000,
+        )
+        .then(
+          (answer) => ({ answered: answer.status }),
+          (error: unknown) => ({ answered: 0, error: String(error) }),
+        );
+      await reached(path.join(dir, moment));
+      await server.kill();
+      const outcome = await inFlight;
+      await server.start();
+      test.info().annotations.push({ type: `in-flight kill ${moment}`, description: JSON.stringify(outcome) });
+      // Killed before it could answer, in both branches.
+      expect(outcome.answered, `${moment}: ${JSON.stringify(outcome)}`).toBe(0);
+    };
+
+    // Before the commit: the payment row existed only inside the killed transaction.
     const lab = await invoiceFor("LAB-FBS");
     expect(lab.patient_total).toBe(TEST);
-    const inFlight = cashier
-      .send<PaymentOut>(
-        "POST",
-        "/api/payments/payments",
-        { patient_id: patient.id, method: "cash", amount: TEST, auto: true, visit_id: visit.id },
-        15_000,
-      )
-      .then(
-        (answer) => ({ answered: answer.status }),
-        (error: unknown) => ({ answered: 0, error: String(error) }),
-      );
-    await new Promise((r) => setTimeout(r, 25));
-    await server.kill();
-    const outcome = await inFlight;
-    await server.start();
-
+    await cutAt("before_commit", TEST);
     byId = await invoices();
-    const labNow = byId.get(lab.id);
-    const recorded = labNow?.payments ?? [];
-    const description = `answer ${String(outcome.answered)}, payments recorded ${String(recorded.length)}`;
-    test.info().annotations.push({ type: "in-flight kill", description });
-    console.log(`restart spec, in-flight kill: ${description}`);
-    // All or nothing: one complete payment, or none at all and the invoice still owed.
-    expect(recorded.length).toBeLessThanOrEqual(1);
-    if (outcome.answered >= 200 && outcome.answered < 300) expect(recorded).toHaveLength(1);
+    expect(byId.get(lab.id)?.payments ?? []).toHaveLength(0);
+    expect(byId.get(lab.id)?.outstanding).toBe(TEST);
     report = await shift();
-    if (recorded.length === 1) {
-      expect(recorded[0]?.amount).toBe(TEST);
-      expect(labNow?.outstanding).toBe("0.00");
-      expect(report.collection.cash_confirmed).toBe(money(Number(CONSULTATION) + Number(TEST)));
-    } else {
-      expect(labNow?.outstanding).toBe(TEST);
-      expect(report.collection.cash_confirmed).toBe(CONSULTATION);
-      expect(report.expected_cash).toBe(money(Number(FLOAT) + Number(CONSULTATION)));
-      // Nothing was taken: the cashier takes it now, once.
-      await cashier.post<PaymentOut>("/api/payments/payments", {
-        patient_id: patient.id,
-        method: "cash",
-        amount: TEST,
-        auto: true,
-        visit_id: visit.id,
-      });
-    }
+    expect(report.collection.cash_confirmed).toBe(CONSULTATION);
+    expect(report.expected_cash).toBe(money(Number(FLOAT) + Number(CONSULTATION)));
+    // Nothing was taken: the cashier takes it now, once.
+    await cashier.post<PaymentOut>("/api/payments/payments", {
+      patient_id: patient.id,
+      method: "cash",
+      amount: TEST,
+      auto: true,
+      visit_id: visit.id,
+    });
+    byId = await invoices();
+    expect(byId.get(lab.id)?.payments).toHaveLength(1);
+    expect(byId.get(lab.id)?.outstanding).toBe("0.00");
+
+    // After the commit: recorded once although the cashier never saw the answer.
+    const cbc = await invoiceFor("LAB-CBC");
+    expect(cbc.patient_total).toBe(CBC);
+    await cutAt("after_commit", CBC);
+    byId = await invoices();
+    const cbcNow = byId.get(cbc.id);
+    expect(cbcNow?.payments).toHaveLength(1);
+    expect(cbcNow?.payments[0]?.amount).toBe(CBC);
+    expect(cbcNow?.outstanding).toBe("0.00");
+    report = await shift();
+    expect(report.collection.cash_confirmed).toBe(money(Number(CONSULTATION) + Number(TEST) + Number(CBC)));
+    // The invoice shows paid, so the cashier takes nothing more: no second payment exists.
+    expect((await billing()).balance.outstanding).toBe("0.00");
 
     // ---- final books ------------------------------------------------------------------------
     byId = await invoices();
-    expect([...byId.values()].map((i) => i.outstanding)).toEqual(["0.00", "0.00", "0.00"]);
+    expect([...byId.values()].map((i) => i.outstanding)).toEqual(["0.00", "0.00", "0.00", "0.00"]);
     expect(byId.get(lab.id)?.payments).toHaveLength(1);
+    expect(byId.get(cbc.id)?.payments).toHaveLength(1);
     report = await shift();
-    expect(report.expected_cash).toBe(money(Number(FLOAT) + Number(CONSULTATION) + Number(TEST)));
-    expect(report.movements.cash_in).toBe(money(Number(CONSULTATION) + Number(TEST)));
+    const cashTaken = Number(CONSULTATION) + Number(TEST) + Number(CBC);
+    expect(report.expected_cash).toBe(money(Number(FLOAT) + cashTaken));
+    expect(report.movements.cash_in).toBe(money(cashTaken));
     expect(report.collection.bank_pending).toBe(DRUG);
     const finalBalance = (await billing()).balance;
     expect([finalBalance.outstanding, finalBalance.credit]).toEqual(["0.00", "0.00"]);
@@ -321,9 +352,10 @@ test.describe("@cycle @restart server restart", () => {
 
     // The revenue report moved by exactly this visit's money: cash collected, transfer pending.
     const now = await revenue();
-    expect(metric(now, "collected") - metric(baseline, "collected")).toBe(Number(CONSULTATION) + Number(TEST));
-    expect(metric(now, "cash") - metric(baseline, "cash")).toBe(Number(CONSULTATION) + Number(TEST));
+    expect(metric(now, "collected") - metric(baseline, "collected")).toBe(cashTaken);
+    expect(metric(now, "cash") - metric(baseline, "cash")).toBe(cashTaken);
     expect(metric(now, "pending_transfers") - metric(baseline, "pending_transfers")).toBe(Number(DRUG));
-    expect(server.starts).toBe(3);
+    // Started at first, after the transfer, and paused then normal for each in-flight cut.
+    expect(server.starts).toBe(6);
   });
 });

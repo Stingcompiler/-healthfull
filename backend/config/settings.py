@@ -134,6 +134,16 @@ DATABASES = {
     }
 }
 
+# Restart e2e spec only (apps.core.e2e.pause): a sync point before or after a payment's commit,
+# on a DEBUG server of an e2e_* database whose environment asks for it. Never in production.
+if (
+    DEBUG
+    and env_str("E2E_PAYMENT_PAUSE", "") in ("before_commit", "after_commit")
+    and env_str("E2E_SYNC_DIR", "")
+    and str(DATABASES["default"]["NAME"]).startswith("e2e_")
+):
+    MIDDLEWARE.append("apps.core.e2e.pause.PaymentPauseMiddleware")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Auth and sessions ----------------------------------------------------------------
