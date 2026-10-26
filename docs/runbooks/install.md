@@ -90,6 +90,9 @@ Set at least: `POSTGRES_PASSWORD`, `DB_OWNER_PASSWORD`, `DB_APP_PASSWORD` (all t
 (the same, with `http://` or `https://`), `APP_IMAGE_TAG` (the release you install), and
 `BIND_IP` = the server's LAN address (see "Firewall and Docker" in step 2).
 Print `.env` and keep it in the clinic safe: without it, backups of secrets are lost.
+`DJANGO_SECRET_KEY` must never change afterwards except on purpose: it signs the QR code of
+every printed receipt (ADR 0016), and a new key makes every older QR fail
+([operations.md, The secret key](operations.md#the-secret-key--المفتاح-السري)).
 
 ### Database roles — أدوار قاعدة البيانات
 
