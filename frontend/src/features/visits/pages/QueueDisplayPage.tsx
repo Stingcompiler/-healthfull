@@ -1,9 +1,12 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { WifiOff } from "lucide-react";
+import { LogOut, WifiOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLogout } from "@/lib/auth/hooks";
 import { formatDate, formatNumber } from "@/lib/format";
 import { useClock } from "@/lib/hooks/use-clock";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -25,7 +28,39 @@ const STALE_AFTER_MS = DISPLAY_REFRESH_MS * 3;
  * It is a kiosk page outside the app shell (route `/display/queue`): no navigation, no quick
  * search and no way into the staff screens from the waiting room. When the feed stops
  * updating it says so instead of showing an old or empty queue.
+ *
+ * The kiosk admin signs the screen out with a small button that asks first (a patient who
+ * taps it by chance cancels), e.g. to sign the display account in on another screen.
  */
+function KioskSignOut() {
+  const { t } = useTranslation("visits");
+  const logout = useLogout();
+  const navigate = useNavigate();
+  return (
+    <ConfirmDialog
+      trigger={
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t("display.signOut")}
+          title={t("display.signOut")}
+          data-testid="display-sign-out"
+        >
+          <LogOut className="rtl:-scale-x-100" aria-hidden="true" />
+        </Button>
+      }
+      title={t("display.signOutTitle")}
+      description={t("display.signOutDescription")}
+      confirmLabel={t("display.signOut")}
+      destructive
+      onConfirm={async () => {
+        await logout.mutateAsync().catch(() => undefined);
+        await navigate({ to: "/login", replace: true });
+      }}
+    />
+  );
+}
+
 export function QueueDisplayPage() {
   const { t } = useTranslation("visits");
   const language = useLanguage();
@@ -80,6 +115,7 @@ export function QueueDisplayPage() {
             </SelectContent>
           </Select>
           <LanguageSwitcher />
+          <KioskSignOut />
         </div>
       </header>
 

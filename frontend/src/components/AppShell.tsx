@@ -31,7 +31,7 @@ import {
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCurrentUser, useLogout } from "@/lib/auth/hooks";
-import { isKnownRole } from "@/lib/auth/permissions";
+import { hasPermission, isKnownRole } from "@/lib/auth/permissions";
 import { useBreakpoint } from "@/lib/hooks/use-media-query";
 import { useShortcut } from "@/lib/hooks/use-shortcut";
 import { useDirection, useLanguage } from "@/lib/i18n-hooks";
@@ -417,6 +417,9 @@ function NavLink({
   );
 }
 
+/** Who sees «دليل التصميم» in the user menu: the system administrators (settings). */
+export const DESIGN_GUIDE_PERMISSION = "core.manage_settings";
+
 function UserMenu() {
   const { t } = useTranslation(["common", "auth"]);
   const language = useLanguage();
@@ -475,12 +478,15 @@ function UserMenu() {
             {t("user.changePassword")}
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/design">
-            <Palette />
-            {t("user.designSystem")}
-          </Link>
-        </DropdownMenuItem>
+        {/* The design guide is a reference for whoever maintains the system (F12). */}
+        {hasPermission(me, DESIGN_GUIDE_PERMISSION) ? (
+          <DropdownMenuItem asChild>
+            <Link to="/design">
+              <Palette />
+              {t("user.designSystem")}
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={onLogout} data-testid="logout">
           <LogOut className="rtl:-scale-x-100" />
