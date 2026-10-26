@@ -34,13 +34,13 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 
 import pghistory
 from django.db import IntegrityError, connection, transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, QuerySet, Sum
 from django.utils import timezone
 
 from apps.billing import services as billing
@@ -109,8 +109,10 @@ __all__ = [
     "open_refund_for_credit_note",
     "open_refunds_for_credit_note",
     "open_shift",
+    "overdue_pending_transfers",
     "patient_balance",
     "pay_refund",
+    "pending_transfer_alert_days",
     "receive_handover",
     "record_payment",
     "refund_source_available",
@@ -1071,6 +1073,33 @@ def reject_transfer(
     return Rejection(locked, reversal, tuple(rows), plan.uncovered)
 
 
+def pending_transfer_alert_days() -> int:
+    """Whole days a transfer may stay pending before it is late (``Policy``, FEATURES 0.13).
+
+    The one source for the dashboard's alert and the verifiers' notification.
+    """
+    return int(Policy.load().pending_transfer_alert_days)
+
+
+def overdue_pending_transfers(today: date, days: int | None = None) -> QuerySet[Payment]:
+    """Pending transfers older than ``days`` whole days on ``today`` (``days`` defaults to
+    :func:`pending_transfer_alert_days`).
+
+    A transfer's age is counted in the center's calendar days from the day it was taken
+    (``domain.payments.pending_age_days``), so ``age > days`` is "taken before the start of
+    ``today - days``". Reversal rows are not transfers awaiting anyone.
+    """
+    if days is None:
+        days = pending_transfer_alert_days()
+    cutoff = timezone.make_aware(datetime.combine(today - timedelta(days=days), time.min))
+    return Payment.objects.filter(
+        verification=Verification.PENDING,
+        method__in=BANK_METHODS,
+        reversal_of__isnull=True,
+        created_at__lt=cutoff,
+    )
+
+
 def notify_overdue_transfers(
     days: int | None = None, *, today: date | None = None, dedupe_key: str = ""
 ) -> int:
@@ -1080,15 +1109,19 @@ def notify_overdue_transfers(
     ``manage.py notify_scan``) alerts each verifier once per key.
     """
     if days is None:
-        days = int(Policy.load().pending_transfer_alert_days)
+        days = pending_transfer_alert_days()
     day = today or timezone.localdate()
-    overdue = []
-    for pk, number, amount, created in Payment.objects.filter(
-        verification=Verification.PENDING, reversal_of__isnull=True
-    ).values_list("id", "number", "amount", "created_at"):
-        age = dp.pending_age_days(timezone.localdate(created), day)
-        if age > days:
-            overdue.append({"payment_id": pk, "number": number, "amount": str(amount), "age": age})
+    overdue = [
+        {
+            "payment_id": pk,
+            "number": number,
+            "amount": str(amount),
+            "age": dp.pending_age_days(timezone.localdate(created), day),
+        }
+        for pk, number, amount, created in overdue_pending_transfers(day, days)
+        .order_by("created_at", "id")
+        .values_list("id", "number", "amount", "created_at")
+    ]
     if not overdue:
         return 0
     return notify_kind(

@@ -38,6 +38,7 @@ from apps.lab import queries as lab_queries
 from apps.lab.models import LabTest
 from apps.orders import services as orders
 from apps.orders.models import BillingStatus, FulfilmentStatus, ServiceLine
+from apps.payments import services as payments
 from apps.payments.models import BANK_METHODS, Payment, Refund, RefundStatus, Shift, ShiftStatus
 from apps.payments.models import Verification as PaymentVerification
 from apps.pharmacy import queries as pharmacy_queries
@@ -1729,12 +1730,8 @@ def dashboard(*, today: date | None = None) -> Dashboard:
     ]
 
     alerts: list[Alert] = []
-    stale = Payment.objects.filter(
-        verification=PaymentVerification.PENDING,
-        method__in=BANK_METHODS,
-        reversal_of__isnull=True,
-        created_at__lt=start - timedelta(days=2),
-    ).aggregate(n=Count("id"), s=Sum("amount"))
+    # Late by the same policy as the verifiers' notification (Policy.pending_transfer_alert_days).
+    stale = payments.overdue_pending_transfers(day).aggregate(n=Count("id"), s=Sum("amount"))
     if stale["n"]:
         alerts.append(
             Alert("stale_transfers", "warning", stale["n"], m(stale["s"]), "pending_transfers")

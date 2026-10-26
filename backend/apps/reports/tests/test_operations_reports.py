@@ -210,3 +210,27 @@ def test_dashboard_tomorrow_flags_yesterdays_leaks(day: Day) -> None:
     alerts = {a.key: a for a in d.alerts}
     assert alerts["paid_not_performed"].count == 2
     assert alerts["requested_not_invoiced"].count == 1
+
+
+@pytest.mark.parametrize("days", [2, 4])
+def test_stale_transfer_alert_and_notification_follow_one_policy(day: Day, days: int) -> None:
+    """The dashboard alert and the verifiers' notification read the same setting (F07)."""
+    from apps.core.models import Notification, Policy
+    from apps.payments import services as pay
+
+    Policy.objects.filter(pk=Policy.load().pk).update(pending_transfer_alert_days=days)
+    fin.staff("accountant")  # a verifier to notify
+    today = timezone.localdate()
+
+    def alerted(on: date) -> bool:
+        return "stale_transfers" in {a.key for a in queries.dashboard(today=on).alerts}
+
+    # The day's transfer (pending) is `days` old: not yet late for either.
+    on_the_limit = today + timedelta(days=days)
+    assert not alerted(on_the_limit)
+    assert pay.notify_overdue_transfers(today=on_the_limit) == 0
+    # One day more: late for both.
+    late = on_the_limit + timedelta(days=1)
+    assert alerted(late)
+    assert pay.notify_overdue_transfers(today=late) >= 1
+    assert Notification.objects.filter(kind="transfers_pending_overdue").exists()

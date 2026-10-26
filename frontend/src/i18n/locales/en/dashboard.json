@@ -19,7 +19,7 @@
     "title": "Needs attention",
     "allClear": "Nothing needs attention right now",
     "open": "Open",
-    "stale_transfers": "transfers pending for more than two days",
+    "stale_transfers": "transfers pending past the alert limit in Policies",
     "unreviewed_variances": "shift variances not reviewed",
     "paid_not_performed": "paid services not performed since yesterday or earlier",
     "requested_not_invoiced": "orders not invoiced since yesterday or earlier",
