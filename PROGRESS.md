@@ -724,3 +724,9 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   `REQUIRE_PG=1 REQUIRE_DJANGO=1 make infra-test` 68 checks passed (pgbackrest conf 6,
   update.sh 26, app entrypoint 5, db roles 14, backup/restore 11, restore drill 6; the drill's
   `integrity_check` now includes `search_locale`). Playwright inventory: 1998 tests in 55 files.
+- 2026-10-26: pre-trial PR 3 on `feat/9-session-reauth` (F06, F12, restart spec; ADR 0026).
+  Results: `make check` green (backend 2412 passed, frontend 585 passed; lint, types,
+  migrations, API contract clean). `make e2e
+  E2E_GREP="@pretrial|@restart|@followups|@auth|@clinic|display"` 62 of 62 passed (6.7 min); the
+  restart spec reached both sync points (before and after the payment commit) and recorded each
+  payment exactly once.
