@@ -120,8 +120,8 @@ jobs:
       - run: make api-check
 
   e2e:
-    # The full suite (about 1,100 tests) runs in eight shards. Setup takes about a minute per shard, so more
-    # shards cut the wait almost linearly; with four, the slowest shard took 23 to 49 minutes.
+    # The full suite runs in eight shards. scripts/e2e.sh runs each shard in two passes (functional
+    # specs, then the responsive matrix), so every shard gets its share of the slow functional specs.
     name: e2e (Playwright, chromium, shard ${{ matrix.shard }}/8)
     runs-on: ubuntu-24.04
     timeout-minutes: 40

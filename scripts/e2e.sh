@@ -9,7 +9,9 @@
 #
 # Environment:
 #   E2E_GREP            passed to Playwright as --grep
-#   E2E_SHARD           passed to Playwright as --shard (e.g. 2/8); CI runs eight shards
+#   E2E_SHARD           passed to Playwright as --shard (e.g. 2/8); CI runs eight shards. A sharded
+#                       run without a filter runs two passes, the functional specs and then the
+#                       responsive matrix, each sharded, so every shard gets its share of both
 #   E2E_DB_NAME         e2e database (default e2e_hospital_<hash>). It is DROPPED and recreated,
 #                       so it must be e2e_hospital_<this worktree's hash>, unless
 #   E2E_ALLOW_FOREIGN_DB=1  allows another e2e_hospital_* name (e.g. a CI-specific one)
@@ -124,7 +126,14 @@ if [[ -n "${E2E_GREP:-}" ]]; then
 fi
 
 status=0
-(cd "$E2E" && pnpm exec playwright test ${args[@]+"${args[@]}"} "$@") || status=$?
+if [[ -n "${E2E_SHARD:-}" && -z "${E2E_GREP:-}" && $# -eq 0 ]]; then
+  for part in functional responsive; do
+    log "part: $part"
+    (cd "$E2E" && E2E_PART="$part" pnpm exec playwright test ${args[@]+"${args[@]}"}) || status=$?
+  done
+else
+  (cd "$E2E" && pnpm exec playwright test ${args[@]+"${args[@]}"} "$@") || status=$?
+fi
 
 shots="$(find "$ROOT/artifacts/screens" -maxdepth 1 -type f -name '*.png' | wc -l | tr -d ' ')"
 log "screenshots: $shots in artifacts/screens/"
