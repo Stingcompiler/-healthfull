@@ -30,6 +30,17 @@ mkdirSync(LOGS_DIR, { recursive: true });
 const CI = process.env.CI === "true" || process.env.CI === "1";
 /** Reuse servers already listening on the ports (local debugging only; they must use DB_NAME). */
 const REUSE = process.env.E2E_REUSE_SERVERS === "1";
+/**
+ * Sharded CI runs (scripts/e2e.sh) run the suite in two parts so every shard gets its share of
+ * both: "functional" (every spec except the responsive matrix) and "responsive" (the matrix).
+ * Sharding one list by test count put nearly all slow functional specs in shard 1.
+ */
+const PART = process.env.E2E_PART;
+if (PART !== undefined && PART !== "functional" && PART !== "responsive") {
+  throw new Error(`E2E_PART must be "functional" or "responsive", not "${PART}"`);
+}
+const RESPONSIVE_SPEC = "**/responsive.spec.ts";
+const PART_DIR = PART === undefined ? "" : `/${PART}`;
 
 const serverEnv: Record<string, string> = {
   ...(Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== undefined)) as Record<string, string>),
@@ -46,7 +57,9 @@ function logTo(name: string): string {
 
 export default defineConfig({
   testDir: "./tests",
-  outputDir: "./test-results",
+  ...(PART === "functional" ? { testIgnore: RESPONSIVE_SPEC } : {}),
+  ...(PART === "responsive" ? { testMatch: RESPONSIVE_SPEC } : {}),
+  outputDir: `./test-results${PART_DIR}`,
   globalSetup: "./global-setup.ts",
   // Specs share server-side state (the admin's saved preferences, seed users), so one worker.
   // Sharded CI runs split by test, not by file (serial-mode files stay together).
@@ -57,7 +70,7 @@ export default defineConfig({
   forbidOnly: CI,
   timeout: 30_000,
   expect: { timeout: 10_000 },
-  reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
+  reporter: [["list"], ["html", { outputFolder: `playwright-report${PART_DIR}`, open: "never" }]],
   use: {
     baseURL: BASE_URL,
     ...devices["Desktop Chrome"],
