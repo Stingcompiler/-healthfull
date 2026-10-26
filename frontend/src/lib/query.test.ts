@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/errors";
 import type { MeOut } from "@/lib/api/contract";
 import { authKeys } from "@/lib/auth/api";
+import { getSessionState } from "@/lib/auth/session";
 
 import { createQueryClient, PASSWORD_CHANGE_REQUIRED } from "./query";
 
@@ -33,17 +34,36 @@ async function failingQuery(status: number, code: string) {
 }
 
 describe("query client error handling", () => {
-  it("forgets the current user when any query answers 401", async () => {
+  // Inspection F06: a 401 under a signed-in user marks the session expired and keeps the user
+  // (and so the page and its unsaved work); AuthGuard then asks for the password again.
+  it("marks the session expired and keeps the user when any query answers 401", async () => {
     const client = await failingQuery(401, "NOT_AUTHENTICATED");
-    expect(client.getQueryData(authKeys.me)).toBeNull();
+    expect(client.getQueryData(authKeys.me)).toEqual(ME);
+    expect(getSessionState(client)).toEqual({ kind: "expired", userId: ME.id, username: ME.username });
   });
 
-  it("forgets the current user when a mutation answers 401", async () => {
+  it("marks the session expired when a mutation answers 401", async () => {
     const client = createQueryClient();
     client.setQueryData(authKeys.me, ME);
     const observer = new MutationObserver(client, { mutationFn: failWith(401, "NOT_AUTHENTICATED") });
     await expect(observer.mutate()).rejects.toBeInstanceOf(ApiError);
+    expect(client.getQueryData(authKeys.me)).toEqual(ME);
+    expect(getSessionState(client)?.kind).toBe("expired");
+  });
+
+  it("forgets the user on a 401 when nobody was signed in", async () => {
+    const client = createQueryClient();
+    await expect(
+      client.query({ queryKey: ["probe"], queryFn: failWith(401, "NOT_AUTHENTICATED"), retry: false }),
+    ).rejects.toBeInstanceOf(ApiError);
     expect(client.getQueryData(authKeys.me)).toBeNull();
+    expect(getSessionState(client)).toBeNull();
+  });
+
+  it("a refused sign-in is not an ended session", async () => {
+    const client = await failingQuery(401, "INVALID_CREDENTIALS");
+    expect(client.getQueryData(authKeys.me)).toEqual(ME);
+    expect(getSessionState(client)).toBeNull();
   });
 
   it("re-reads /me when the server requires a password change", async () => {
