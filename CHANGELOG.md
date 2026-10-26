@@ -4,6 +4,7 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
 ### Fixed (pre-trial, inspection of October 2026)
+- One permission sweep over the whole API contract and all 12 roles: every operation classified (public, any staff, ping, portal patient, or staff with its permission), 401/403/404 checked per class; no gap found (F02).
 - Arabic fuzzy search and duplicate warnings need a database locale that sees Arabic letters: compose and CI pin `initdb` to UTF-8 `en_US.utf8` (the image default); `migrate` / `manage.py check --database default` fail with `patients.E001` and `integrity_check` reports `search_locale` when two Arabic spelling variants are not similar; install runbook section "Database locale" (F01).
 - The database refuses dispensing an expired batch (`dispense_batch_not_expired`, judged on the center's day of the dispense) (F04).
 - Database guard errors (`LINE_TERMINAL`, `PRICE_VERSION_LOCKED`, `BATCH_EXPIRED`, ...) answer 409 with a specific translated code instead of 500; every trigger code is mapped, checked against the schema by a test; SQL text is only logged (F05).

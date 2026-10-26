@@ -385,11 +385,14 @@ Follow-ups from the adoption (none are blocking): per-user density switch; one r
 the refund schema (ADR 0024), F11 remove the accountant's discount code (ADR 0025). Four
 sequential PRs, each merged before the next:
 
-- [ ] PR 1, pre-trial correctness: F01 database locale pinned and checked (Arabic trigram
+- [x] PR 1 (#16, `b256dad`), pre-trial correctness: F01 database locale pinned and checked (Arabic trigram
   similarity, `patients.E001`, `integrity_check search_locale`); F04 expiry guard on dispense;
   F05 database guard codes as 409; F07 one late-transfer policy; F08 refund schema (ADR 0024);
   F09 this file; F10 SECRET_KEY rotation runbook; F11 accountant discount (ADR 0025).
-- [ ] PR 2, F02: one permission sweep over every OpenAPI operation and all 12 roles.
+- [x] PR 2, F02: one permission sweep over every OpenAPI operation and all 12 roles
+  (`api/tests/test_permission_sweep.py`). It found no gap: every staff operation refuses every
+  role lacking its code (2,968 refusals checked), 401 for anonymous and across portal/staff
+  sessions, 404 for another patient's invoice, receipt, result and appointment.
 - [ ] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
   sign-out and design-guide link by role; deterministic restart spec branches.
 - [ ] PR 4, F03: printed prescription and referral letter.
