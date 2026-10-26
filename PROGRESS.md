@@ -390,7 +390,7 @@ sequential PRs, each merged before the next:
   similarity, `patients.E001`, `integrity_check search_locale`); F04 expiry guard on dispense;
   F05 database guard codes as 409; F07 one late-transfer policy; F08 refund schema (ADR 0024);
   F09 this file; F10 SECRET_KEY rotation runbook; F11 accountant discount (ADR 0025).
-- [x] PR 2, F02: one permission sweep over every OpenAPI operation and all 12 roles
+- [x] PR 2 (#17), F02: one permission sweep over every OpenAPI operation and all 12 roles
   (`api/tests/test_permission_sweep.py`). It found no gap: every staff operation refuses every
   role lacking its code (2,968 refusals checked), 401 for anonymous and across portal/staff
   sessions, 404 for another patient's invoice, receipt, result and appointment.
