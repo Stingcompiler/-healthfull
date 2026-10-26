@@ -48,7 +48,8 @@ register_permission(
     "billing.apply_discount",
     label_ar="تطبيق خصم أو إعفاء في حدود الدور",
     label_en="Apply discounts within the role limit",
-    default_roles={CASHIER, CASHIER_SUPERVISOR, ACCOUNTANT, MANAGER, ADMIN},
+    # Not the accountant: they draft no invoice and approve no desk discount (ADR 0025).
+    default_roles={CASHIER, CASHIER_SUPERVISOR, MANAGER, ADMIN},
 )
 
 register_permission(

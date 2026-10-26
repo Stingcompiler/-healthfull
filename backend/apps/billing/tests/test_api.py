@@ -361,3 +361,29 @@ def test_credit_note_by_cashier_approved_by_supervisor_opens_a_refund(d: Desk) -
     assert detail["lines"][1]["state"] == "cancelled"
     assert detail["lines"][1]["credited_quantity"] == 1
     assert Invoice.objects.get(pk=inv["id"]).patient_total.__str__() == "3600.00"
+
+
+def test_accountant_gives_no_discounts(d: Desk) -> None:
+    """The accountant neither drafts invoices nor approves desk discounts, so a discount
+    code would only act on drafts they cannot otherwise touch (ADR 0025, inspection F11)."""
+    from apps.core.permissions import effective_permissions
+
+    codes = effective_permissions(d.accountant.user)
+    assert "billing.apply_discount" not in codes
+    assert "billing.create_invoice" not in codes
+    assert "billing.override_discount_limit" not in codes
+    # What the accountant keeps on the billing side.
+    assert {"billing.view", "billing.create_credit_note", "billing.approve_credit_note"} <= codes
+    iv = kit.insured_visit(d.doctor.user)
+    inv = ok(d.sup.api.post("/api/billing/invoices", {"visit_id": iv.visit.pk}), 201)
+    line_id = inv["lines"][0]["id"]
+    for url in (
+        f"/api/billing/invoices/{inv['id']}/discount",
+        f"/api/billing/invoices/{inv['id']}/lines/{line_id}/discount",
+    ):
+        body = error(
+            d.accountant.api.post(url, {"reason": "STAFF", "percent": "10"}),
+            403,
+            "PERMISSION_DENIED",
+        )
+        assert body["details"] == {"permission": "billing.apply_discount"}
