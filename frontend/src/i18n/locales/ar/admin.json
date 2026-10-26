@@ -230,7 +230,8 @@
       "prescription": "الوصفة الطبية",
       "lab_result": "نتيجة المعمل",
       "claim_export": "تصدير المطالبة",
-      "shift_report": "تقرير الوردية"
+      "shift_report": "تقرير الوردية",
+      "referral": "خطاب إحالة"
     },
     "papers": {
       "a4": "A4",

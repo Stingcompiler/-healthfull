@@ -1,7 +1,10 @@
 import { createRoute, type AnyRoute } from "@tanstack/react-router";
 
 import { ClinicPage } from "./pages/ClinicPage";
+import { PrescriptionPrintPage } from "./pages/PrescriptionPrintPage";
+import { ReferralPrintPage } from "./pages/ReferralPrintPage";
 import { VisitWorkspacePage } from "./pages/VisitWorkspacePage";
+import { parseClinicPrintSearch } from "./print/search";
 
 /** clinic module routes, mounted under the authenticated app layout. */
 export function routes<TParent extends AnyRoute>(parent: TParent) {
@@ -15,5 +18,17 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     path: "/clinic/visits/$visitId",
     component: VisitWorkspacePage,
   });
-  return [index, workspace] as const;
+  const prescriptionPrint = createRoute({
+    getParentRoute: () => parent,
+    path: "/clinic/visits/$visitId/prescription/print",
+    component: PrescriptionPrintPage,
+    validateSearch: parseClinicPrintSearch,
+  });
+  const referralPrint = createRoute({
+    getParentRoute: () => parent,
+    path: "/clinic/referrals/$referralId/print",
+    component: ReferralPrintPage,
+    validateSearch: parseClinicPrintSearch,
+  });
+  return [index, workspace, prescriptionPrint, referralPrint] as const;
 }

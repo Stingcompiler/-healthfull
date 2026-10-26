@@ -49,3 +49,6 @@ export type Route = S["PrescriptionIn"]["route"];
 
 /** One allergy match: a 409 ALLERGY_CONFLICT (details.alerts) or the allergy-alerts warning. */
 export type AllergyAlert = S["AllergyAlertOut"];
+export type PrescriptionPrint = S["PrescriptionPrintOut"];
+export type ReferralPrint = S["ReferralPrintOut"];
+export type ClinicalPrint = Omit<PrescriptionPrint, "items" | "prescriber">;

@@ -835,3 +835,69 @@ def order_set_out(order_set: Any) -> dict[str, Any]:
             for it in items
         ],
     }
+
+
+# --- printed prescription and referral letter (F03) ---------------------------------------
+
+
+class PrintCenterOut(Schema):
+    name_ar: str
+    name_en: str
+    address: str
+    phone: str
+    has_logo: bool
+
+
+class PrintTemplateBlockOut(Schema):
+    """The document's header, footer and logo switch (Administration > Print templates)."""
+
+    show_logo: bool
+    header_ar: str
+    header_en: str
+    footer_ar: str
+    footer_en: str
+
+
+class PrintPatientOut(Schema):
+    file_no: str
+    full_name_ar: str
+    full_name_en: str
+    sex: Literal["male", "female", "unknown"]
+    date_of_birth: date | None
+    dob_is_estimated: bool
+
+
+class ClinicalPrintOut(Schema):
+    center: PrintCenterOut
+    template: PrintTemplateBlockOut
+    patient: PrintPatientOut
+    allergies: list[AllergyChipOut]
+    visit_number: str
+    visit_date: date
+    department: DepartmentRefOut | None
+    doctor: DoctorRefOut | None
+    diagnoses: list[DiagnosisOut]
+    printed_at: datetime
+
+
+class PrescriptionItemOut(Schema):
+    line_id: int
+    name_ar: str
+    name_en: str
+    dose: str
+    route: str
+    frequency_code: str
+    frequency_per_day: str | None
+    duration_days: int | None
+    as_needed: bool
+    instructions: str
+    quantity: int
+
+
+class PrescriptionPrintOut(ClinicalPrintOut):
+    prescriber: ClinicUserRefOut | None
+    items: list[PrescriptionItemOut]
+
+
+class ReferralPrintOut(ClinicalPrintOut):
+    referral: ReferralOut

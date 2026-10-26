@@ -293,6 +293,7 @@ class PrintDocument(models.TextChoices):
     INVOICE = "invoice", "Invoice"
     RECEIPT = "receipt", "Receipt"
     PRESCRIPTION = "prescription", "Prescription"
+    REFERRAL = "referral", "Referral letter"
     LAB_RESULT = "lab_result", "Lab result"
     CLAIM_EXPORT = "claim_export", "Claim export"
     SHIFT_REPORT = "shift_report", "Shift report"

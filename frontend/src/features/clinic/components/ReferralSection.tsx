@@ -1,4 +1,5 @@
-import { Send, XCircle } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Printer, Send, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -91,12 +92,24 @@ export function ReferralSection({
                   {t("referral.cancelledBecause", { reason: r.cancel_reason })}
                 </p>
               ) : null}
-              {canRefer && r.status === "issued" && r.referred_by?.id === me?.id ? (
-                <div className="flex justify-end">
-                  <Button size="sm" variant="ghost" onClick={() => setCancelling(r)}>
-                    <XCircle aria-hidden="true" />
-                    {t("referral.cancel")}
+              {r.status !== "cancelled" ? (
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button size="sm" variant="outline" asChild>
+                    <Link
+                      to="/clinic/referrals/$referralId/print"
+                      params={{ referralId: String(r.id) }}
+                      data-testid="referral-print"
+                    >
+                      <Printer aria-hidden="true" />
+                      {t("print.printLetter")}
+                    </Link>
                   </Button>
+                  {canRefer && r.status === "issued" && r.referred_by?.id === me?.id ? (
+                    <Button size="sm" variant="ghost" onClick={() => setCancelling(r)}>
+                      <XCircle aria-hidden="true" />
+                      {t("referral.cancel")}
+                    </Button>
+                  ) : null}
                 </div>
               ) : null}
             </li>
