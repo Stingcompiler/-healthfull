@@ -344,8 +344,8 @@ where ticked (ADRs 0021, 0022):
   Polish: `DEVICE_ROLE_ALONE` in the API and an exclusive checkbox on the users screen.
 - [x] No screen closes a visit (`visits.close`, «ختم الزيارة») although FLOW.md has the doctor close
   it. Polish: «ختم الزيارة» in the clinic workspace, `POST /api/visits/{id}/close`.
-- [ ] The kiosk page has no sign-out; «دليل التصميم» shows in every user's menu. Not in the
-  polish scope.
+- [x] The kiosk page has no sign-out; «دليل التصميم» shows in every user's menu. Pre-trial PR 3
+  (F12): a sign-out with confirmation on the kiosk; the design guide for `core.manage_settings`.
 - [x] Operations: the new `UpdateRun` columns are not in `/api/ops/updates` or on the status page;
   no scheduled `integrity_check` with an in-app alert. Polish: both done (ADR 0021).
 - [ ] The production drill runs in two parts (backup container, then the app containers) because
@@ -358,8 +358,9 @@ where ticked (ADRs 0021, 0022):
   fast as before the per-day transactions and per-event audit contexts. It is above the 10
   minute aim on this machine; `--visits-per-day` trims it. Most of the time is the services'
   own invoice approval and payment work (about 500 queries per visit).
-- The restart spec's "kill lands after the commit" branch is coded and asserted but every run
+- [x] The restart spec's "kill lands after the commit" branch is coded and asserted but every run
   so far killed the server before the commit (the payment was then taken once, again).
+  Pre-trial PR 3: both branches run every time at a sync point (`apps.core.e2e.pause`).
 - The full-cycle spec cleans both cashiers' shifts and filters claims and reports by its own
   file number; in the full run it passed at its place in file order.
 - Demo audit rows carry the seed's database time, not the simulated day (ADR 0017).
@@ -393,7 +394,7 @@ sequential PRs, each merged before the next:
   (`api/tests/test_permission_sweep.py`). It found no gap: every staff operation refuses every
   role lacking its code (2,968 refusals checked), 401 for anonymous and across portal/staff
   sessions, 404 for another patient's invoice, receipt, result and appointment.
-- [ ] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
+- [x] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
   sign-out and design-guide link by role; deterministic restart spec branches.
 - [ ] PR 4, F03: printed prescription and referral letter.
 
