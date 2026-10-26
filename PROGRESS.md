@@ -398,7 +398,7 @@ sequential PRs, each merged before the next:
   (`api/tests/test_permission_sweep.py`). It found no gap: every staff operation refuses every
   role lacking its code (2,968 refusals checked), 401 for anonymous and across portal/staff
   sessions, 404 for another patient's invoice, receipt, result and appointment.
-- [x] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
+- [x] PR 3 (#18), F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
   sign-out and design-guide link by role; deterministic restart spec branches.
 - [x] PR 4, F03: printed prescription and referral letter (A4, ar/en, center identity and the
   print template, a new `referral` template document; no prices).
