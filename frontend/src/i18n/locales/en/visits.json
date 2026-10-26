@@ -151,7 +151,10 @@
     "recentlyCalled": "Recently called",
     "offlineTitle": "Connection lost",
     "offlineDescription": "This screen is not updating. It comes back by itself when the connection returns; please listen for calls at reception.",
-    "loading": "Loading the queue…"
+    "loading": "Loading the queue…",
+    "signOut": "Sign out this screen",
+    "signOutTitle": "Sign this screen out?",
+    "signOutDescription": "The waiting room will see the sign-in page until the display account signs in again."
   },
   "appointments": {
     "title": "Appointments",

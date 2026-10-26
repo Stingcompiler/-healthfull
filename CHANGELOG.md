@@ -4,6 +4,9 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
 ### Fixed (pre-trial, inspection of October 2026)
+- An ended session no longer throws away unsaved work: the page stays (hidden) behind a sign-in dialog; the same user carries on with the draft, another user never sees it (ADR 0026, F06).
+- The waiting-room kiosk can be signed out (with a confirmation); the design guide shows in the user menu of system administrators only (F12).
+- The restart e2e spec kills the server before and after the payment commit on every run, at a sync point instead of a fixed sleep, and asserts no duplicate payment in both.
 - One permission sweep over the whole API contract and all 12 roles: every operation classified (public, any staff, ping, portal patient, or staff with its permission), 401/403/404 checked per class; no gap found (F02).
 - Arabic fuzzy search and duplicate warnings need a database locale that sees Arabic letters: compose and CI pin `initdb` to UTF-8 `en_US.utf8` (the image default); `migrate` / `manage.py check --database default` fail with `patients.E001` and `integrity_check` reports `search_locale` when two Arabic spelling variants are not similar; install runbook section "Database locale" (F01).
 - The database refuses dispensing an expired batch (`dispense_batch_not_expired`, judged on the center's day of the dispense) (F04).

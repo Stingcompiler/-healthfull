@@ -9,7 +9,7 @@
  *   Playwright-managed one), hard-killed and started again, with a small CSRF-aware API client.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { closeSync, openSync } from "node:fs";
+import { closeSync, existsSync, openSync } from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
 
@@ -211,7 +211,8 @@ export class Backend {
     this.url = `http://127.0.0.1:${String(port)}`;
   }
 
-  async start(): Promise<void> {
+  /** Starts the server; `env` adds variables for this run only (e.g. the payment sync point). */
+  async start(env: Record<string, string> = {}): Promise<void> {
     if (this.child) throw new Error("backend already running");
     if (await listening(`${this.url}/api/ops/health`)) throw new Error(`port ${String(this.port)} is taken`);
     const log = openSync(path.join(LOGS_DIR, `restart-backend-${String(this.port)}.log`), "a");
@@ -225,6 +226,7 @@ export class Backend {
           DB_NAME,
           BACKEND_PORT: String(this.port),
           DJANGO_DEBUG: "1",
+          ...env,
         },
         detached: true,
         stdio: ["ignore", log, log],
@@ -264,6 +266,18 @@ export class Backend {
 
   get running(): boolean {
     return this.child !== null;
+  }
+}
+
+/**
+ * Waits for the file a paused server writes at its sync point (`apps.core.e2e.pause`): the
+ * moment is known, not guessed from a sleep.
+ */
+export async function reached(file: string, timeoutMs = 60_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!existsSync(file)) {
+    if (Date.now() > deadline) throw new Error(`the server never reached ${file}`);
+    await new Promise((r) => setTimeout(r, 25));
   }
 }
 

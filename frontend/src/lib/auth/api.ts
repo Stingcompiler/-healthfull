@@ -1,27 +1,36 @@
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api/client";
 import type { ChangePasswordIn, LoginIn, MeOut, PreferencesPatch } from "@/lib/api/contract";
 import { ensureCsrfToken } from "@/lib/api/csrf";
 import { isApiError } from "@/lib/api/errors";
 
+import { getSessionState } from "./session";
+
 export const authKeys = {
   me: ["auth", "me"] as const,
 };
 
-/** Current user, or null when not logged in (401 is not an error here). */
-export async function fetchMe(): Promise<MeOut | null> {
+/**
+ * Current user, or null when not logged in (401 is not an error here). While a session has
+ * expired under a signed-in user (`session.ts`), a 401 stays an error so the cached user, and
+ * with it the page and its draft, is kept until the re-authentication dialog decides.
+ */
+export async function fetchMe(client?: QueryClient): Promise<MeOut | null> {
   try {
     return await unwrap(api.GET("/api/auth/me"));
   } catch (error) {
-    if (isApiError(error) && error.status === 401) return null;
+    if (isApiError(error) && error.status === 401) {
+      if (client && getSessionState(client) !== null) throw error;
+      return null;
+    }
     throw error;
   }
 }
 
 export const meQueryOptions = queryOptions({
   queryKey: authKeys.me,
-  queryFn: fetchMe,
+  queryFn: ({ client }) => fetchMe(client),
   staleTime: 5 * 60_000,
   retry: false,
 });

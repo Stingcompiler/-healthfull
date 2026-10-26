@@ -344,8 +344,8 @@ where ticked (ADRs 0021, 0022):
   Polish: `DEVICE_ROLE_ALONE` in the API and an exclusive checkbox on the users screen.
 - [x] No screen closes a visit (`visits.close`, «ختم الزيارة») although FLOW.md has the doctor close
   it. Polish: «ختم الزيارة» in the clinic workspace, `POST /api/visits/{id}/close`.
-- [ ] The kiosk page has no sign-out; «دليل التصميم» shows in every user's menu. Not in the
-  polish scope.
+- [x] The kiosk page has no sign-out; «دليل التصميم» shows in every user's menu. Pre-trial PR 3
+  (F12): a sign-out with confirmation on the kiosk; the design guide for `core.manage_settings`.
 - [x] Operations: the new `UpdateRun` columns are not in `/api/ops/updates` or on the status page;
   no scheduled `integrity_check` with an in-app alert. Polish: both done (ADR 0021).
 - [ ] The production drill runs in two parts (backup container, then the app containers) because
@@ -358,8 +358,9 @@ where ticked (ADRs 0021, 0022):
   fast as before the per-day transactions and per-event audit contexts. It is above the 10
   minute aim on this machine; `--visits-per-day` trims it. Most of the time is the services'
   own invoice approval and payment work (about 500 queries per visit).
-- The restart spec's "kill lands after the commit" branch is coded and asserted but every run
+- [x] The restart spec's "kill lands after the commit" branch is coded and asserted but every run
   so far killed the server before the commit (the payment was then taken once, again).
+  Pre-trial PR 3: both branches run every time at a sync point (`apps.core.e2e.pause`).
 - The full-cycle spec cleans both cashiers' shifts and filters claims and reports by its own
   file number; in the full run it passed at its place in file order.
 - Demo audit rows carry the seed's database time, not the simulated day (ADR 0017).
@@ -389,11 +390,11 @@ sequential PRs, each merged before the next:
   similarity, `patients.E001`, `integrity_check search_locale`); F04 expiry guard on dispense;
   F05 database guard codes as 409; F07 one late-transfer policy; F08 refund schema (ADR 0024);
   F09 this file; F10 SECRET_KEY rotation runbook; F11 accountant discount (ADR 0025).
-- [x] PR 2, F02: one permission sweep over every OpenAPI operation and all 12 roles
+- [x] PR 2 (#17), F02: one permission sweep over every OpenAPI operation and all 12 roles
   (`api/tests/test_permission_sweep.py`). It found no gap: every staff operation refuses every
   role lacking its code (2,968 refusals checked), 401 for anonymous and across portal/staff
   sessions, 404 for another patient's invoice, receipt, result and appointment.
-- [ ] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
+- [x] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
   sign-out and design-guide link by role; deterministic restart spec branches.
 - [ ] PR 4, F03: printed prescription and referral letter.
 
@@ -723,3 +724,9 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   `REQUIRE_PG=1 REQUIRE_DJANGO=1 make infra-test` 68 checks passed (pgbackrest conf 6,
   update.sh 26, app entrypoint 5, db roles 14, backup/restore 11, restore drill 6; the drill's
   `integrity_check` now includes `search_locale`). Playwright inventory: 1998 tests in 55 files.
+- 2026-10-26: pre-trial PR 3 on `feat/9-session-reauth` (F06, F12, restart spec; ADR 0026).
+  Results: `make check` green (backend 2412 passed, frontend 585 passed; lint, types,
+  migrations, API contract clean). `make e2e
+  E2E_GREP="@pretrial|@restart|@followups|@auth|@clinic|display"` 62 of 62 passed (6.7 min); the
+  restart spec reached both sync points (before and after the payment commit) and recorded each
+  payment exactly once.
