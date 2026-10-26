@@ -50,7 +50,8 @@ class PaymentPauseMiddleware:
                 execute: Callable[..., Any], sql: str, params: Any, many: bool, context: Any
             ) -> Any:
                 result = execute(sql, params, many, context)
-                if sql.lstrip().startswith('INSERT INTO "payments_payment" '):
+                # Not a prefix: pghistory puts its context statement in front of the SQL.
+                if 'INSERT INTO "payments_payment" ' in sql:
                     _reached("before_commit")
                 return result
 

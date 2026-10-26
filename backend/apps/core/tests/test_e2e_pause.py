@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import pghistory
 import pytest
 from django.conf import settings
 from django.http import HttpResponse
@@ -49,7 +50,9 @@ def test_before_commit_stops_right_after_the_payment_insert(
     done: list[str] = []
 
     def view(request: Any) -> HttpResponse:
-        b.payment()
+        # As in a real request: pghistory prefixes the INSERT with its context statement.
+        with pghistory.context(user=None, reason="test"):
+            b.payment()
         done.append("after insert")
         return HttpResponse(status=201)
 

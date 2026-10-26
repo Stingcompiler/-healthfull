@@ -47,8 +47,8 @@ async function endSession(page: Page): Promise<void> {
 
 async function reauth(page: Page, username: string): Promise<void> {
   const dialog = page.getByTestId("reauth-dialog");
-  await dialog.getByLabel(tr("en", "auth:login.username")).fill(username);
-  await dialog.getByLabel(tr("en", "auth:login.password"), { exact: true }).fill(E2E_PASSWORD);
+  await dialog.locator('input[name="username"]').fill(username);
+  await dialog.locator('input[name="password"]').fill(E2E_PASSWORD);
   await dialog.getByTestId("reauth-submit").click();
 }
 
@@ -89,7 +89,13 @@ test.describe("@followups @pretrial session expiry keeps the draft", () => {
     await expect(page.getByTestId("reauth-dialog")).toBeHidden();
     await expect(page.getByTestId("user-menu")).toBeVisible();
     await expect(page.getByText(DRAFT)).toHaveCount(0);
-    await expect(page.locator("textarea")).not.toHaveValue(DRAFT);
+    // Not in any field either, visible or not: the page holding it was unmounted.
+    const anywhere = await page.evaluate(
+      (draft) =>
+        Array.from(document.querySelectorAll("textarea, input")).some((el) => (el as HTMLInputElement).value === draft),
+      DRAFT,
+    );
+    expect(anywhere).toBe(false);
   });
 });
 
@@ -99,6 +105,7 @@ test.describe("@followups @pretrial kiosk and user menu", () => {
     await expect(loginForm(page).submit).toBeVisible();
     await submitLogin(page, "display", E2E_PASSWORD);
     await expect(page).toHaveURL(/\/display\/queue/);
+    await setPrefs(page, { theme: "light", lang: "en" });
     const signOut = page.getByTestId("display-sign-out");
     await expect(signOut).toBeVisible();
     // A tap by chance changes nothing: the screen asks first.

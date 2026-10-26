@@ -1,5 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { LogOut, WifiOff } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -36,28 +37,35 @@ function KioskSignOut() {
   const { t } = useTranslation("visits");
   const logout = useLogout();
   const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
   return (
-    <ConfirmDialog
-      trigger={
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={t("display.signOut")}
-          title={t("display.signOut")}
-          data-testid="display-sign-out"
-        >
-          <LogOut className="rtl:-scale-x-100" aria-hidden="true" />
-        </Button>
-      }
-      title={t("display.signOutTitle")}
-      description={t("display.signOutDescription")}
-      confirmLabel={t("display.signOut")}
-      destructive
-      onConfirm={async () => {
-        await logout.mutateAsync().catch(() => undefined);
-        await navigate({ to: "/login", replace: true });
-      }}
-    />
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={t("display.signOut")}
+        title={t("display.signOut")}
+        onClick={() => setConfirming(true)}
+        data-testid="display-sign-out"
+      >
+        <LogOut className="rtl:-scale-x-100" aria-hidden="true" />
+      </Button>
+      {/* Mounted only while asking: this page re-renders every second (the clock). */}
+      {confirming ? (
+        <ConfirmDialog
+          open
+          onOpenChange={setConfirming}
+          title={t("display.signOutTitle")}
+          description={t("display.signOutDescription")}
+          confirmLabel={t("display.signOut")}
+          destructive
+          onConfirm={async () => {
+            await logout.mutateAsync().catch(() => undefined);
+            await navigate({ to: "/login", replace: true });
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 
