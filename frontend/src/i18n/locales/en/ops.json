@@ -279,7 +279,8 @@
         "payer_receivables": "Payer receivables",
         "shift_cash": "Cash per shift",
         "stock": "Stock",
-        "allocations": "Payment allocations"
+        "allocations": "Payment allocations",
+        "search_locale": "Arabic fuzzy search (database locale)"
       }
     }
   },

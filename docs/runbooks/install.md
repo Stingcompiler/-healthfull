@@ -107,6 +107,29 @@ ledger unchangeable (ADR 0006). The first start of the `db` container creates th
 `.env` (`infra/db/initdb-roles.sh`); `infra/db-roles.sh` checks and repairs them at any time.
 Role passwords: 16-128 characters from `A-Z a-z 0-9 . _ - ~` (the generator above qualifies).
 
+### Database locale — لغة قاعدة البيانات
+
+PostgreSQL must run with a **UTF-8 locale where Arabic letters are letters**: `en_US.utf8`, the
+default of the official `postgres:16` image, pinned in `infra/docker-compose.yml`
+(`POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=en_US.utf8`). Patient search by spelling
+variants and the duplicate-file warning use `pg_trgm`, which under the `C` locale (for example
+a cluster made with `initdb --no-locale`) sees no letters in an Arabic name: every similarity is
+0, so nothing fuzzy is found and no duplicate is ever flagged, without any error.
+
+- The locale is chosen once, when the data directory is created. Do not change
+  `POSTGRES_INITDB_ARGS` on an existing install; it is ignored there.
+- An existing database made by this compose file already uses the image default and needs
+  nothing. To see it: `infra/compose.sh exec db psql -U "$POSTGRES_USER" -Atc "SELECT datctype,
+  datcollate FROM pg_database WHERE datname = current_database()"` shows `en_US.utf8`.
+- The application checks it: `migrate` (first start and every update) and
+  `manage check --database default` stop with `patients.E001` and the measured similarity when
+  the locale does not see Arabic, and the daily `integrity_check` reports `search_locale`.
+- A database outside this compose file (another server, a manual `initdb`) must be created the
+  same way: `initdb --encoding=UTF8 --locale=en_US.utf8`, or
+  `CREATE DATABASE ... TEMPLATE template0 LC_COLLATE 'en_US.utf8' LC_CTYPE 'en_US.utf8'`.
+  To move a database off a `C` locale: back up (`backup-restore.md`), create the new database
+  with the locale above, restore into it.
+
 ## 6. Images and first start — الصور والتشغيل الأول
 
 Pick one source of images:
@@ -125,6 +148,9 @@ infra/compose.sh ps -a                                   # db, app, web healthy;
                                                          # migrate "Exited (0)"
 curl -s http://192.168.1.10/api/ops/health               # BIND_IP: {"status": "ok", "db": "ok", ...}
 infra/db-roles.sh                                        # roles and grants verified: "verified."
+infra/compose.sh run --rm --no-deps app manage check --database default
+                                                         # "no issues"; patients.E001 = wrong
+                                                         # database locale (see above)
 infra/compose.sh run --rm --no-deps app manage createsuperuser   # first system admin
 ```
 
@@ -218,6 +244,7 @@ returns, the BIOS setting powers the server on and `restart: unless-stopped` bri
 - [ ] `.env` filled, printed, stored in the safe
 - [ ] `infra/compose.sh ps` all healthy; login works from a workstation
 - [ ] `infra/db-roles.sh` ends with "verified."
+- [ ] `manage check --database default` reports no issues (database locale sees Arabic)
 - [ ] Manual backup and restore test both `ok`; restore drill and `integrity_check` pass
 - [ ] Break-glass password sealed in the safe; named admin accounts created
 - [ ] Server clock right (`timedatectl`): prices take effect by date

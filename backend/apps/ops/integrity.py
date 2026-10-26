@@ -18,6 +18,9 @@ views of the same thing and reports where they differ (``domain.integrity``):
   journal entry and each such entry an allocation; allocations are on approved invoices; a
   payment never has more allocated than its amount, nor less than zero; a reversal row names
   an allocation of the same payment and invoice.
+* ``search_locale``: the database's locale lets ``pg_trgm`` see Arabic letters, so Arabic
+  spelling variants score above the duplicate threshold (``apps.patients.search_locale``;
+  under a ``C`` locale fuzzy search and duplicate warnings silently find nothing).
 
 All checks run in one REPEATABLE READ, READ ONLY transaction: one consistent snapshot while
 the application keeps working, and nothing can be written. The app role (DML only) may run it.
@@ -39,6 +42,7 @@ from apps.billing.models import DocumentStatus, Invoice
 from apps.claims import services as claims
 from apps.ledger import services as ledger
 from apps.ledger.models import JournalEntry, JournalLine, SourceType
+from apps.patients import search_locale
 from apps.payments import services as payments
 from apps.payments.models import Allocation, AllocationKind, Payment, Shift, ShiftStatus
 from apps.pharmacy.models import StockBalance, StockMove
@@ -206,6 +210,15 @@ def check_allocations() -> CheckResult:
     return result
 
 
+def check_search_locale() -> CheckResult:
+    result = CheckResult("search_locale")
+    result.checked = len(search_locale.PROBE_PAIRS)
+    with connection.cursor() as cursor:
+        for problem in search_locale.problems(cursor):
+            result.add(problem)
+    return result
+
+
 CHECKS: dict[str, Callable[[], CheckResult]] = {
     "ledger_balanced": check_ledger_balanced,
     "invoice_positions": check_invoice_positions,
@@ -213,6 +226,7 @@ CHECKS: dict[str, Callable[[], CheckResult]] = {
     "shift_cash": check_shift_cash,
     "stock": check_stock,
     "allocations": check_allocations,
+    "search_locale": check_search_locale,
 }
 
 

@@ -63,7 +63,12 @@ services:
       DB_APP_USER: ${DB_APP_USER:-hospital_app}
       DB_APP_PASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD in .env}
       # Page checksums let PostgreSQL and pgBackRest detect disk corruption early.
-      POSTGRES_INITDB_ARGS: "--data-checksums"
+      # The locale is pinned to the image's default (en_US.utf8): pg_trgm needs a UTF-8
+      # LC_CTYPE that treats Arabic letters as letters, or Arabic fuzzy search and duplicate
+      # warnings silently find nothing (under "C" every Arabic similarity is 0). Read only by
+      # initdb on an empty data directory: an existing cluster keeps its locale, and
+      # `manage.py check --database default` / `integrity_check` verify it (patients.E001).
+      POSTGRES_INITDB_ARGS: "--data-checksums --encoding=UTF8 --locale=en_US.utf8"
       TZ: ${TZ:-Africa/Khartoum}
     command:
       - postgres

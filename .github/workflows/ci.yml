@@ -31,6 +31,8 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          # Same locale as production (infra/docker-compose.yml): Arabic trigram search needs it.
+          POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.utf8"
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres"
@@ -133,6 +135,8 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          # Same locale as production (infra/docker-compose.yml): Arabic trigram search needs it.
+          POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.utf8"
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres"
@@ -264,6 +268,8 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          # Same locale as production (infra/docker-compose.yml): Arabic trigram search needs it.
+          POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.utf8"
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres"

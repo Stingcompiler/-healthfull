@@ -141,6 +141,7 @@ anything, and the app role may run it during opening hours) and checks:
 | `shift_cash` | each open shift's CASH equals its expected cash; a closed shift holds none |
 | `stock` | no batch below zero, and every stock balance equals the sum of its moves |
 | `allocations` | each payment allocation has exactly one ledger entry and every allocation entry an allocation; only approved invoices; never more allocated than paid; reversals match their original |
+| `search_locale` | the database locale lets Arabic names be compared (two Arabic spelling variants score above the duplicate threshold); a failure means the database was created with a `C` locale and Arabic fuzzy search and duplicate warnings find nothing: see [install.md, Database locale](install.md#database-locale--لغة-قاعدة-البيانات). Not a data problem, nothing to back up first |
 
 ```bash
 infra/compose.sh run --rm --no-deps -T app manage integrity_check            # text
