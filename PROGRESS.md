@@ -71,7 +71,10 @@ Source of truth for build status. Update at the end of every task. Phases from `
 
 ## Follow-ups (clinic, wave a review)
 
-- Print: referral letters and prescriptions have no print view yet. The A4/80 mm templates of
+- [x] Print: referral letters and prescriptions have no print view yet. Done in pre-trial PR 4
+  (F03): `/clinic/visits/$visitId/prescription/print`, `/clinic/referrals/$referralId/print`,
+  the center header from `/api/clinical/.../print` (clinical.view), the print stylesheet reused
+  from the cashier module. Original note: The A4/80 mm templates of
   FEATURES 0.10 landed with the cashier module but live in `features/cashier`
   (`components/PrintFrame.tsx`, `components/print.css`, `DocHeader` in `pages/ReceiptPage.tsx`),
   and the document header reads the center profile from billing endpoints a doctor cannot
@@ -119,7 +122,8 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - FEATURES 0.10: invoice, receipt (QR, 6.9) and shift report print on A4 and 80 mm; the
   prescription, lab result and claim export templates come with the clinic print views (above),
   the lab module and claims. The lab result (A4) and tube label prints landed with the lab
-  module (wave b); prescription and claim export prints are still open.
+  module (wave b); the prescription (and the referral letter) since pre-trial PR 4; the claim
+  export print is still open.
 - [x] FEATURES 5.12 (walk-in pharmacy sale) exists as a tested service
   (`billing.services` walk-in sale) with its permission; the screen comes with the pharmacy
   module. Done on `feat/b-pharmacy` (`/pharmacy/sale`).
@@ -396,7 +400,8 @@ sequential PRs, each merged before the next:
   sessions, 404 for another patient's invoice, receipt, result and appointment.
 - [x] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
   sign-out and design-guide link by role; deterministic restart spec branches.
-- [ ] PR 4, F03: printed prescription and referral letter.
+- [x] PR 4, F03: printed prescription and referral letter (A4, ar/en, center identity and the
+  print template, a new `referral` template document; no prices).
 
 Not code (field work in the report, sections 7 and 8): installation on the center's machine,
 printers, power-cut and disaster drills, role acceptance, licence and release decision.
@@ -730,3 +735,8 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   E2E_GREP="@pretrial|@restart|@followups|@auth|@clinic|display"` 62 of 62 passed (6.7 min); the
   restart spec reached both sync points (before and after the payment commit) and recorded each
   payment exactly once.
+- 2026-10-26: pre-trial PR 4 on `feat/9-clinic-prints` (F03). Core migration 0018 (template
+  document `referral`). Results: `make check` green (backend 2416 passed, frontend 585 passed;
+  lint, types, migrations, API contract clean). `make e2e E2E_GREP="@prints|@admin|@clinic|
+  clinic-prescription-print|clinic-referral-print|route registry"` 71 of 71 passed (7.6 min),
+  including both print routes in the responsive matrix (3 viewports x 3 themes x 2 languages).
