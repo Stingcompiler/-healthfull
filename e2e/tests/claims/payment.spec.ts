@@ -49,7 +49,9 @@ test.describe("@claims payer payment", () => {
 
     await page.goto("/claims/aging");
     await expect(row).toContainText(sdg("5400.00"));
-    await expect(row).not.toContainText(sdg("15400.00"));
+    // Per cell: the row's text runs cells together ("CLM001" + "5,400.00" reads "...15,400.00").
+    const fullAmount = new RegExp(`^\\s*${sdg("15400.00").source}\\s*$`);
+    await expect(row.locator("td").filter({ hasText: fullAmount })).toHaveCount(0);
 
     await page.goto(`/claims/${String(claim.id)}`);
     await claimLoaded(page);
