@@ -36,7 +36,10 @@ from domain.stock import Pick
 
 pytestmark = pytest.mark.django_db
 
-TODAY = date(2026, 10, 7)
+#: The day the dispenses really happen: the database's expiry guard
+#: (``dispense_batch_not_expired``) judges a batch by the dispense's own time, so a fixed past
+#: date here would let a test hand out a batch that is expired by the time the test runs.
+TODAY = timezone.localdate()
 
 
 # --- fixtures and helpers -------------------------------------------------------------------
