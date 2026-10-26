@@ -262,7 +262,7 @@
     "followUpDays": "Free follow-up window (days)",
     "followUpDiscount": "Follow-up discount (%)",
     "transferAlertDays": "Alert on transfers pending more than (days)",
-    "transferAlertHint": "Verifiers are notified about bank transfers not yet confirmed.",
+    "transferAlertHint": "Verifiers are alerted to unconfirmed bank transfers; after the same number of days they also show under the manager dashboard's \"Needs attention\".",
     "discountLimits": "Discount limits per role",
     "discountLimitsHint": "Highest discount in percent of the patient share. Empty means no discount.",
     "noDiscount": "No discount",

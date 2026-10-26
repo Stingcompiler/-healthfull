@@ -107,6 +107,19 @@ def raise_integrity(request: HttpRequest) -> None:
     Department.objects.create(code="DUP", name_ar="ب", name_en="B")
 
 
+@test_api.post("/db-raise", auth=None)
+def raise_in_database(request: HttpRequest, payload: EchoIn) -> None:
+    """A real PostgreSQL ``RAISE EXCEPTION`` with ``payload.name`` as its text, the way a guard
+    trigger raises (``<CODE>: <detail naming tables and ids>``)."""
+    from django.db import connection, transaction
+
+    with transaction.atomic(), connection.cursor() as cursor:
+        cursor.execute("SELECT set_config('hs.test_message', %s, true)", [payload.name])
+        cursor.execute(
+            "DO $$ BEGIN RAISE EXCEPTION '%%', current_setting('hs.test_message'); END $$"
+        )
+
+
 @test_api.get("/boom", auth=None)
 def raise_boom(request: HttpRequest) -> None:
     raise RuntimeError("internal secret")

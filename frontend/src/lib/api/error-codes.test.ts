@@ -7,7 +7,8 @@
  * The codes are read from the backend sources: DomainError(...) in domain/,
  * services and models (409 unless mapped otherwise), codes passed to private
  * helpers that raise it, and the HTTP layer in api/ (status map, ApiError,
- * error responses). Adding a code there without translating it fails
+ * error responses, and the codes database guards answer, `DB_GUARD_CODES` in
+ * api/errors.py). Adding a code there without translating it fails
  * `pnpm test` (and `make check`). A text may interpolate `{{key}}` only when
  * every raise of its code passes that `details` key.
  */
@@ -69,8 +70,21 @@ function scan(patterns: readonly RegExp[]): Map<string, string> {
   return found;
 }
 
+/** API codes of database guard errors: the values of `DB_GUARD_CODES = {"GUARD": "CODE", ...}` (no details). */
+function dbGuardCodes(): Map<string, string> {
+  const found = new Map<string, string>();
+  for (const [file, text] of Object.entries(sources)) {
+    const block = /^DB_GUARD_CODES[^=]*=\s*\{([\s\S]*?)^\}/m.exec(text);
+    if (!block) continue;
+    for (const match of (block[1] ?? "").matchAll(new RegExp(String.raw`:\s*${CODE}`, "g"))) {
+      if (match[1]) found.set(match[1], shortPath(file));
+    }
+  }
+  return found;
+}
+
 function backendCodes(): Map<string, string> {
-  return new Map([...scan(HELPER_PATTERNS), ...scan(PATTERNS)]);
+  return new Map([...scan(HELPER_PATTERNS), ...dbGuardCodes(), ...scan(PATTERNS)]);
 }
 
 /** Keyword argument names of the Python call whose "(" is at `open` (strings and nested brackets skipped). */
@@ -104,6 +118,10 @@ function raiseSites(): Map<string, { file: string; keys: Set<string> }[]> {
       sites.set(code, [...(sites.get(code) ?? []), { file: shortPath(file), keys }]);
     }
   }
+  // A database guard answers its code with empty details.
+  for (const [code, file] of dbGuardCodes()) {
+    sites.set(code, [...(sites.get(code) ?? []), { file, keys: new Set<string>() }]);
+  }
   return sites;
 }
 
@@ -133,6 +151,13 @@ describe.skipIf(!hasBackend)("backend error codes", () => {
   ] as const)("all have %s text in the errors namespace", (_lang, messages) => {
     const missing = [...codes].filter(([code]) => !(code in messages)).map(([code, file]) => `${code} (${file})`);
     expect(missing, "add these to src/i18n/locales/{ar,en}/errors.json").toEqual([]);
+  });
+
+  it("finds the codes database guards answer", () => {
+    const guards = dbGuardCodes();
+    for (const code of ["LINE_TERMINAL", "BATCH_EXPIRED", "PRICE_VERSION_LOCKED_GUARD", "RECORD_PROTECTED"]) {
+      expect(guards.has(code), code).toBe(true);
+    }
   });
 
   it("finds codes raised through private helpers", () => {

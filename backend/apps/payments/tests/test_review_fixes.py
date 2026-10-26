@@ -234,6 +234,7 @@ def test_db_refuses_self_approved_and_rewritten_refunds() -> None:
         number=f"RF-{b.n()}",
         patient=inv.patient,
         amount=D("50.00"),
+        credit_note=b.draft_credit_note(inv),
         service_line=inv.lines.get().service_line,
         reason_code=b.reason("refund"),
         requested_by=u,

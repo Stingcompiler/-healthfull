@@ -34,6 +34,11 @@ from apps.core.db import (
     truncate_guard,
 )
 
+#: The center's time zone as a literal, so the expiry trigger's SQL (and its migration) never
+#: depends on the settings of the machine that generates it. A test keeps it equal to
+#: ``settings.TIME_ZONE``.
+CENTER_TIME_ZONE = "Africa/Khartoum"
+
 
 @track_history()
 class DrugClass(models.Model):
@@ -479,6 +484,28 @@ class DispenseLine(models.Model):
                     END IF;
                     RETURN NEW;
                 """,
+            ),
+            # Invariant 5 and ARCHITECTURE 4.8: an expired batch is never dispensed. A batch is
+            # usable through its expiry date, judged on the center's calendar day of the
+            # dispense (the service also applies Policy.min_days_left; this is the backstop).
+            pgtrigger.Trigger(
+                name="dispense_batch_not_expired",
+                when=pgtrigger.Before,
+                operation=pgtrigger.Insert,
+                declare=[("expiry", "date"), ("dispensed_on", "date")],
+                func="""
+                    SELECT b.expiry_date INTO expiry
+                      FROM pharmacy_batch b WHERE b.id = NEW.batch_id;
+                    SELECT (d.dispensed_at AT TIME ZONE '@TZ@')::date
+                      INTO dispensed_on
+                      FROM pharmacy_dispense d WHERE d.id = NEW.dispense_id;
+                    IF expiry < dispensed_on THEN
+                        RAISE EXCEPTION
+                            'BATCH_EXPIRED: batch % expired on %, dispensed on %',
+                            NEW.batch_id, expiry, dispensed_on;
+                    END IF;
+                    RETURN NEW;
+                """.replace("@TZ@", CENTER_TIME_ZONE),
             ),
         ]
 

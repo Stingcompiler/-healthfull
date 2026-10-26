@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pytest
 from django.db import IntegrityError, transaction
@@ -316,3 +318,61 @@ def test_unit_conversion_and_barcode() -> None:
         b.item(barcode="6001234")
     b.item(barcode="")
     b.item(barcode="")  # empty barcodes do not collide
+
+
+# --- Expired batches never leave (invariant 5, ARCHITECTURE 4.8) ----------------------------
+
+
+def _raw_dispense_line(batch: Any, store: Any, *, at: datetime) -> tuple[str, list[Any]]:
+    """An INSERT of one unit of ``batch`` on a dispense made at ``at`` (paid line, stock on
+    hand), so only the batch's expiry decides."""
+    b.stock_move(batch, store, "5")
+    visit = b.visit()
+    line = b.billed_line(visit, batch.item.service, quantity="5")
+    move = b.stock_move(batch, store, "-1", "dispense")
+    number = f"DSP-R{b.n()}"
+    # dispensed_at is auto_now_add on the model: a raw row sets the day under test.
+    (dispense_id,) = b.sql(
+        "INSERT INTO pharmacy_dispense (number, visit_id, store_id, dispensed_by_id,"
+        " dispensed_at, note) VALUES (%s, %s, %s, %s, %s, '') RETURNING id",
+        [number, visit.pk, store.pk, b.user().pk, at],
+    )[0]
+    sql = (
+        "INSERT INTO pharmacy_dispenseline (dispense_id, service_line_id, item_id, batch_id,"
+        " quantity_units, qty_base, batch_override, override_note, stock_move_id)"
+        " VALUES (%s, %s, %s, %s, 1, 1, false, '', %s)"
+    )
+    return sql, [dispense_id, line.pk, batch.item_id, batch.pk, move.pk]
+
+
+_KHARTOUM = ZoneInfo("Africa/Khartoum")
+
+
+def test_db_refuses_dispensing_an_expired_batch_as_the_app_role() -> None:
+    store = b.store()
+    expired = b.batch(expiry=date(2026, 3, 31))
+    # 00:30 on 1 April in Khartoum is still 31 March in UTC: the center's day decides.
+    at = datetime(2026, 4, 1, 0, 30, tzinfo=_KHARTOUM)
+    sql, params = _raw_dispense_line(expired, store, at=at)
+    with b.as_app_role():
+        b.sql_rejects(sql, params, "BATCH_EXPIRED")
+    assert not DispenseLine.objects.filter(batch=expired).exists()
+
+
+def test_db_lets_a_batch_leave_through_its_expiry_day() -> None:
+    store = b.store()
+    batch = b.batch(expiry=date(2026, 3, 31))
+    at = datetime(2026, 3, 31, 23, 30, tzinfo=_KHARTOUM)
+    sql, params = _raw_dispense_line(batch, store, at=at)
+    with b.as_app_role():
+        b.sql(sql, params)
+    assert DispenseLine.objects.filter(batch=batch).count() == 1
+
+
+def test_expiry_guard_uses_the_center_time_zone() -> None:
+    from django.conf import settings
+
+    # The trigger compares days in this zone (pharmacy.models.CENTER_TIME_ZONE).
+    from apps.pharmacy.models import CENTER_TIME_ZONE
+
+    assert settings.TIME_ZONE == CENTER_TIME_ZONE == str(_KHARTOUM)

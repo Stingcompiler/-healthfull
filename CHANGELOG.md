@@ -3,6 +3,15 @@
 All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
+### Fixed (pre-trial, inspection of October 2026)
+- Arabic fuzzy search and duplicate warnings need a database locale that sees Arabic letters: compose and CI pin `initdb` to UTF-8 `en_US.utf8` (the image default); `migrate` / `manage.py check --database default` fail with `patients.E001` and `integrity_check` reports `search_locale` when two Arabic spelling variants are not similar; install runbook section "Database locale" (F01).
+- The database refuses dispensing an expired batch (`dispense_batch_not_expired`, judged on the center's day of the dispense) (F04).
+- Database guard errors (`LINE_TERMINAL`, `PRICE_VERSION_LOCKED`, `BATCH_EXPIRED`, ...) answer 409 with a specific translated code instead of 500; every trigger code is mapped, checked against the schema by a test; SQL text is only logged (F05).
+- The dashboard's stale-transfer alert follows `Policy.pending_transfer_alert_days`, like the verifiers' notification (F07).
+- Refund schema: cash only, from a credit note; the migration stops and names any row that does not fit (ADR 0024, F08).
+- The accountant no longer holds `billing.apply_discount` (ADR 0025, F11).
+- Runbooks: rotating `DJANGO_SECRET_KEY` breaks the QR of every earlier receipt; rotation, recovery and the receipt check by number (F10). PROGRESS brought up to date (F09).
+
 ### Changed
 - Patient portal home leads with what needs action (amount to pay and how to pay, results outside the normal range), then the next appointment, latest results and balance; each result names its status; the last card no longer sits under the phone tab bar. Portal sign-in links back to the center page and shows where the file number and code are printed on the receipt. The staff sign-in side panel shows the center's identity, today's date and opening status and today's notices instead of product claims (D-0018).
 

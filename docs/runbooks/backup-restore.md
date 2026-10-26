@@ -188,6 +188,8 @@ Target: clinic working again within 2 hours with last night's data.
 1. Install a new server per [install.md](install.md) steps 1-5. Use the saved `.env`
    (same `POSTGRES_PASSWORD`, `DB_OWNER_PASSWORD`, `DB_APP_PASSWORD`, `DJANGO_SECRET_KEY`, cipher
    passphrases). The first `up -d db` creates the owner and app roles from it.
+   A different `DJANGO_SECRET_KEY` would make the QR code of every receipt printed so far stop
+   verifying ([operations.md, The secret key](operations.md#the-secret-key--المفتاح-السري)).
 2. Copy the backups (USB or cloud) to `/srv/hospital/backups/`.
 3. Load images (`docker load` from the release archive) with the same `APP_IMAGE_TAG`.
 4. Start only the database, restore, then the rest:

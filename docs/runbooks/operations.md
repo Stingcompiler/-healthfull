@@ -83,6 +83,46 @@ infra/compose.sh run --rm --no-deps app manage changepassword <username>   # ask
 A locked break-glass account unlocks itself after 15 minutes. Keep its password sealed in the
 clinic safe with the printed `.env`, and use it only to repair access.
 
+## The secret key — المفتاح السري
+
+`DJANGO_SECRET_KEY` in `.env` signs sessions and **the QR code on every printed receipt**
+(ADR 0016: the QR opens `/verify/<token>?r=<number>`, the token is an HMAC of the receipt
+number with this key).
+
+> **Warning — تحذير.** Changing `DJANGO_SECRET_KEY` makes the QR of **every receipt printed
+> before the change** stop verifying: a patient or payer who scans an old receipt is told it
+> is not found, as if it were forged. It also signs every staff user and every patient portal
+> session out. Nothing in the database changes, and the receipts are as valid as before. Keep
+> the key stable across updates, restores and server moves: it is in the printed `.env` in the
+> safe and must be copied with it (`backup-restore.md`, "New server after a disaster").
+
+**Alternative check for an old receipt (always works, any key).** A staff member with
+`payments.view` (cashier, cashier supervisor, accountant, manager, admin) opens
+**Cashier > Receipt check** (`/cashier/receipt-check`, «التحقق من إيصال») and scans the QR or
+types the receipt number or the text printed under the QR (`number|amount|day`). The answer
+comes from the database by number and does not use the key. Tell callers (insurers, employers)
+who verify receipts by QR to call the center for receipts printed before the change.
+
+**Rotate only when the key may have leaked** (a copy of `.env` left the safe, a former
+administrator had it, a server was lost with its disk unencrypted). Then:
+
+1. Pick a quiet time; note the date and time: receipts printed before it carry old QR codes.
+2. Generate a new key: `openssl rand -base64 48 | tr -d '\n/+=' ; echo`.
+3. Put it in `.env` as `DJANGO_SECRET_KEY`, print the new `.env` and replace the copy in the
+   safe (destroy the old printout).
+4. `infra/compose.sh up -d app maintenance` (restarts with the new key; everyone signs in
+   again).
+5. Print a test receipt and scan its QR: it must verify. Scan an old receipt: it must answer
+   "not found"; check that same receipt in **Receipt check** by number: it must be found.
+6. Write the rotation down (date, time, reason, who) with the printed `.env`, and tell the cashiers
+   and the accountant that receipts printed before that time are checked by number.
+
+**Recovery.** If the key was changed by mistake (for example a restore on a new server with a
+new `.env`), put the **old** key back from the printed `.env` and restart
+(`infra/compose.sh up -d app maintenance`): every old QR verifies again; receipts printed with
+the wrong key in between then fail and are checked by number. If the old key is lost, old QR
+codes can never verify again; use **Receipt check** for them.
+
 ## When the internet is down — عند انقطاع الإنترنت
 
 Nothing to do. The system runs entirely on the clinic LAN: no page, font, script or service
@@ -141,6 +181,7 @@ anything, and the app role may run it during opening hours) and checks:
 | `shift_cash` | each open shift's CASH equals its expected cash; a closed shift holds none |
 | `stock` | no batch below zero, and every stock balance equals the sum of its moves |
 | `allocations` | each payment allocation has exactly one ledger entry and every allocation entry an allocation; only approved invoices; never more allocated than paid; reversals match their original |
+| `search_locale` | the database locale lets Arabic names be compared (two Arabic spelling variants score above the duplicate threshold); a failure means the database was created with a `C` locale and Arabic fuzzy search and duplicate warnings find nothing: see [install.md, Database locale](install.md#database-locale--لغة-قاعدة-البيانات). Not a data problem, nothing to back up first |
 
 ```bash
 infra/compose.sh run --rm --no-deps -T app manage integrity_check            # text

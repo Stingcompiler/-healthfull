@@ -10,5 +10,5 @@ class PatientsConfig(AppConfig):
     verbose_name = "Patients"
 
     def ready(self) -> None:
-        # Register this app's permission codes (ARCHITECTURE 4.10).
-        from apps.patients import permissions  # noqa: F401
+        # Register this app's permission codes (ARCHITECTURE 4.10) and system checks.
+        from apps.patients import checks, permissions  # noqa: F401

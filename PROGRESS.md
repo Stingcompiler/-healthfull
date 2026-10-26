@@ -12,7 +12,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 5. Pharmacy, lab, procedures | done on `wave/b` (merged from `feat/b-pharmacy`, `feat/b-lab`, `feat/b-nursing`); merged to main (PR #5) | FEATURES 5.12, 8.1-8.10 (pharmacy); 9.1-9.8 (lab, ADR 0010); 3.4 for nurses, 10.1-10.3, 10.5 (nursing and procedures, ADR 0011); follow-ups below |
 | 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merged to main (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
 | 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merged to main (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
-| 8. Hardening and handover | in progress on `phase/8` | merged into `phase/8`: follow-ups from `feat/8-followups` (admission in error, dispense returns, `display` role, reception portal codes, claims second approver, Arabic generic names; ADRs 0018, 0019) and docs and operations from `feat/8-docs` (README, user guides, runbooks, `integrity_check`, restore drill, UpdateRun from `update.sh`, ADR 0020); `feat/8-cycle` (ADR 0017: demo dataset, full-cycle and restart e2e, e2e fixture server) done, merge pending |
+| 8. Hardening and handover | done; merged to main (PR #8, `9cc3e6d`), then UI and portal PRs #9-#15 | follow-ups (ADRs 0018, 0019), docs and operations (ADR 0020), cycle (ADR 0017: demo dataset, full-cycle and restart e2e, e2e fixture server) and polish (ADRs 0021, 0022) all on main; pre-trial fixes from the October 2026 inspection in progress (below) |
 
 ## Phase 0 checklist
 
@@ -53,8 +53,9 @@ Source of truth for build status. Update at the end of every task. Phases from `
   role script and the new CI steps are first run by the CI `docker` job (no Docker here).
 - [x] Frontend: every backend error code has ar and en text in `errors.json` (259 codes);
   `translateError` passes `details` so the 23 messages with placeholders show their values.
-- Errors: database trigger codes (`CREDIT_NOTE_FROZEN`, `APPEND_ONLY`, `LINE_TERMINAL`, ...) are
-  not mapped to API error codes and reach the user as `INTERNAL_ERROR`.
+- [x] Errors: database trigger codes (`CREDIT_NOTE_FROZEN`, `APPEND_ONLY`, `LINE_TERMINAL`, ...) are
+  not mapped to API error codes and reach the user as `INTERNAL_ERROR`. Fixed by the pre-trial
+  PR 1 (inspection F05): `api.errors.DB_GUARD_CODES`, 409 with a translated code.
 - [x] Terminology: `الدفعة` means both a stock batch and a payment; settle on `التشغيلة` for batches
   in the pharmacy screens.
 - Errors: amounts in error placeholders are raw backend strings (`15000.00`); format them with
@@ -280,7 +281,8 @@ Source of truth for build status. Update at the end of every task. Phases from `
   aborts in-flight requests even to 127.0.0.1 (`net::ERR_NETWORK_CHANGED`) and a case whose
   module loads were cut shows a blank page. Seen on 9 claims cases across three runs, each
   passing in another run.
-- The full e2e is now 1844 tests (1.7 h on one worker here); CI runs four shards.
+- The full e2e was 1844 tests then (1.7 h on one worker here) on four CI shards. Now (2026-10-26,
+  `playwright test --list`): 1998 tests in 55 files; CI runs eight shards since PR #15.
 
 ## FEATURES 14 (data protection and operations) status
 
@@ -320,11 +322,12 @@ where ticked (ADRs 0021, 0022):
   recipients and permitted links, tested per recipient role; managers open the patient file.
 - [x] Registered but unused codes: `payments.manage_banks`, `ledger.view`, `ledger.manage_accounts`.
   Polish: banks screen at `/administration/banks`; the ledger codes removed (core migration 0016).
-- [ ] The accountant holds `billing.apply_discount` without `billing.create_invoice` (discount
+- [x] The accountant holds `billing.apply_discount` without `billing.create_invoice` (discount
   actions on drafts they cannot otherwise edit) and cannot approve a desk discount
-  (`billing.override_discount_limit`). Not in the polish scope (a role-default decision).
-- [ ] The dashboard's stale-transfer alert uses a fixed 2 days; the notification uses
-  `Policy.pending_transfer_alert_days` (3). Not in the polish scope.
+  (`billing.override_discount_limit`). Pre-trial PR 1 (F11): removed from the accountant, ADR 0025.
+- [x] The dashboard's stale-transfer alert uses a fixed 2 days; the notification uses
+  `Policy.pending_transfer_alert_days` (3). Pre-trial PR 1 (F07): one source,
+  `payments.overdue_pending_transfers`.
 - [x] Wording names fewer roles than can act: the shift review form «اعتماد المدير» and
   `SELF_REVIEW_NOT_ALLOWED` (supervisors and accountants review too), `SELF_APPROVAL_NOT_ALLOWED`
   (accountants approve refunds), `OVERRIDE_NOT_PERMITTED` (admin may override); `portal.login.help`
@@ -376,11 +379,23 @@ Three sequential PRs. Frontend only: the seven invariants, money rules and the A
 
 Follow-ups from the adoption (none are blocking): per-user density switch; one required/optional marker style across every form (visible text, not star only); `useForm({ mode: "onTouched" })` everywhere (validate on blur, section 15.3); zod messages that say how to fix; amount formatting on blur; task-named save buttons; chart titles that carry the takeaway, `.num` on chart axes, "try another period" and retry on chart empty/error states, last-updated time; F4/F8/F9 meaning differs from the reference (D-0015); offline sync states are deliberately not built (D-0014, needs its own ADR).
 
-## Next: finish Phase 8 on `phase/8`
+## Next: pre-trial fixes (inspection of October 2026)
 
-Wave c is on `main` (PR #7, `39dd731`) and merged into `phase/8`. `feat/8-followups` and
-`feat/8-docs` are merged into `phase/8`; merge `feat/8-cycle` (ADR 0017) when it is done, then
-run the full `make e2e` on `phase/8` and take it to `main`.
+`docs/inspection/REPORT-2026-10.md` (Arabic) lists findings F01-F12. Owner decisions: F08 narrow
+the refund schema (ADR 0024), F11 remove the accountant's discount code (ADR 0025). Four
+sequential PRs, each merged before the next:
+
+- [ ] PR 1, pre-trial correctness: F01 database locale pinned and checked (Arabic trigram
+  similarity, `patients.E001`, `integrity_check search_locale`); F04 expiry guard on dispense;
+  F05 database guard codes as 409; F07 one late-transfer policy; F08 refund schema (ADR 0024);
+  F09 this file; F10 SECRET_KEY rotation runbook; F11 accountant discount (ADR 0025).
+- [ ] PR 2, F02: one permission sweep over every OpenAPI operation and all 12 roles.
+- [ ] PR 3, F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
+  sign-out and design-guide link by role; deterministic restart spec branches.
+- [ ] PR 4, F03: printed prescription and referral letter.
+
+Not code (field work in the report, sections 7 and 8): installation on the center's machine,
+printers, power-cut and disaster drills, role acceptance, licence and release decision.
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.
@@ -692,3 +707,16 @@ run the full `make e2e` on `phase/8` and take it to `main`.
   registry"` 76 of 76 passed (20.9 min), no flakes; `manage.py integrity_check` on the e2e
   database afterwards (returns, cancelled admissions, claims, portal data) passed every check.
   The full e2e runs after `feat/8-cycle` is merged.
+- 2026-10-26: pre-trial PR 1 on `fix/9-pre-trial-correctness` (inspection F01, F04, F05, F07,
+  F08, F09, F10, F11; ADRs 0024, 0025). F01 root cause confirmed here: on a database created
+  with `LC_CTYPE=C`, `similarity('فاطمة إبراهيم', 'فاطمة إبراهيم')` is 0 (no trigrams for
+  Arabic letters), on `en_US.UTF-8` the inspection's spelling pair scores 0.47 raw and 1.0
+  after folding. Migrations: pharmacy 0007 (expiry trigger), payments 0005 (refund schema,
+  stops on rows that do not fit; proven on a scratch database with an old-shaped row).
+  Results: `make check` green (backend 2403 passed in 13.8 min, frontend 579 passed; ruff,
+  ruff format, mypy, eslint, prettier, tsc for frontend and e2e clean; no missing migrations;
+  API contract in sync; shellcheck not installed here). `make e2e
+  E2E_GREP="@pharmacy|@reports|@cashier|@ops|@admin|@patients"` 84 of 84 passed (10.3 min).
+  `REQUIRE_PG=1 REQUIRE_DJANGO=1 make infra-test` 68 checks passed (pgbackrest conf 6,
+  update.sh 26, app entrypoint 5, db roles 14, backup/restore 11, restore drill 6; the drill's
+  `integrity_check` now includes `search_locale`). Playwright inventory: 1998 tests in 55 files.
