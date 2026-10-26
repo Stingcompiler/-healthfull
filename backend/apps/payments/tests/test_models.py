@@ -146,6 +146,7 @@ def test_refund_cannot_be_paid_from_a_closed_shift() -> None:
         number="RF-1",
         patient=inv.patient,
         amount=Decimal("50.00"),
+        credit_note=b.draft_credit_note(inv),
         service_line=line,
         reason_code=b.reason("refund"),
         requested_by=b.user(),
@@ -199,16 +200,54 @@ def test_handover_from_or_to_closed_shift_rejected() -> None:
     handover(shift=open_shift, destination="safe")
 
 
-def test_refund_needs_a_source_and_a_reason() -> None:
-    pat = b.patient()
-    with pytest.raises(IntegrityError, match="payments_refund_has_source"), transaction.atomic():
-        Refund.objects.create(
-            number="RF-2",
-            patient=pat,
-            amount=Decimal("5"),
-            reason_code=b.reason("refund"),
-            requested_by=b.user(),
-        )
+def test_refund_needs_a_credit_note_and_a_reason() -> None:
+    """Refunds come only from credit an approved credit note created (ADR 0024): a service
+    line alone is context, not a source."""
+    inv = b.approved_invoice()
+    for extra in ({}, {"service_line": inv.lines.get().service_line}):
+        with (
+            pytest.raises(IntegrityError, match="payments_refund_from_credit_note"),
+            transaction.atomic(),
+        ):
+            Refund.objects.create(
+                number=f"RF-{b.n()}",
+                patient=inv.patient,
+                amount=Decimal("5"),
+                reason_code=b.reason("refund"),
+                requested_by=b.user(),
+                **extra,
+            )
+
+
+def test_refund_is_paid_in_cash_only_raw_sql_too() -> None:
+    """The service pays refunds in cash from a shift; the schema allows nothing else (ADR 0024)."""
+    inv = b.approved_invoice()
+    cn = b.draft_credit_note(inv)
+    bank = b.bank("RFB")
+    insert = (
+        "INSERT INTO payments_refund (number, patient_id, amount, method, bank_id, reference,"
+        " credit_note_id, reason_code_id, reason_note, status, requested_by_id, requested_at,"
+        " decision_note) VALUES (%s, %s, 10, %s, %s, %s, %s, %s, '', 'requested', %s, now(), '')"
+    )
+
+    def params(method: str, bank_id: int | None, reference: str) -> list[object]:
+        return [
+            f"RF-{b.n()}",
+            inv.patient_id,
+            method,
+            bank_id,
+            reference,
+            cn.pk,
+            b.reason("refund").pk,
+            b.user().pk,
+        ]
+
+    with b.as_app_role():
+        b.sql_rejects(insert, params("bank_transfer", bank.pk, "TRX-1"), "payments_refund")
+        b.sql_rejects(insert, params("cash", bank.pk, ""), "payments_refund_cash_only")
+        b.sql_rejects(insert, params("cash", None, "TRX-1"), "payments_refund_cash_only")
+        b.sql(insert, params("cash", None, ""))
+    assert Refund.objects.filter(credit_note=cn, method="cash").count() == 1
 
 
 # --- Payments ------------------------------------------------------------------------------

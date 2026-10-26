@@ -528,13 +528,20 @@ class RefundStatus(models.TextChoices):
 
 
 class RefundMethod(models.TextChoices):
+    """Refunds are paid in cash from the paying user's open shift (ARCHITECTURE 4.6, ADR 0024).
+
+    ``method``, ``bank`` and ``reference`` stay as columns for history; the schema allows
+    only cash with no bank and no reference.
+    """
+
     CASH = "cash", "Cash"
-    BANK_TRANSFER = "bank_transfer", "Bank transfer"
 
 
 @track_history()
 class Refund(models.Model):
-    """Money paid back from patient credit created by a credit note or cancellation.
+    """Money paid back in cash from patient credit an approved credit note created (ADR 0024).
+
+    ``service_line`` is optional context (the cancelled line the credit note covers).
 
     Requested by a cashier, decided by a supervisor, paid from the payer's current shift
     (FEATURES 6.7). Paid and rejected refunds never change.
@@ -600,9 +607,10 @@ class Refund(models.Model):
             choice_check("status", RefundStatus, "payments_refund_status_valid"),
             choice_check("method", RefundMethod, "payments_refund_method_valid"),
             models.CheckConstraint(condition=Q(amount__gt=0), name="payments_refund_positive"),
+            # ADR 0024: the only source of a refund is a credit note's credit.
             models.CheckConstraint(
-                condition=Q(credit_note__isnull=False) | Q(service_line__isnull=False),
-                name="payments_refund_has_source",
+                condition=Q(credit_note__isnull=False),
+                name="payments_refund_from_credit_note",
             ),
             models.CheckConstraint(
                 condition=Q(status=RefundStatus.REQUESTED)
@@ -614,9 +622,10 @@ class Refund(models.Model):
                 | Q(shift__isnull=False, paid_by__isnull=False, paid_at__isnull=False),
                 name="payments_refund_payment_documented",
             ),
+            # ADR 0024: paid in cash from a shift; no bank route exists.
             models.CheckConstraint(
-                condition=~Q(method=RefundMethod.BANK_TRANSFER) | Q(bank__isnull=False),
-                name="payments_refund_transfer_has_bank",
+                condition=Q(method=RefundMethod.CASH, bank__isnull=True, reference=""),
+                name="payments_refund_cash_only",
             ),
             # Segregation of duties (FLOW 8): nobody approves their own refund request.
             models.CheckConstraint(

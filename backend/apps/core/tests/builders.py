@@ -343,6 +343,15 @@ def approved_invoice(lines: int = 1, unit_price: str = "100.00") -> Any:
     return approve_invoice(inv)
 
 
+def draft_credit_note(inv: Any) -> Any:
+    """A draft credit note on ``inv`` (no lines): enough to be a refund's source."""
+    from apps.billing.models import CreditNote
+
+    return CreditNote.objects.create(
+        invoice=inv, patient=inv.patient, reason_code=reason("credit_note"), created_by=user()
+    )
+
+
 # --- Payments ------------------------------------------------------------------------------
 
 
