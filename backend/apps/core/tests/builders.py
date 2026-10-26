@@ -77,6 +77,31 @@ def deferred_checks_fire(match: str | None = None, *, rejects: bool = True) -> I
         _constraints("DEFERRED")
 
 
+@contextmanager
+def as_app_role() -> Iterator[None]:
+    """Run the block as a role shaped like production's app role (``infra/db/roles.sql``).
+
+    The role is created inside the test transaction (rolled back with it): LOGIN-less here,
+    no superuser, owner of nothing, member of nothing, NOINHERIT, with only DML on tables,
+    sequences and functions. ``SET LOCAL ROLE`` lasts until the enclosing transaction ends,
+    so the block runs in a savepoint and ``RESET ROLE`` restores the test user after it.
+    """
+    role = f"test_app_role_{n()}"
+    with connection.cursor() as cursor:
+        cursor.execute(f"CREATE ROLE {role} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT")
+        cursor.execute(
+            f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {role}"
+        )
+        cursor.execute(f"GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO {role}")
+        cursor.execute(f"GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO {role}")
+        cursor.execute(f"SET LOCAL ROLE {role}")
+    try:
+        yield
+    finally:
+        with connection.cursor() as cursor:
+            cursor.execute("RESET ROLE")
+
+
 class _Rollback(Exception):
     pass
 
