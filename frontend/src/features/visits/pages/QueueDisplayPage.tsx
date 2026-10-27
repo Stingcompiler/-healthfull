@@ -13,6 +13,7 @@ import { useClock } from "@/lib/hooks/use-clock";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
+import { signInPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 import { DISPLAY_REFRESH_MS, useWaitingRoom } from "../api";
@@ -61,7 +62,7 @@ function KioskSignOut() {
           destructive
           onConfirm={async () => {
             await logout.mutateAsync().catch(() => undefined);
-            await navigate({ to: "/login", replace: true });
+            await navigate({ to: signInPath(), replace: true });
           }}
         />
       ) : null}

@@ -19,10 +19,17 @@ export { appRoute, visitPath, type AppRoute } from "./route-kit";
 const CORE_ROUTES: readonly AppRoute[] = [
   // Public and auth screens (features/auth, portal, root not-found)
   { name: "login", path: "/login", auth: false, ready: loginSubmit },
+  // The staff sign-in's canonical address; /login is its alias unless the marketing page is on (ADR 0027).
+  { name: "sign-in", path: "/sign-in", auth: false, ready: loginSubmit },
   appRoute("change-password", "/change-password"),
   // The public center page at the portal's door (sign-in is /portal/sign-in).
   { name: "portal", path: "/portal", auth: false, ready: pageHeading },
-  { name: "not-found", path: "/this-page-does-not-exist", auth: false, ready: pageHeading },
+  {
+    name: "not-found",
+    path: "/this-page-does-not-exist",
+    auth: false,
+    ready: pageHeading,
+  },
 
   // Authenticated app shell
   appRoute("dashboard", "/"),
@@ -52,27 +59,41 @@ const CORE_ROUTES: readonly AppRoute[] = [
   appRoute("design", "/design"),
 ];
 
-const MODULE_ROUTES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "module-routes");
+const MODULE_ROUTES_DIR = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "module-routes",
+);
 
 async function moduleRoutes(): Promise<AppRoute[]> {
   const files = readdirSync(MODULE_ROUTES_DIR)
-    .filter((f) => f.endsWith(".ts") && !f.endsWith(".d.ts") && !f.startsWith("_"))
+    .filter(
+      (f) => f.endsWith(".ts") && !f.endsWith(".d.ts") && !f.startsWith("_"),
+    )
     .sort();
   const found: AppRoute[] = [];
   for (const file of files) {
-    const loaded = (await import(pathToFileURL(path.join(MODULE_ROUTES_DIR, file)).href)) as {
+    const loaded = (await import(
+      pathToFileURL(path.join(MODULE_ROUTES_DIR, file)).href
+    )) as {
       routes?: readonly AppRoute[];
     };
-    if (!loaded.routes) throw new Error(`e2e/module-routes/${file} must export "routes"`);
+    if (!loaded.routes)
+      throw new Error(`e2e/module-routes/${file} must export "routes"`);
     found.push(...loaded.routes);
   }
   return found;
 }
 
-export const ROUTES: readonly AppRoute[] = [...CORE_ROUTES, ...(await moduleRoutes())];
+export const ROUTES: readonly AppRoute[] = [
+  ...CORE_ROUTES,
+  ...(await moduleRoutes()),
+];
 
-const duplicates = ROUTES.map((r) => r.name).filter((name, i, all) => all.indexOf(name) !== i);
-if (duplicates.length > 0) throw new Error(`Duplicate e2e route names: ${duplicates.join(", ")}`);
+const duplicates = ROUTES.map((r) => r.name).filter(
+  (name, i, all) => all.indexOf(name) !== i,
+);
+if (duplicates.length > 0)
+  throw new Error(`Duplicate e2e route names: ${duplicates.join(", ")}`);
 
 export function routeByName(name: string): AppRoute {
   const route = ROUTES.find((r) => r.name === name);

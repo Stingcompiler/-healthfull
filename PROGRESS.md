@@ -740,3 +740,9 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   lint, types, migrations, API contract clean). `make e2e E2E_GREP="@prints|@admin|@clinic|
   clinic-prescription-print|clinic-referral-print|route registry"` 71 of 71 passed (7.6 min),
   including both print routes in the responsive matrix (3 viewports x 3 themes x 2 languages).
+- 2026-10-27: marketing page at `/login` on `feat/marketing-login-page` (ADR 0027, D-0019). `/sign-in`
+  is the staff sign-in; `MARKETING_SITE` (default off) is read from the new public
+  `GET /api/ops/site`. Results: backend 2431 tests (3 fixed after adding the public operation to
+  the allowlists), frontend 625 passed (lint, types, lint-ui, tokens, API contract clean);
+  `make e2e E2E_GREP="@marketing|@auth|route registry|..."` 28 `@marketing` tests (matrix 3x3x2,
+  CTA count, real sign-in, weight, contact) and `@auth`, sign-in/login responsive all passed.

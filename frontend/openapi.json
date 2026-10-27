@@ -26901,6 +26901,42 @@
         "title": "ShiftReviewOut",
         "type": "object"
       },
+      "SiteOut": {
+        "description": "What the SPA needs before it picks the /login page (ADR 0027). Public; contact values\nare only returned while the marketing page is on.",
+        "properties": {
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_whatsapp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Whatsapp"
+          },
+          "marketing": {
+            "title": "Marketing",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "marketing"
+        ],
+        "title": "SiteOut",
+        "type": "object"
+      },
       "StockAdjustmentIn": {
         "properties": {
           "lines": {
@@ -49083,6 +49119,29 @@
           }
         },
         "summary": "Liveness and database health (no authentication)",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/api/ops/site": {
+      "get": {
+        "description": "marketing=false on every private install (the default). When true, /login shows the product page and the staff sign-in is /sign-in (ADR 0027). The vendor contact values come back only while it is on.",
+        "operationId": "ops_get_site",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Public site switches: is the marketing page on /login (no authentication)",
         "tags": [
           "ops"
         ]

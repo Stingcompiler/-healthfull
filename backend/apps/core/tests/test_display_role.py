@@ -39,6 +39,7 @@ UNGUARDED_STAFF = {
     "core_mark_notification_read",
     "core_list_reason_codes",
     "ops_get_health",
+    "ops_get_site",
     "portal_get_session",
     "portal_login",
     "portal_logout",

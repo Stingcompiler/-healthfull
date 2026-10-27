@@ -1,0 +1,196 @@
+{
+  "brand": "Healthfull",
+  "meta": {
+    "title": "Healthfull: medical center management system",
+    "description": "A bilingual system for clinics in Sudan. It runs on your own network without internet, and no service is performed before payment is settled."
+  },
+  "skip": "Skip to content",
+  "cta": "Sign in to the system",
+  "preferences": "Language and appearance",
+  "hero": {
+    "title": "Run your medical center from registration to shift close",
+    "lead": "Built for Sudanese clinics. Runs on your own network, no internet needed. No service is done before payment is settled.",
+    "see": "See how a visit goes",
+    "imageAlt": "Manager dashboard: confirmed collections today, and what needs attention as decision rows"
+  },
+  "problem": {
+    "title": "What a busy clinic day looks like",
+    "lead": "On paper, small mistakes creep in.",
+    "p1": "A drug is dispensed and never paid for.",
+    "p2": "An approved invoice is edited and nobody knows who.",
+    "p3": "A shift closes, then its numbers change.",
+    "p4": "Stock goes missing and nobody knows where.",
+    "close": "Healthfull prevents this with fixed rules."
+  },
+  "cycle": {
+    "title": "One cycle, from registration to reports",
+    "lead": "One path for every patient.",
+    "before": "Before the service",
+    "perform": "Performing it",
+    "after": "After the visit",
+    "reception": {
+      "title": "Reception and queue",
+      "text": "Search by name, phone or file number. Duplicates are flagged. Nobody is called before the fee is paid."
+    },
+    "doctor": {
+      "title": "Doctor",
+      "text": "Sees allergies and past visits, writes orders. Sees no prices."
+    },
+    "cashier": {
+      "title": "Cashier",
+      "text": "Invoices from the current price list. Collects cash or transfers."
+    },
+    "lab": {
+      "title": "Laboratory",
+      "text": "Only paid tests appear. A result shows only once approved."
+    },
+    "pharmacy": {
+      "title": "Pharmacy",
+      "text": "Picks the batch that expires first. Stock drops at dispensing."
+    },
+    "nursing": {
+      "title": "Nursing and procedures",
+      "text": "One «Done» button records who did it and when."
+    },
+    "claims": {
+      "title": "Insurance claims",
+      "text": "The payer share stays owed until the payer pays."
+    },
+    "reports": {
+      "title": "Reports",
+      "text": "Collections, shifts, exceptions and stock, with Excel export and print."
+    },
+    "portal": {
+      "title": "Patient portal",
+      "text": "Patients see appointments, approved results and balance."
+    }
+  },
+  "safety": {
+    "title": "Seven rules the system enforces",
+    "lead": "The system's own rules, not extras.",
+    "r1": {
+      "title": "No service before it is settled",
+      "text": "Nothing is performed until paid, unless a documented authorization names who allowed it."
+    },
+    "r2": {
+      "title": "An approved invoice never changes",
+      "text": "Corrections are credit notes linked to the original."
+    },
+    "r3": {
+      "title": "A closed shift never changes",
+      "text": "Later effects post to the current shift, linked to the original."
+    },
+    "r4": {
+      "title": "Every exception has a reason and a name",
+      "text": "Cancellations, discounts, refunds and transfer confirmations record reason, approver and time."
+    },
+    "r5": {
+      "title": "Stock is deducted at dispensing",
+      "text": "Not at invoicing. Never below zero."
+    },
+    "r6": {
+      "title": "The price freezes at approval",
+      "text": "Taken from the price list in force that day."
+    },
+    "r7": {
+      "title": "The insurer share is a receivable, not cash",
+      "text": "Owed until the payer's payment is recorded."
+    },
+    "foot": "Enforced in the server and database. Each rule has automated tests."
+  },
+  "roles": {
+    "title": "A screen for every role",
+    "lead": "Each role sees only what it needs.",
+    "cashier": {
+      "title": "Cashier",
+      "text": "Payer and patient shares in two columns. The amount to collect is largest.",
+      "alt": "Cashier desk: an insured invoice with payer and patient shares in columns"
+    },
+    "doctor": {
+      "title": "Doctor",
+      "text": "Patients who paid the fee, in serving order.",
+      "alt": "Doctor's clinic: the patient list in serving order"
+    },
+    "pharmacist": {
+      "title": "Pharmacist",
+      "text": "Paid prescriptions waiting to be dispensed, with barcode scanning.",
+      "alt": "Pharmacy desk: paid prescriptions waiting to be dispensed"
+    },
+    "lab": {
+      "title": "Laboratory",
+      "text": "Every paid test in one list, from sample to approval.",
+      "alt": "Laboratory worklist by sample stage"
+    },
+    "manager": {
+      "title": "Manager",
+      "text": "Reports: money, shifts, exceptions, insurance, stock.",
+      "alt": "The reports index with its sections"
+    },
+    "accountant": {
+      "title": "Accountant",
+      "text": "What each payer owes, from approval to payment.",
+      "alt": "Payer receivables: what each insurer owes",
+      "note": "Screenshot in Arabic"
+    }
+  },
+  "network": {
+    "title": "Runs on your own network",
+    "lead": "Your server, your data.",
+    "n1": {
+      "title": "No internet",
+      "text": "Works without internet and calls no outside site."
+    },
+    "n2": {
+      "title": "A backup every night",
+      "text": "A restore test runs every month."
+    },
+    "n3": {
+      "title": "A daily integrity check",
+      "text": "Shown on the status page."
+    },
+    "n4": {
+      "title": "Safe shutdown",
+      "text": "A UPS lets the server shut down safely when power fails."
+    },
+    "n5": {
+      "title": "A notice when it drops",
+      "text": "If the server is unreachable, staff are told and typed text stays."
+    }
+  },
+  "portal": {
+    "title": "A patient portal on their phone",
+    "lead": "Patients sign in with a code from the center.",
+    "p1": "See appointments and book new ones.",
+    "p2": "See approved results only, flagged if outside the normal range.",
+    "p3": "See the balance due.",
+    "homeAlt": "Patient portal on a phone: the next appointment, the latest results and the balance",
+    "resultsAlt": "Approved lab results in the patient portal",
+    "note": "Both screenshots are in Arabic"
+  },
+  "faq": {
+    "title": "Common questions",
+    "q1": "How much does it cost?",
+    "a1": "No fixed price is shown here. Ask for an offer that fits your center.",
+    "q2": "Does the system need internet?",
+    "a2": "No. It runs on the center's own network. Cloud backup is optional.",
+    "q3": "Where is my data kept, and who sees it?",
+    "a3": "On a server inside your center. Each role gets only its permissions, and every change is recorded by name.",
+    "q4": "Does it work in Arabic?",
+    "a4": "Yes. Arabic first, right to left, English one tap away.",
+    "q5": "Can we try it?",
+    "a5": "A demo with sample data is available on request.",
+    "q6": "How long does installation take?",
+    "a6": "About two hours for the server, per the install guide. Data and training come after."
+  },
+  "final": {
+    "title": "Ready to see the system?",
+    "lead": "Have an account? Sign in. Want a trial? Ask for a demo.",
+    "demo": "A demo is available on request.",
+    "contact": "Contact",
+    "email": "E-mail",
+    "whatsapp": "WhatsApp"
+  },
+  "footer": {
+    "text": "Healthfull: medical center management system"
+  }
+}

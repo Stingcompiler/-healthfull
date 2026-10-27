@@ -11,6 +11,7 @@ import { NotificationBell } from "@/features/notifications/NotificationBell";
 import { usePatientQuickSearch } from "@/features/patients/quick-search";
 import { useMe } from "@/lib/auth/hooks";
 import { useSessionState } from "@/lib/auth/session";
+import { isSignInPath, signInPath } from "@/lib/site";
 import { ConnectionProvider } from "@/lib/hooks/use-server-connection";
 import { densityAttribute, densityForPath } from "@/lib/density";
 
@@ -42,8 +43,8 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     // nothing left to do; redirecting again would nest ?redirect=/login?...
     // forever and React would abort with "Maximum update depth exceeded".
     if (!me) {
-      if (pathname === "/login") return;
-      void navigate({ to: "/login", search: { redirect: safeRedirectTarget(href) ?? undefined }, replace: true });
+      if (isSignInPath(pathname)) return;
+      void navigate({ to: signInPath(), search: { redirect: safeRedirectTarget(href) ?? undefined }, replace: true });
     } else if (me.must_change_password) {
       if (pathname === "/change-password") return;
       void navigate({ to: "/change-password", replace: true });

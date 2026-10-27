@@ -142,6 +142,7 @@ def test_operation_ids_are_stable_and_unique(schema: dict[str, Any]) -> None:
         "auth_update_preferences",
         "auth_change_password",
         "ops_get_health",
+        "ops_get_site",
         *(f"{module}_get_ping" for module in PING_MODULES),
         *CASHIER_OPERATIONS,
     }
@@ -186,6 +187,7 @@ OPEN_OPERATIONS = frozenset(
         "auth_update_preferences",
         "auth_change_password",
         "ops_get_health",
+        "ops_get_site",
         # Reference data every screen reads: the reason dialog lists and the center logo on
         # printouts and the app shell.
         "core_list_reason_codes",
@@ -246,6 +248,7 @@ def test_only_whitelisted_operations_are_public(schema: dict[str, Any]) -> None:
         "auth_login",
         "auth_logout",
         "ops_get_health",
+        "ops_get_site",
         # Patient portal sign-in and sign-out, and the public receipt check (ADR 0016).
         "portal_get_session",
         "portal_login",

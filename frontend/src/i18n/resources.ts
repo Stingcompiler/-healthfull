@@ -14,6 +14,7 @@ import arDashboard from "./locales/ar/dashboard.json";
 import arDesign from "./locales/ar/design.json";
 import arErrors from "./locales/ar/errors.json";
 import arLab from "./locales/ar/lab.json";
+import arMarketing from "./locales/ar/marketing.json";
 import arNav from "./locales/ar/nav.json";
 import arNursing from "./locales/ar/nursing.json";
 import arOps from "./locales/ar/ops.json";
@@ -32,6 +33,7 @@ import enDashboard from "./locales/en/dashboard.json";
 import enDesign from "./locales/en/design.json";
 import enErrors from "./locales/en/errors.json";
 import enLab from "./locales/en/lab.json";
+import enMarketing from "./locales/en/marketing.json";
 import enNav from "./locales/en/nav.json";
 import enNursing from "./locales/en/nursing.json";
 import enOps from "./locales/en/ops.json";
@@ -60,6 +62,7 @@ export const en = {
   admin: enAdmin,
   ops: enOps,
   portal: enPortal,
+  marketing: enMarketing,
 } as const;
 
 export const ar = {
@@ -81,6 +84,7 @@ export const ar = {
   admin: arAdmin,
   ops: arOps,
   portal: arPortal,
+  marketing: arMarketing,
 } as const;
 
 export const resources = { ar, en } as const;

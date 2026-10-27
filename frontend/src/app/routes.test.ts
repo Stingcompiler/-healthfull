@@ -11,6 +11,7 @@ describe("route tree", () => {
     for (const path of [
       "/",
       "/login",
+      "/sign-in",
       "/change-password",
       "/patients",
       "/queue",
@@ -85,12 +86,18 @@ describe("safeRedirectTarget", () => {
     expect(safeRedirectTarget("/patients?q=ali")).toBe("/patients?q=ali");
   });
 
-  it.each(["//evil.example/x", "https://evil.example", "/\\evil", "patients", "/login?redirect=/", 42, undefined])(
-    "rejects %s",
-    (target) => {
-      expect(safeRedirectTarget(target)).toBeNull();
-    },
-  );
+  it.each([
+    "//evil.example/x",
+    "https://evil.example",
+    "/\\evil",
+    "patients",
+    "/login?redirect=/",
+    "/sign-in?redirect=/",
+    42,
+    undefined,
+  ])("rejects %s", (target) => {
+    expect(safeRedirectTarget(target)).toBeNull();
+  });
 });
 
 describe("isKioskOnly (ADR 0019)", () => {

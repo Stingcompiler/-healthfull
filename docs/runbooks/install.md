@@ -94,6 +94,18 @@ Print `.env` and keep it in the clinic safe: without it, backups of secrets are 
 every printed receipt (ADR 0016), and a new key makes every older QR fail
 ([operations.md, The secret key](operations.md#the-secret-key--المفتاح-السري)).
 
+### Product page at /login (public demo site only) — صفحة التعريف
+
+A center's own install leaves `MARKETING_SITE` unset (or `0`): `/login` is the staff sign-in, as
+always. On the public product site only, set `MARKETING_SITE=1` in `.env`: `/login` then shows the
+product page (ADR 0027), and the staff sign-in is `/sign-in` (every redirect, sign-out and the
+page's button go there). Optional `MARKETING_CONTACT_EMAIL` and `MARKETING_CONTACT_WHATSAPP`
+(digits with the country code) add two plain contact links; empty shows none.
+The setting is read when the app starts and the browser asks `GET /api/ops/site`, so no image is
+rebuilt: edit `.env`, then `infra/compose.sh up -d` (recreates `app`). To check:
+`curl -s http://<server>/api/ops/site` answers `{"marketing":true,...}`. To turn it off, set `0`
+(or remove the line) and recreate `app`. The page never prints a password or an account.
+
 ### Database roles — أدوار قاعدة البيانات
 
 The application never connects to PostgreSQL as an all-powerful account. Three roles exist:
