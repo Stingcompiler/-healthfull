@@ -7,6 +7,7 @@ import { CenterIdentity } from "@/components/CenterIdentity";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
+import { signInPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 import { usePortalMe } from "./api";
@@ -102,7 +103,7 @@ export function PortalLayout() {
         <p>{t("privacy")}</p>
         {signedIn ? null : (
           <Link
-            to="/login"
+            to={signInPath()}
             className="mt-1 inline-flex min-h-11 items-center px-2 font-medium text-primary-strong underline-offset-4 hover:underline"
           >
             {t("staffLink")}

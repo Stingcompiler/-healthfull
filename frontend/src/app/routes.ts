@@ -3,7 +3,7 @@
  * work only ever edits files inside its own features/<module>/ folder.
  *
  *   root
- *   ├── /login, /change-password        (features/auth)
+ *   ├── /login, /sign-in, /change-password  (features/auth; /login is the product page when MARKETING_SITE is on, ADR 0027)
  *   ├── /portal/*                        (portal, mobile-first, public)
  *   ├── /display/queue                   visits: waiting-room kiosk (signed in, no shell)
  *   └── _app  (auth guard + AppShell)

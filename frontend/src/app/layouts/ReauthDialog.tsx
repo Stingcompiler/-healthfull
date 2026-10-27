@@ -14,6 +14,7 @@ import { toApiError, type ApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { authKeys, login } from "@/lib/auth/api";
 import { setSessionState, type SessionState } from "@/lib/auth/session";
+import { signInPath } from "@/lib/site";
 import { vmsg } from "@/lib/validation";
 
 const schema = z.object({
@@ -53,7 +54,7 @@ export function ReauthDialog({ session }: { session: Extract<SessionState, { kin
     await nextFrame();
     queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== "auth" });
     queryClient.setQueryData(authKeys.me, next);
-    const to = next === null ? "/login" : next.must_change_password ? "/change-password" : "/";
+    const to = next === null ? signInPath() : next.must_change_password ? "/change-password" : "/";
     await router.navigate({ to, replace: true, ignoreBlocker: true });
     setSessionState(queryClient, null);
   }

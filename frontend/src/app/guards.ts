@@ -2,6 +2,7 @@ import { redirect, type ParsedLocation } from "@tanstack/react-router";
 
 import type { MeOut } from "@/lib/api/contract";
 import { meQueryOptions } from "@/lib/auth/api";
+import { isMarketingSite, signInPath } from "@/lib/site";
 
 import type { RouterContext } from "./router-context";
 
@@ -14,16 +15,16 @@ interface GuardArgs {
 export function safeRedirectTarget(target: unknown): string | null {
   if (typeof target !== "string") return null;
   if (!target.startsWith("/") || target.startsWith("//") || target.startsWith("/\\")) return null;
-  if (target.startsWith("/login")) return null;
+  if (target.startsWith("/login") || target.startsWith("/sign-in")) return null;
   return target;
 }
 
-/** Any logged-in user; otherwise go to /login and come back afterwards. */
+/** Any logged-in user; otherwise go to the sign-in page and come back afterwards. */
 export async function requireUser({ context, location }: GuardArgs): Promise<MeOut> {
   const me = await context.queryClient.query({ ...meQueryOptions, staleTime: "static" });
   if (!me) {
     // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
-    throw redirect({ to: "/login", search: { redirect: location.href } });
+    throw redirect({ to: signInPath(), search: { redirect: location.href } });
   }
   return me;
 }
@@ -50,8 +51,16 @@ export function isKioskOnly(me: Pick<MeOut, "permissions">): boolean {
   return me.permissions.length > 0 && me.permissions.every((code) => code === KIOSK_PERMISSION);
 }
 
-/** The login page bounces a logged-in user to where they were going. */
-export async function redirectIfLoggedIn({ context }: GuardArgs, target: unknown): Promise<void> {
+/**
+ * The sign-in page bounces a logged-in user to where they were going. `/login` as the product
+ * page (ADR 0027) is public for everyone and never bounces; its button does, at /sign-in.
+ */
+export async function redirectIfLoggedIn(
+  { context }: GuardArgs,
+  target: unknown,
+  options: { marketingPage?: boolean } = {},
+): Promise<void> {
+  if (options.marketingPage && isMarketingSite()) return;
   const me = await context.queryClient.query({ ...meQueryOptions, staleTime: "static" });
   if (!me) return;
   const href = me.must_change_password ? "/change-password" : (safeRedirectTarget(target) ?? "/");

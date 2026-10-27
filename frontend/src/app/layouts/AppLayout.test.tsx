@@ -8,6 +8,7 @@ import i18n from "@/i18n";
 import type { MeOut } from "@/lib/api/contract";
 import { authKeys } from "@/lib/auth/api";
 import { createQueryClient } from "@/lib/query";
+import { setSiteConfig } from "@/lib/site";
 
 const ADMIN: MeOut = {
   id: 1,
@@ -74,6 +75,7 @@ describe("AuthGuard", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    setSiteConfig(null);
   });
 
   function expectNoRenderLoop() {
@@ -94,6 +96,23 @@ describe("AuthGuard", () => {
     await settle();
 
     expect(router.state.location.pathname).toBe("/login");
+    expect(router.state.location.search).toEqual({ redirect: "/reports" });
+    expectNoRenderLoop();
+  });
+
+  it("sends a user whose session ended to /sign-in when /login is the product page (ADR 0027)", async () => {
+    setSiteConfig({ marketing: true });
+    const { router, queryClient } = await renderApp("/reports", ADMIN);
+
+    act(() => {
+      queryClient.setQueryData(authKeys.me, null);
+    });
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/sign-in");
+    });
+    await settle();
+
+    expect(router.state.location.pathname).toBe("/sign-in");
     expect(router.state.location.search).toEqual({ redirect: "/reports" });
     expectNoRenderLoop();
   });

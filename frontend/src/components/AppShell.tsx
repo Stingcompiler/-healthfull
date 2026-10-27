@@ -32,6 +32,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCurrentUser, useLogout } from "@/lib/auth/hooks";
 import { hasPermission, isKnownRole } from "@/lib/auth/permissions";
+import { signInPath } from "@/lib/site";
 import { useBreakpoint } from "@/lib/hooks/use-media-query";
 import { useShortcut } from "@/lib/hooks/use-shortcut";
 import { useDirection, useLanguage } from "@/lib/i18n-hooks";
@@ -433,7 +434,7 @@ function UserMenu() {
     logout.mutate(undefined, {
       onSettled: () => {
         toast.success(t("auth:logout.success"));
-        void navigate({ to: "/login", replace: true });
+        void navigate({ to: signInPath(), replace: true });
       },
     });
   };
