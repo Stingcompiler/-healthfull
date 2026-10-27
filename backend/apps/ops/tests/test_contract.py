@@ -31,7 +31,9 @@ def test_every_operation_refuses_a_user_without_the_permission(
 ) -> None:
     make_user("nobody")
     assert api_client.login("nobody").status_code == 200
-    assert_role_less_user_is_refused(api_client, OPERATIONS, open_ops={"ops_get_health", "ops_get_site"})
+    assert_role_less_user_is_refused(
+        api_client, OPERATIONS, open_ops={"ops_get_health", "ops_get_site"}
+    )
 
 
 @pytest.mark.parametrize(

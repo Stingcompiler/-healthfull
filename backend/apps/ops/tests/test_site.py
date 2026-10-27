@@ -43,7 +43,9 @@ def test_on_without_contact_shows_none(settings: Any) -> None:
     assert body == {"marketing": True, "contact_email": None, "contact_whatsapp": None}
 
 
-@pytest.mark.parametrize("email", ["not an email", "a@b", 'x"@y.com', "<s>@y.com", "javascript:alert(1)"])
+@pytest.mark.parametrize(
+    "email", ["not an email", "a@b", 'x"@y.com', "<s>@y.com", "javascript:alert(1)"]
+)
 def test_a_malformed_email_is_dropped(settings: Any, email: str) -> None:
     settings.MARKETING_SITE = True
     settings.MARKETING_CONTACT_EMAIL = email
