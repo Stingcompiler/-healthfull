@@ -19,6 +19,15 @@ class HealthOut(Schema):
     time: datetime
 
 
+class SiteOut(Schema):
+    """What the SPA needs before it picks the /login page (ADR 0027). Public; contact values
+    are only returned while the marketing page is on."""
+
+    marketing: bool
+    contact_email: str | None = None
+    contact_whatsapp: str | None = None
+
+
 class OpsDatabaseOut(Schema):
     ok: bool
     server_version: str

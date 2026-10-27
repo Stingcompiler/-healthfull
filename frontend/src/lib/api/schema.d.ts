@@ -3112,6 +3112,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ops/site": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public site switches: is the marketing page on /login (no authentication)
+         * @description marketing=false on every private install (the default). When true, /login shows the product page and the staff sign-in is /sign-in (ADR 0027). The vendor contact values come back only while it is on.
+         */
+        get: operations["ops_get_site"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ops/status": {
         parameters: {
             query?: never;
@@ -16462,6 +16482,19 @@ export interface components {
              */
             reviewed_at: string;
             reviewed_by: components["schemas"]["BillingUserRefOut"] | null;
+        };
+        /**
+         * SiteOut
+         * @description What the SPA needs before it picks the /login page (ADR 0027). Public; contact values
+         *     are only returned while the marketing page is on.
+         */
+        SiteOut: {
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Contact Whatsapp */
+            contact_whatsapp?: string | null;
+            /** Marketing */
+            marketing: boolean;
         };
         /** StockAdjustmentIn */
         StockAdjustmentIn: {
@@ -30705,6 +30738,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
+    ops_get_site: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteOut"];
                 };
             };
         };

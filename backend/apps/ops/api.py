@@ -25,6 +25,7 @@ from apps.ops.schemas import (
     BackupRequestIn,
     BackupRequestOut,
     HealthOut,
+    SiteOut,
     SystemStatusOut,
     UpdateHistoryOut,
     UpdateParams,
@@ -54,6 +55,22 @@ def _actor(request: HttpRequest) -> User:
 def health(request: HttpRequest) -> Status[dict[str, Any]]:
     result = services.health()
     return Status(200 if result["status"] == "ok" else 503, result)
+
+
+@ops_router.get(
+    "/site",
+    auth=None,
+    response={200: SiteOut},
+    operation_id="ops_get_site",
+    summary="Public site switches: is the marketing page on /login (no authentication)",
+    description=(
+        "marketing=false on every private install (the default). When true, /login shows the "
+        "product page and the staff sign-in is /sign-in (ADR 0027). The vendor contact values "
+        "come back only while it is on."
+    ),
+)
+def get_site(request: HttpRequest) -> dict[str, Any]:
+    return services.site_config()
 
 
 @ops_router.get(

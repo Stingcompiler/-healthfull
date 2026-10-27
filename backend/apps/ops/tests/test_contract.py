@@ -14,6 +14,7 @@ pytestmark = pytest.mark.django_db
 
 OPERATIONS = {
     ("get", "/api/ops/health"): "ops_get_health",
+    ("get", "/api/ops/site"): "ops_get_site",
     ("get", "/api/ops/status"): "ops_get_status",
     ("post", "/api/ops/backups/request"): "ops_request_backup",
     ("get", "/api/ops/updates"): "ops_list_updates",
@@ -30,7 +31,7 @@ def test_every_operation_refuses_a_user_without_the_permission(
 ) -> None:
     make_user("nobody")
     assert api_client.login("nobody").status_code == 200
-    assert_role_less_user_is_refused(api_client, OPERATIONS, open_ops={"ops_get_health"})
+    assert_role_less_user_is_refused(api_client, OPERATIONS, open_ops={"ops_get_health", "ops_get_site"})
 
 
 @pytest.mark.parametrize(

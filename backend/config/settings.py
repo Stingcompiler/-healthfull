@@ -179,6 +179,14 @@ LOGIN_IP_WINDOW_SECONDS = env_int("LOGIN_IP_WINDOW_SECONDS", 15 * 60)
 PORTAL_PAGE_IP_MAX = env_int("PORTAL_PAGE_IP_MAX", 300)
 PORTAL_PAGE_IP_WINDOW_SECONDS = env_int("PORTAL_PAGE_IP_WINDOW_SECONDS", 10 * 60)
 
+#: Marketing page at /login (ADR 0027). Off by default: a hospital's own install keeps the plain
+#: staff sign-in at /login. The SPA reads it at start from GET /api/ops/site (no rebuild).
+MARKETING_SITE = env_bool("MARKETING_SITE", False)
+#: Where a visitor of the marketing page can reach the vendor: a plain e-mail address and/or a
+#: WhatsApp number in international digits. Both optional; nothing is shown when empty.
+MARKETING_CONTACT_EMAIL = env_str("MARKETING_CONTACT_EMAIL", "").strip()
+MARKETING_CONTACT_WHATSAPP = env_str("MARKETING_CONTACT_WHATSAPP", "").strip()
+
 # Idle timeout: the cookie age is refreshed on every request, so a session dies after
 # SESSION_COOKIE_AGE of inactivity. Login narrows it to Policy.session_idle_minutes.
 SESSION_COOKIE_AGE = env_int("SESSION_IDLE_SECONDS", 8 * 60 * 60)

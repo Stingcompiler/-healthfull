@@ -46,6 +46,7 @@ PUBLIC = {
     "auth_login",
     "auth_logout",
     "ops_get_health",
+    "ops_get_site",
     "portal_get_session",
     "portal_login",
     "portal_logout",

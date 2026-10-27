@@ -16,6 +16,7 @@ requests and update history.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -55,6 +56,7 @@ __all__ = [
     "UpdateRecord",
     "check_database",
     "health",
+    "site_config",
     "last_backup",
     "record_update_run",
     "request_backup",
@@ -92,6 +94,25 @@ def health() -> dict[str, Any]:
         "db": "ok" if db_ok else "error",
         "version": settings.APP_VERSION,
         "time": timezone.now(),
+    }
+
+
+_EMAIL_RE = re.compile(r"^[^@\s<>\"']+@[^@\s<>\"']+\.[^@\s<>\"']+$")
+_DIGITS_RE = re.compile(r"^[1-9][0-9]{7,14}$")
+
+
+def site_config() -> dict[str, Any]:
+    """The deployment's public site switches (ADR 0027): the marketing page flag and, when it
+    is on, the vendor contact values. A value that is not a plain address or international
+    digits is dropped, so a typo in .env never becomes a broken or unsafe link."""
+    if not settings.MARKETING_SITE:
+        return {"marketing": False, "contact_email": None, "contact_whatsapp": None}
+    email = str(settings.MARKETING_CONTACT_EMAIL or "").strip()
+    whatsapp = re.sub(r"[\s+()-]", "", str(settings.MARKETING_CONTACT_WHATSAPP or ""))
+    return {
+        "marketing": True,
+        "contact_email": email if _EMAIL_RE.match(email) else None,
+        "contact_whatsapp": whatsapp if _DIGITS_RE.match(whatsapp) else None,
     }
 
 
