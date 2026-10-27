@@ -166,6 +166,8 @@ services:
       APP_VERSION: ${APP_IMAGE_TAG:-dev}
       # This role cannot migrate; the `migrate` service and infra/update.sh do.
       MIGRATE_ON_START: "false"
+      # MARKETING_SITE and MARKETING_CONTACT_* (the product page at /login, ADR 0027) reach the
+      # app from .env through env_file above; nothing to list here.
       # Read by the ops status page (backup and restore-test JSON lines).
       BACKUP_STATUS_DIR: /var/lib/hospital/backup-status
       # The app never needs the superuser or owner passwords, backup encryption or cloud

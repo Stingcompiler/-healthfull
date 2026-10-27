@@ -71,7 +71,7 @@ Several checkouts (git worktrees) may run at once. Never hardcode DB names or po
 | `reports` | no models; read-only query services |
 | `portal` | PortalAccessCode, portal auth |
 | `imports` | ImportJob, ImportRow (Excel preview/confirm) |
-| `ops` | BackupRun, RestoreTest, UpdateRun (written by `infra/update.sh` through `manage.py record_update`), BackupRequest, DataExport, health checks, status page, `manage.py integrity_check` (`apps/ops/integrity.py`; daily runs recorded in IntegrityRun, ADR 0021) |
+| `ops` | public site switches (`GET /api/ops/site`: `MARKETING_SITE`, ADR 0027), BackupRun, RestoreTest, UpdateRun (written by `infra/update.sh` through `manage.py record_update`), BackupRequest, DataExport, health checks, status page, `manage.py integrity_check` (`apps/ops/integrity.py`; daily runs recorded in IntegrityRun, ADR 0021) |
 
 ### 4.2 Layering (strict)
 
