@@ -282,7 +282,11 @@ test.describe("@marketing page", () => {
         !url.startsWith("blob:")
       )
         outside.push(url);
-      if (/\.webp(\?|$)/.test(url)) {
+      // Vite's dev server also answers a JavaScript module per picture (`?import`); only real images count.
+      if (
+        /\.webp(\?|$)/.test(url) &&
+        (response.headers()["content-type"] ?? "").startsWith("image/")
+      ) {
         void response
           .body()
           .then((body) => pictures.push({ url, bytes: body.length }))
@@ -295,14 +299,23 @@ test.describe("@marketing page", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.waitForLoadState("networkidle");
     expect(outside, "requests to another origin").toEqual([]);
+    const hero = pictures.find((p) => p.url.includes("/hero-"));
+    expect(hero, "the hero picture is fetched").toBeDefined();
+    expect(hero?.bytes ?? Infinity).toBeLessThan(250 * 1024);
+    // The browser prefetches lazy pictures a screen or two ahead; the far ones wait for the scroll.
     expect(
-      pictures.length,
-      `pictures fetched before scrolling: ${pictures.map((p) => p.url).join(", ")}`,
-    ).toBe(1);
-    expect(pictures[0]?.bytes ?? Infinity).toBeLessThan(250 * 1024);
+      pictures.some((p) => p.url.includes("portal-results")),
+      `fetched before scrolling: ${pictures.map((p) => p.url).join(", ")}`,
+    ).toBe(false);
+    const before = pictures.reduce((sum, p) => sum + p.bytes, 0);
+    expect(before, "picture bytes before scrolling").toBeLessThan(400 * 1024);
     // Below-the-fold pictures arrive when scrolled to.
-    await page.locator('[data-testid="mk-role-lab"]').scrollIntoViewIfNeeded();
-    await expect.poll(() => pictures.length).toBeGreaterThan(1);
+    await page
+      .getByRole("img", { name: tr("ar", "marketing:portal.resultsAlt") })
+      .scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => pictures.some((p) => p.url.includes("portal-results")))
+      .toBe(true);
   });
 
   test("reduced motion: the FAQ chevron does not animate", async ({ page }) => {
@@ -323,6 +336,7 @@ test.describe("@marketing off by default", () => {
   test("the server says off, /login is the sign-in form and /sign-in is its alias", async ({
     page,
   }) => {
+    await setPrefs(page, { theme: "light", lang: "en" });
     const site = (await (
       await page.context().request.get("/api/ops/site")
     ).json()) as { marketing: boolean };
