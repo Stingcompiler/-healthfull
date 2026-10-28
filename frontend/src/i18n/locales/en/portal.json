@@ -269,7 +269,8 @@
       "open": "Open now, until {{time}}",
       "opensLater": "Opens today at {{time}}",
       "closedNow": "Closed now",
-      "closedToday": "Closed today"
+      "closedToday": "Closed today",
+      "reopens": "Opens {{day}} at {{time}}"
     },
     "todayLabel": "Today",
     "hours": "Opening hours",
@@ -282,6 +283,31 @@
     "departments": "Departments",
     "contact": "Contact and address",
     "call": "Call",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "tomorrow": "tomorrow",
+    "quick": {
+      "label": "Quick actions",
+      "directions": "Directions",
+      "book": "Book an appointment"
+    },
+    "email": "Email",
+    "address": "Address",
+    "how": {
+      "title": "How to open your file",
+      "file": {
+        "title": "File number",
+        "text": "Printed in the “Patient portal access” box at the bottom of your receipt. It starts with PT."
+      },
+      "phone": {
+        "title": "Phone number",
+        "text": "The number you gave at reception."
+      },
+      "code": {
+        "title": "Access code",
+        "text": "The 8 digits in the same box. It works for 30 days."
+      }
+    },
+    "bookHint": "after you sign in",
+    "doctorsToday": "In clinic today"
   }
 }

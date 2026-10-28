@@ -58,3 +58,31 @@ export function groupClinicDays(days: readonly DaySpan[]): SpanGroup[] {
   }
   return [...groups.values()];
 }
+
+export interface HoursDay {
+  weekday: number;
+  closed: boolean;
+  opens?: string | null;
+  closes?: string | null;
+}
+
+export interface NextOpening {
+  weekday: number;
+  opens: string;
+  /** 1 = tomorrow ... 7 = the same weekday next week. */
+  daysAhead: number;
+}
+
+/**
+ * The next day after `from` (a weekday number, 0 = Monday) on which the center opens, with its
+ * opening time; null when no later day has hours. Days off or without times are skipped.
+ */
+export function nextOpening(hours: readonly HoursDay[], from: number): NextOpening | null {
+  const byDay = new Map(hours.map((h) => [h.weekday, h]));
+  for (let ahead = 1; ahead <= 7; ahead += 1) {
+    const weekday = (from + ahead) % 7;
+    const day = byDay.get(weekday);
+    if (day && !day.closed && day.opens && day.closes) return { weekday, opens: day.opens, daysAhead: ahead };
+  }
+  return null;
+}

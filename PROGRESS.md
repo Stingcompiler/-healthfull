@@ -400,6 +400,7 @@ sequential PRs, each merged before the next:
   sessions, 404 for another patient's invoice, receipt, result and appointment.
 - [x] PR 3 (#18), F06 session expiry keeps dirty forms (re-authentication dialog); F12 kiosk
   sign-out and design-guide link by role; deterministic restart spec branches.
+- [x] Center page redesign (D-0020): two-column wide layout, single hero identity, phone quick actions and sticky bar, sparse states; e2e (full/sparse/empty variants, screenshots `center-*` in artifacts/screens).
 - [x] PR 4, F03: printed prescription and referral letter (A4, ar/en, center identity and the
   print template, a new `referral` template document; no prices).
 

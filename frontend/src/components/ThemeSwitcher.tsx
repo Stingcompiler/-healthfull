@@ -38,10 +38,12 @@ export function ThemeSwatch({ theme, className }: { theme: Theme; className?: st
 export interface ThemeSwitcherProps {
   /** "menu": icon button with dropdown (top bar). "segmented": three inline buttons. */
   variant?: "menu" | "segmented";
+  /** "menu" only: also writes the current theme's name beside the icon from the sm breakpoint. */
+  labelled?: boolean;
   className?: string;
 }
 
-export function ThemeSwitcher({ variant = "menu", className }: ThemeSwitcherProps) {
+export function ThemeSwitcher({ variant = "menu", labelled = false, className }: ThemeSwitcherProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = usePreferences();
   const CurrentIcon = THEME_ICONS[theme];
@@ -85,8 +87,14 @@ export function ThemeSwitcher({ variant = "menu", className }: ThemeSwitcherProp
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className={className} aria-label={t("theme.change")}>
+            <Button
+              variant="ghost"
+              size={labelled ? "default" : "icon"}
+              className={cn(labelled && "px-2.5 max-sm:min-w-11", className)}
+              aria-label={t("theme.change")}
+            >
               <CurrentIcon />
+              {labelled ? <span className="hidden sm:inline">{t(`theme.${theme}`)}</span> : null}
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
