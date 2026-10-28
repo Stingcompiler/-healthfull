@@ -11,7 +11,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { BASE_URL } from "../../env";
-import { ANONYMOUS_STATE } from "../../fixtures/state";
+import { ADMIN_STATE, ANONYMOUS_STATE } from "../../fixtures/state";
 import {
   expectNoHorizontalScroll,
   expectPrefsApplied,
@@ -327,6 +327,55 @@ test.describe("@marketing page", () => {
       .first()
       .evaluate((el) => getComputedStyle(el).transitionDuration);
     expect(parseFloat(duration)).toBeLessThan(0.05);
+  });
+});
+
+test.describe("@marketing site root", () => {
+  test.describe("signed out", () => {
+    test.use({ storageState: ANONYMOUS_STATE });
+
+    test("/ shows the page with the eight calls to action, all to /sign-in", async ({
+      page,
+    }) => {
+      await marketingOn(page);
+      await setPrefs(page, { theme: "light", lang: "en" });
+      await page.goto("/");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+        copy("en", "hero.title"),
+      );
+      expect(new URL(page.url()).pathname).toBe("/");
+      const ctas = page.getByTestId("mk-cta");
+      expect(await ctas.count()).toBe(8);
+      for (const cta of await ctas.all())
+        await expect(cta).toHaveAttribute("href", "/sign-in");
+      await page.locator('[data-cta="hero"]').click();
+      await expect(page).toHaveURL(/\/sign-in$/);
+      await expect(loginForm(page).submit).toBeVisible();
+    });
+
+    test("a protected route still goes to /sign-in", async ({ page }) => {
+      await marketingOn(page);
+      await page.goto("/queue");
+      await expect(page).toHaveURL(/\/sign-in\?redirect=%2Fqueue/);
+    });
+
+    test("/portal stays the center page", async ({ page }) => {
+      await marketingOn(page);
+      await page.goto("/portal");
+      await expect(page.getByTestId("marketing-page")).toHaveCount(0);
+      await expect(page.locator("#main h1").first()).toBeVisible();
+    });
+  });
+
+  test.describe("signed in", () => {
+    test.use({ storageState: ADMIN_STATE });
+
+    test("/ is the dashboard, and the page never appears", async ({ page }) => {
+      await marketingOn(page);
+      await page.goto("/");
+      await expect(page.getByTestId("user-menu")).toBeVisible();
+      await expect(page.getByTestId("marketing-page")).toHaveCount(0);
+    });
   });
 });
 

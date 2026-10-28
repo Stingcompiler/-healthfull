@@ -6,13 +6,16 @@ import { Providers } from "@/app/providers";
 import { routeTree } from "@/app/routes";
 import i18n from "@/i18n";
 import { ar, en } from "@/i18n/resources";
+import type { MeOut } from "@/lib/api/contract";
+import { authKeys } from "@/lib/auth/api";
 import { createQueryClient } from "@/lib/query";
 import { setSiteConfig } from "@/lib/site";
 
 /** The real route tree and guards at `path`, nobody signed in. */
-async function renderAt(path: string, language: "ar" | "en" = "en") {
+async function renderAt(path: string, language: "ar" | "en" = "en", me: MeOut | null = null) {
   await i18n.changeLanguage(language);
   const queryClient = createQueryClient();
+  if (me) queryClient.setQueryData(authKeys.me, me);
   const router = createRouter({
     routeTree,
     context: { queryClient },
@@ -157,5 +160,68 @@ describe("/login and /sign-in (ADR 0027)", () => {
     expect(items.length).toBeGreaterThanOrEqual(4);
     expect(items.length).toBeLessThanOrEqual(8);
     for (const item of items) expect(item.querySelector("summary")).not.toBeNull();
+  });
+
+  const ADMIN: MeOut = {
+    id: 1,
+    username: "admin",
+    full_name_ar: "مدير النظام",
+    full_name_en: "System Admin",
+    roles: ["admin"],
+    permissions: [],
+    language: "en",
+    theme: "light",
+    must_change_password: false,
+  };
+
+  describe("the site root", () => {
+    it("is on, signed out: / is the product page, at the same address", async () => {
+      setSiteConfig({ marketing: true });
+      const router = await renderAt("/");
+      await screen.findByTestId("marketing-page");
+      expect(router.state.location.pathname).toBe("/");
+      expect(screen.getAllByRole("link", { name: en.marketing.cta }).length).toBeGreaterThanOrEqual(5);
+      for (const cta of screen.getAllByTestId("mk-cta")) expect(cta).toHaveAttribute("href", "/sign-in");
+    });
+
+    it("is on, signed in: / is the dashboard and the page never shows", async () => {
+      setSiteConfig({ marketing: true });
+      const router = await renderAt("/", "en", ADMIN);
+      await screen.findByTestId("user-menu");
+      expect(router.state.location.pathname).toBe("/");
+      expect(screen.queryByTestId("marketing-page")).not.toBeInTheDocument();
+    });
+
+    it("is on, signed out: a protected route still goes to /sign-in, not to /", async () => {
+      setSiteConfig({ marketing: true });
+      const router = await renderAt("/patients");
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe("/sign-in");
+      });
+      expect(router.state.location.search).toEqual({ redirect: "/patients" });
+      expect(screen.queryByTestId("marketing-page")).not.toBeInTheDocument();
+    });
+
+    it("is off, signed out: / goes to /login as before", async () => {
+      const router = await renderAt("/");
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe("/login");
+      });
+      expect(screen.queryByTestId("marketing-page")).not.toBeInTheDocument();
+    });
+
+    it("is off, signed in: / is the dashboard", async () => {
+      const router = await renderAt("/", "en", ADMIN);
+      await screen.findByTestId("user-menu");
+      expect(router.state.location.pathname).toBe("/");
+    });
+
+    it("is on: /portal stays the center page", async () => {
+      setSiteConfig({ marketing: true });
+      await renderAt("/portal");
+      await waitFor(() => {
+        expect(screen.queryByTestId("marketing-page")).not.toBeInTheDocument();
+      });
+    });
   });
 });

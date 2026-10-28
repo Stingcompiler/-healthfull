@@ -59,3 +59,13 @@ should change for them.
 `apps/ops/{api,services,schemas}.py`, `config/settings.py`; frontend `src/lib/site.ts`,
 `src/app/guards.ts`, `src/features/auth/routes.tsx`, `src/features/marketing/`,
 `src/i18n/locales/{ar,en}/marketing.json`, `src/assets/marketing/`; `.env.example`.
+
+## Addendum (2026-10-28): the page also opens at the site root
+With marketing on, `/` renders the same page (same component, same call to action) when the
+visitor has **no staff session**. The `_app` route's guard reads the session first (the cached
+`/api/auth/me` answer), then chooses, so a signed-in user gets the dashboard at `/` with no flash
+of the page. Only the exact path `/` is affected: every protected route still redirects a
+signed-out visitor to `/sign-in?redirect=...`, `/login` keeps the page, `/portal` stays the center
+page and the kiosk routes are unchanged. With marketing off nothing changes at `/` (signed out
+goes to `/login`). `robots.txt` allows `/` and `/login`. Code: `src/app/routes.tsx` (`AppEntry`,
+route context `marketingRoot`), `src/features/marketing/LazyMarketingPage.tsx`.

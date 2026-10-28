@@ -1,5 +1,6 @@
-# Only /login may be indexed, and it is the product page only where MARKETING_SITE is on (ADR 0027).
+# Only / and /login may be indexed, and it is the product page only where MARKETING_SITE is on (ADR 0027).
 # Every other address is the staff system or the patient portal, behind a sign-in.
 User-agent: *
+Allow: /$
 Allow: /login$
 Disallow: /

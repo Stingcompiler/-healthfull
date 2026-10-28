@@ -98,7 +98,7 @@ every printed receipt (ADR 0016), and a new key makes every older QR fail
 
 A center's own install leaves `MARKETING_SITE` unset (or `0`): `/login` is the staff sign-in, as
 always. On the public product site only, set `MARKETING_SITE=1` in `.env`: `/login` then shows the
-product page (ADR 0027), and the staff sign-in is `/sign-in` (every redirect, sign-out and the
+product page (ADR 0027), and so does the site root `/` for a visitor with no session (a signed-in user still gets the dashboard); the staff sign-in is `/sign-in` (every redirect, sign-out and the
 page's button go there). Optional `MARKETING_CONTACT_EMAIL` and `MARKETING_CONTACT_WHATSAPP`
 (digits with the country code) add two plain contact links; empty shows none.
 The setting is read when the app starts and the browser asks `GET /api/ops/site`, so no image is
