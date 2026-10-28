@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { BrandMark } from "@/components/BrandMark";
 import { CenterIdentity } from "@/components/CenterIdentity";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -44,27 +45,44 @@ export function PortalLayout() {
   // Signed out, the one action (sign in) stays reachable in the sticky header while the
   // visitor scrolls the center page (LANDING section 2); the sign-in page needs no copy.
   const showSignIn = !signedIn && !path.startsWith("/portal/sign-in");
+  // The center page is the one wide screen (two columns from lg); every other portal screen
+  // stays a phone-width column. Its hero carries the center's name, so the header keeps only the
+  // compact portal brand there, and on phones its sticky bottom bar replaces the header button.
+  const isCenter = path.replace(/\/+$/u, "") === "/portal";
+  const width = isCenter ? "max-w-[75rem] md:px-6 lg:px-8" : "max-w-md md:max-w-2xl";
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg" data-density="comfortable">
       <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur print:hidden">
-        <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between gap-2 px-4 md:max-w-2xl">
+        <div className={cn("mx-auto flex h-14 w-full items-center justify-between gap-2 px-4", width)}>
           <Link
             to={signedIn ? "/portal/home" : "/portal"}
             className="flex min-h-11 min-w-0 items-center gap-2 rounded-control focus-ring"
           >
-            <CenterIdentity subtitle={t("brand")} />
+            {isCenter ? (
+              <span className="flex min-w-0 items-center gap-2.5" data-testid="portal-brand">
+                <BrandMark className="size-8" />
+                <span className="truncate text-sm font-bold text-fg">{t("brand")}</span>
+              </span>
+            ) : (
+              <CenterIdentity subtitle={t("brand")} />
+            )}
           </Link>
           <div className="flex shrink-0 items-center">
             {showSignIn ? (
-              <Button asChild size="sm" variant="soft" className="me-1">
+              <Button
+                asChild
+                size="sm"
+                variant={isCenter ? "default" : "soft"}
+                className={cn("me-1", isCenter && "max-md:hidden")}
+              >
                 <Link to="/portal/sign-in" data-testid="portal-header-sign-in">
                   {t("center.signInShort")}
                 </Link>
               </Button>
             ) : null}
-            <LanguageSwitcher variant="icon" />
-            <ThemeSwitcher />
+            <LanguageSwitcher />
+            <ThemeSwitcher labelled />
             {signedIn ? (
               <Button
                 variant="ghost"
@@ -86,7 +104,10 @@ export function PortalLayout() {
           </div>
         </div>
       </header>
-      <main id="main" className="mx-auto w-full max-w-md flex-1 px-4 py-6 md:max-w-2xl print:max-w-none print:p-0">
+      <main
+        id="main"
+        className={cn("mx-auto w-full flex-1 px-4 py-6 print:max-w-none print:p-0", width, isCenter && "lg:py-8")}
+      >
         <Outlet />
       </main>
       <footer
@@ -94,8 +115,10 @@ export function PortalLayout() {
         // device's safe area free, so the last card is never under it. (`safe-bottom` alone set
         // padding-bottom to the inset and cancelled the tab-bar room.)
         className={cn(
-          "mx-auto w-full max-w-md px-4 text-center text-xs text-muted md:max-w-2xl print:hidden",
-          signedIn
+          "mx-auto w-full px-4 text-center text-xs text-muted print:hidden",
+          width,
+          // The center page's sticky action bar is fixed over the end of the page on phones too.
+          signedIn || isCenter
             ? "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6"
             : "pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
         )}

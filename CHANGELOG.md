@@ -3,6 +3,8 @@
 All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
+### Changed
+- Public center page (/portal) redesigned for phones and large screens: one identity hero with the open/closed status and the next opening, a 1200px two-column layout from lg (notices, doctor cards and departments beside today's hours, contact and a how-to-sign-in guide), quick actions and a sticky bottom bar on phones, calm sparse-data states, labelled header controls (D-0020).
 ### Fixed (pre-trial, inspection of October 2026)
 - Printed prescription and referral letter from the clinic: A4, Arabic or English paper, the center's identity and the document's print template (new template document "Referral letter"), patient, allergies and diagnoses; never a price (F03).
 - An ended session no longer throws away unsaved work: the page stays (hidden) behind a sign-in dialog; the same user carries on with the draft, another user never sees it (ADR 0026, F06).

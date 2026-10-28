@@ -18,6 +18,8 @@
     ["primary-fg", "primary", 4.5],
     ["primary-fg", "primary-hover", 4.5],
     ["primary-strong", "primary-soft", 4.5],
+    ["fg", "primary-soft", 4.5],
+    ["fg-muted", "primary-soft", 4.5],
     ["secondary-fg", "secondary", 4.5],
     ["secondary-fg", "secondary-hover", 4.5],
     ["accent-fg", "accent", 4.5],
