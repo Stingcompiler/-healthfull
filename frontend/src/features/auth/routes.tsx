@@ -1,8 +1,8 @@
 import { createRoute, useSearch, type AnyRoute } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
 import { redirectIfLoggedIn, requireUser } from "@/app/guards";
 import type { RouterContext } from "@/app/router-context";
+import { LazyMarketingPage } from "@/features/marketing/LazyMarketingPage";
 import { isMarketingSite } from "@/lib/site";
 
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
@@ -17,19 +17,10 @@ function LoginRoute() {
   return <LoginPage redirectTo={typeof search.redirect === "string" ? search.redirect : undefined} />;
 }
 
-// The product page (its code, styles and screenshots) is fetched only where the deployment turns it on.
-const MarketingPage = lazy(() =>
-  import("@/features/marketing/MarketingPage").then((module) => ({ default: module.MarketingPage })),
-);
-
 /** `/login`: the product page when the deployment turns it on, otherwise the staff sign-in. */
 function LoginEntry() {
   if (!isMarketingSite()) return <LoginRoute />;
-  return (
-    <Suspense fallback={null}>
-      <MarketingPage />
-    </Suspense>
-  );
+  return <LazyMarketingPage />;
 }
 
 const validateLoginSearch = (search: Record<string, unknown>): LoginSearch =>

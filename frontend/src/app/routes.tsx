@@ -37,6 +37,10 @@ import { routes as reportsRoutes } from "@/features/reports/routes";
 import { kioskRoutes as visitsKioskRoutes, routes as visitsRoutes } from "@/features/visits/routes";
 import { routes as portalRoutes } from "@/portal/routes";
 
+import { meQueryOptions } from "@/lib/auth/api";
+import { isMarketingSite } from "@/lib/site";
+import { LazyMarketingPage } from "@/features/marketing/LazyMarketingPage";
+
 import { isKioskOnly, requireAppUser } from "./guards";
 import { AppLayout } from "./layouts/AppLayout";
 import { RootLayout } from "./layouts/RootLayout";
@@ -50,17 +54,29 @@ export const rootRoute = createRootRouteWithContext<RouterContext>()({
   errorComponent: RouteErrorPage,
 });
 
+function AppEntry() {
+  const { marketingRoot } = appRoute.useRouteContext();
+  return marketingRoot ? <LazyMarketingPage /> : <AppLayout />;
+}
+
 export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "_app",
   beforeLoad: async ({ context, location }) => {
+    // Marketing mode (ADR 0027): a visitor with no staff session who opens the site root sees the
+    // product page there. The session is read first, so a signed-in user never sees it flash.
+    if (isMarketingSite() && location.pathname === "/") {
+      const session = await context.queryClient.query({ ...meQueryOptions, staleTime: "static" });
+      if (!session) return { marketingRoot: true };
+    }
     const me = await requireAppUser({ context, location });
     if (isKioskOnly(me)) {
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
       throw redirect({ to: "/display/queue" });
     }
+    return { marketingRoot: false };
   },
-  component: AppLayout,
+  component: AppEntry,
 });
 
 export const routeTree = rootRoute.addChildren([

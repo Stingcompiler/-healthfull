@@ -249,7 +249,7 @@ Service line state colors (`--state-*`): requested slate, invoiced blue, paid li
 ### 5.5 Data and routing
 
 - `openapi-fetch` typed client from generated `schema.d.ts`; TanStack Query hooks live in `features/<m>/api.ts`.
-- Code-based TanStack Router. Each feature exports `routes(parent)` from `features/<m>/routes.tsx`; `src/app/routes.ts` already imports every feature (pre-registered) so feature work never edits shared routing files. Nav entries per feature in `features/<m>/nav.ts`, aggregated centrally and filtered by permission.
+- Code-based TanStack Router. Each feature exports `routes(parent)` from `features/<m>/routes.tsx`; `src/app/routes.tsx` already imports every feature (pre-registered) so feature work never edits shared routing files. Nav entries per feature in `features/<m>/nav.ts`, aggregated centrally and filtered by permission.
 - Forms: react-hook-form + zod; server `code` errors shown via the `errors` namespace.
 
 ## 6. Testing
