@@ -216,6 +216,9 @@ services:
       APP_UPSTREAM: "app:8000"
       DEVICE_AGENT_ORIGIN: "${DEVICE_AGENT_ORIGIN:-http://127.0.0.1:9123}"
       CADDY_MAX_BODY: "${CADDY_MAX_BODY:-25MB}"
+      # Empty = trust no peer's X-Forwarded-For (the LAN edge). Behind a host reverse proxy,
+      # that proxy's source address(es): infra/Caddyfile, ADR 0028 decision 6.
+      CADDY_TRUSTED_PROXIES: "${CADDY_TRUSTED_PROXIES:-}"
     volumes:
       - caddy_data:/var/lib/caddy/data
       - caddy_config:/var/lib/caddy/config
