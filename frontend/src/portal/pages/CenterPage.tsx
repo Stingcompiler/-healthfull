@@ -602,8 +602,8 @@ function Policies({ page }: { page: CenterPageData }) {
   const { t } = useTranslation("portal");
   const pick = usePick();
   const items = [
-    { key: "privacy", text: pick(page.privacy_ar, page.privacy_en) },
-    { key: "cancellation", text: pick(page.cancellation_policy_ar, page.cancellation_policy_en) },
+    { key: "privacy" as const, text: pick(page.privacy_ar, page.privacy_en) },
+    { key: "cancellation" as const, text: pick(page.cancellation_policy_ar, page.cancellation_policy_en) },
   ].filter((item) => item.text);
   if (items.length === 0) return null;
   return (
