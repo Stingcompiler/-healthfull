@@ -171,6 +171,25 @@ while staff on the LAN are unaffected.
 - Owner action before switching the public pages on at OVH: verify the header handling of
   decision 6 on the host Caddy.
 
+## Implementation note: decision 6 (2026-10-29)
+The OVH host Caddy turned out to be a bare `reverse_proxy 127.0.0.1:8300`: it overwrites
+`X-Forwarded-For` with the visitor's address (correct for the outermost hop), but the compose Caddy
+trusted no peer and overwrote it again with the Docker gateway address, so every internet visitor
+reached Django as one address. Fixed in two places:
+- **Compose Caddy** (`infra/Caddyfile`): global `servers { trusted_proxies static
+  {$CADDY_TRUSTED_PROXIES} }`, passed through `infra/docker-compose.yml`. Empty (the default, valid
+  Caddy that trusts nobody) keeps the LAN behavior: the compose Caddy is the edge and replaces any
+  forged header. Behind a host proxy with `BIND_IP=127.0.0.1`, `CADDY_TRUSTED_PROXIES=private_ranges`
+  keeps the host proxy's header and appends the gateway. Proven by
+  `infra/tests/test_caddy_trusted_proxies.sh` (`caddy validate` of each form, then real requests;
+  the CI docker job runs it with the web image's own Caddy binary).
+- **Django** (`apps.core.services.client_ip`): with `DJANGO_TRUST_X_FORWARDED_FOR=1` the header is
+  now read from the **right**, skipping `DJANGO_TRUSTED_PROXIES` (default `private_ranges`), instead
+  of taking the leftmost entry. A forged leading entry can then never win, even if some proxy in the
+  chain appends rather than overwrites; when every entry is a private hop (a LAN client), the
+  leftmost is used, which the compose Caddy wrote itself. A malformed entry ends the walk.
+Runbook: `docs/runbooks/install.md` "Behind a host reverse proxy".
+
 ## Code
 Phase 1: `backend/apps/core/{models,services,api,schemas}.py` (`PublicSiteSettings`),
 `backend/apps/ops/{api,schemas}.py`, `backend/apps/portal/{api,services,conf}.py`,

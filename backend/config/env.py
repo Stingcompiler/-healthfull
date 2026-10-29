@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import os
 from collections.abc import Mapping
 
@@ -47,3 +48,37 @@ def env_list(name: str, default: list[str], environ: Mapping[str, str] | None = 
     if raw is None:
         return list(default)
     return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+#: Caddy's ``private_ranges`` shorthand, so one value means the same to both (infra/Caddyfile).
+PRIVATE_RANGES = (
+    "192.168.0.0/16",
+    "172.16.0.0/12",
+    "10.0.0.0/8",
+    "127.0.0.0/8",
+    "fd00::/8",
+    "::1/128",
+)
+
+Network = ipaddress.IPv4Network | ipaddress.IPv6Network
+
+
+def env_networks(
+    name: str, default: str, environ: Mapping[str, str] | None = None
+) -> tuple[Network, ...]:
+    """IP networks separated by commas or spaces; ``private_ranges`` expands as in Caddy.
+
+    A bare address is a one-host network; host bits are allowed (``172.18.0.1/16``). An
+    invalid entry raises ``ImproperlyConfigured`` so a typo fails at start, not silently.
+    """
+    raw = env_str(name, default, environ)
+    networks: list[Network] = []
+    for item in raw.replace(",", " ").split():
+        for value in PRIVATE_RANGES if item == "private_ranges" else (item,):
+            try:
+                networks.append(ipaddress.ip_network(value, strict=False))
+            except ValueError as exc:
+                raise ImproperlyConfigured(
+                    f"{name} must list IP networks or private_ranges, got {item!r}"
+                ) from exc
+    return tuple(networks)

@@ -66,6 +66,7 @@ from apps.core.permissions import (
     role_permissions,
     roles_holding,
 )
+from config.env import Network
 from domain import center_content as content_rules
 from domain import center_page as center_rules
 from domain import images as image_rules
@@ -101,15 +102,43 @@ def _valid_ip(value: str | None) -> str | None:
         return None
 
 
+def _forwarded_client(header: str, trusted: tuple[Network, ...]) -> str | None:
+    """The visitor's address in an ``X-Forwarded-For`` chain (ADR 0028 decision 6).
+
+    Each proxy appends the address it was connected from, so only entries on the right were
+    written by our own proxies; anything to the left of them may be the visitor's own text.
+    Read from the right, skip our proxy hops (``trusted``), and return the first other
+    address. A malformed entry ends the walk (no proxy of ours wrote it). When every entry is
+    one of our hops (a LAN client behind the compose Caddy), the leftmost is the address the
+    outermost proxy saw.
+    """
+    last_trusted: str | None = None
+    for raw in reversed(header.split(",")):
+        address = _valid_ip(raw)
+        if address is None:
+            break
+        if not any(ipaddress.ip_address(address) in network for network in trusted):
+            return address
+        last_trusted = address
+    return last_trusted
+
+
 def client_ip(request: HttpRequest) -> str | None:
     """Client address; trusts ``X-Forwarded-For`` only when configured behind our proxy.
 
-    Values that are not IP addresses are ignored (falling back to ``REMOTE_ADDR``), so a
-    forged header can never break the ``inet`` column of the audit table.
+    With ``TRUST_X_FORWARDED_FOR`` the header is read from the right past
+    ``TRUSTED_PROXIES`` (``_forwarded_client``), so a forged leading entry never wins even
+    if some proxy appends instead of overwriting. Values that are not IP addresses are
+    ignored (falling back to ``REMOTE_ADDR``), so a forged header can never break the
+    ``inet`` column of the audit table.
     """
     if getattr(settings, "TRUST_X_FORWARDED_FOR", False):
         forwarded = request.headers.get("X-Forwarded-For", "")
-        candidate = _valid_ip(forwarded.split(",")[0]) if forwarded else None
+        candidate = (
+            _forwarded_client(forwarded, getattr(settings, "TRUSTED_PROXIES", ()))
+            if forwarded
+            else None
+        )
         if candidate:
             return candidate
     return _valid_ip(request.META.get("REMOTE_ADDR"))
