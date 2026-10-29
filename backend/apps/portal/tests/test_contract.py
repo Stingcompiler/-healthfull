@@ -20,6 +20,8 @@ PUBLIC = {
     "portal_get_center_logo",
     # The center name and logo, answered with the website off (ADR 0029 H).
     "portal_get_center_identity",
+    # The website's images (ADR 0029 H).
+    "portal_get_center_media",
 }
 STAFF = {
     "portal_get_ping": None,

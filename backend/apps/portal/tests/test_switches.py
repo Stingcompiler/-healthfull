@@ -36,7 +36,11 @@ ISSUE_OPERATIONS = {"portal_issue_access_code", "portal_issue_patient_access_cod
 
 #: switch field -> {operation id: (status, code)}; operations not named are unaffected.
 EXPECTED: dict[str, dict[str, tuple[int, str]]] = {
-    "site_enabled": {"portal_get_center_page": (404, "SITE_DISABLED")},
+    "site_enabled": {
+        "portal_get_center_page": (404, "SITE_DISABLED"),
+        # The website's images belong to the website (ADR 0028 decision 3, Phase 2).
+        "portal_get_center_media": (404, "SITE_DISABLED"),
+    },
     "online_booking_enabled": dict.fromkeys(BOOKING_OPERATIONS, (409, "ONLINE_BOOKING_DISABLED")),
     "patient_tracking_enabled": dict.fromkeys(
         PATIENT_OPERATIONS | {"portal_login"} | ISSUE_OPERATIONS, (409, "PORTAL_DISABLED")
@@ -102,6 +106,7 @@ def _call(
         "payment_id": w["payment"]["id"],
         "patient_id": w["patient"]["id"],
         "code_id": code.pk if code else 1,
+        "media_id": 1,
     }
     url = _url(path, ids)
     client: ApiClient = staff if op_id in STAFF_OPERATIONS else patient

@@ -47,6 +47,25 @@ TOP_KEYS = {
     "address",
     "directions_ar",
     "directions_en",
+    # Website content (ADR 0029 H, Phase 2): still no prices, numbers or other staff.
+    "maps_url",
+    "hero_title_ar",
+    "hero_title_en",
+    "hero_text_ar",
+    "hero_text_en",
+    "hero_image",
+    "gallery",
+    "facilities",
+    "reasons",
+    "insurance",
+    "faq",
+    "testimonials",
+    "accessibility_ar",
+    "accessibility_en",
+    "privacy_ar",
+    "privacy_en",
+    "cancellation_policy_ar",
+    "cancellation_policy_en",
 }
 DOCTOR_KEYS = {
     "id",
@@ -58,6 +77,11 @@ DOCTOR_KEYS = {
     "department_ar",
     "department_en",
     "clinic_days",
+    "qualifications_ar",
+    "qualifications_en",
+    "bio_ar",
+    "bio_en",
+    "photo",
 }
 
 WEEK = [{"weekday": d, "closed": d == 4, "opens": "08:00", "closes": "20:00"} for d in range(7)]
@@ -137,7 +161,7 @@ def test_only_public_fields(seeded: None, author: User) -> None:
         for day in doctor["clinic_days"]:
             assert set(day) == {"weekday", "starts", "ends"}
     for dept in body["departments"]:
-        assert set(dept) == {"id", "name_ar", "name_en"}
+        assert set(dept) == {"id", "name_ar", "name_en", "services"}
     assert set(body["announcements"][0]) == {
         "id",
         "title_ar",
@@ -243,6 +267,16 @@ def test_hidden_sections_come_back_empty(seeded: None, author: User) -> None:
         show_announcements=False,
         show_contact=False,
         show_address=False,
+        show_services=False,
+        show_insurance=False,
+        show_faq=False,
+        show_testimonials=False,
+        show_facilities=False,
+        show_policies=False,
+        maps_url="https://maps.example.test/x",
+        facilities=[{"name_ar": "مختبر", "name_en": "Laboratory"}],
+        privacy_en="We keep your data",
+        cancellation_policy_en="Cancel a day before",
     )
     _announce(author)
     body = _get()
@@ -251,8 +285,12 @@ def test_hidden_sections_come_back_empty(seeded: None, author: User) -> None:
         assert body[key] == "", key
     for key in ("directions_ar", "directions_en"):
         assert body[key] == "", key
-    for key in ("hours", "departments", "doctors", "announcements"):
+    for key in ("hours", "departments", "doctors", "announcements", "facilities", "gallery"):
         assert body[key] == [], key
+    for key in ("insurance", "faq", "testimonials"):
+        assert body[key] == [], key
+    for key in ("maps_url", "privacy_en", "cancellation_policy_en"):
+        assert body[key] == "", key
     assert body["today"] is None
 
 

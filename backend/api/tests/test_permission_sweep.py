@@ -54,6 +54,7 @@ PUBLIC = {
     "portal_get_center_page",
     "portal_get_center_logo",
     "portal_get_center_identity",
+    "portal_get_center_media",
 }
 
 STAFF_ANY = {

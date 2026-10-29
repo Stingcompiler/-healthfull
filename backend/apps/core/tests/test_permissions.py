@@ -23,6 +23,7 @@ CORE_CODES = {
     "core.manage_roles",
     "core.manage_settings",
     "core.manage_public_site",
+    "core.approve_testimonial",
     "core.view_audit",
     "ops.view_status",
 }
@@ -236,6 +237,7 @@ def test_superuser_has_everything(make_user: Any) -> None:
             {
                 "core.manage_settings",
                 "core.manage_public_site",
+                "core.approve_testimonial",
                 "core.view_audit",
                 "ops.view_status",
             },

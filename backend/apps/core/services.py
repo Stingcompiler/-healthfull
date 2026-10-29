@@ -34,6 +34,9 @@ from apps.core.models import (
     Announcement,
     AuthEvent,
     AuthEventKind,
+    CenterFaq,
+    CenterMedia,
+    CenterMediaKind,
     CenterPage,
     CenterProfile,
     Department,
@@ -51,6 +54,7 @@ from apps.core.models import (
     RolePermission,
     Room,
     Sequence,
+    Testimonial,
     ThrottleScope,
     User,
     UserRole,
@@ -62,7 +66,9 @@ from apps.core.permissions import (
     role_permissions,
     roles_holding,
 )
+from domain import center_content as content_rules
 from domain import center_page as center_rules
+from domain import images as image_rules
 from domain import public_site as public_rules
 from domain.errors import DomainError
 from domain.lockout import (
@@ -1183,7 +1189,23 @@ def center_logo() -> tuple[bytes, str]:
 
 # --- Center page of the patient portal ----------------------------------------------------
 
-_CENTER_PAGE_TEXT = {"about_ar", "about_en", "email", "directions_ar", "directions_en"}
+_CENTER_PAGE_TEXT = {
+    "about_ar",
+    "about_en",
+    "email",
+    "directions_ar",
+    "directions_en",
+    "hero_title_ar",
+    "hero_title_en",
+    "hero_text_ar",
+    "hero_text_en",
+    "accessibility_ar",
+    "accessibility_en",
+    "privacy_ar",
+    "privacy_en",
+    "cancellation_policy_ar",
+    "cancellation_policy_en",
+}
 _CENTER_PAGE_SWITCHES = {
     "show_about",
     "show_hours",
@@ -1192,6 +1214,12 @@ _CENTER_PAGE_SWITCHES = {
     "show_announcements",
     "show_contact",
     "show_address",
+    "show_services",
+    "show_insurance",
+    "show_faq",
+    "show_testimonials",
+    "show_facilities",
+    "show_policies",
 }
 _CENTER_PAGE_FIELDS = (
     _CENTER_PAGE_TEXT
@@ -1201,6 +1229,9 @@ _CENTER_PAGE_FIELDS = (
         "whatsapp",
         "hidden_department_ids",
         "hidden_doctor_ids",
+        "facilities",
+        "reasons",
+        "maps_url",
     }
 )
 
@@ -1223,10 +1254,20 @@ def update_center_page(actor: User, **fields: Any) -> CenterPage:
 
     Raises:
         DomainError: ``CENTER_HOURS_INVALID``, ``CENTER_WHATSAPP_INVALID``,
-            ``CENTER_PAGE_UNKNOWN_ITEM`` (a hidden department or doctor that does not exist).
+            ``CENTER_PAGE_UNKNOWN_ITEM`` (a hidden department or doctor that does not exist),
+            ``CENTER_ROWS_INVALID`` (facilities over 20 or reasons over 8 rows, or a bad row),
+            ``CENTER_MAPS_URL_INVALID``.
         ValidationError: a malformed e-mail or a text over its length (HTTP 422).
     """
     _check_fields(fields, _CENTER_PAGE_FIELDS, "center page")
+    if "facilities" in fields:
+        fields["facilities"] = content_rules.parse_rows(
+            fields["facilities"], content_rules.FACILITY_ROW
+        )
+    if "reasons" in fields:
+        fields["reasons"] = content_rules.parse_rows(fields["reasons"], content_rules.REASON_ROW)
+    if "maps_url" in fields:
+        fields["maps_url"] = content_rules.maps_link(fields["maps_url"])
     if "hours" in fields:
         fields["hours"] = center_rules.hours_json(center_rules.parse_hours(fields["hours"]))
     if "whatsapp" in fields:
@@ -1370,6 +1411,326 @@ def update_announcement(actor: User, announcement_id: int, **fields: Any) -> Ann
         _check_announcement(row)
         row.save()
     return list_announcements().get(pk=announcement_id)
+
+
+# --- Website content: images, FAQ, testimonials, doctors, insurers, services (ADR 0029 H) -----
+
+#: An image of the website may be at most 2 MB (plan section 3); the database checks it too.
+MEDIA_MAX_BYTES = 2 * 1024 * 1024
+#: Images kept at once (shown or not): bounds the disk a site can use.
+MEDIA_MAX_ROWS = 100
+
+_MEDIA_FIELDS = {"alt_ar", "alt_en", "sort_order", "active"}
+
+
+def list_center_media() -> QuerySet[CenterMedia]:
+    return CenterMedia.objects.all()
+
+
+def upload_center_media(
+    actor: User,
+    upload: UploadedFile,
+    *,
+    kind: str,
+    alt_ar: str = "",
+    alt_en: str = "",
+    sort_order: int = 0,
+) -> CenterMedia:
+    """Store an image of the website under MEDIA_ROOT (``center/media/``).
+
+    The bytes decide the type: PNG, JPEG or WebP, walked to its end (``domain.images``).
+
+    Raises:
+        DomainError: ``MEDIA_TOO_LARGE`` (over 2 MB), ``MEDIA_INVALID_IMAGE``,
+            ``MEDIA_IMAGE_TOO_BIG`` (over 8000 pixels a side), ``MEDIA_KIND_INVALID``,
+            ``MEDIA_LIMIT_REACHED`` (100 images kept).
+    """
+    if kind not in CenterMediaKind.values:
+        raise DomainError("MEDIA_KIND_INVALID", "Unknown image kind", kind=kind)
+    data = upload.read(MEDIA_MAX_BYTES + 1)
+    if (upload.size or 0) > MEDIA_MAX_BYTES or len(data) > MEDIA_MAX_BYTES:
+        raise DomainError(
+            "MEDIA_TOO_LARGE", "The image must be 2 MB or smaller", max_bytes=MEDIA_MAX_BYTES
+        )
+    info = image_rules.inspect_image(data)
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="website image added"):
+        # The count is checked under a lock on the page row so two uploads cannot both pass.
+        CenterPage.load()
+        CenterPage.objects.select_for_update().get(pk=CenterPage.SINGLETON_PK)
+        if CenterMedia.objects.count() >= MEDIA_MAX_ROWS:
+            raise DomainError(
+                "MEDIA_LIMIT_REACHED",
+                "Remove an image before adding another",
+                max_rows=MEDIA_MAX_ROWS,
+            )
+        row = CenterMedia(
+            kind=kind,
+            content_type=info.content_type,
+            width=info.width,
+            height=info.height,
+            size_bytes=len(data),
+            alt_ar=_clean(alt_ar),
+            alt_en=_clean(alt_en),
+            sort_order=sort_order,
+            created_by=actor,
+        )
+        row.full_clean(exclude=["file", "created_by"])
+        row.file.save(f"{kind}-{uuid.uuid4().hex[:16]}.{info.ext}", ContentFile(data), save=False)
+        try:
+            row.save()
+        except Exception:
+            row.file.storage.delete(row.file.name)  # no orphan file when the row is refused
+            raise
+    return row
+
+
+def update_center_media(actor: User, media_id: int, **fields: Any) -> CenterMedia:
+    """Edit an image's alternative text, order or whether it shows (the file never changes)."""
+    _check_fields(fields, _MEDIA_FIELDS, "image")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="website image edited"):
+        row = CenterMedia.objects.select_for_update().get(pk=media_id)
+        for attr, value in fields.items():
+            setattr(row, attr, _clean(value))
+        row.full_clean(exclude=["file", "created_by"])
+        row.save()
+    return row
+
+
+def delete_center_media(actor: User, media_id: int) -> None:
+    """Remove an image and its file (a doctor showing it loses the photo; history keeps the row)."""
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="website image removed"):
+        row = CenterMedia.objects.select_for_update().get(pk=media_id)
+        name = row.file.name
+        storage = row.file.storage
+        row.delete()
+        if name:
+            transaction.on_commit(lambda: storage.delete(name))
+
+
+def _media_bytes(row: CenterMedia) -> tuple[bytes, str]:
+    try:
+        with row.file.open("rb") as handle:
+            data = handle.read(MEDIA_MAX_BYTES + 1)
+    except (FileNotFoundError, ValueError):
+        raise CenterMedia.DoesNotExist("Image file missing") from None
+    return data, row.content_type
+
+
+def center_media_file(media_id: int) -> tuple[bytes, str]:
+    """The stored image for the administration screen, shown or not (``NOT_FOUND`` if none)."""
+    return _media_bytes(CenterMedia.objects.get(pk=media_id))
+
+
+def public_center_media(media_id: int) -> tuple[bytes, str]:
+    """An image the public website shows, while the website is on.
+
+    Only active images; a doctor photo only while that doctor is on the page (active, not
+    hidden, with a shown department), so the photo of someone the page leaves out is not served.
+
+    Raises:
+        DomainError: ``SITE_DISABLED`` (404) while the website is off.
+        CenterMedia.DoesNotExist: anything else (404, not told apart).
+    """
+    require_site()
+    row = CenterMedia.objects.get(pk=media_id, active=True)
+    if row.kind == CenterMediaKind.DOCTOR:
+        page = center_page()
+        shown = (
+            page.show_doctors
+            and DoctorProfile.objects.filter(
+                photo=row, active=True, user__is_active=True, department__active=True
+            )
+            .exclude(pk__in=page.hidden_doctor_ids)
+            .exclude(department_id__in=page.hidden_department_ids)
+            .exists()
+        )
+        if not shown:
+            raise CenterMedia.DoesNotExist("Not on the page")
+    return _media_bytes(row)
+
+
+_FAQ_FIELDS = {"question_ar", "question_en", "answer_ar", "answer_en", "sort_order", "active"}
+
+
+def list_faq() -> QuerySet[CenterFaq]:
+    return CenterFaq.objects.all()
+
+
+def _check_faq(row: CenterFaq) -> None:
+    if not row.question_ar and not row.question_en:
+        raise DomainError("FAQ_QUESTION_REQUIRED", "Give the question in Arabic or English")
+    if not row.answer_ar and not row.answer_en:
+        raise DomainError("FAQ_ANSWER_REQUIRED", "Give the answer in Arabic or English")
+    row.full_clean(exclude=["created_by"])
+
+
+def create_faq(actor: User, **fields: Any) -> CenterFaq:
+    """Raises ``FAQ_QUESTION_REQUIRED``, ``FAQ_ANSWER_REQUIRED``."""
+    _check_fields(fields, _FAQ_FIELDS, "FAQ")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="website FAQ added"):
+        row = CenterFaq(created_by=actor, **{k: _clean(v) for k, v in fields.items()})
+        _check_faq(row)
+        row.save()
+    return row
+
+
+def update_faq(actor: User, faq_id: int, **fields: Any) -> CenterFaq:
+    """Raises ``FAQ_QUESTION_REQUIRED``, ``FAQ_ANSWER_REQUIRED``."""
+    _check_fields(fields, _FAQ_FIELDS, "FAQ")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="website FAQ edited"):
+        row = CenterFaq.objects.select_for_update().get(pk=faq_id)
+        for attr, value in fields.items():
+            setattr(row, attr, _clean(value))
+        _check_faq(row)
+        row.save()
+    return row
+
+
+def delete_faq(actor: User, faq_id: int) -> None:
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="website FAQ removed"):
+        CenterFaq.objects.select_for_update().get(pk=faq_id).delete()
+
+
+_TESTIMONIAL_TEXT = {"text_ar", "text_en", "author_ar", "author_en"}
+_TESTIMONIAL_FIELDS = _TESTIMONIAL_TEXT | {"sort_order", "active"}
+
+
+def list_testimonials() -> QuerySet[Testimonial]:
+    return Testimonial.objects.select_related("approved_by", "created_by")
+
+
+def _check_testimonial(row: Testimonial) -> None:
+    if not row.text_ar and not row.text_en:
+        raise DomainError("TESTIMONIAL_TEXT_REQUIRED", "Give the words in Arabic or English")
+    row.full_clean(exclude=["created_by", "approved_by"])
+
+
+def create_testimonial(actor: User, **fields: Any) -> Testimonial:
+    """A testimonial typed by staff. It starts unapproved and is not shown until a holder of
+    ``core.approve_testimonial`` approves it (ADR 0029 A6).
+
+    Raises ``TESTIMONIAL_TEXT_REQUIRED``."""
+    _check_fields(fields, _TESTIMONIAL_FIELDS, "testimonial")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="testimonial added"):
+        row = Testimonial(created_by=actor, **{k: _clean(v) for k, v in fields.items()})
+        _check_testimonial(row)
+        row.save()
+    return list_testimonials().get(pk=row.pk)
+
+
+def update_testimonial(actor: User, testimonial_id: int, **fields: Any) -> Testimonial:
+    """Edit a testimonial. A change of the words or the author takes the approval back: the
+    approval was given to the old text (``domain.center_content``).
+
+    Raises ``TESTIMONIAL_TEXT_REQUIRED``."""
+    _check_fields(fields, _TESTIMONIAL_FIELDS, "testimonial")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="testimonial edited"):
+        row = Testimonial.objects.select_for_update().get(pk=testimonial_id)
+        before = {k: getattr(row, k) for k in _TESTIMONIAL_TEXT}
+        for attr, value in fields.items():
+            setattr(row, attr, _clean(value))
+        after = {k: getattr(row, k) for k in _TESTIMONIAL_TEXT}
+        if content_rules.approval_lapses_on_edit(before, after):
+            row.approved_by = None
+            row.approved_at = None
+        _check_testimonial(row)
+        row.save()
+    return list_testimonials().get(pk=testimonial_id)
+
+
+def approve_testimonial(actor: User, testimonial_id: int) -> Testimonial:
+    """Approve a testimonial for the website, recording who and when (invariant 4 style).
+
+    The router requires ``core.approve_testimonial``; the service checks it again.
+
+    Raises:
+        DomainError: ``PERMISSION_DENIED`` (403), ``TESTIMONIAL_ALREADY_APPROVED``.
+    """
+    require_permission(actor, "core.approve_testimonial")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="testimonial approved"):
+        row = Testimonial.objects.select_for_update().get(pk=testimonial_id)
+        if row.approved_at is not None:
+            raise DomainError("TESTIMONIAL_ALREADY_APPROVED", "This testimonial is approved")
+        row.approved_by = actor
+        row.approved_at = timezone.now()
+        row.save()
+    return list_testimonials().get(pk=testimonial_id)
+
+
+def delete_testimonial(actor: User, testimonial_id: int) -> None:
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="testimonial removed"):
+        Testimonial.objects.select_for_update().get(pk=testimonial_id).delete()
+
+
+_DOCTOR_SITE_FIELDS = {
+    "qualifications_ar",
+    "qualifications_en",
+    "bio_ar",
+    "bio_en",
+    "photo_id",
+}
+
+
+def list_doctor_site_profiles() -> QuerySet[DoctorProfile]:
+    return DoctorProfile.objects.select_related("user", "department", "photo").order_by(
+        "department__sort_order", "department__code", "user__username"
+    )
+
+
+def update_doctor_site_profile(actor: User, doctor_id: int, **fields: Any) -> DoctorProfile:
+    """The doctor's qualifications, short biography (at most 400 characters) and photo on the
+    website. Nothing else of the clinical profile changes here.
+
+    Raises:
+        DomainError: ``MEDIA_KIND_MISMATCH`` (the photo is not a doctor image),
+            ``MEDIA_NOT_FOUND``.
+        ValidationError: a text over its length (HTTP 422).
+    """
+    _check_fields(fields, _DOCTOR_SITE_FIELDS, "doctor website profile")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="doctor on website"):
+        doctor = DoctorProfile.objects.select_for_update().get(pk=doctor_id)
+        for attr, value in fields.items():
+            if attr == "photo_id":
+                if value is None:
+                    doctor.photo = None
+                    continue
+                photo = CenterMedia.objects.filter(pk=value).first()
+                if photo is None:
+                    raise DomainError("MEDIA_NOT_FOUND", "No such image", id=value)
+                if photo.kind != CenterMediaKind.DOCTOR:
+                    raise DomainError(
+                        "MEDIA_KIND_MISMATCH", "Choose an image uploaded as a doctor photo"
+                    )
+                doctor.photo = photo
+            else:
+                setattr(doctor, attr, _clean(value))
+        doctor.full_clean(exclude=["user", "department", "consultation_service"])
+        doctor.save()
+    return list_doctor_site_profiles().get(pk=doctor_id)
+
+
+def site_payers() -> Any:
+    from apps.catalog import services as catalog  # catalog imports core
+
+    return catalog.site_payers()
+
+
+def site_services() -> Any:
+    from apps.catalog import services as catalog
+
+    return catalog.site_services()
+
+
+def set_payer_on_site(actor: User, payer_id: int, *, show_on_site: bool) -> Any:
+    from apps.catalog import services as catalog
+
+    return catalog.set_payer_on_site(actor, payer_id, show_on_site=show_on_site)
+
+
+def set_service_on_site(actor: User, service_id: int, *, show_on_site: bool) -> Any:
+    from apps.catalog import services as catalog
+
+    return catalog.set_service_on_site(actor, service_id, show_on_site=show_on_site)
 
 
 # --- Policy (FEATURES 13.4) ---------------------------------------------------------------

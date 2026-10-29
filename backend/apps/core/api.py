@@ -14,7 +14,7 @@ from typing import Any
 
 from django.http import HttpRequest, HttpResponse
 from django.middleware.csrf import get_token
-from ninja import File, Query, Router, Status
+from ninja import File, Form, Query, Router, Status
 from ninja.errors import AuthenticationError
 from ninja.files import UploadedFile
 
@@ -26,6 +26,8 @@ from api.security import session_auth_pending_ok
 from apps.core import services
 from apps.core.models import (
     Announcement,
+    CenterFaq,
+    CenterMedia,
     CenterPage,
     CenterProfile,
     DoctorProfile,
@@ -40,6 +42,11 @@ from apps.core.schemas import (
     AnnouncementIn,
     AnnouncementOut,
     AnnouncementPatch,
+    CenterFaqIn,
+    CenterFaqOut,
+    CenterFaqPatch,
+    CenterMediaOut,
+    CenterMediaPatch,
     CenterPageIn,
     CenterPageOut,
     CenterProfileIn,
@@ -54,7 +61,10 @@ from apps.core.schemas import (
     DoctorListParams,
     DoctorOut,
     DoctorPatch,
+    DoctorSiteProfileOut,
+    DoctorSiteProfilePatch,
     LoginIn,
+    MediaKind,
     MeOut,
     PaperCode,
     PermissionMatrixIn,
@@ -81,6 +91,12 @@ from apps.core.schemas import (
     ScheduleIn,
     SequenceParams,
     SequencesOut,
+    ShowOnSiteIn,
+    SitePayerOut,
+    SiteServiceOut,
+    TestimonialIn,
+    TestimonialOut,
+    TestimonialPatch,
     UserIn,
     UserListParams,
     UserOut,
@@ -506,6 +522,283 @@ def update_announcement(
 ) -> Announcement:
     return services.update_announcement(
         _current_user(request), announcement_id, **payload.changes()
+    )
+
+
+# --- Website content (ADR 0029 H) ---------------------------------------------------------
+
+_IMAGE_RESPONSE = {
+    "responses": {
+        200: {
+            "description": "The image",
+            "content": {"image/*": {"schema": {"type": "string", "format": "binary"}}},
+        }
+    }
+}
+
+
+@core_router.get(
+    "/center-media",
+    response={200: list[CenterMediaOut], **_READ},
+    operation_id="core_list_center_media",
+    summary="Images of the website (hero, gallery, doctor photos), shown or not",
+)
+@require_perm("core.manage_public_site")
+def list_center_media(request: HttpRequest) -> list[CenterMedia]:
+    return list(services.list_center_media())
+
+
+@core_router.post(
+    "/center-media",
+    response={201: CenterMediaOut, **_WRITE},
+    operation_id="core_upload_center_media",
+    summary="Upload an image of the website (PNG, JPEG or WebP, at most 2 MB)",
+    description=(
+        "The bytes decide the type. 409 MEDIA_TOO_LARGE, MEDIA_INVALID_IMAGE, "
+        "MEDIA_IMAGE_TOO_BIG, MEDIA_KIND_INVALID, MEDIA_LIMIT_REACHED."
+    ),
+)
+@require_perm("core.manage_public_site")
+def upload_center_media(
+    request: HttpRequest,
+    file: File[UploadedFile],
+    kind: Form[MediaKind],
+    alt_ar: Form[str] = "",
+    alt_en: Form[str] = "",
+    sort_order: Form[int] = 0,
+) -> Status[CenterMedia]:
+    return Status(
+        201,
+        services.upload_center_media(
+            _current_user(request),
+            file,
+            kind=kind,
+            alt_ar=alt_ar[:200],
+            alt_en=alt_en[:200],
+            sort_order=max(0, min(sort_order, 32767)),
+        ),
+    )
+
+
+@core_router.patch(
+    "/center-media/{media_id}",
+    response={200: CenterMediaOut, **_WRITE},
+    operation_id="core_update_center_media",
+    summary="Edit an image's alternative text, order or visibility",
+)
+@require_perm("core.manage_public_site")
+def update_center_media(
+    request: HttpRequest, media_id: int, payload: CenterMediaPatch
+) -> CenterMedia:
+    return services.update_center_media(_current_user(request), media_id, **payload.changes())
+
+
+@core_router.delete(
+    "/center-media/{media_id}",
+    response={204: None, **_WRITE},
+    operation_id="core_delete_center_media",
+    summary="Remove an image of the website and its file",
+)
+@require_perm("core.manage_public_site")
+def delete_center_media(request: HttpRequest, media_id: int) -> Status[None]:
+    services.delete_center_media(_current_user(request), media_id)
+    return Status(204, None)
+
+
+@core_router.get(
+    "/center-media/{media_id}/file",
+    response={200: None, **_READ},
+    operation_id="core_get_center_media_file",
+    summary="An image of the website for the administration screen (works with the site off)",
+    openapi_extra=_IMAGE_RESPONSE,
+)
+@require_perm("core.manage_public_site")
+def get_center_media_file(request: HttpRequest, media_id: int) -> HttpResponse:
+    data, content_type = services.center_media_file(media_id)
+    response = HttpResponse(data, content_type=content_type)
+    response["Cache-Control"] = "private, max-age=3600"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@core_router.get(
+    "/center-faq",
+    response={200: list[CenterFaqOut], **_READ},
+    operation_id="core_list_center_faq",
+    summary="Questions and answers of the website, shown or not",
+)
+@require_perm("core.manage_public_site")
+def list_center_faq(request: HttpRequest) -> list[CenterFaq]:
+    return list(services.list_faq())
+
+
+@core_router.post(
+    "/center-faq",
+    response={201: CenterFaqOut, **_WRITE},
+    operation_id="core_create_center_faq",
+    summary="Add a question and its answer to the website",
+    description="409 FAQ_QUESTION_REQUIRED, FAQ_ANSWER_REQUIRED.",
+)
+@require_perm("core.manage_public_site")
+def create_center_faq(request: HttpRequest, payload: CenterFaqIn) -> Status[CenterFaq]:
+    return Status(201, services.create_faq(_current_user(request), **payload.dict()))
+
+
+@core_router.patch(
+    "/center-faq/{faq_id}",
+    response={200: CenterFaqOut, **_WRITE},
+    operation_id="core_update_center_faq",
+    summary="Edit, reorder or hide a question",
+    description="409 FAQ_QUESTION_REQUIRED, FAQ_ANSWER_REQUIRED.",
+)
+@require_perm("core.manage_public_site")
+def update_center_faq(request: HttpRequest, faq_id: int, payload: CenterFaqPatch) -> CenterFaq:
+    return services.update_faq(_current_user(request), faq_id, **payload.changes())
+
+
+@core_router.delete(
+    "/center-faq/{faq_id}",
+    response={204: None, **_WRITE},
+    operation_id="core_delete_center_faq",
+    summary="Remove a question from the website",
+)
+@require_perm("core.manage_public_site")
+def delete_center_faq(request: HttpRequest, faq_id: int) -> Status[None]:
+    services.delete_faq(_current_user(request), faq_id)
+    return Status(204, None)
+
+
+@core_router.get(
+    "/testimonials",
+    response={200: list[TestimonialOut], **_READ},
+    operation_id="core_list_testimonials",
+    summary="Testimonials typed by staff, approved or not",
+)
+@require_perm("core.manage_public_site")
+def list_testimonials(request: HttpRequest) -> Any:
+    return list(services.list_testimonials())
+
+
+@core_router.post(
+    "/testimonials",
+    response={201: TestimonialOut, **_WRITE},
+    operation_id="core_create_testimonial",
+    summary="Add a testimonial (not shown until approved)",
+    description="409 TESTIMONIAL_TEXT_REQUIRED.",
+)
+@require_perm("core.manage_public_site")
+def create_testimonial(request: HttpRequest, payload: TestimonialIn) -> Any:
+    return Status(201, services.create_testimonial(_current_user(request), **payload.dict()))
+
+
+@core_router.patch(
+    "/testimonials/{testimonial_id}",
+    response={200: TestimonialOut, **_WRITE},
+    operation_id="core_update_testimonial",
+    summary="Edit, reorder or hide a testimonial; new words need a new approval",
+    description="409 TESTIMONIAL_TEXT_REQUIRED.",
+)
+@require_perm("core.manage_public_site")
+def update_testimonial(request: HttpRequest, testimonial_id: int, payload: TestimonialPatch) -> Any:
+    return services.update_testimonial(_current_user(request), testimonial_id, **payload.changes())
+
+
+@core_router.post(
+    "/testimonials/{testimonial_id}/approve",
+    response={200: TestimonialOut, **_WRITE},
+    operation_id="core_approve_testimonial",
+    summary="Approve a testimonial for the website (records who and when)",
+    description="409 TESTIMONIAL_ALREADY_APPROVED.",
+)
+@require_perm("core.approve_testimonial")
+def approve_testimonial(request: HttpRequest, testimonial_id: int) -> Any:
+    return services.approve_testimonial(_current_user(request), testimonial_id)
+
+
+@core_router.delete(
+    "/testimonials/{testimonial_id}",
+    response={204: None, **_WRITE},
+    operation_id="core_delete_testimonial",
+    summary="Remove a testimonial",
+)
+@require_perm("core.manage_public_site")
+def delete_testimonial(request: HttpRequest, testimonial_id: int) -> Status[None]:
+    services.delete_testimonial(_current_user(request), testimonial_id)
+    return Status(204, None)
+
+
+@core_router.get(
+    "/center-page/doctors",
+    response={200: list[DoctorSiteProfileOut], **_READ},
+    operation_id="core_list_doctor_site_profiles",
+    summary="Doctors with their qualifications, biography and photo on the website",
+)
+@require_perm("core.manage_public_site")
+def list_doctor_site_profiles(request: HttpRequest) -> list[DoctorProfile]:
+    return list(services.list_doctor_site_profiles())
+
+
+@core_router.patch(
+    "/center-page/doctors/{doctor_id}",
+    response={200: DoctorSiteProfileOut, **_WRITE},
+    operation_id="core_update_doctor_site_profile",
+    summary="Set a doctor's qualifications, biography (at most 400 characters) and photo",
+    description="409 MEDIA_NOT_FOUND, MEDIA_KIND_MISMATCH.",
+)
+@require_perm("core.manage_public_site")
+def update_doctor_site_profile(
+    request: HttpRequest, doctor_id: int, payload: DoctorSiteProfilePatch
+) -> DoctorProfile:
+    return services.update_doctor_site_profile(
+        _current_user(request), doctor_id, **payload.changes()
+    )
+
+
+@core_router.get(
+    "/center-page/payers",
+    response={200: list[SitePayerOut], **_READ},
+    operation_id="core_list_site_payers",
+    summary="Payers and whether their name shows among the website's insurers",
+)
+@require_perm("core.manage_public_site")
+def list_site_payers(request: HttpRequest) -> Any:
+    return list(services.site_payers())
+
+
+@core_router.put(
+    "/center-page/payers/{payer_id}",
+    response={200: SitePayerOut, **_WRITE},
+    operation_id="core_set_payer_on_site",
+    summary="Show or hide a payer's name on the website",
+)
+@require_perm("core.manage_public_site")
+def set_payer_on_site(request: HttpRequest, payer_id: int, payload: ShowOnSiteIn) -> Any:
+    return services.set_payer_on_site(
+        _current_user(request), payer_id, show_on_site=payload.show_on_site
+    )
+
+
+@core_router.get(
+    "/center-page/services",
+    response={200: list[SiteServiceOut], **_READ},
+    operation_id="core_list_site_services",
+    summary="Services and whether their name shows on the website (never a price)",
+)
+@require_perm("core.manage_public_site")
+def list_site_services(request: HttpRequest) -> Any:
+    return list(services.site_services())
+
+
+@core_router.put(
+    "/center-page/services/{service_id}",
+    response={200: SiteServiceOut, **_WRITE},
+    operation_id="core_set_service_on_site",
+    summary="Show or hide a service's name under its department on the website",
+)
+@require_perm("core.manage_public_site")
+def set_service_on_site(request: HttpRequest, service_id: int, payload: ShowOnSiteIn) -> Any:
+    return services.set_service_on_site(
+        _current_user(request), service_id, show_on_site=payload.show_on_site
     )
 
 

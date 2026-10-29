@@ -2606,6 +2606,330 @@
         "title": "CenterDayHours",
         "type": "object"
       },
+      "CenterFacilityRow": {
+        "description": "One facility of the center (at most 20).",
+        "properties": {
+          "name_ar": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "title": "CenterFacilityRow",
+        "type": "object"
+      },
+      "CenterFaqIn": {
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "answer_ar": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Answer Ar",
+            "type": "string"
+          },
+          "answer_en": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Answer En",
+            "type": "string"
+          },
+          "question_ar": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Question Ar",
+            "type": "string"
+          },
+          "question_en": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Question En",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "maximum": 32767,
+            "minimum": 0,
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "title": "CenterFaqIn",
+        "type": "object"
+      },
+      "CenterFaqOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "answer_ar": {
+            "title": "Answer Ar",
+            "type": "string"
+          },
+          "answer_en": {
+            "title": "Answer En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "question_ar": {
+            "title": "Question Ar",
+            "type": "string"
+          },
+          "question_en": {
+            "title": "Question En",
+            "type": "string"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "question_ar",
+          "question_en",
+          "answer_ar",
+          "answer_en",
+          "sort_order",
+          "active",
+          "updated_at"
+        ],
+        "title": "CenterFaqOut",
+        "type": "object"
+      },
+      "CenterFaqPatch": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "answer_ar": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Ar"
+          },
+          "answer_en": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer En"
+          },
+          "question_ar": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Ar"
+          },
+          "question_en": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question En"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "maximum": 32767,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "CenterFaqPatch",
+        "type": "object"
+      },
+      "CenterMediaOut": {
+        "description": "An image of the website, uploaded by staff (PNG, JPEG or WebP, at most 2 MB).",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "alt_ar": {
+            "title": "Alt Ar",
+            "type": "string"
+          },
+          "alt_en": {
+            "title": "Alt En",
+            "type": "string"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "hero",
+              "gallery",
+              "doctor"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "url": {
+            "description": "Staff preview of the image (works with the site off)",
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "content_type",
+          "width",
+          "height",
+          "size_bytes",
+          "alt_ar",
+          "alt_en",
+          "sort_order",
+          "active",
+          "url",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CenterMediaOut",
+        "type": "object"
+      },
+      "CenterMediaPatch": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "alt_ar": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alt Ar"
+          },
+          "alt_en": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alt En"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "maximum": 32767,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "CenterMediaPatch",
+        "type": "object"
+      },
       "CenterOut": {
         "properties": {
           "name_ar": {
@@ -2643,6 +2967,30 @@
             "title": "About En",
             "type": "string"
           },
+          "accessibility_ar": {
+            "default": "",
+            "maxLength": 600,
+            "title": "Accessibility Ar",
+            "type": "string"
+          },
+          "accessibility_en": {
+            "default": "",
+            "maxLength": 600,
+            "title": "Accessibility En",
+            "type": "string"
+          },
+          "cancellation_policy_ar": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Cancellation Policy Ar",
+            "type": "string"
+          },
+          "cancellation_policy_en": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Cancellation Policy En",
+            "type": "string"
+          },
           "directions_ar": {
             "default": "",
             "maxLength": 400,
@@ -2659,6 +3007,38 @@
             "default": "",
             "maxLength": 120,
             "title": "Email",
+            "type": "string"
+          },
+          "facilities": {
+            "items": {
+              "$ref": "#/components/schemas/CenterFacilityRow"
+            },
+            "maxItems": 20,
+            "title": "Facilities",
+            "type": "array"
+          },
+          "hero_text_ar": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Hero Text Ar",
+            "type": "string"
+          },
+          "hero_text_en": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Hero Text En",
+            "type": "string"
+          },
+          "hero_title_ar": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Hero Title Ar",
+            "type": "string"
+          },
+          "hero_title_en": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Hero Title En",
             "type": "string"
           },
           "hidden_department_ids": {
@@ -2685,6 +3065,32 @@
             "title": "Hours",
             "type": "array"
           },
+          "maps_url": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Maps Url",
+            "type": "string"
+          },
+          "privacy_ar": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Privacy Ar",
+            "type": "string"
+          },
+          "privacy_en": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Privacy En",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/CenterReasonRow"
+            },
+            "maxItems": 8,
+            "title": "Reasons",
+            "type": "array"
+          },
           "show_about": {
             "default": true,
             "title": "Show About",
@@ -2715,9 +3121,39 @@
             "title": "Show Doctors",
             "type": "boolean"
           },
+          "show_facilities": {
+            "default": true,
+            "title": "Show Facilities",
+            "type": "boolean"
+          },
+          "show_faq": {
+            "default": true,
+            "title": "Show Faq",
+            "type": "boolean"
+          },
           "show_hours": {
             "default": true,
             "title": "Show Hours",
+            "type": "boolean"
+          },
+          "show_insurance": {
+            "default": true,
+            "title": "Show Insurance",
+            "type": "boolean"
+          },
+          "show_policies": {
+            "default": true,
+            "title": "Show Policies",
+            "type": "boolean"
+          },
+          "show_services": {
+            "default": true,
+            "title": "Show Services",
+            "type": "boolean"
+          },
+          "show_testimonials": {
+            "default": true,
+            "title": "Show Testimonials",
             "type": "boolean"
           },
           "whatsapp": {
@@ -2740,6 +3176,22 @@
             "title": "About En",
             "type": "string"
           },
+          "accessibility_ar": {
+            "title": "Accessibility Ar",
+            "type": "string"
+          },
+          "accessibility_en": {
+            "title": "Accessibility En",
+            "type": "string"
+          },
+          "cancellation_policy_ar": {
+            "title": "Cancellation Policy Ar",
+            "type": "string"
+          },
+          "cancellation_policy_en": {
+            "title": "Cancellation Policy En",
+            "type": "string"
+          },
           "directions_ar": {
             "title": "Directions Ar",
             "type": "string"
@@ -2750,6 +3202,29 @@
           },
           "email": {
             "title": "Email",
+            "type": "string"
+          },
+          "facilities": {
+            "items": {
+              "$ref": "#/components/schemas/CenterFacilityRow"
+            },
+            "title": "Facilities",
+            "type": "array"
+          },
+          "hero_text_ar": {
+            "title": "Hero Text Ar",
+            "type": "string"
+          },
+          "hero_text_en": {
+            "title": "Hero Text En",
+            "type": "string"
+          },
+          "hero_title_ar": {
+            "title": "Hero Title Ar",
+            "type": "string"
+          },
+          "hero_title_en": {
+            "title": "Hero Title En",
             "type": "string"
           },
           "hidden_department_ids": {
@@ -2774,6 +3249,26 @@
             "title": "Hours",
             "type": "array"
           },
+          "maps_url": {
+            "description": "A plain https link opened by the visitor's phone",
+            "title": "Maps Url",
+            "type": "string"
+          },
+          "privacy_ar": {
+            "title": "Privacy Ar",
+            "type": "string"
+          },
+          "privacy_en": {
+            "title": "Privacy En",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/CenterReasonRow"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
           "show_about": {
             "title": "Show About",
             "type": "boolean"
@@ -2798,8 +3293,32 @@
             "title": "Show Doctors",
             "type": "boolean"
           },
+          "show_facilities": {
+            "title": "Show Facilities",
+            "type": "boolean"
+          },
+          "show_faq": {
+            "title": "Show Faq",
+            "type": "boolean"
+          },
           "show_hours": {
             "title": "Show Hours",
+            "type": "boolean"
+          },
+          "show_insurance": {
+            "title": "Show Insurance",
+            "type": "boolean"
+          },
+          "show_policies": {
+            "title": "Show Policies",
+            "type": "boolean"
+          },
+          "show_services": {
+            "title": "Show Services",
+            "type": "boolean"
+          },
+          "show_testimonials": {
+            "title": "Show Testimonials",
             "type": "boolean"
           },
           "updated_at": {
@@ -2837,6 +3356,25 @@
           "show_address",
           "hidden_department_ids",
           "hidden_doctor_ids",
+          "hero_title_ar",
+          "hero_title_en",
+          "hero_text_ar",
+          "hero_text_en",
+          "facilities",
+          "reasons",
+          "accessibility_ar",
+          "accessibility_en",
+          "privacy_ar",
+          "privacy_en",
+          "cancellation_policy_ar",
+          "cancellation_policy_en",
+          "maps_url",
+          "show_services",
+          "show_insurance",
+          "show_faq",
+          "show_testimonials",
+          "show_facilities",
+          "show_policies",
           "updated_at"
         ],
         "title": "CenterPageOut",
@@ -2971,6 +3509,37 @@
           "updated_at"
         ],
         "title": "CenterProfileOut",
+        "type": "object"
+      },
+      "CenterReasonRow": {
+        "description": "One reason to choose the center (at most 8).",
+        "properties": {
+          "text_ar": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Text Ar",
+            "type": "string"
+          },
+          "text_en": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Text En",
+            "type": "string"
+          },
+          "title_ar": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Title Ar",
+            "type": "string"
+          },
+          "title_en": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Title En",
+            "type": "string"
+          }
+        },
+        "title": "CenterReasonRow",
         "type": "object"
       },
       "ChangePasswordIn": {
@@ -8572,6 +9141,152 @@
           "name_en"
         ],
         "title": "DoctorRefOut",
+        "type": "object"
+      },
+      "DoctorSiteProfileOut": {
+        "description": "A doctor as the website administration sees it (no prices, no account data).",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "bio_ar": {
+            "title": "Bio Ar",
+            "type": "string"
+          },
+          "bio_en": {
+            "title": "Bio En",
+            "type": "string"
+          },
+          "department_ar": {
+            "title": "Department Ar",
+            "type": "string"
+          },
+          "department_en": {
+            "title": "Department En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          },
+          "qualifications_ar": {
+            "title": "Qualifications Ar",
+            "type": "string"
+          },
+          "qualifications_en": {
+            "title": "Qualifications En",
+            "type": "string"
+          },
+          "specialty_ar": {
+            "title": "Specialty Ar",
+            "type": "string"
+          },
+          "specialty_en": {
+            "title": "Specialty En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en",
+          "specialty_ar",
+          "specialty_en",
+          "department_ar",
+          "department_en",
+          "active",
+          "qualifications_ar",
+          "qualifications_en",
+          "bio_ar",
+          "bio_en",
+          "photo_id"
+        ],
+        "title": "DoctorSiteProfileOut",
+        "type": "object"
+      },
+      "DoctorSiteProfilePatch": {
+        "properties": {
+          "bio_ar": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio Ar"
+          },
+          "bio_en": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio En"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          },
+          "qualifications_ar": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qualifications Ar"
+          },
+          "qualifications_en": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qualifications En"
+          }
+        },
+        "title": "DoctorSiteProfilePatch",
         "type": "object"
       },
       "DrugClassOut": {
@@ -19947,6 +20662,14 @@
             "title": "About En",
             "type": "string"
           },
+          "accessibility_ar": {
+            "title": "Accessibility Ar",
+            "type": "string"
+          },
+          "accessibility_en": {
+            "title": "Accessibility En",
+            "type": "string"
+          },
           "address": {
             "title": "Address",
             "type": "string"
@@ -19957,6 +20680,14 @@
             },
             "title": "Announcements",
             "type": "array"
+          },
+          "cancellation_policy_ar": {
+            "title": "Cancellation Policy Ar",
+            "type": "string"
+          },
+          "cancellation_policy_en": {
+            "title": "Cancellation Policy En",
+            "type": "string"
           },
           "departments": {
             "items": {
@@ -19984,11 +20715,66 @@
             "title": "Email",
             "type": "string"
           },
+          "facilities": {
+            "items": {
+              "$ref": "#/components/schemas/PortalFacilityOut"
+            },
+            "title": "Facilities",
+            "type": "array"
+          },
+          "faq": {
+            "items": {
+              "$ref": "#/components/schemas/PortalFaqOut"
+            },
+            "title": "Faq",
+            "type": "array"
+          },
+          "gallery": {
+            "items": {
+              "$ref": "#/components/schemas/PortalPublicImageOut"
+            },
+            "title": "Gallery",
+            "type": "array"
+          },
+          "hero_image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalPublicImageOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hero_text_ar": {
+            "title": "Hero Text Ar",
+            "type": "string"
+          },
+          "hero_text_en": {
+            "title": "Hero Text En",
+            "type": "string"
+          },
+          "hero_title_ar": {
+            "title": "Hero Title Ar",
+            "type": "string"
+          },
+          "hero_title_en": {
+            "title": "Hero Title En",
+            "type": "string"
+          },
           "hours": {
             "items": {
               "$ref": "#/components/schemas/PortalHoursOut"
             },
             "title": "Hours",
+            "type": "array"
+          },
+          "insurance": {
+            "description": "Accepted insurers, names only",
+            "items": {
+              "$ref": "#/components/schemas/PortalPublicPayerOut"
+            },
+            "title": "Insurance",
             "type": "array"
           },
           "logo_url": {
@@ -20002,6 +20788,11 @@
             ],
             "description": "Public logo, changes with the logo",
             "title": "Logo Url"
+          },
+          "maps_url": {
+            "description": "A plain https map link, or empty",
+            "title": "Maps Url",
+            "type": "string"
           },
           "name_ar": {
             "title": "Name Ar",
@@ -20019,6 +20810,28 @@
             "description": "tel: link of the phone, or empty",
             "title": "Phone Uri",
             "type": "string"
+          },
+          "privacy_ar": {
+            "title": "Privacy Ar",
+            "type": "string"
+          },
+          "privacy_en": {
+            "title": "Privacy En",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/PortalReasonOut"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "testimonials": {
+            "items": {
+              "$ref": "#/components/schemas/PortalTestimonialOut"
+            },
+            "title": "Testimonials",
+            "type": "array"
           },
           "today": {
             "anyOf": [
@@ -20053,7 +20866,25 @@
           "email",
           "address",
           "directions_ar",
-          "directions_en"
+          "directions_en",
+          "maps_url",
+          "hero_title_ar",
+          "hero_title_en",
+          "hero_text_ar",
+          "hero_text_en",
+          "hero_image",
+          "gallery",
+          "facilities",
+          "reasons",
+          "insurance",
+          "faq",
+          "testimonials",
+          "accessibility_ar",
+          "accessibility_en",
+          "privacy_ar",
+          "privacy_en",
+          "cancellation_policy_ar",
+          "cancellation_policy_en"
         ],
         "title": "PortalCenterPageOut",
         "type": "object"
@@ -20160,6 +20991,57 @@
           "department_en"
         ],
         "title": "PortalDoctorOut",
+        "type": "object"
+      },
+      "PortalFacilityOut": {
+        "properties": {
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name_ar",
+          "name_en"
+        ],
+        "title": "PortalFacilityOut",
+        "type": "object"
+      },
+      "PortalFaqOut": {
+        "properties": {
+          "answer_ar": {
+            "title": "Answer Ar",
+            "type": "string"
+          },
+          "answer_en": {
+            "title": "Answer En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "question_ar": {
+            "title": "Question Ar",
+            "type": "string"
+          },
+          "question_en": {
+            "title": "Question En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "question_ar",
+          "question_en",
+          "answer_ar",
+          "answer_en"
+        ],
+        "title": "PortalFaqOut",
         "type": "object"
       },
       "PortalHoursOut": {
@@ -20799,18 +21681,35 @@
           "name_en": {
             "title": "Name En",
             "type": "string"
+          },
+          "services": {
+            "description": "Names of the services the center shows under this department",
+            "items": {
+              "$ref": "#/components/schemas/PortalPublicServiceOut"
+            },
+            "title": "Services",
+            "type": "array"
           }
         },
         "required": [
           "id",
           "name_ar",
-          "name_en"
+          "name_en",
+          "services"
         ],
         "title": "PortalPublicDepartmentOut",
         "type": "object"
       },
       "PortalPublicDoctorOut": {
         "properties": {
+          "bio_ar": {
+            "title": "Bio Ar",
+            "type": "string"
+          },
+          "bio_en": {
+            "title": "Bio En",
+            "type": "string"
+          },
           "clinic_days": {
             "items": {
               "$ref": "#/components/schemas/PortalClinicDayOut"
@@ -20842,6 +21741,24 @@
             "title": "Name En",
             "type": "string"
           },
+          "photo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortalPublicImageOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qualifications_ar": {
+            "title": "Qualifications Ar",
+            "type": "string"
+          },
+          "qualifications_en": {
+            "title": "Qualifications En",
+            "type": "string"
+          },
           "specialty_ar": {
             "title": "Specialty Ar",
             "type": "string"
@@ -20860,9 +21777,128 @@
           "department_id",
           "department_ar",
           "department_en",
-          "clinic_days"
+          "clinic_days",
+          "qualifications_ar",
+          "qualifications_en",
+          "bio_ar",
+          "bio_en",
+          "photo"
         ],
         "title": "PortalPublicDoctorOut",
+        "type": "object"
+      },
+      "PortalPublicImageOut": {
+        "description": "An image the center uploaded (never an external URL); the URL changes with the image.",
+        "properties": {
+          "alt_ar": {
+            "title": "Alt Ar",
+            "type": "string"
+          },
+          "alt_en": {
+            "title": "Alt En",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "alt_ar",
+          "alt_en",
+          "width",
+          "height"
+        ],
+        "title": "PortalPublicImageOut",
+        "type": "object"
+      },
+      "PortalPublicPayerOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "PortalPublicPayerOut",
+        "type": "object"
+      },
+      "PortalPublicServiceOut": {
+        "description": "A service's name only: the website never shows a price (ADR 0023, 0029 A5).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name_ar",
+          "name_en"
+        ],
+        "title": "PortalPublicServiceOut",
+        "type": "object"
+      },
+      "PortalReasonOut": {
+        "properties": {
+          "text_ar": {
+            "title": "Text Ar",
+            "type": "string"
+          },
+          "text_en": {
+            "title": "Text En",
+            "type": "string"
+          },
+          "title_ar": {
+            "title": "Title Ar",
+            "type": "string"
+          },
+          "title_en": {
+            "title": "Title En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title_ar",
+          "title_en",
+          "text_ar",
+          "text_en"
+        ],
+        "title": "PortalReasonOut",
         "type": "object"
       },
       "PortalReceiptDetailOut": {
@@ -21357,6 +22393,40 @@
           "balance"
         ],
         "title": "PortalSummaryOut",
+        "type": "object"
+      },
+      "PortalTestimonialOut": {
+        "description": "Typed by staff and approved by a manager; never submitted by the public.",
+        "properties": {
+          "author_ar": {
+            "title": "Author Ar",
+            "type": "string"
+          },
+          "author_en": {
+            "title": "Author En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "text_ar": {
+            "title": "Text Ar",
+            "type": "string"
+          },
+          "text_en": {
+            "title": "Text En",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text_ar",
+          "text_en",
+          "author_ar",
+          "author_en"
+        ],
+        "title": "PortalTestimonialOut",
         "type": "object"
       },
       "PortalTodayOut": {
@@ -27260,6 +28330,19 @@
         "title": "ShiftReviewOut",
         "type": "object"
       },
+      "ShowOnSiteIn": {
+        "properties": {
+          "show_on_site": {
+            "title": "Show On Site",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "show_on_site"
+        ],
+        "title": "ShowOnSiteIn",
+        "type": "object"
+      },
       "SiteOut": {
         "description": "What the SPA needs before its first render (ADR 0027, 0028). Public; contact values are\nonly returned while the marketing page is on. ``center_site``, ``online_booking`` and\n``patient_tracking`` are the center administrator's switches: the root ``/`` shows the\ncenter website while ``center_site`` is on and no staff session exists.",
         "properties": {
@@ -27309,6 +28392,110 @@
           "marketing"
         ],
         "title": "SiteOut",
+        "type": "object"
+      },
+      "SitePayerOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "show_on_site": {
+            "title": "Show On Site",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en",
+          "active",
+          "show_on_site"
+        ],
+        "title": "SitePayerOut",
+        "type": "object"
+      },
+      "SiteServiceOut": {
+        "description": "A service's name and department only: the website never shows a price.",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "department_ar": {
+            "title": "Department Ar",
+            "type": "string"
+          },
+          "department_en": {
+            "title": "Department En",
+            "type": "string"
+          },
+          "department_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_ar": {
+            "title": "Name Ar",
+            "type": "string"
+          },
+          "name_en": {
+            "title": "Name En",
+            "type": "string"
+          },
+          "show_on_site": {
+            "title": "Show On Site",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name_ar",
+          "name_en",
+          "kind",
+          "department_id",
+          "department_ar",
+          "department_en",
+          "active",
+          "show_on_site"
+        ],
+        "title": "SiteServiceOut",
         "type": "object"
       },
       "StockAdjustmentIn": {
@@ -29128,6 +30315,206 @@
           }
         },
         "title": "TemplateParams",
+        "type": "object"
+      },
+      "TestimonialIn": {
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "author_ar": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Author Ar",
+            "type": "string"
+          },
+          "author_en": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Author En",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "maximum": 32767,
+            "minimum": 0,
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "text_ar": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Text Ar",
+            "type": "string"
+          },
+          "text_en": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Text En",
+            "type": "string"
+          }
+        },
+        "title": "TestimonialIn",
+        "type": "object"
+      },
+      "TestimonialOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "approved": {
+            "description": "Shown on the website only when approved and active",
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By Name"
+          },
+          "author_ar": {
+            "title": "Author Ar",
+            "type": "string"
+          },
+          "author_en": {
+            "title": "Author En",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "text_ar": {
+            "title": "Text Ar",
+            "type": "string"
+          },
+          "text_en": {
+            "title": "Text En",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text_ar",
+          "text_en",
+          "author_ar",
+          "author_en",
+          "sort_order",
+          "active",
+          "approved",
+          "approved_by_name",
+          "approved_at",
+          "updated_at"
+        ],
+        "title": "TestimonialOut",
+        "type": "object"
+      },
+      "TestimonialPatch": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "author_ar": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Ar"
+          },
+          "author_en": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author En"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "maximum": 32767,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          },
+          "text_ar": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Ar"
+          },
+          "text_en": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text En"
+          }
+        },
+        "title": "TestimonialPatch",
         "type": "object"
       },
       "TimelineOut": {
@@ -42253,6 +43640,785 @@
         ]
       }
     },
+    "/api/core/center-faq": {
+      "get": {
+        "operationId": "core_list_center_faq",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CenterFaqOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Questions and answers of the website, shown or not",
+        "tags": [
+          "core"
+        ]
+      },
+      "post": {
+        "description": "409 FAQ_QUESTION_REQUIRED, FAQ_ANSWER_REQUIRED.",
+        "operationId": "core_create_center_faq",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CenterFaqIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CenterFaqOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Add a question and its answer to the website",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-faq/{faq_id}": {
+      "delete": {
+        "operationId": "core_delete_center_faq",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "faq_id",
+            "required": true,
+            "schema": {
+              "title": "Faq Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Remove a question from the website",
+        "tags": [
+          "core"
+        ]
+      },
+      "patch": {
+        "description": "409 FAQ_QUESTION_REQUIRED, FAQ_ANSWER_REQUIRED.",
+        "operationId": "core_update_center_faq",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "faq_id",
+            "required": true,
+            "schema": {
+              "title": "Faq Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CenterFaqPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CenterFaqOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Edit, reorder or hide a question",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-media": {
+      "get": {
+        "operationId": "core_list_center_media",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CenterMediaOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Images of the website (hero, gallery, doctor photos), shown or not",
+        "tags": [
+          "core"
+        ]
+      },
+      "post": {
+        "description": "The bytes decide the type. 409 MEDIA_TOO_LARGE, MEDIA_INVALID_IMAGE, MEDIA_IMAGE_TOO_BIG, MEDIA_KIND_INVALID, MEDIA_LIMIT_REACHED.",
+        "operationId": "core_upload_center_media",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "alt_ar": {
+                    "default": "",
+                    "title": "Alt Ar",
+                    "type": "string"
+                  },
+                  "alt_en": {
+                    "default": "",
+                    "title": "Alt En",
+                    "type": "string"
+                  },
+                  "file": {
+                    "format": "binary",
+                    "title": "File",
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "hero",
+                      "gallery",
+                      "doctor"
+                    ],
+                    "title": "Kind",
+                    "type": "string"
+                  },
+                  "sort_order": {
+                    "default": 0,
+                    "title": "Sort Order",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "file",
+                  "kind"
+                ],
+                "title": "MultiPartBodyParams",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CenterMediaOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Upload an image of the website (PNG, JPEG or WebP, at most 2 MB)",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-media/{media_id}": {
+      "delete": {
+        "operationId": "core_delete_center_media",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "title": "Media Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Remove an image of the website and its file",
+        "tags": [
+          "core"
+        ]
+      },
+      "patch": {
+        "operationId": "core_update_center_media",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "title": "Media Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CenterMediaPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CenterMediaOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Edit an image's alternative text, order or visibility",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-media/{media_id}/file": {
+      "get": {
+        "operationId": "core_get_center_media_file",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "title": "Media Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/*": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The image"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "An image of the website for the administration screen (works with the site off)",
+        "tags": [
+          "core"
+        ]
+      }
+    },
     "/api/core/center-page": {
       "get": {
         "operationId": "core_get_center_page",
@@ -42401,6 +44567,511 @@
           }
         ],
         "summary": "Save the public center page's sections",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-page/doctors": {
+      "get": {
+        "operationId": "core_list_doctor_site_profiles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorSiteProfileOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Doctors with their qualifications, biography and photo on the website",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-page/doctors/{doctor_id}": {
+      "patch": {
+        "description": "409 MEDIA_NOT_FOUND, MEDIA_KIND_MISMATCH.",
+        "operationId": "core_update_doctor_site_profile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doctor_id",
+            "required": true,
+            "schema": {
+              "title": "Doctor Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorSiteProfilePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorSiteProfileOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Set a doctor's qualifications, biography (at most 400 characters) and photo",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-page/payers": {
+      "get": {
+        "operationId": "core_list_site_payers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SitePayerOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Payers and whether their name shows among the website's insurers",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-page/payers/{payer_id}": {
+      "put": {
+        "operationId": "core_set_payer_on_site",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payer_id",
+            "required": true,
+            "schema": {
+              "title": "Payer Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShowOnSiteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePayerOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Show or hide a payer's name on the website",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-page/services": {
+      "get": {
+        "operationId": "core_list_site_services",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SiteServiceOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Services and whether their name shows on the website (never a price)",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/center-page/services/{service_id}": {
+      "put": {
+        "operationId": "core_set_service_on_site",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "service_id",
+            "required": true,
+            "schema": {
+              "title": "Service Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShowOnSiteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteServiceOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Show or hide a service's name under its department on the website",
         "tags": [
           "core"
         ]
@@ -45155,6 +47826,427 @@
           }
         ],
         "summary": "Document numbering counters of a year (last and next number per type)",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/testimonials": {
+      "get": {
+        "operationId": "core_list_testimonials",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TestimonialOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Testimonials typed by staff, approved or not",
+        "tags": [
+          "core"
+        ]
+      },
+      "post": {
+        "description": "409 TESTIMONIAL_TEXT_REQUIRED.",
+        "operationId": "core_create_testimonial",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestimonialIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestimonialOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Add a testimonial (not shown until approved)",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/testimonials/{testimonial_id}": {
+      "delete": {
+        "operationId": "core_delete_testimonial",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "testimonial_id",
+            "required": true,
+            "schema": {
+              "title": "Testimonial Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Remove a testimonial",
+        "tags": [
+          "core"
+        ]
+      },
+      "patch": {
+        "description": "409 TESTIMONIAL_TEXT_REQUIRED.",
+        "operationId": "core_update_testimonial",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "testimonial_id",
+            "required": true,
+            "schema": {
+              "title": "Testimonial Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestimonialPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestimonialOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Edit, reorder or hide a testimonial; new words need a new approval",
+        "tags": [
+          "core"
+        ]
+      }
+    },
+    "/api/core/testimonials/{testimonial_id}/approve": {
+      "post": {
+        "description": "409 TESTIMONIAL_ALREADY_APPROVED.",
+        "operationId": "core_approve_testimonial",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "testimonial_id",
+            "required": true,
+            "schema": {
+              "title": "Testimonial Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestimonialOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Approve a testimonial for the website (records who and when)",
         "tags": [
           "core"
         ]
@@ -60752,6 +63844,60 @@
           }
         },
         "summary": "The center logo for the public pages (portal and staff sign-in)",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/center-media/{media_id}": {
+      "get": {
+        "description": "No sign-in. Only images the center uploaded and shows; 404 for anything else and `SITE_DISABLED` while the website is off. The URL carries the image's version, so it may be cached for an hour. 429 after too many reads from one address.",
+        "operationId": "portal_get_center_media",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "title": "Media Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/*": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The image"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "An image of the center website (hero, gallery, a shown doctor's photo)",
         "tags": [
           "portal"
         ]

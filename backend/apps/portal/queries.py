@@ -20,8 +20,16 @@ from django.utils import timezone
 
 from apps.billing import services as billing
 from apps.billing.models import DocumentStatus, Invoice
+from apps.catalog import services as catalog
 from apps.core import services as core
-from apps.core.models import CenterProfile, Department, DoctorProfile, User
+from apps.core.models import (
+    CenterMedia,
+    CenterMediaKind,
+    CenterProfile,
+    Department,
+    DoctorProfile,
+    User,
+)
 from apps.lab.models import LabTest, ResultStatus, ResultValue, ResultVersion
 from apps.orders.models import FulfilmentStatus, ServiceLine
 from apps.patients.models import Patient
@@ -559,6 +567,24 @@ def center_identity() -> dict[str, Any]:
     }
 
 
+def public_image(row: CenterMedia | None) -> dict[str, Any] | None:
+    """An uploaded image as the website shows it; its URL carries its version (1 h cache)."""
+    if row is None or not row.active:
+        return None
+    return {
+        "id": row.pk,
+        "url": f"/api/portal/center-media/{row.pk}?v={row.updated_at:%Y%m%d%H%M%S%f}",
+        "alt_ar": row.alt_ar,
+        "alt_en": row.alt_en,
+        "width": row.width,
+        "height": row.height,
+    }
+
+
+def _rows(rows: Any, keys: tuple[str, ...]) -> list[dict[str, str]]:
+    return [{k: str(row.get(k, "")) for k in keys} for row in rows if isinstance(row, dict)]
+
+
 def center_page() -> dict[str, Any]:
     """The public center page (no sign-in): identity always, then only the sections the
     center shows. Departments, doctors and clinic days are read from the same rows reception
@@ -597,7 +623,7 @@ def center_page() -> dict[str, Any]:
                 schedules__in=current,
             )
             .exclude(pk__in=page.hidden_doctor_ids)
-            .select_related("user", "department")
+            .select_related("user", "department", "photo")
             .prefetch_related(Prefetch("schedules", queryset=current, to_attr="current"))
             .distinct()
             .order_by("department__sort_order", "department__code", "user__username")
@@ -621,6 +647,11 @@ def center_page() -> dict[str, Any]:
                         }
                         for s in doctor.current
                     ],
+                    "qualifications_ar": doctor.qualifications_ar,
+                    "qualifications_en": doctor.qualifications_en,
+                    "bio_ar": doctor.bio_ar,
+                    "bio_en": doctor.bio_en,
+                    "photo": public_image(doctor.photo),
                 }
             )
 
@@ -642,6 +673,55 @@ def center_page() -> dict[str, Any]:
             )
         ]
 
+    services: dict[int, list[dict[str, Any]]] = {}
+    if page.show_departments and page.show_services:
+        for service in catalog.public_services(shown_departments):
+            services.setdefault(service.department_id or 0, []).append(
+                {"id": service.pk, "name_ar": service.name_ar, "name_en": service.name_en}
+            )
+
+    media = [m for m in core.list_center_media() if m.active]
+    hero = next((m for m in media if m.kind == CenterMediaKind.HERO), None)
+    gallery = (
+        [img for m in media if m.kind == CenterMediaKind.GALLERY if (img := public_image(m))]
+        if page.show_about
+        else []
+    )
+    insurance = (
+        [{"id": p.pk, "name_ar": p.name_ar, "name_en": p.name_en} for p in catalog.public_payers()]
+        if page.show_insurance
+        else []
+    )
+    faq = (
+        [
+            {
+                "id": f.pk,
+                "question_ar": f.question_ar,
+                "question_en": f.question_en,
+                "answer_ar": f.answer_ar,
+                "answer_en": f.answer_en,
+            }
+            for f in core.list_faq().filter(active=True)
+        ]
+        if page.show_faq
+        else []
+    )
+    testimonials = (
+        [
+            {
+                "id": t.pk,
+                "text_ar": t.text_ar,
+                "text_en": t.text_en,
+                "author_ar": t.author_ar,
+                "author_en": t.author_en,
+            }
+            for t in core.list_testimonials().filter(active=True, approved_at__isnull=False)
+        ]
+        if page.show_testimonials
+        else []
+    )
+    policies = page.show_policies
+
     contact = page.show_contact
     return {
         "name_ar": profile.name_ar,
@@ -661,7 +741,15 @@ def center_page() -> dict[str, Any]:
             else None
         ),
         "departments": (
-            [{"id": d.pk, "name_ar": d.name_ar, "name_en": d.name_en} for d in departments]
+            [
+                {
+                    "id": d.pk,
+                    "name_ar": d.name_ar,
+                    "name_en": d.name_en,
+                    "services": services.get(d.pk, []),
+                }
+                for d in departments
+            ]
             if page.show_departments
             else []
         ),
@@ -674,4 +762,24 @@ def center_page() -> dict[str, Any]:
         "address": profile.address if page.show_address else "",
         "directions_ar": page.directions_ar if page.show_address else "",
         "directions_en": page.directions_en if page.show_address else "",
+        "maps_url": page.maps_url if page.show_address else "",
+        "hero_title_ar": page.hero_title_ar,
+        "hero_title_en": page.hero_title_en,
+        "hero_text_ar": page.hero_text_ar,
+        "hero_text_en": page.hero_text_en,
+        "hero_image": public_image(hero),
+        "gallery": gallery,
+        "facilities": (
+            _rows(page.facilities, ("name_ar", "name_en")) if page.show_facilities else []
+        ),
+        "reasons": _rows(page.reasons, ("title_ar", "title_en", "text_ar", "text_en")),
+        "insurance": insurance,
+        "faq": faq,
+        "testimonials": testimonials,
+        "accessibility_ar": page.accessibility_ar,
+        "accessibility_en": page.accessibility_en,
+        "privacy_ar": page.privacy_ar if policies else "",
+        "privacy_en": page.privacy_en if policies else "",
+        "cancellation_policy_ar": page.cancellation_policy_ar if policies else "",
+        "cancellation_policy_en": page.cancellation_policy_en if policies else "",
     }

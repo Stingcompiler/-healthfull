@@ -1923,6 +1923,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/center-faq": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Questions and answers of the website, shown or not */
+        get: operations["core_list_center_faq"];
+        put?: never;
+        /**
+         * Add a question and its answer to the website
+         * @description 409 FAQ_QUESTION_REQUIRED, FAQ_ANSWER_REQUIRED.
+         */
+        post: operations["core_create_center_faq"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center-faq/{faq_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a question from the website */
+        delete: operations["core_delete_center_faq"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit, reorder or hide a question
+         * @description 409 FAQ_QUESTION_REQUIRED, FAQ_ANSWER_REQUIRED.
+         */
+        patch: operations["core_update_center_faq"];
+        trace?: never;
+    };
+    "/api/core/center-media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Images of the website (hero, gallery, doctor photos), shown or not */
+        get: operations["core_list_center_media"];
+        put?: never;
+        /**
+         * Upload an image of the website (PNG, JPEG or WebP, at most 2 MB)
+         * @description The bytes decide the type. 409 MEDIA_TOO_LARGE, MEDIA_INVALID_IMAGE, MEDIA_IMAGE_TOO_BIG, MEDIA_KIND_INVALID, MEDIA_LIMIT_REACHED.
+         */
+        post: operations["core_upload_center_media"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center-media/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an image of the website and its file */
+        delete: operations["core_delete_center_media"];
+        options?: never;
+        head?: never;
+        /** Edit an image's alternative text, order or visibility */
+        patch: operations["core_update_center_media"];
+        trace?: never;
+    };
+    "/api/core/center-media/{media_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An image of the website for the administration screen (works with the site off) */
+        get: operations["core_get_center_media_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/core/center-page": {
         parameters: {
             query?: never;
@@ -1937,6 +2035,111 @@ export interface paths {
          * @description 409 CENTER_HOURS_INVALID, CENTER_WHATSAPP_INVALID, CENTER_PAGE_UNKNOWN_ITEM; 422 for a malformed e-mail.
          */
         put: operations["core_update_center_page"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center-page/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Doctors with their qualifications, biography and photo on the website */
+        get: operations["core_list_doctor_site_profiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center-page/doctors/{doctor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set a doctor's qualifications, biography (at most 400 characters) and photo
+         * @description 409 MEDIA_NOT_FOUND, MEDIA_KIND_MISMATCH.
+         */
+        patch: operations["core_update_doctor_site_profile"];
+        trace?: never;
+    };
+    "/api/core/center-page/payers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payers and whether their name shows among the website's insurers */
+        get: operations["core_list_site_payers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center-page/payers/{payer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Show or hide a payer's name on the website */
+        put: operations["core_set_payer_on_site"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center-page/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Services and whether their name shows on the website (never a price) */
+        get: operations["core_list_site_services"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/center-page/services/{service_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Show or hide a service's name under its department on the website */
+        put: operations["core_set_service_on_site"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2368,6 +2571,68 @@ export interface paths {
         get: operations["core_list_sequences"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/testimonials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Testimonials typed by staff, approved or not */
+        get: operations["core_list_testimonials"];
+        put?: never;
+        /**
+         * Add a testimonial (not shown until approved)
+         * @description 409 TESTIMONIAL_TEXT_REQUIRED.
+         */
+        post: operations["core_create_testimonial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/testimonials/{testimonial_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a testimonial */
+        delete: operations["core_delete_testimonial"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit, reorder or hide a testimonial; new words need a new approval
+         * @description 409 TESTIMONIAL_TEXT_REQUIRED.
+         */
+        patch: operations["core_update_testimonial"];
+        trace?: never;
+    };
+    "/api/core/testimonials/{testimonial_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a testimonial for the website (records who and when)
+         * @description 409 TESTIMONIAL_ALREADY_APPROVED.
+         */
+        post: operations["core_approve_testimonial"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5003,6 +5268,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/center-media/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An image of the center website (hero, gallery, a shown doctor's photo)
+         * @description No sign-in. Only images the center uploaded and shows; 404 for anything else and `SITE_DISABLED` while the website is off. The URL carries the image's version, so it may be cached for an hour. 429 after too many reads from one address.
+         */
+        get: operations["portal_get_center_media"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/center-page": {
         parameters: {
             query?: never;
@@ -7391,6 +7676,147 @@ export interface components {
              */
             weekday: number;
         };
+        /**
+         * CenterFacilityRow
+         * @description One facility of the center (at most 20).
+         */
+        CenterFacilityRow: {
+            /**
+             * Name Ar
+             * @default
+             */
+            name_ar: string;
+            /**
+             * Name En
+             * @default
+             */
+            name_en: string;
+        };
+        /** CenterFaqIn */
+        CenterFaqIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Answer Ar
+             * @default
+             */
+            answer_ar: string;
+            /**
+             * Answer En
+             * @default
+             */
+            answer_en: string;
+            /**
+             * Question Ar
+             * @default
+             */
+            question_ar: string;
+            /**
+             * Question En
+             * @default
+             */
+            question_en: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** CenterFaqOut */
+        CenterFaqOut: {
+            /** Active */
+            active: boolean;
+            /** Answer Ar */
+            answer_ar: string;
+            /** Answer En */
+            answer_en: string;
+            /** Id */
+            id: number;
+            /** Question Ar */
+            question_ar: string;
+            /** Question En */
+            question_en: string;
+            /** Sort Order */
+            sort_order: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** CenterFaqPatch */
+        CenterFaqPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Answer Ar */
+            answer_ar?: string | null;
+            /** Answer En */
+            answer_en?: string | null;
+            /** Question Ar */
+            question_ar?: string | null;
+            /** Question En */
+            question_en?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /**
+         * CenterMediaOut
+         * @description An image of the website, uploaded by staff (PNG, JPEG or WebP, at most 2 MB).
+         */
+        CenterMediaOut: {
+            /** Active */
+            active: boolean;
+            /** Alt Ar */
+            alt_ar: string;
+            /** Alt En */
+            alt_en: string;
+            /** Content Type */
+            content_type: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Height */
+            height: number;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "hero" | "gallery" | "doctor";
+            /** Size Bytes */
+            size_bytes: number;
+            /** Sort Order */
+            sort_order: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Url
+             * @description Staff preview of the image (works with the site off)
+             */
+            url: string;
+            /** Width */
+            width: number;
+        };
+        /** CenterMediaPatch */
+        CenterMediaPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Alt Ar */
+            alt_ar?: string | null;
+            /** Alt En */
+            alt_en?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /** CenterOut */
         CenterOut: {
             /** Name Ar */
@@ -7413,6 +7839,26 @@ export interface components {
              */
             about_en: string;
             /**
+             * Accessibility Ar
+             * @default
+             */
+            accessibility_ar: string;
+            /**
+             * Accessibility En
+             * @default
+             */
+            accessibility_en: string;
+            /**
+             * Cancellation Policy Ar
+             * @default
+             */
+            cancellation_policy_ar: string;
+            /**
+             * Cancellation Policy En
+             * @default
+             */
+            cancellation_policy_en: string;
+            /**
              * Directions Ar
              * @default
              */
@@ -7427,12 +7873,51 @@ export interface components {
              * @default
              */
             email: string;
+            /** Facilities */
+            facilities?: components["schemas"]["CenterFacilityRow"][];
+            /**
+             * Hero Text Ar
+             * @default
+             */
+            hero_text_ar: string;
+            /**
+             * Hero Text En
+             * @default
+             */
+            hero_text_en: string;
+            /**
+             * Hero Title Ar
+             * @default
+             */
+            hero_title_ar: string;
+            /**
+             * Hero Title En
+             * @default
+             */
+            hero_title_en: string;
             /** Hidden Department Ids */
             hidden_department_ids?: number[];
             /** Hidden Doctor Ids */
             hidden_doctor_ids?: number[];
             /** Hours */
             hours?: components["schemas"]["CenterDayHours"][];
+            /**
+             * Maps Url
+             * @default
+             */
+            maps_url: string;
+            /**
+             * Privacy Ar
+             * @default
+             */
+            privacy_ar: string;
+            /**
+             * Privacy En
+             * @default
+             */
+            privacy_en: string;
+            /** Reasons */
+            reasons?: components["schemas"]["CenterReasonRow"][];
             /**
              * Show About
              * @default true
@@ -7464,10 +7949,40 @@ export interface components {
              */
             show_doctors: boolean;
             /**
+             * Show Facilities
+             * @default true
+             */
+            show_facilities: boolean;
+            /**
+             * Show Faq
+             * @default true
+             */
+            show_faq: boolean;
+            /**
              * Show Hours
              * @default true
              */
             show_hours: boolean;
+            /**
+             * Show Insurance
+             * @default true
+             */
+            show_insurance: boolean;
+            /**
+             * Show Policies
+             * @default true
+             */
+            show_policies: boolean;
+            /**
+             * Show Services
+             * @default true
+             */
+            show_services: boolean;
+            /**
+             * Show Testimonials
+             * @default true
+             */
+            show_testimonials: boolean;
             /**
              * Whatsapp
              * @default
@@ -7480,12 +7995,30 @@ export interface components {
             about_ar: string;
             /** About En */
             about_en: string;
+            /** Accessibility Ar */
+            accessibility_ar: string;
+            /** Accessibility En */
+            accessibility_en: string;
+            /** Cancellation Policy Ar */
+            cancellation_policy_ar: string;
+            /** Cancellation Policy En */
+            cancellation_policy_en: string;
             /** Directions Ar */
             directions_ar: string;
             /** Directions En */
             directions_en: string;
             /** Email */
             email: string;
+            /** Facilities */
+            facilities: components["schemas"]["CenterFacilityRow"][];
+            /** Hero Text Ar */
+            hero_text_ar: string;
+            /** Hero Text En */
+            hero_text_en: string;
+            /** Hero Title Ar */
+            hero_title_ar: string;
+            /** Hero Title En */
+            hero_title_en: string;
             /** Hidden Department Ids */
             hidden_department_ids: number[];
             /** Hidden Doctor Ids */
@@ -7495,6 +8028,17 @@ export interface components {
              * @description Seven days, or empty: not published
              */
             hours: components["schemas"]["CenterDayHours"][];
+            /**
+             * Maps Url
+             * @description A plain https link opened by the visitor's phone
+             */
+            maps_url: string;
+            /** Privacy Ar */
+            privacy_ar: string;
+            /** Privacy En */
+            privacy_en: string;
+            /** Reasons */
+            reasons: components["schemas"]["CenterReasonRow"][];
             /** Show About */
             show_about: boolean;
             /** Show Address */
@@ -7507,8 +8051,20 @@ export interface components {
             show_departments: boolean;
             /** Show Doctors */
             show_doctors: boolean;
+            /** Show Facilities */
+            show_facilities: boolean;
+            /** Show Faq */
+            show_faq: boolean;
             /** Show Hours */
             show_hours: boolean;
+            /** Show Insurance */
+            show_insurance: boolean;
+            /** Show Policies */
+            show_policies: boolean;
+            /** Show Services */
+            show_services: boolean;
+            /** Show Testimonials */
+            show_testimonials: boolean;
             /** Updated At */
             updated_at: string | null;
             /**
@@ -7578,6 +8134,32 @@ export interface components {
             tax_no: string;
             /** Updated At */
             updated_at: string | null;
+        };
+        /**
+         * CenterReasonRow
+         * @description One reason to choose the center (at most 8).
+         */
+        CenterReasonRow: {
+            /**
+             * Text Ar
+             * @default
+             */
+            text_ar: string;
+            /**
+             * Text En
+             * @default
+             */
+            text_en: string;
+            /**
+             * Title Ar
+             * @default
+             */
+            title_ar: string;
+            /**
+             * Title En
+             * @default
+             */
+            title_en: string;
         };
         /** ChangePasswordIn */
         ChangePasswordIn: {
@@ -9724,6 +10306,51 @@ export interface components {
             name_ar: string;
             /** Name En */
             name_en: string;
+        };
+        /**
+         * DoctorSiteProfileOut
+         * @description A doctor as the website administration sees it (no prices, no account data).
+         */
+        DoctorSiteProfileOut: {
+            /** Active */
+            active: boolean;
+            /** Bio Ar */
+            bio_ar: string;
+            /** Bio En */
+            bio_en: string;
+            /** Department Ar */
+            department_ar: string;
+            /** Department En */
+            department_en: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Photo Id */
+            photo_id: number | null;
+            /** Qualifications Ar */
+            qualifications_ar: string;
+            /** Qualifications En */
+            qualifications_en: string;
+            /** Specialty Ar */
+            specialty_ar: string;
+            /** Specialty En */
+            specialty_en: string;
+        };
+        /** DoctorSiteProfilePatch */
+        DoctorSiteProfilePatch: {
+            /** Bio Ar */
+            bio_ar?: string | null;
+            /** Bio En */
+            bio_en?: string | null;
+            /** Photo Id */
+            photo_id?: number | null;
+            /** Qualifications Ar */
+            qualifications_ar?: string | null;
+            /** Qualifications En */
+            qualifications_en?: string | null;
         };
         /** DrugClassOut */
         DrugClassOut: {
@@ -13973,10 +14600,18 @@ export interface components {
             about_ar: string;
             /** About En */
             about_en: string;
+            /** Accessibility Ar */
+            accessibility_ar: string;
+            /** Accessibility En */
+            accessibility_en: string;
             /** Address */
             address: string;
             /** Announcements */
             announcements: components["schemas"]["PortalAnnouncementOut"][];
+            /** Cancellation Policy Ar */
+            cancellation_policy_ar: string;
+            /** Cancellation Policy En */
+            cancellation_policy_en: string;
             /** Departments */
             departments: components["schemas"]["PortalPublicDepartmentOut"][];
             /** Directions Ar */
@@ -13987,13 +14622,38 @@ export interface components {
             doctors: components["schemas"]["PortalPublicDoctorOut"][];
             /** Email */
             email: string;
+            /** Facilities */
+            facilities: components["schemas"]["PortalFacilityOut"][];
+            /** Faq */
+            faq: components["schemas"]["PortalFaqOut"][];
+            /** Gallery */
+            gallery: components["schemas"]["PortalPublicImageOut"][];
+            hero_image: components["schemas"]["PortalPublicImageOut"] | null;
+            /** Hero Text Ar */
+            hero_text_ar: string;
+            /** Hero Text En */
+            hero_text_en: string;
+            /** Hero Title Ar */
+            hero_title_ar: string;
+            /** Hero Title En */
+            hero_title_en: string;
             /** Hours */
             hours: components["schemas"]["PortalHoursOut"][];
+            /**
+             * Insurance
+             * @description Accepted insurers, names only
+             */
+            insurance: components["schemas"]["PortalPublicPayerOut"][];
             /**
              * Logo Url
              * @description Public logo, changes with the logo
              */
             logo_url: string | null;
+            /**
+             * Maps Url
+             * @description A plain https map link, or empty
+             */
+            maps_url: string;
             /** Name Ar */
             name_ar: string;
             /** Name En */
@@ -14005,6 +14665,14 @@ export interface components {
              * @description tel: link of the phone, or empty
              */
             phone_uri: string;
+            /** Privacy Ar */
+            privacy_ar: string;
+            /** Privacy En */
+            privacy_en: string;
+            /** Reasons */
+            reasons: components["schemas"]["PortalReasonOut"][];
+            /** Testimonials */
+            testimonials: components["schemas"]["PortalTestimonialOut"][];
             today: components["schemas"]["PortalTodayOut"] | null;
             /**
              * Whatsapp
@@ -14065,6 +14733,26 @@ export interface components {
             specialty_ar: string;
             /** Specialty En */
             specialty_en: string;
+        };
+        /** PortalFacilityOut */
+        PortalFacilityOut: {
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** PortalFaqOut */
+        PortalFaqOut: {
+            /** Answer Ar */
+            answer_ar: string;
+            /** Answer En */
+            answer_en: string;
+            /** Id */
+            id: number;
+            /** Question Ar */
+            question_ar: string;
+            /** Question En */
+            question_en: string;
         };
         /** PortalHoursOut */
         PortalHoursOut: {
@@ -14321,9 +15009,18 @@ export interface components {
             name_ar: string;
             /** Name En */
             name_en: string;
+            /**
+             * Services
+             * @description Names of the services the center shows under this department
+             */
+            services: components["schemas"]["PortalPublicServiceOut"][];
         };
         /** PortalPublicDoctorOut */
         PortalPublicDoctorOut: {
+            /** Bio Ar */
+            bio_ar: string;
+            /** Bio En */
+            bio_en: string;
             /** Clinic Days */
             clinic_days: components["schemas"]["PortalClinicDayOut"][];
             /** Department Ar */
@@ -14338,10 +15035,65 @@ export interface components {
             name_ar: string;
             /** Name En */
             name_en: string;
+            photo: components["schemas"]["PortalPublicImageOut"] | null;
+            /** Qualifications Ar */
+            qualifications_ar: string;
+            /** Qualifications En */
+            qualifications_en: string;
             /** Specialty Ar */
             specialty_ar: string;
             /** Specialty En */
             specialty_en: string;
+        };
+        /**
+         * PortalPublicImageOut
+         * @description An image the center uploaded (never an external URL); the URL changes with the image.
+         */
+        PortalPublicImageOut: {
+            /** Alt Ar */
+            alt_ar: string;
+            /** Alt En */
+            alt_en: string;
+            /** Height */
+            height: number;
+            /** Id */
+            id: number;
+            /** Url */
+            url: string;
+            /** Width */
+            width: number;
+        };
+        /** PortalPublicPayerOut */
+        PortalPublicPayerOut: {
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /**
+         * PortalPublicServiceOut
+         * @description A service's name only: the website never shows a price (ADR 0023, 0029 A5).
+         */
+        PortalPublicServiceOut: {
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
+        /** PortalReasonOut */
+        PortalReasonOut: {
+            /** Text Ar */
+            text_ar: string;
+            /** Text En */
+            text_en: string;
+            /** Title Ar */
+            title_ar: string;
+            /** Title En */
+            title_en: string;
         };
         /** PortalReceiptDetailOut */
         PortalReceiptDetailOut: {
@@ -14540,6 +15292,22 @@ export interface components {
             /** Latest Results */
             latest_results: components["schemas"]["PortalResultSummaryOut"][];
             next_appointment: components["schemas"]["PortalAppointmentOut"] | null;
+        };
+        /**
+         * PortalTestimonialOut
+         * @description Typed by staff and approved by a manager; never submitted by the public.
+         */
+        PortalTestimonialOut: {
+            /** Author Ar */
+            author_ar: string;
+            /** Author En */
+            author_en: string;
+            /** Id */
+            id: number;
+            /** Text Ar */
+            text_ar: string;
+            /** Text En */
+            text_en: string;
         };
         /** PortalTodayOut */
         PortalTodayOut: {
@@ -16643,6 +17411,11 @@ export interface components {
             reviewed_at: string;
             reviewed_by: components["schemas"]["BillingUserRefOut"] | null;
         };
+        /** ShowOnSiteIn */
+        ShowOnSiteIn: {
+            /** Show On Site */
+            show_on_site: boolean;
+        };
         /**
          * SiteOut
          * @description What the SPA needs before its first render (ADR 0027, 0028). Public; contact values are
@@ -16672,6 +17445,47 @@ export interface components {
              * @default false
              */
             patient_tracking: boolean;
+        };
+        /** SitePayerOut */
+        SitePayerOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Show On Site */
+            show_on_site: boolean;
+        };
+        /**
+         * SiteServiceOut
+         * @description A service's name and department only: the website never shows a price.
+         */
+        SiteServiceOut: {
+            /** Active */
+            active: boolean;
+            /** Code */
+            code: string;
+            /** Department Ar */
+            department_ar: string;
+            /** Department En */
+            department_en: string;
+            /** Department Id */
+            department_id: number | null;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /** Show On Site */
+            show_on_site: boolean;
         };
         /** StockAdjustmentIn */
         StockAdjustmentIn: {
@@ -17348,6 +18162,85 @@ export interface components {
              * @enum {string}
              */
             language: "ar" | "en";
+        };
+        /** TestimonialIn */
+        TestimonialIn: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Author Ar
+             * @default
+             */
+            author_ar: string;
+            /**
+             * Author En
+             * @default
+             */
+            author_en: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Text Ar
+             * @default
+             */
+            text_ar: string;
+            /**
+             * Text En
+             * @default
+             */
+            text_en: string;
+        };
+        /** TestimonialOut */
+        TestimonialOut: {
+            /** Active */
+            active: boolean;
+            /**
+             * Approved
+             * @description Shown on the website only when approved and active
+             */
+            approved: boolean;
+            /** Approved At */
+            approved_at: string | null;
+            /** Approved By Name */
+            approved_by_name: string | null;
+            /** Author Ar */
+            author_ar: string;
+            /** Author En */
+            author_en: string;
+            /** Id */
+            id: number;
+            /** Sort Order */
+            sort_order: number;
+            /** Text Ar */
+            text_ar: string;
+            /** Text En */
+            text_en: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** TestimonialPatch */
+        TestimonialPatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Author Ar */
+            author_ar?: string | null;
+            /** Author En */
+            author_en?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Text Ar */
+            text_ar?: string | null;
+            /** Text En */
+            text_en?: string | null;
         };
         /**
          * TimelineOut
@@ -25795,6 +26688,612 @@ export interface operations {
             };
         };
     };
+    core_list_center_faq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterFaqOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_create_center_faq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterFaqIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterFaqOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_delete_center_faq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                faq_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_center_faq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                faq_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterFaqPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterFaqOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_center_media: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterMediaOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_upload_center_media: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Alt Ar
+                     * @default
+                     */
+                    alt_ar?: string;
+                    /**
+                     * Alt En
+                     * @default
+                     */
+                    alt_en?: string;
+                    /**
+                     * File
+                     * Format: binary
+                     */
+                    file: string;
+                    /**
+                     * Kind
+                     * @enum {string}
+                     */
+                    kind: "hero" | "gallery" | "doctor";
+                    /**
+                     * Sort Order
+                     * @default 0
+                     */
+                    sort_order?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterMediaOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_delete_center_media: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_center_media: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterMediaPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterMediaOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_get_center_media_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": string;
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     core_get_center_page: {
         parameters: {
             query?: never;
@@ -25871,6 +27370,387 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CenterPageOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_doctor_site_profiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorSiteProfileOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_doctor_site_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoctorSiteProfilePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorSiteProfileOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_site_payers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePayerOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_set_payer_on_site: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShowOnSiteIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePayerOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_site_services: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteServiceOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_set_service_on_site: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShowOnSiteIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteServiceOut"];
                 };
             };
             /** @description Unauthorized */
@@ -27916,6 +29796,334 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_list_testimonials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestimonialOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_create_testimonial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestimonialIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestimonialOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_delete_testimonial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                testimonial_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_testimonial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                testimonial_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestimonialPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestimonialOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_approve_testimonial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                testimonial_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestimonialOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38892,6 +41100,46 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The logo image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": string;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_center_media: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
             200: {
                 headers: {
                     [name: string]: unknown;

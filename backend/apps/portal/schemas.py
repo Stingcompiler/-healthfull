@@ -112,10 +112,68 @@ class PortalTodayOut(Schema):
     closes: str | None
 
 
+class PortalPublicServiceOut(Schema):
+    """A service's name only: the website never shows a price (ADR 0023, 0029 A5)."""
+
+    id: int
+    name_ar: str
+    name_en: str
+
+
 class PortalPublicDepartmentOut(Schema):
     id: int
     name_ar: str
     name_en: str
+    services: list[PortalPublicServiceOut] = Field(
+        ..., description="Names of the services the center shows under this department"
+    )
+
+
+class PortalPublicImageOut(Schema):
+    """An image the center uploaded (never an external URL); the URL changes with the image."""
+
+    id: int
+    url: str
+    alt_ar: str
+    alt_en: str
+    width: int
+    height: int
+
+
+class PortalFacilityOut(Schema):
+    name_ar: str
+    name_en: str
+
+
+class PortalReasonOut(Schema):
+    title_ar: str
+    title_en: str
+    text_ar: str
+    text_en: str
+
+
+class PortalPublicPayerOut(Schema):
+    id: int
+    name_ar: str
+    name_en: str
+
+
+class PortalFaqOut(Schema):
+    id: int
+    question_ar: str
+    question_en: str
+    answer_ar: str
+    answer_en: str
+
+
+class PortalTestimonialOut(Schema):
+    """Typed by staff and approved by a manager; never submitted by the public."""
+
+    id: int
+    text_ar: str
+    text_en: str
+    author_ar: str
+    author_en: str
 
 
 class PortalClinicDayOut(Schema):
@@ -134,6 +192,11 @@ class PortalPublicDoctorOut(Schema):
     department_ar: str
     department_en: str
     clinic_days: list[PortalClinicDayOut]
+    qualifications_ar: str
+    qualifications_en: str
+    bio_ar: str
+    bio_en: str
+    photo: PortalPublicImageOut | None
 
 
 class PortalAnnouncementOut(Schema):
@@ -175,6 +238,24 @@ class PortalCenterPageOut(Schema):
     address: str
     directions_ar: str
     directions_en: str
+    maps_url: str = Field(..., description="A plain https map link, or empty")
+    hero_title_ar: str
+    hero_title_en: str
+    hero_text_ar: str
+    hero_text_en: str
+    hero_image: PortalPublicImageOut | None
+    gallery: list[PortalPublicImageOut]
+    facilities: list[PortalFacilityOut]
+    reasons: list[PortalReasonOut]
+    insurance: list[PortalPublicPayerOut] = Field(..., description="Accepted insurers, names only")
+    faq: list[PortalFaqOut]
+    testimonials: list[PortalTestimonialOut]
+    accessibility_ar: str
+    accessibility_en: str
+    privacy_ar: str
+    privacy_en: str
+    cancellation_policy_ar: str
+    cancellation_policy_en: str
 
 
 class PortalPatientHeadOut(Schema):
