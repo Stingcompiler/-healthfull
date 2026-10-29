@@ -10,6 +10,7 @@ from apps.visits.models import (
     BedCharge,
     BedStay,
     DoctorSchedule,
+    DoctorTimeOff,
     QueueEntry,
     Visit,
 )
@@ -43,6 +44,15 @@ class AppointmentAdmin(ReadOnlyAdmin[Appointment]):
 class DoctorScheduleAdmin(admin.ModelAdmin[DoctorSchedule]):
     list_display = ("doctor", "weekday", "start_time", "end_time", "slot_minutes", "room", "active")
     list_filter = ("weekday", "active")
+
+
+@admin.register(DoctorTimeOff)
+class DoctorTimeOffAdmin(ReadOnlyAdmin[DoctorTimeOff]):
+    """Time off changes through ``apps.visits.services`` (overlap checks, the doctor lock)."""
+
+    list_display = ("doctor", "starts_at", "ends_at", "reason_en", "created_by")
+    list_filter = ("doctor",)
+    date_hierarchy = "starts_at"
 
 
 @admin.register(Bed)
