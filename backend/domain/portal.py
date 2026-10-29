@@ -31,8 +31,10 @@ __all__ = [
     "ReceiptStatus",
     "bookable",
     "can_cancel",
+    "can_reschedule",
     "check_booking",
     "check_cancel",
+    "check_reschedule",
     "format_access_code",
     "generate_access_code",
     "initials",
@@ -200,20 +202,24 @@ def session_expired(
 class BookingRules:
     """``lead``: earliest start after now; ``horizon_days``: last bookable local day after
     today; ``max_open``: future bookings a person may hold; ``cancel_cutoff``: a booking is
-    cancelled online at least this long before it starts."""
+    cancelled online at least this long before it starts; ``reschedule_allowed`` and
+    ``reschedule_cutoff``: whether and until when a booking is moved online (the same family
+    as the cancel cut-off, ADR 0029 A7)."""
 
     lead: timedelta
     horizon_days: int
     max_open: int
     cancel_cutoff: timedelta
+    reschedule_allowed: bool = True
+    reschedule_cutoff: timedelta = timedelta(hours=2)
 
     def __post_init__(self) -> None:
         if self.horizon_days < 1:
             raise ValueError("horizon_days must be >= 1")
         if self.max_open < 1:
             raise ValueError("max_open must be >= 1")
-        if self.lead < timedelta(0) or self.cancel_cutoff < timedelta(0):
-            raise ValueError("lead and cancel_cutoff must not be negative")
+        if min(self.lead, self.cancel_cutoff, self.reschedule_cutoff) < timedelta(0):
+            raise ValueError("lead and the cut-offs must not be negative")
 
 
 def _in_window(
@@ -286,4 +292,36 @@ def check_cancel(starts_at: datetime, *, booked: bool, now: datetime, rules: Boo
             "PORTAL_CANCEL_TOO_LATE",
             "It is too late to cancel online; please call the center",
             cutoff_hours=int(rules.cancel_cutoff.total_seconds() // 3600),
+        )
+
+
+def can_reschedule(
+    starts_at: datetime, *, booked: bool, now: datetime, rules: BookingRules
+) -> bool:
+    _require_aware(starts_at, now)
+    return booked and rules.reschedule_allowed and starts_at - now >= rules.reschedule_cutoff
+
+
+def check_reschedule(
+    starts_at: datetime, *, booked: bool, now: datetime, rules: BookingRules
+) -> None:
+    """Whether the patient may move a booking that starts at ``starts_at`` (ADR 0029 A7). The
+    new time is then checked like a new booking (:func:`check_booking`).
+
+    Raises:
+        DomainError: ``PORTAL_RESCHEDULE_DISABLED``, ``APPOINTMENT_NOT_BOOKED`` (only a
+            confirmed booking moves; a request is cancelled and booked again),
+            ``PORTAL_RESCHEDULE_TOO_LATE`` (``details.cutoff_hours``).
+    """
+    if not rules.reschedule_allowed:
+        raise DomainError(
+            "PORTAL_RESCHEDULE_DISABLED", "Moving a booking online is not offered; call the center"
+        )
+    if not booked:
+        raise DomainError("APPOINTMENT_NOT_BOOKED", "The appointment is not open")
+    if not can_reschedule(starts_at, booked=booked, now=now, rules=rules):
+        raise DomainError(
+            "PORTAL_RESCHEDULE_TOO_LATE",
+            "It is too late to move this booking online; please call the center",
+            cutoff_hours=int(rules.reschedule_cutoff.total_seconds() // 3600),
         )

@@ -1110,6 +1110,7 @@ def _seed_doctor(
             "specialty_en": spec.specialty_en,
             "consultation_service": services[spec.consultation],
             "active": True,
+            "online_bookable": True,
         },
     )
     for session in spec.sessions:

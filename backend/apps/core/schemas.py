@@ -569,10 +569,16 @@ class DoctorSiteProfileOut(Schema):
     bio_ar: str
     bio_en: str
     photo_id: int | None
+    online_bookable: bool = Field(..., description="Offered for online booking (ADR 0029 B)")
+    has_schedule: bool = Field(..., description="Has active weekly hours (needed to book online)")
 
     @staticmethod
     def resolve_name_ar(obj: Any) -> str:
         return str(obj.user.display_name_ar)
+
+    @staticmethod
+    def resolve_has_schedule(obj: Any) -> bool:
+        return bool(obj.schedules.filter(active=True).exists())
 
     @staticmethod
     def resolve_name_en(obj: Any) -> str:
@@ -595,6 +601,7 @@ class DoctorSiteProfilePatch(PatchSchema):
     bio_ar: str | None = Field(None, max_length=400)
     bio_en: str | None = Field(None, max_length=400)
     photo_id: int | None = None
+    online_bookable: bool | None = None
 
 
 class SitePayerOut(Schema):

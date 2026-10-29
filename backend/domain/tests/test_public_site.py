@@ -138,3 +138,17 @@ def test_every_value_in_range_makes_valid_booking_rules(
     assert rules.horizon_days == horizon
     assert rules.max_open == max_open
     assert rules.cancel_cutoff == timedelta(hours=cutoff)
+
+
+def test_offered_rules_leave_the_review_window() -> None:
+    from datetime import timedelta
+
+    from domain.public_site import booking_rules, offered_booking_rules, request_rules
+
+    base = booking_rules(lead_minutes=60, horizon_days=30, max_open=3, cancel_cutoff_hours=2)
+    on = request_rules(require_approval=True, request_ttl_hours=24, min_review_minutes=30)
+    off = request_rules(require_approval=False, request_ttl_hours=24, min_review_minutes=30)
+    assert offered_booking_rules(base, off) == base
+    widened = offered_booking_rules(base, on)
+    assert widened.lead == timedelta(minutes=90)
+    assert widened.cancel_cutoff == base.cancel_cutoff

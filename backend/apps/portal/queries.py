@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from django.db.models import Prefetch, QuerySet
+from django.db.models import Prefetch, Q, QuerySet
 from django.utils import timezone
 
 from apps.billing import services as billing
@@ -39,11 +39,14 @@ from apps.portal import conf
 from apps.portal.services import PortalPrincipal, bookable_doctor
 from apps.visits import services as visits
 from apps.visits.models import Appointment, AppointmentStatus, DoctorSchedule
+from domain import appointments as dappt
 from domain import center_page as dcenter
 from domain import portal as dportal
+from domain import public_site as public_rules
 from domain.money import ZERO, money
 from domain.payments import Verification
 from domain.portal import BookingRules
+from domain.portal_status import booking_display
 
 __all__ = [
     "appointment",
@@ -120,20 +123,33 @@ def summary(principal: PortalPrincipal) -> dict[str, Any]:
 
 def _appointment_rows(files: Iterable[int]) -> QuerySet[Appointment]:
     return Appointment.objects.filter(patient_id__in=list(files)).select_related(
-        "doctor__user", "doctor__department", "department"
+        "doctor__user", "doctor__department", "department", "cancel_reason"
     )
 
 
 def _appointment_json(a: Appointment, *, now: datetime, rules: BookingRules) -> dict[str, Any]:
+    holds = dappt.holds_slot(a.status, a.expires_at, now=now)
     booked = a.status == AppointmentStatus.BOOKED
+    can_move = dportal.can_reschedule(a.starts_at, booked=booked, now=now, rules=rules)
     return {
         "id": a.pk,
         "starts_at": a.starts_at,
         "ends_at": a.ends_at,
         "status": a.status,
+        "display_status": booking_display(
+            a.status,
+            cancel_reason=a.cancel_reason.code if a.cancel_reason else None,
+            was_request=a.expires_at is not None and a.approved_at is None,
+            expired=a.status == AppointmentStatus.REQUESTED and not holds,
+        ),
+        "expires_at": a.expires_at if a.status == AppointmentStatus.REQUESTED else None,
         "doctor": _doctor_json(a.doctor),
-        "can_cancel": dportal.can_cancel(a.starts_at, booked=booked, now=now, rules=rules),
-        "cancel_until": a.starts_at - rules.cancel_cutoff if booked else None,
+        "can_cancel": dportal.can_cancel(a.starts_at, booked=holds, now=now, rules=rules),
+        "cancel_until": a.starts_at - rules.cancel_cutoff if holds else None,
+        "can_reschedule": can_move,
+        "reschedule_until": (
+            a.starts_at - rules.reschedule_cutoff if booked and rules.reschedule_allowed else None
+        ),
     }
 
 
@@ -147,9 +163,11 @@ def appointments(principal: PortalPrincipal) -> dict[str, Any]:
     """Upcoming bookings (soonest first) and the last 20 past or closed ones."""
     now = timezone.now()
     rows = _appointment_rows(principal.file_ids())
-    upcoming = rows.filter(status=AppointmentStatus.BOOKED, ends_at__gt=now).order_by(
-        "starts_at", "id"
-    )
+    upcoming = rows.filter(
+        Q(status=AppointmentStatus.BOOKED)
+        | Q(status=AppointmentStatus.REQUESTED, expires_at__gt=now),
+        ends_at__gt=now,
+    ).order_by("starts_at", "id")
     past = rows.exclude(pk__in=upcoming.values("pk")).order_by("-starts_at", "-id")[:20]
     rules = core.booking_rules()
     return {
@@ -159,17 +177,23 @@ def appointments(principal: PortalPrincipal) -> dict[str, Any]:
             "max_open": rules.max_open,
             "cancel_cutoff_hours": int(rules.cancel_cutoff.total_seconds() // 3600),
             "horizon_days": rules.horizon_days,
+            "reschedule_allowed": rules.reschedule_allowed,
+            "reschedule_cutoff_hours": int(rules.reschedule_cutoff.total_seconds() // 3600),
+            "require_approval": core.request_rules().require_approval,
         },
     }
 
 
 def booking_doctors() -> list[dict[str, Any]]:
-    """Doctors who take portal bookings: active, with an active weekly schedule.
+    """Doctors who take portal bookings: active, offered online (``online_bookable``, ADR
+    0029 B), with an active weekly schedule.
 
     Raises: DomainError ``ONLINE_BOOKING_DISABLED`` (as the days and slots reads)."""
     core.require_online_booking()
     doctors = (
-        DoctorProfile.objects.filter(active=True, user__is_active=True, schedules__active=True)
+        DoctorProfile.objects.filter(
+            active=True, online_bookable=True, user__is_active=True, schedules__active=True
+        )
         .select_related("user", "department")
         .distinct()
         .order_by("department__sort_order", "department__code", "user__username")
@@ -177,11 +201,16 @@ def booking_doctors() -> list[dict[str, Any]]:
     return [_doctor_json(d) for d in doctors]
 
 
+def _offered_rules() -> BookingRules:
+    """The booking rules for what is offered (with the review window while approval is on)."""
+    return public_rules.offered_booking_rules(core.booking_rules(), core.request_rules())
+
+
 def _bookable_starts(
     doctor: DoctorProfile, on: date, *, now: datetime, rules: BookingRules
 ) -> list[datetime]:
     return dportal.bookable(
-        [start for start, _ in visits.available_slots(doctor, on)],
+        [start for start, _ in visits.available_slots(doctor, on, now=now)],
         now=now,
         today=timezone.localdate(),
         rules=rules,
@@ -198,7 +227,7 @@ def booking_days(doctor_id: int) -> list[date]:
     weekdays = set(
         DoctorSchedule.objects.filter(doctor=doctor, active=True).values_list("weekday", flat=True)
     )
-    rules = core.booking_rules()
+    rules = _offered_rules()
     days = []
     for offset in range(rules.horizon_days + 1):
         on = today + timedelta(days=offset)
@@ -210,9 +239,12 @@ def booking_days(doctor_id: int) -> list[date]:
 def booking_slots(doctor_id: int, on: date) -> dict[str, Any]:
     core.require_online_booking()
     doctor = bookable_doctor(doctor_id)
-    starts = set(_bookable_starts(doctor, on, now=timezone.now(), rules=core.booking_rules()))
+    now = timezone.now()
+    starts = set(_bookable_starts(doctor, on, now=now, rules=_offered_rules()))
     slots = [
-        {"starts_at": s, "ends_at": e} for s, e in visits.available_slots(doctor, on) if s in starts
+        {"starts_at": s, "ends_at": e}
+        for s, e in visits.available_slots(doctor, on, now=now)
+        if s in starts
     ]
     return {"doctor": _doctor_json(doctor), "day": on, "slots": slots}
 

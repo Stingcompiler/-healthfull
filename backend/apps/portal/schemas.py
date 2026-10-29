@@ -47,16 +47,35 @@ class PortalAppointmentOut(Schema):
     id: int
     starts_at: datetime
     ends_at: datetime
-    status: Literal["booked", "arrived", "no_show", "cancelled", "rescheduled"]
+    status: Literal["requested", "booked", "arrived", "no_show", "cancelled", "rescheduled"]
+    display_status: Literal[
+        "awaiting_approval",
+        "confirmed",
+        "received",
+        "moved",
+        "cancelled_by_you",
+        "cancelled_by_center",
+        "declined",
+        "expired",
+        "missed",
+    ] = Field(..., description="What the patient is told (domain.portal_status)")
+    expires_at: datetime | None = Field(
+        ..., description="A request waiting for reception lapses then (ADR 0029 A8)"
+    )
     doctor: PortalDoctorOut
     can_cancel: bool
     cancel_until: datetime | None
+    can_reschedule: bool
+    reschedule_until: datetime | None
 
 
 class PortalBookingRulesOut(Schema):
     max_open: int
     cancel_cutoff_hours: int
     horizon_days: int
+    reschedule_allowed: bool
+    reschedule_cutoff_hours: int
+    require_approval: bool
 
 
 class PortalAppointmentsOut(Schema):
@@ -79,6 +98,11 @@ class PortalSlotsOut(Schema):
 class PortalBookIn(Schema):
     doctor_id: int
     starts_at: datetime = Field(..., description="Exactly a `starts_at` from the slots list")
+
+
+class PortalRescheduleIn(Schema):
+    starts_at: datetime = Field(..., description="Exactly a `starts_at` from the slots list")
+    doctor_id: int | None = Field(None, description="Another doctor; default the same one")
 
 
 class PortalResultSummaryOut(Schema):

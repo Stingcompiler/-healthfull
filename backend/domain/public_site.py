@@ -14,7 +14,7 @@ only place the "new install versus existing install" choice is made (ADR 0029 K1
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import timedelta
 from types import MappingProxyType
 
@@ -52,8 +52,9 @@ def tracking_turned_off(before: Switches, after: Switches) -> bool:
     return before.patient_tracking and not after.patient_tracking
 
 
-#: Inclusive (min, max) of every whole-number setting. Phase 1 enforces the first four;
-#: the others are stored now and take effect with the phases that use them (ADR 0029).
+#: Inclusive (min, max) of every whole-number setting. Phase 1 enforced the first four;
+#: Phase 3 the reschedule cut-off, the request lifetime and the review window; the others
+#: are stored now and take effect with the phases that use them (ADR 0029).
 RULE_RANGES: Mapping[str, tuple[int, int]] = MappingProxyType(
     {
         "lead_minutes": (0, 7 * 24 * 60),
@@ -138,7 +139,13 @@ def initial_values(*, existing_install: bool, env: Mapping[str, str]) -> dict[st
 
 
 def booking_rules(
-    *, lead_minutes: int, horizon_days: int, max_open: int, cancel_cutoff_hours: int
+    *,
+    lead_minutes: int,
+    horizon_days: int,
+    max_open: int,
+    cancel_cutoff_hours: int,
+    reschedule_allowed: bool = True,
+    reschedule_cutoff_hours: int = RULE_DEFAULTS["reschedule_cutoff_hours"],
 ) -> BookingRules:
     """The portal booking rules of the settings row (``domain.portal.BookingRules``)."""
     return BookingRules(
@@ -146,4 +153,35 @@ def booking_rules(
         horizon_days=horizon_days,
         max_open=max_open,
         cancel_cutoff=timedelta(hours=cancel_cutoff_hours),
+        reschedule_allowed=reschedule_allowed,
+        reschedule_cutoff=timedelta(hours=reschedule_cutoff_hours),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class RequestRules:
+    """How an online booking waits for reception (ADR 0029 A2, A8, C): whether it does,
+    how long a request lives, and the shortest time reception must have to answer it."""
+
+    require_approval: bool
+    ttl: timedelta
+    min_review: timedelta
+
+
+def request_rules(
+    *, require_approval: bool, request_ttl_hours: int, min_review_minutes: int
+) -> RequestRules:
+    return RequestRules(
+        require_approval=require_approval,
+        ttl=timedelta(hours=request_ttl_hours),
+        min_review=timedelta(minutes=min_review_minutes),
+    )
+
+
+def offered_booking_rules(rules: BookingRules, requests: RequestRules) -> BookingRules:
+    """The rules for what the portal offers: while online bookings wait for approval, the
+    earliest offered start also leaves reception its review window (``start - lead - now``
+    at least ``min_review``, ADR 0029 C), so a request is never born expired."""
+    if not requests.require_approval:
+        return rules
+    return replace(rules, lead=rules.lead + requests.min_review)

@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.core.models import LoginThrottle
 from apps.portal import services as portal_services
+from apps.visits import services as visit_services
 
 
 class Command(BaseCommand):
@@ -42,3 +43,7 @@ class Command(BaseCommand):
             f"maintenance: ended {portal_ended} idle portal session(s), removed "
             f"{portal_throttles} stale portal throttle row(s)."
         )
+        # Online booking requests nobody answered in time (ADR 0029 C). Booking already
+        # expires a doctor's due requests under the doctor lock; this tidies the rest.
+        expired = visit_services.expire_requests(now)
+        self.stdout.write(f"maintenance: expired {expired} unanswered online request(s).")

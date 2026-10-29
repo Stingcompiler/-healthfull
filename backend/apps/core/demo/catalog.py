@@ -162,6 +162,7 @@ def _doctors(cat: Catalog, rooms: dict[str, Room]) -> None:
                 "specialty_en": doc.specialty_en,
                 "consultation_service": cat.services[doc.consultation],
                 "active": True,
+                "online_bookable": True,
             },
         )
         for session in doc.sessions:

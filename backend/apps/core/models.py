@@ -813,6 +813,13 @@ class DoctorProfile(models.Model):
         related_name="doctors",
         help_text="A CenterMedia image of kind 'doctor'.",
     )
+    online_bookable = models.BooleanField(
+        default=False,
+        help_text=(
+            "Offered for online booking (ADR 0029 B). Off by default so switching booking on "
+            "exposes nobody by accident."
+        ),
+    )
 
     class Meta:
         ordering: ClassVar[list[str]] = ["user__username"]

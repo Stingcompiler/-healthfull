@@ -26,7 +26,7 @@ from apps.core.models import Department, DoctorProfile, User
 from apps.patients.models import Patient, PatientCoverage
 from apps.visits import services
 from apps.visits.inpatient_api import inpatient_router
-from apps.visits.models import Appointment, QueueEntry, Visit
+from apps.visits.models import Appointment, DoctorTimeOff, QueueEntry, Visit
 from apps.visits.schemas import (
     AgendaParams,
     AppointmentCancelIn,
@@ -38,10 +38,14 @@ from apps.visits.schemas import (
     CheckInIn,
     DayAgendaOut,
     DisplayParams,
+    OnlineBookingRejectIn,
     QueueMoveIn,
     QueueRowOut,
     RescheduleIn,
     TimelineOut,
+    TimeOffAddedOut,
+    TimeOffIn,
+    TimeOffOut,
     TokenSlipOut,
     UpcomingParams,
     VisitCancelIn,
@@ -295,7 +299,7 @@ def get_agenda(request: HttpRequest, params: Query[AgendaParams]) -> Any:
     "/appointments/upcoming",
     response={200: list[AppointmentOut], **_READ},
     operation_id="visits_list_upcoming_appointments",
-    summary="Booked appointments of a patient that have not ended yet",
+    summary="Booked appointments and open online requests of a patient that have not ended",
 )
 @require_perm("visits.view")
 def list_upcoming(request: HttpRequest, params: Query[UpcomingParams]) -> list[Any]:
@@ -308,8 +312,9 @@ def list_upcoming(request: HttpRequest, params: Query[UpcomingParams]) -> list[A
     operation_id="visits_book_appointment",
     summary="Book a slot with a doctor (for a patient or a named caller)",
     description=(
-        "409 APPOINTMENT_CONFLICT (details.appointments), OUTSIDE_SCHEDULE, INVALID_SLOT, "
-        "APPOINTMENT_IN_PAST, PATIENT_OR_CONTACT_REQUIRED, DOCTOR_INACTIVE."
+        "409 APPOINTMENT_CONFLICT (details.appointments), OUTSIDE_SCHEDULE, DOCTOR_TIME_OFF, "
+        "INVALID_SLOT, APPOINTMENT_IN_PAST, PATIENT_OR_CONTACT_REQUIRED, DOCTOR_INACTIVE. "
+        "There is no overbooking: an urgent patient is a walk-in visit (ADR 0029 C)."
     ),
 )
 @require_perm("visits.manage_appointments")
@@ -347,7 +352,9 @@ def update_appointment(request: HttpRequest, appointment_id: int, payload: Appoi
     response={201: AppointmentOut, **_WRITE},
     operation_id="visits_reschedule_appointment",
     summary="Move a booking to another slot (the old one is kept as rescheduled)",
-    description="409 APPOINTMENT_NOT_BOOKED, APPOINTMENT_CONFLICT, OUTSIDE_SCHEDULE.",
+    description=(
+        "409 APPOINTMENT_NOT_BOOKED, APPOINTMENT_CONFLICT, OUTSIDE_SCHEDULE, DOCTOR_TIME_OFF."
+    ),
 )
 @require_perm("visits.manage_appointments")
 def reschedule_appointment(
@@ -418,6 +425,86 @@ def check_in(request: HttpRequest, appointment_id: int, payload: CheckInIn) -> S
         chief_complaint=payload.chief_complaint,
     )
     return Status(201, view)
+
+
+# --- online requests (ADR 0029 E; the reception inbox screen is Phase 4) ---------------------
+
+
+@visits_router.post(
+    "/online-bookings/{int:appointment_id}/approve",
+    response={200: AppointmentOut, **_WRITE},
+    operation_id="visits_approve_online_booking",
+    summary="Confirm an online request (requested -> booked, who and when recorded)",
+    description="409 APPOINTMENT_NOT_REQUESTED, ONLINE_REQUEST_EXPIRED.",
+)
+@require_perm("visits.manage_online_bookings")
+def approve_online_booking(request: HttpRequest, appointment_id: int) -> Any:
+    return services.approve_online_booking(
+        get_object_or_404(Appointment, pk=appointment_id), actor=_actor(request)
+    )
+
+
+@visits_router.post(
+    "/online-bookings/{int:appointment_id}/reject",
+    response={200: AppointmentOut, **_WRITE},
+    operation_id="visits_reject_online_booking",
+    summary="Decline an online request with a reason code and a note",
+    description=(
+        "409 APPOINTMENT_NOT_REQUESTED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED."
+    ),
+)
+@require_perm("visits.manage_online_bookings")
+def reject_online_booking(
+    request: HttpRequest, appointment_id: int, payload: OnlineBookingRejectIn
+) -> Any:
+    return services.reject_online_booking(
+        get_object_or_404(Appointment, pk=appointment_id),
+        actor=_actor(request),
+        reason_code=payload.reason_code,
+        note=payload.note,
+    )
+
+
+# --- doctor time off (ADR 0029 C) -----------------------------------------------------------
+
+
+@visits_router.get(
+    "/doctors/{int:doctor_id}/time-off",
+    response={200: list[TimeOffOut], **_READ},
+    operation_id="visits_list_time_off",
+    summary="A doctor's time off that has not ended yet",
+)
+@require_perm("core.manage_departments")
+def list_time_off(request: HttpRequest, doctor_id: int) -> list[Any]:
+    return services.list_time_off(get_object_or_404(DoctorProfile, pk=doctor_id).pk)
+
+
+@visits_router.post(
+    "/doctors/{int:doctor_id}/time-off",
+    response={201: TimeOffAddedOut, **_WRITE},
+    operation_id="visits_add_time_off",
+    summary="Block a period of a doctor's calendar (no slot inside it is offered or booked)",
+    description=(
+        "Bookings already inside the period are returned, not cancelled. 409 "
+        "TIME_OFF_INVALID_RANGE, TIME_OFF_IN_PAST, TIME_OFF_REASON_REQUIRED, TIME_OFF_OVERLAP."
+    ),
+)
+@require_perm("core.manage_departments")
+def add_time_off(request: HttpRequest, doctor_id: int, payload: TimeOffIn) -> Status[Any]:
+    doctor = get_object_or_404(DoctorProfile, pk=doctor_id)
+    return Status(201, services.add_time_off(_actor(request), doctor.pk, **payload.dict()))
+
+
+@visits_router.delete(
+    "/time-off/{int:time_off_id}",
+    response={204: None, **_WRITE},
+    operation_id="visits_remove_time_off",
+    summary="Give a period of time off back to the doctor's calendar",
+)
+@require_perm("core.manage_departments")
+def remove_time_off(request: HttpRequest, time_off_id: int) -> Status[None]:
+    services.remove_time_off(_actor(request), get_object_or_404(DoctorTimeOff, pk=time_off_id).pk)
+    return Status(204, None)
 
 
 # Minimal inpatient for the nursing screens (FEATURES 10.5).

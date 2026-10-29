@@ -259,4 +259,5 @@ def test_a_patient_gets_404_for_another_patients_rows(
         "portal_get_receipt",
         "portal_get_result",
         "portal_cancel_appointment",
+        "portal_reschedule_appointment",
     }

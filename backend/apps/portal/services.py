@@ -34,7 +34,7 @@ from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError, IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -55,8 +55,15 @@ from apps.portal.models import (
     PortalThrottleScope,
 )
 from apps.visits import services as visits
-from apps.visits.models import Appointment, AppointmentStatus
+from apps.visits.models import (
+    SLOT_HOLDING_STATUSES,
+    Appointment,
+    AppointmentSource,
+    AppointmentStatus,
+)
+from domain import appointments as dappt
 from domain import portal as dportal
+from domain import public_site as public_rules
 from domain.errors import DomainError
 from domain.lockout import LockState, is_locked, normalize, register_failure, register_success
 from domain.money import money
@@ -604,17 +611,77 @@ def logout(request: HttpRequest, token: str | None) -> None:
 
 
 def bookable_doctor(doctor_id: int) -> DoctorProfile:
-    """An active doctor with an active weekly schedule (only those take portal bookings).
+    """An active doctor offered online (``online_bookable``, ADR 0029 B) with an active
+    weekly schedule (only those take portal bookings).
 
     Raises:
         DoctorProfile.DoesNotExist: anything else (404).
     """
     return (
         DoctorProfile.objects.select_related("user", "department")
-        .filter(pk=doctor_id, active=True, user__is_active=True, schedules__active=True)
+        .filter(
+            pk=doctor_id,
+            active=True,
+            online_bookable=True,
+            user__is_active=True,
+            schedules__active=True,
+        )
         .distinct()
         .get()
     )
+
+
+def _aware(value: datetime) -> datetime:
+    return value if timezone.is_aware(value) else timezone.make_aware(value)
+
+
+def _held_upcoming(files: list[int], now: datetime) -> QuerySet[Appointment]:
+    """The person's future bookings that hold a slot (booked, or requested until expiry)."""
+    return Appointment.objects.filter(
+        Q(status=AppointmentStatus.BOOKED)
+        | Q(status=AppointmentStatus.REQUESTED, expires_at__gt=now),
+        patient_id__in=files,
+        starts_at__gt=now,
+    )
+
+
+def _check_new_slot(
+    doctor: DoctorProfile,
+    start: datetime,
+    *,
+    files: list[int],
+    now: datetime,
+    rules: dportal.BookingRules,
+    requests: public_rules.RequestRules,
+    moving: int | None = None,
+) -> datetime | None:
+    """Validate a slot the person asks for online, as a booking (ADR 0029 A7: a moved booking
+    is checked like a new one; ``moving`` is the booking being moved, not counted). Returns
+    the request expiry when online bookings wait for approval, else None.
+
+    Raises:
+        DomainError: ``PORTAL_SLOT_UNAVAILABLE``, ``PORTAL_BOOKING_LIMIT``,
+            ``PORTAL_ALREADY_BOOKED``, ``ONLINE_REVIEW_WINDOW_TOO_SHORT``.
+    """
+    day = timezone.localtime(start).date()
+    upcoming = _held_upcoming(files, now)
+    if moving is not None:
+        upcoming = upcoming.exclude(pk=moving)
+    dportal.check_booking(
+        start,
+        now=now,
+        today=timezone.localdate(),
+        start_day=day,
+        offered=[s for s, _ in visits.available_slots(doctor, day, now=now)],
+        open_count=upcoming.count(),
+        same_day_with_doctor=upcoming.filter(doctor=doctor, starts_at__date=day).exists(),
+        rules=public_rules.offered_booking_rules(rules, requests),
+    )
+    if not requests.require_approval:
+        return None
+    expires = dappt.request_expiry(now, start, ttl=requests.ttl, lead=rules.lead)
+    dappt.check_review_window(expires, now=now, min_review=requests.min_review)
+    return expires
 
 
 def book_appointment(
@@ -622,19 +689,23 @@ def book_appointment(
 ) -> Appointment:
     """Book one of a doctor's free schedule slots for the signed-in person (FEATURES 2.5, 15.2).
 
+    While the administrator requires approval (``require_approval``, ADR 0029 A2) the booking
+    is a ``requested`` one that holds the slot until reception answers or it expires;
+    otherwise it is ``booked`` at once.
+
     Raises:
-        DoctorProfile.DoesNotExist: unknown doctor or one without a schedule (404).
+        DoctorProfile.DoesNotExist: unknown doctor, one not offered online or without a
+            schedule (404).
         DomainError: ``PORTAL_DISABLED``, ``ONLINE_BOOKING_DISABLED`` (switched off),
             ``PORTAL_SLOT_UNAVAILABLE``, ``PORTAL_BOOKING_LIMIT``, ``PORTAL_ALREADY_BOOKED``,
-            ``APPOINTMENT_CONFLICT`` (taken meanwhile).
+            ``ONLINE_REVIEW_WINDOW_TOO_SHORT``, ``APPOINTMENT_CONFLICT`` (taken meanwhile).
     """
     core.require_tracking()
     core.require_online_booking()
     doctor = bookable_doctor(doctor_id)
-    start = starts_at if timezone.is_aware(starts_at) else timezone.make_aware(starts_at)
+    start = _aware(starts_at)
     now = timezone.now()
-    day = timezone.localtime(start).date()
-    rules = core.booking_rules()
+    rules, requests = core.booking_rules(), core.request_rules()
     actor = portal_actor()
     with (
         transaction.atomic(),
@@ -644,19 +715,9 @@ def book_appointment(
     ):
         # One booking at a time per person, so the limits cannot be raced past.
         person = Patient.objects.select_for_update().get(pk=principal.person().pk)
-        files = patients.person_file_ids(person)
-        upcoming = Appointment.objects.filter(
-            patient_id__in=files, status=AppointmentStatus.BOOKED, starts_at__gt=now
-        )
-        dportal.check_booking(
-            start,
-            now=now,
-            today=timezone.localdate(),
-            start_day=day,
-            offered=[s for s, _ in visits.available_slots(doctor, day)],
-            open_count=upcoming.count(),
-            same_day_with_doctor=upcoming.filter(doctor=doctor, starts_at__date=day).exists(),
-            rules=rules,
+        files = list(patients.person_file_ids(person))
+        expires = _check_new_slot(
+            doctor, start, files=files, now=now, rules=rules, requests=requests
         )
         return visits.book_appointment(
             doctor=doctor,
@@ -664,11 +725,81 @@ def book_appointment(
             actor=actor,
             patient=person,
             notes="Booked by the patient on the portal",
+            source=AppointmentSource.PORTAL,
+            expires_at=expires,
+        )
+
+
+def reschedule_appointment(
+    principal: PortalPrincipal,
+    appointment_id: int,
+    *,
+    starts_at: datetime,
+    doctor_id: int | None = None,
+) -> Appointment:
+    """Move the person's own confirmed booking to another free slot (ADR 0029 A7): the same
+    cut-off family as cancelling (``reschedule_allowed``, ``reschedule_cutoff_hours``), the new
+    slot checked like a booking, the old one ``rescheduled`` and linked from the new one, in
+    one transaction holding the person's lock, then both doctors' in id order. The new booking
+    follows the approval setting like any online booking (it waits for reception when
+    approval is required).
+
+    Raises:
+        Appointment.DoesNotExist: not one of the person's appointments (404).
+        DoctorProfile.DoesNotExist: the new doctor is not offered online (404).
+        DomainError: ``PORTAL_DISABLED``, ``ONLINE_BOOKING_DISABLED``,
+            ``PORTAL_RESCHEDULE_DISABLED``, ``APPOINTMENT_NOT_BOOKED``,
+            ``PORTAL_RESCHEDULE_TOO_LATE`` and every refusal of :func:`book_appointment`.
+    """
+    core.require_tracking()
+    core.require_online_booking()
+    current = Appointment.objects.only("pk", "doctor_id").get(
+        pk=appointment_id, patient_id__in=principal.file_ids()
+    )
+    doctor = bookable_doctor(doctor_id if doctor_id is not None else current.doctor_id)
+    start = _aware(starts_at)
+    now = timezone.now()
+    rules, requests = core.booking_rules(), core.request_rules()
+    actor = portal_actor()
+    with (
+        transaction.atomic(),
+        pghistory.context(
+            user=actor.pk, reason="portal reschedule", portal_session=principal.session_id
+        ),
+    ):
+        person = Patient.objects.select_for_update().get(pk=principal.person().pk)
+        files = list(patients.person_file_ids(person))
+
+        def check(old: Appointment) -> datetime | None:
+            dportal.check_reschedule(
+                old.starts_at,
+                booked=old.status == AppointmentStatus.BOOKED,
+                now=now,
+                rules=rules,
+            )
+            return _check_new_slot(
+                doctor,
+                start,
+                files=files,
+                now=now,
+                rules=rules,
+                requests=requests,
+                moving=old.pk,
+            )
+
+        return visits.move_appointment(
+            current,
+            starts_at=start,
+            doctor=doctor,
+            actor=actor,
+            reason="portal reschedule",
+            check=check,
         )
 
 
 def cancel_appointment(principal: PortalPrincipal, appointment_id: int) -> Appointment:
-    """Cancel the person's own future booking before the cut-off (reason ``PATIENT_REQUEST``).
+    """Cancel the person's own future booking or request before the cut-off (reason
+    ``PATIENT_REQUEST``).
 
     Works while online booking is off (a patient may still cancel what they hold), not while
     patient sign-in is off.
@@ -691,7 +822,7 @@ def cancel_appointment(principal: PortalPrincipal, appointment_id: int) -> Appoi
         )
         dportal.check_cancel(
             appointment.starts_at,
-            booked=appointment.status == AppointmentStatus.BOOKED,
+            booked=appointment.status in SLOT_HOLDING_STATUSES,
             now=timezone.now(),
             rules=core.booking_rules(),
         )

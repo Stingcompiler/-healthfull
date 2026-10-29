@@ -42,6 +42,17 @@ OPERATIONS = {
         "/api/visits/appointments/{appointment_id}/no-show",
     ): "visits_mark_appointment_no_show",
     ("post", "/api/visits/appointments/{appointment_id}/check-in"): "visits_check_in_appointment",
+    (
+        "post",
+        "/api/visits/online-bookings/{appointment_id}/approve",
+    ): "visits_approve_online_booking",
+    (
+        "post",
+        "/api/visits/online-bookings/{appointment_id}/reject",
+    ): "visits_reject_online_booking",
+    ("get", "/api/visits/doctors/{doctor_id}/time-off"): "visits_list_time_off",
+    ("post", "/api/visits/doctors/{doctor_id}/time-off"): "visits_add_time_off",
+    ("delete", "/api/visits/time-off/{time_off_id}"): "visits_remove_time_off",
     ("get", "/api/visits/ping"): "visits_get_ping",
     ("get", "/api/visits/inpatient/board"): "visits_get_bed_board",
     ("post", "/api/visits/inpatient/admissions"): "visits_admit_patient",
