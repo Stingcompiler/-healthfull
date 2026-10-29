@@ -53,7 +53,7 @@ Default policy throughout: **pay first, then perform.** Perform-first is an auth
 | 2.2 | Consultation fee line auto-created as requested; follow-up within N days free or discounted per center rule | V1 |
 | 2.3 | Doctor queue: paid visits in order, with called/in-progress/done states and a waiting-room display | V1 |
 | 2.4 | Visit timeline: every order, invoice, result, dispense, and refund linked to the visit | V1 |
-| 2.5 | Appointments: book slot per doctor, reschedule, cancel, convert to visit on arrival | V1? |
+| 2.5 | Appointments: book slot per doctor, reschedule, cancel, convert to visit on arrival. Online requests (patient or guest) enter `requested`, hold their slot and are approved or rejected from the reception inbox (15.4, ADR 0029); a database constraint forbids two open bookings overlapping for one doctor | V1? |
 | 2.6 | Queue token printing | V1? |
 | 2.7 | Visit cancellation with reason and automatic refund flow if paid | V1 |
 
@@ -241,8 +241,10 @@ Default policy throughout: **pay first, then perform.** Perform-first is an auth
 | # | Feature | Phase |
 |---|---|---|
 | 15.1 | Printed receipt and result with QR for verification | V1 |
-| 15.2 | Web portal: appointments, approved results, instructions, no app install | P2 |
-| 15.3 | SMS notifications | Later |
+| 15.2 | Web portal: appointments (book, reschedule, cancel), approved results, instructions, visit and order tracking, in-portal notices, no app install. Patient sign-in and tracking are switched by `patient_tracking_enabled` | P2 |
+| 15.3 | Public center website, optional per deployment (`site_enabled`): hero, about, facilities, reasons, departments and service names (no prices), doctors with qualifications and clinic days, hours, insurance providers, FAQ, manager-approved testimonials, accessibility and policy notes, contact and map link; shown at `/` ahead of the vendor sales page, also at `/portal`; edited under `core.manage_public_site` (ADR 0029, 0028) | P2 |
+| 15.4 | Online booking, optional per deployment (`online_booking_enabled`): registered patients and guests (no file) book a doctor's consultation slot; reception approves (`require_approval` on by default), request expiry, guest reference and PIN, abuse limits and offline proof-of-work, reception inbox with `wa.me` click-to-chat, reissue PIN, cancel on behalf, retention; no fees, no payment, no SMS (ADR 0029) | P2 |
+| 15.5 | SMS notifications | Later |
 
 ---
 
