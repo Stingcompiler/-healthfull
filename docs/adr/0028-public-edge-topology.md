@@ -1,13 +1,14 @@
-# 0028: How the public reaches a center: optional switches, a public listener, an optional edge
+# 0028: How the public reaches a center: optional switches, one host, an optional edge
 
-Date: 2026-10-29. Status: proposed (Phase 0 of `docs/PUBLIC-SITE-PLAN.md`, awaiting the owner's
-review). Related: 0005 (one door, abuse control), 0016 (portal), 0023 (center page), 0027
-(marketing page), 0029 (what the public site and online booking do). Amends ARCHITECTURE section 8
-(the "no runtime fetch" rule) by one sentence, below.
+Date: 2026-10-29. Status: accepted (Phase 0 of `docs/PUBLIC-SITE-PLAN.md`, decided by the owner on
+2026-10-29). Related: 0004 and 0005 (staff sign-in, lockout, abuse control), 0016 (portal), 0023
+(center page), 0027 (marketing page), 0029 (what the public site and online booking do). Amends
+ARCHITECTURE section 8 (the "no runtime fetch" rule) by one sentence, below.
 
-Items marked **[DESIGN DECISION, owner may veto]** are recommendations adopted from the Phase 0
-review, not choices the owner has already made. The owner's settled choices are marked
-**[SETTLED]**. Everything else follows from them.
+Every decision here is **[SETTLED]**: the owner's own choice, or a Phase 0 recommendation the owner
+accepted. The first draft of this ADR proposed a separate public listener (a second process with
+only the public operations routed) as defense in depth; the owner rejected it on 2026-10-29
+(decision 3 and "Alternatives rejected").
 
 ## Context
 Every center install today is private: Caddy on the LAN, internal TLS, no inbound internet
@@ -37,52 +38,60 @@ reaches the server (public IP, host Caddy, tunnel) is infrastructure, documented
 
 | | Internet-facing (OVH) | LAN-only |
 |---|---|---|
-| Reach | the host's public name | nothing by default |
-| What makes it public | the host Caddy exposes the **public listener** (decision 3) on a public name | an **edge** (decision 5) tunnels to the public listener |
+| Reach | the host's existing public name | nothing by default |
+| What makes it public | nothing new: the host Caddy already proxies the whole app on that name | an **edge** (decision 5) tunnels the allowlisted public operations to the app |
 | Edge needed | no | yes, only if the center wants the pages on the internet |
 | Switches | the same | the same |
 
-**3. [DESIGN DECISION, owner may veto] A separate public listener inside the app, defense in
-depth.** The app can run a second listener whose URL configuration contains **only** the
-allowlisted public operations; every other path answers the JSON `404 NOT_FOUND`. Staff session
-cookies are never read on it (a staff request that reaches it is anonymous). It shares the
-database and the code with the staff listener; it is a second process of the same image, enabled
-by `PUBLIC_LISTENER_PORT` (unset = no public listener, which is the default and the LAN-only
-behavior). A host Caddy, a tunnel or an edge points a public name at this listener and never at
-the staff listener. A mistake in the proxy's path list then cannot expose staff routes, because
-the process behind it does not have them.
+**3. [SETTLED] One domain, one host, one application process.** The center website, online
+booking, the patient portal and the staff application are served under **one** public name by
+**one** host (for example `healtfull.stingdev.pro` serves all of them). There is **no** separate
+public hostname, **no** separate public listener and **no** network isolation between the public
+pages and the staff app on an internet-facing deployment. Security comes from enforcement inside
+the application, which every request passes through whatever the network shape:
 
-The allowlist is a list of operation ids, enforced by a test that enumerates every operation of
-the full API and asserts that the public URL configuration routes exactly the listed set (a new
-operation is private until someone lists it, the same shape as `OPEN_OPERATIONS` in
-`backend/api/tests/test_main.py`). Planned set (Phase 1 builds the mechanism, later phases add
-their operations):
+- **Switches** (decision 1, 0029 B): a public or patient operation whose switch is off answers its
+  error code (`SITE_DISABLED`, `ONLINE_BOOKING_DISABLED`, `PORTAL_DISABLED`) from the service
+  layer, so a forgotten router check cannot publish it.
+- **Authentication separation**: staff routers require the staff session and a permission code
+  (`require_perm`); patient operations require the portal cookie (`portal_auth`, 0016); guest
+  operations (0029 D) require the guest cookie. A cookie of one kind is never accepted by another
+  kind of operation (matrix tests). The three staff-session operations that live in the portal
+  router (`POST /api/portal/access-codes`, `GET|POST /api/portal/patients/{id}/access-codes`,
+  `POST /api/portal/access-codes/{id}/revoke`, `backend/apps/portal/api.py`) keep `session_auth`
+  and their permission.
+- **Abuse control**: staff sign-in lockout and per-address limits (0004, 0005), portal and public
+  throttles (0016, 0023), and the booking limits of 0029 F. They key on `client_ip`, which is why
+  decision 6 matters on an internet-facing host.
+- **The operation allowlist test stays**: `OPEN_OPERATIONS` in `backend/api/tests/test_main.py`
+  lists every operation reachable without a staff session; a new public operation is private until
+  it is listed there deliberately.
+
+The staff sign-in page is therefore reachable on the internet on an internet-facing deployment, as
+it already is on OVH today; that exposure is accepted and is covered by 0004 and 0005.
+
+**Per-operation allowlist, LAN edge only (Phase 6).** The list of public operations below is kept,
+but only as the configuration of the optional edge for LAN-only installs (decision 5). It is not
+used on an internet-facing deployment. The edge allowlists exact paths and methods, never a prefix:
 
 - Center site: `GET /api/portal/center-page`, `/center-identity`, `/center-logo`,
-  `/center-media/{id}`.
+  `/center-media/{id}` (Phase 2).
 - Patient portal: `GET /api/portal/session`, `POST /api/portal/login`, `POST /api/portal/session/logout`,
   `GET /api/portal/verify`, and every patient operation (`PATIENT_OPERATIONS`, `portal_auth`).
-- Booking: the doctor, day and slot reads (currently `/api/portal/doctors*`, patient-session
-  only), `POST /api/portal/appointments*`, and the guest operations of 0029.
-- `GET /api/ops/site` (the pre-render switches, ADR 0027), method GET only.
-- A CSRF token: today the SPA fetches `GET /api/auth/csrf`. The public listener must not route
-  the `auth` namespace; Phase 1 adds `GET /api/portal/csrf` with the same behavior and the portal
-  client uses it.
-- **Never routed there:** `/api/auth/*`, every staff router (`/api/visits`, `/api/core`, ...),
-  `/admin`, and the three **staff-session operations that live in the portal router**
-  (`POST /api/portal/access-codes`, `GET|POST /api/portal/patients/{id}/access-codes`,
-  `POST /api/portal/access-codes/{id}/revoke`, `backend/apps/portal/api.py` lines 232-330). A
-  path allowlist written as `/api/portal/*` would have exposed them; the per-operation allowlist
-  does not.
+- Booking: the doctor, day and slot reads, `POST /api/portal/appointments*`, and the guest
+  operations of 0029.
+- `GET /api/ops/site` (the pre-render switches, ADR 0027) and `GET /api/auth/csrf` (the CSRF token
+  every public POST needs, `frontend/src/lib/api/csrf.ts`), both GET only and listed as exact paths.
+- **Never routed by the edge:** every other `/api/auth/*` operation, every staff router
+  (`/api/visits`, `/api/core`, ...), `/admin`, and the three staff-session operations of the
+  portal router named above. A prefix rule `/api/portal/*` would have exposed them; the exact list
+  does not. The edge serves the SPA bundle and the public client routes (`/`, `/portal*`,
+  `/verify*`, `/assets/*`, the public booking routes of 0029) and answers 404 for staff client
+  routes. `infra/tests` proves the edge refuses the never-routed set (Phase 6).
 
-The SPA bundle is static and public by nature. The public site block serves the bundle and the
-public client routes (`/`, `/portal*`, `/verify*`, `/assets/*`, the public booking routes of
-0029); a staff client route on the public name answers 404 rather than the app shell.
-
-**4. [DESIGN DECISION, owner may veto] Root `/` precedence: the center website wins.** One
-deployment can hold two kinds of public page: the center's website (0029) and the vendor's sales
-page (`MARKETING_SITE`, 0027). They are different things. At the exact path `/` for a visitor with
-no staff session:
+**4. [SETTLED] Root `/` precedence: the center website wins.** One deployment can hold two kinds
+of public page: the center's website (0029) and the vendor's sales page (`MARKETING_SITE`, 0027).
+They are different things. At the exact path `/`:
 
 | Order | Condition | `/` shows |
 |---|---|---|
@@ -105,12 +114,12 @@ failure rule as 0027: an unreachable server leaves it off). The center website c
 opens an outbound tunnel (WireGuard to a vendor-run VPS is the recommended mechanism: no third
 party; a managed tunnel such as Cloudflare Tunnel also works and is the owner's call on trust and
 cost). The server initiates, so there is no inbound port, no public IP and no router change. The
-edge is a Caddy on the VPS that proxies the tunnel to the **public listener only**, adds
-rate limits and TLS, and serves a static fallback (center name, phone, "online booking
+edge is a Caddy on the VPS that proxies the tunnel **for the allowlisted operations of decision 3
+only**, adds rate limits and TLS, and serves a static fallback (center name, phone, "online booking
 temporarily unavailable") from a cached copy of the center page when the tunnel is down. It fails
 closed: with the tunnel down nothing else is reachable. The edge is opt-in per center, delivered in
-Phase 6, and is **not needed** on an internet-facing deployment, which points its host Caddy at
-the public listener directly.
+Phase 6, and is **not used** on an internet-facing deployment, where the host's own name already
+serves the whole app (decision 3).
 
 ARCHITECTURE section 8 is amended by this sentence: *the application itself makes no outbound
 request; an optional tunnel process outside the application may carry inbound traffic to it.* The
@@ -118,44 +127,52 @@ rule "no runtime internet dependency" is otherwise unchanged: the pages work on 
 tunnel absent.
 
 **6. The client address behind proxies must be right, or every per-address limit is wrong.** The
-limits of 0005, 0016 and 0023 key on `apps.core.services.client_ip`, which trusts
+limits of 0005, 0016, 0023 and 0029 key on `apps.core.services.client_ip`, which trusts
 `X-Forwarded-For` only when `DJANGO_TRUST_X_FORWARDED_FOR=1`, and then takes the **leftmost**
 entry. Behind two proxies (host Caddy, then the compose Caddy) a proxy that appends instead of
 overwriting lets a visitor choose the leftmost value, and a proxy that overwrites without trusting
-the first hop makes all visitors one address. This ADR requires, for any deployment with the
-public listener: the outermost proxy **overwrites** the header with the connection address, inner
-proxies trust only that hop (`trusted_proxies`), the app sets the trust flag, and a Phase 1 test
-and a runbook check (a request with a forged header is counted under the real address) prove it.
-**Not verified here:** the current OVH host Caddy configuration was not read (no server access in
-Phase 0); Phase 1 must check it before the public switches are turned on there.
+the first hop makes all visitors one address. This ADR requires, for any internet-facing deployment
+and for the edge: the outermost proxy **overwrites** the header with the connection address, inner
+proxies trust only that hop (`trusted_proxies`), the app sets the trust flag, and a runbook check
+(a request with a forged header is counted under the real address) proves it before the public
+switches are turned on. **Not verified here:** the current OVH host Caddy configuration was not read
+(no server access in Phase 0 or Phase 1); the owner, or a session with server access, must check it
+before switching `site_enabled` or `online_booking_enabled` on there.
 
-**7. Failure behavior.** Public listener down: the proxy answers 502 and the SPA shows its
-offline state; staff work is unaffected (separate process). Tunnel down: edge fallback page.
-Database down: both listeners fail health checks the same way. The public listener has its own
-health route for the proxy and never reports staff detail.
+**7. Failure behavior.** One process serves everything, so an application or database outage takes
+the public pages and the staff app down together, exactly as today; the SPA shows its offline
+state. On a LAN install with an edge, a tunnel outage shows the edge fallback page to the public
+while staff on the LAN are unaffected.
 
 ## Alternatives rejected
+- **A separate public listener** (a second process of the same image whose URL configuration routes
+  only the public operations, reached through a second public name). It isolates staff routes from
+  the internet at the network level, but on the OVH host it adds a second name, a second process
+  and a second Caddy site block for a staff app that is already internet-facing and protected by
+  sign-in lockout and permissions. Rejected by the owner on 2026-10-29 in favour of decision 3. The
+  same isolation is still available to a LAN-only install through the edge allowlist.
 - **A separate public service with a replicated read model and a booking queue** (plan D1
   alternative). It survives outages but needs a second deployable, a sync protocol and conflict
   handling, and bookings become "pending until synced" with no real availability. Rejected for V1.
-- **A path allowlist at the proxy only.** One layer; a typo exposes staff routes. Kept as the
-  outer layer, not the only one.
+- **A path-prefix allowlist at the edge** (`/api/portal/*`). It exposes the staff-session portal
+  operations; the edge uses exact paths (decision 3).
 - **Port-forwarding the center's own IP.** Needs a static address and router access most Sudanese
   centers do not have, and exposes the whole server.
 
 ## Consequences
-- New settings: `PUBLIC_LISTENER_PORT`, plus the compose service and a Caddy public site block
-  (`CADDY_PUBLIC_ADDRESS`, empty = none). `.env.example` and `docs/runbooks/install.md` change.
-- Tests added in Phase 1: public URL configuration equals the allowlist; a staff cookie on the
-  public listener is ignored; every non-listed path is 404; the forged-`X-Forwarded-For` case.
-  Phase 6 adds the edge-config test (`infra/tests`).
+- No new process, port or Caddy site block for an internet-facing deployment; `infra/` is
+  unchanged by Phases 1 to 5. Phase 6 adds `infra/edge/` and its runbook for LAN installs.
+- Phase 1 builds the switches, their service-level guards and tests (every public and patient
+  operation with each switch off answers the exact code), `GET /api/portal/center-identity`, and
+  `center_site` in `GET /api/ops/site` with the root precedence of decision 4. It builds **no**
+  public listener and no `urls_public.py`.
 - `GET /api/ops/site` gains `center_site`; `frontend/src/lib/site.ts`, `src/app/routes.tsx` and
   their tests change (`docs/inspection/public-site-impact.md`).
-- Open question for the owner: on the OVH host staff and visitors share one name today. Do you want
-  the center website on that same name (then the staff listener stays reachable there, the public
-  listener adds no isolation on that host) or on a second public name that points at the public
-  listener only? The design supports both; the second gives the isolation of decision 3.
+- Owner action before switching the public pages on at OVH: verify the header handling of
+  decision 6 on the host Caddy.
 
-## Code (planned)
-`backend/config/urls_public.py`, `backend/apps/ops/{api,schemas}.py`, `infra/docker-compose.yml`,
-`infra/Caddyfile`, `infra/edge/` (Phase 6), `frontend/src/lib/site.ts`, `frontend/src/app/routes.tsx`.
+## Code
+Phase 1: `backend/apps/core/{models,services,api,schemas}.py` (`PublicSiteSettings`),
+`backend/apps/ops/{api,schemas}.py`, `backend/apps/portal/{api,services,conf}.py`,
+`frontend/src/lib/site.ts`, `frontend/src/app/routes.tsx`. Phase 6: `infra/edge/`,
+`docs/runbooks/public-edge.md`, `infra/tests`.

@@ -4,6 +4,12 @@ Status: PLAN ONLY. Nothing in this document has been executed. It is an enhanced
 rewrite of the original request, grounded in the code on `main` as of 2026-10-29. Claude Code
 executes it phase by phase with the `ship-feature` skill; Musab reviews Phase 0 before any code.
 
+**Amended 2026-10-29 by the owner's Phase 0 review.** Where this plan and ADRs 0028 / 0029 differ,
+the ADRs win. In particular: one domain and one host serve the website, booking, the portal and
+the staff app (no public listener, no separate public name); the edge of D1 and Phase 6 is for
+LAN-only installs; `core.manage_public_site` (not `core.manage_settings`) edits the site settings;
+`require_approval` is seeded off on an existing install.
+
 Read first, in order: `CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/FLOW.md`, ADRs 0005, 0016, 0023,
 0027. Every rule in them stays binding. Where this plan extends a rule it says so and names the ADR
 that must record it.

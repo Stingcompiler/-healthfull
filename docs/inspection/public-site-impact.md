@@ -6,6 +6,11 @@ below; no application code, migration, server or deployment was touched. Where a
 the owner's settled decisions in section 7), ADR 0028 (topology) and ADR 0029 (booking and site).
 Paths are relative to the repository root; `file:N` is a line on `e26929b`.
 
+**Owner review, 2026-10-29.** The owner decided the open items of section 7 (one domain and one
+host, no public listener; `require_approval` seeded off for existing installs; guest data left in
+the append-only history accepted; the proposed numbers accepted). Sections 4, 6 and 7 are updated
+to match; ADR 0028 and 0029 are accepted.
+
 ## 1. The plan's section 0 table, re-verified
 
 Every row of the plan's table holds, with the corrections noted. "Where" cites the code.
@@ -74,7 +79,7 @@ Every row of the plan's table holds, with the corrections noted. "Where" cites t
   - The constraint WHERE clause names `requested`, so `REQUESTED` and the constraint belong in one migration (the plan puts the status in Phase 4 but the constraint in Phase 3; see section 4, contradiction 2). `choice_check("status", ...)` (`models.py:270`) must also change.
   - `pghistory` tracks `Appointment` (`@track_history()`, `models.py:217`); the event table copies columns but not constraints, so the constraint does not touch it.
 
-**Verdict:** safe, provided the migration pre-checks and reports conflicts. No product change to staff booking is needed because overbooking is not a feature today. If reception wants an "urgent double-book", that would be a new, audited override and would conflict with this constraint; ask the owner once (open item 2).
+**Verdict:** safe, provided the migration pre-checks and reports conflicts. No product change to staff booking is needed because overbooking is not a feature today. If reception wants an "urgent double-book", that would be a new, audited override and would conflict with this constraint; ask the owner once (section 7, still open item 1).
 
 ### (b) Permission guarding the center page, and the migration for `core.manage_public_site`
 
@@ -175,10 +180,13 @@ the order (staff session, then center site, then vendor page, then sign-in) and 
    `GET|POST /api/portal/patients/{id}/access-codes`, `POST /api/portal/access-codes/{id}/revoke`
    (`backend/apps/portal/api.py:232-330`, `auth=session_auth`). A path rule `/api/portal/*` at an
    edge would expose them to the internet (they still need a staff cookie, but they should not be
-   reachable at all). ADR 0028 decision 3 allowlists per operation.
+   reachable at all). The LAN edge of ADR 0028 (decision 3, Phase 6) allowlists exact paths; on an
+   internet-facing deployment they stay reachable on the one host and are protected by
+   `session_auth` and their permission, like every staff route.
 6. **CSRF for public POSTs** comes from `GET /api/auth/csrf` today (`frontend/src/lib/api/csrf.ts`,
    `frontend/src/portal/api.ts:53`), so an edge that refuses `/api/auth/*` (the plan's list) would
-   break every public POST. ADR 0028 adds a portal-namespace CSRF endpoint.
+   break every public POST. The LAN edge of ADR 0028 lists `GET /api/auth/csrf` as an exact path;
+   an internet-facing deployment serves it as today.
 7. **Client address behind proxies**: `client_ip` trusts the leftmost `X-Forwarded-For` only when
    `DJANGO_TRUST_X_FORWARDED_FOR=1` (`backend/apps/core/services.py:96-106`,
    `backend/config/settings.py:223`). The per-address limits that guest booking relies on are only
@@ -209,22 +217,24 @@ the order (staff session, then center site, then vendor page, then sign-in) and 
    guest reschedules (the old row becomes `rescheduled`, a new row is created). ADR 0029 D: the
    access belongs to the chain and is moved in the same transaction.
 5. **Edge allowlist** `/api/portal/*` includes staff-session operations (fact 5) and omits the CSRF
-   endpoint (fact 6). Per-operation allowlist in ADR 0028.
+   endpoint (fact 6). Exact-path allowlist for the LAN edge in ADR 0028 decision 3 (Phase 6 only).
 6. **Exclusion violation mapping** through `DB_GUARD_CODES` does not work (finding a).
 7. **Approval default changes existing behavior.** Decision 2 applies "every online booking" to
    registered patients too, so after Phase 4 an install that already uses portal booking
-   (instant `booked` today, `backend/apps/portal/tests/test_booking.py:81`) starts asking reception
-   to approve. That is the owner's decision, but the migration default for *existing* installs is
-   unspecified. Open item 3.
+   (instant `booked` today, `backend/apps/portal/tests/test_booking.py:81`) would start asking
+   reception to approve. **Decided 2026-10-29:** the Phase 1 migration seeds `require_approval`
+   off on an existing install (at least one `patients.Patient` row when it runs) and on on a new
+   install (ADR 0029 K1).
 8. **Topology wording.** Section 7.1 says the feature works on a plain internet-facing deployment;
-   plan D1 and Phase 6 describe only the tunnel. The OVH host serves staff and visitors on one name,
-   so the "public listener only" isolation of ADR 0028 applies to OVH only if the center site is on a
-   second public name. Open item 1.
+   plan D1 and Phase 6 describe only the tunnel. **Decided 2026-10-29:** one domain, one host, one
+   process; no public listener; security from app-level enforcement (ADR 0028 decision 3). The
+   tunnel and its exact-path allowlist are Phase 6, for LAN installs only.
 9. **Maintenance cadence:** the plan says `maintenance` expires requests; it is hourly (fact 2).
 10. **`seed_e2e` / `seed_demo`** must fill the new settings and content (ADR 0023 did the same);
     not mentioned in the plan.
-11. **Phase 6 sequence:** `infra/edge` is listed last, but the public listener and the `ops/site`
-    change (finding c) are Phase 1 work; moved there in section 6.
+11. **Phase 6 sequence:** `infra/edge` is listed last, but the `ops/site` change (finding c) is
+    Phase 1 work; moved there in section 6. With no public listener (ADR 0028 decision 3), Phase 1
+    has no infrastructure change at all.
 
 ## 5. Existing tests that must change
 
@@ -232,7 +242,7 @@ Grouped by the phase that changes them. "Add" means a new case in an existing fi
 means an existing assertion is wrong after the change. Counts are not given: they come from the
 real run in each phase.
 
-**Phase 1 (switches, public listener, `center-identity`, `ops/site`)**
+**Phase 1 (switches, `center-identity`, `ops/site`; no public listener)**
 - `backend/api/tests/test_main.py:145` (pinned operation ids), `:190-210` (public operation set),
   `:223-259` (`OPEN_OPERATIONS` allowlist): add the new public operations.
 - `backend/api/tests/test_permission_sweep.py:44-58` (`PUBLIC`), `:149` (what an anonymous client
@@ -305,29 +315,45 @@ production at each stop, and so that the owner sees real behavior before the ris
 
 | Train | Phases | What the owner gets | Why it stops there |
 |---|---|---|---|
-| **A** | 1, 2, 3 | Switches and the public listener; the full center website; availability hardening (time off, `online_bookable`, exclusion constraint, `requested` support, portal reschedule). Booking behaves as today (registered patients only, instant) until train B because nothing creates `requested` rows yet. | Ships the website and fixes double-booking risk with no new public write path. Everything stays off by default. The migration risk (constraint, permission data migration) is exercised on the demo first. |
-| **B** | 4 | Guest booking, approval by reception, the inbox, abuse limits, the `wa.me` buttons, retention. `require_approval` takes effect for registered patients too. | The first anonymous write path. Needs the owner's review of approval defaults for existing installs and of the limits. |
+| **A** | 1, 2, 3 | Switches and their enforcement; the full center website; availability hardening (time off, `online_bookable`, exclusion constraint, `requested` support, portal reschedule). Booking behaves as today (registered patients only, instant) until train B because nothing creates `requested` rows yet. | Ships the website and fixes double-booking risk with no new public write path. Everything stays off by default. The migration risk (constraint, permission data migration) is exercised on the demo first. |
+| **B** | 4 | Guest booking, approval by reception, the inbox, abuse limits, the `wa.me` buttons, retention. `require_approval` takes effect for registered patients too (on for new installs; existing installs were seeded off in Phase 1). | The first anonymous write path. |
 | **C** | 5 | Patient tracking: visit timeline, status mapping, notices. | Read-only on existing data; independent of B. |
 | (LAN only) | 6 | Edge, tunnel, runbook, guides. | Only for centers without a public server; an internet-facing deployment (OVH) skips it. |
 
-Dependencies to respect: the public listener and the `ops/site` change are in train A (Phase 1),
-not Phase 6 as the plan's order implied; `REQUESTED` and the constraint ship together in Phase 3
+Dependencies to respect: the `ops/site` change is in train A (Phase 1), not Phase 6 as the plan's
+order implied; there is no public listener in any phase (ADR 0028 decision 3); `REQUESTED` and the constraint ship together in Phase 3
 (train A); the guides (reception inbox, administrator) ship with the phase that adds the screens,
 and Phase 6 only adds the edge runbook. Each phase still ships with `ship-feature` and is its own PR.
 
-## 7. Open items for the owner
+## 7. Owner decisions and remaining open items
 
-1. **OVH topology:** center website on the same public name as staff today, or on a second name that
-   points only at the public listener (ADR 0028, last consequence)?
-2. **Urgent double-booking:** is there any real need for staff to overbook a slot? If yes, it needs a
-   separate audited override and a different constraint design; if no, nothing changes.
-3. **Existing installs and approval:** should the migration seed `require_approval` off for a center
-   that already takes instant portal bookings, so nothing changes until the administrator turns it on?
-4. **Guest data retention:** the anonymize-in-place rule leaves earlier copies in the append-only
-   appointment history (ADR 0029 G). Acceptable?
-5. **Proposed numbers to confirm or change:** pending requests per doctor per day 10, requests per
-   address per day 5, proof-of-work 18 bits, minimum review window 30 minutes, guest retention 90 days.
-6. **Tunnel provider** for LAN installs (WireGuard to a vendor VPS recommended; a managed tunnel is the alternative).
-7. **Not verified in Phase 0 (no server access, by instruction):** the OVH host Caddy and compose
-   Caddy forwarding headers; whether production or demo data contains overlapping booked
-   appointments; the `portal_event` trigger's behavior on ALTER; contrib extensions in the Postgres image.
+### Decided by the owner on 2026-10-29 (binding)
+
+1. **Topology:** the center website, booking, the patient portal and the staff app stay under
+   **one** domain on **one** host (for example `healtfull.stingdev.pro` serves everything). No
+   separate public hostname, no separate public listener, no network isolation on the OVH
+   deployment. Security comes from app-level enforcement (switches, authentication separation,
+   throttles). The exact-path allowlist survives only as the optional edge configuration for LAN
+   installs (Phase 6). ADR 0028 decision 3.
+2. **Existing installs and approval:** `require_approval` is on for a new install; the Phase 1
+   migration seeds it off for an existing install, detected as "the `patients.Patient` table holds
+   at least one row when the migration runs" (the migration depends on the latest `patients`
+   migration; a fresh install migrates an empty database before any seed). Registered patients
+   keep booking instantly until the administrator turns approval on. ADR 0029 K1.
+3. **Guest data retention:** the anonymize-in-place purge leaves earlier copies of a guest's name
+   and phone in the append-only appointment history. Accepted and documented. ADR 0029 G, K3.
+4. **Defaults accepted, all editable by the administrator in the settings row:** pending requests
+   per doctor per day 10, requests per address per day 5, proof-of-work 18 bits, guest retention 90
+   days, minimum review window 30 minutes. ADR 0029 K4.
+
+### Still open
+
+1. **Urgent double-booking:** is there any real need for staff to overbook a slot? If yes, it needs a
+   separate audited override and a different constraint design; if no, nothing changes. Needed
+   before Phase 3.
+2. **Tunnel provider** for LAN installs (WireGuard to a vendor VPS recommended; a managed tunnel is
+   the alternative). Needed before Phase 6.
+3. **Not verified (no server access, by instruction):** the OVH host Caddy and compose Caddy
+   forwarding headers (ADR 0028 decision 6, to check before the public switches go on at OVH);
+   whether production or demo data contains overlapping booked appointments; the `portal_event`
+   trigger's behavior on ALTER; contrib extensions in the Postgres image.

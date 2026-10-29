@@ -749,5 +749,7 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   CTA count, real sign-in, weight, contact) and `@auth`, sign-in/login responsive all passed.
 - 2026-10-29: public site work order, Phase 0 (docs only) on `docs/public-site-phase0`: ADRs 0028 and 0029
   (proposed), `docs/inspection/public-site-impact.md`, FEATURES 15.3-15.5 (SMS renumbered to 15.5), FLOW
-  step 1 subsection. Stops for the owner's review before Phase 1 (release trains A: phases 1-3, B: phase 4,
-  C: phase 5, phase 6 for LAN installs only). No application code, migration or server touched.
+  step 1 subsection. Release trains A: phases 1-3, B: phase 4, C: phase 5, phase 6 for LAN installs only.
+  No application code, migration or server touched. Owner review the same day: one domain and one host
+  (no public listener), `require_approval` seeded off for existing installs (any `patients.Patient` row),
+  guest history retention accepted, default limits accepted; ADRs 0028 and 0029 accepted.

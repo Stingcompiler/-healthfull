@@ -4,7 +4,7 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
 ### Docs
-- Phase 0 of the public website, online booking and patient tracking work order (`docs/PUBLIC-SITE-PLAN.md`): ADR 0028 (public listener, optional edge, root `/` precedence) and ADR 0029 (guest and patient booking, approval, abuse limits, site content), impact analysis `docs/inspection/public-site-impact.md`, FEATURES 2.5 / 15.2-15.5 and a FLOW note. Proposed, awaiting the owner's review; no code changed.
+- Phase 0 of the public website, online booking and patient tracking work order (`docs/PUBLIC-SITE-PLAN.md`): ADR 0028 (one domain and one host, app-level enforcement, optional LAN edge, root `/` precedence) and ADR 0029 (guest and patient booking, approval, abuse limits, site content), impact analysis `docs/inspection/public-site-impact.md`, FEATURES 2.5 / 15.2-15.5 and a FLOW note. Accepted with the owner's decisions of 2026-10-29 (no public listener; `require_approval` seeded off for existing installs; guest history retention accepted; default limits accepted); no code changed.
 ### Changed
 - Public center page (/portal) redesigned for phones and large screens: one identity hero with the open/closed status and the next opening, a 1200px two-column layout from lg (notices, doctor cards and departments beside today's hours, contact and a how-to-sign-in guide), quick actions and a sticky bottom bar on phones, calm sparse-data states, labelled header controls (D-0020).
 ### Fixed (pre-trial, inspection of October 2026)

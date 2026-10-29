@@ -1,13 +1,13 @@
 # 0029: Online booking for patients and guests, approval by reception, and the public website
 
-Date: 2026-10-29. Status: proposed (Phase 0 of `docs/PUBLIC-SITE-PLAN.md`, awaiting the owner's
-review). Extends 0016 (portal) and 0023 (center page) without weakening their rules; related: 0005
+Date: 2026-10-29. Status: accepted (Phase 0 of `docs/PUBLIC-SITE-PLAN.md`, decided by the owner
+on 2026-10-29). Extends 0016 (portal) and 0023 (center page) without weakening their rules; related: 0005
 (abuse control), 0028 (how the public reaches a center), 0021 (notifications).
 
 Markers: **[SETTLED]** is the owner's decision (plan section 7 and the Phase 0 brief, binding).
-**[DESIGN DECISION, owner may veto]** is a recommendation adopted from the Phase 0 review. Anything
-unmarked follows from those. Numbers marked "proposed" are starting defaults, editable in the
-settings row.
+**[DECIDED 2026-10-29]** is a Phase 0 recommendation the owner reviewed and accepted on
+2026-10-29 (section K lists those decisions). Anything unmarked follows from those. Every number
+below is a default, editable by the administrator in the settings row.
 
 ## Context
 `main` already has a public center page, a patient portal with doctor-day-slot booking for
@@ -23,8 +23,9 @@ evidence with file and line citations.
 ### A. What is settled [SETTLED]
 1. **Switches.** `site_enabled` and `online_booking_enabled` (and `patient_tracking_enabled`) are
    administrator switches, default off, enforced in services and routers (0028 decision 1).
-2. **Approval.** `require_approval` defaults **on**. An online booking, **by a signed-in patient or
-   a guest**, enters `requested` and becomes `booked` only when reception approves.
+2. **Approval.** `require_approval` defaults **on** for a new install. An online booking, **by a
+   signed-in patient or a guest**, enters `requested` and becomes `booked` only when reception
+   approves. An existing install is seeded **off** (section K, decision 1).
 3. **Both registered-patient booking and guest booking ship in V1.** Guests need no file. Cap: 2
    open guest bookings per phone (`max_guest_bookings_per_phone`, editable). No automatic phone
    blocking for no-shows in V1.
@@ -59,7 +60,7 @@ evidence with file and line citations.
   behalf), `core.approve_testimonial`. The center page and its notices are guarded today by
   `core.manage_settings` (`backend/apps/core/api.py` lines 410-470); they move to
   `core.manage_public_site`, while `core.manage_settings` keeps the center profile and policy.
-- **[DESIGN DECISION, owner may veto] Permission migration keeps every grant.** A data migration
+- **[DECIDED 2026-10-29] Permission migration keeps every grant.** A data migration
   gives `core.manage_public_site` to **every role that holds `core.manage_settings`**, computed as
   the *effective* grant (default roles `admin` and `manager`, with `RolePermission` overrides
   applied), so a role the administrator had granted the old code (for example a receptionist) keeps
@@ -83,7 +84,7 @@ evidence with file and line citations.
   trigger message, so it does not go through `DB_GUARD_CODES` (which is checked against
   `pg_proc`); the booking service catches the violation and raises `APPOINTMENT_CONFLICT`, and the
   generic `IntegrityError` handler (`409 CONFLICT`) stays as the last resort.
-- **[DESIGN DECISION, owner may veto] The constraint migration pre-checks live data.** Before
+- **[DECIDED 2026-10-29] The constraint migration pre-checks live data.** Before
   adding the constraint the migration queries for overlapping `booked` rows per doctor and, if any
   exist, **fails with a message that lists them** (doctor, both appointment ids, both times)
   instead of Postgres's bare constraint error, and changes nothing. The administrator resolves
@@ -97,7 +98,7 @@ evidence with file and line citations.
   notifies. Approval of an expired request is refused (`ONLINE_REQUEST_EXPIRED`) whether or not
   the sweep has run.
 - **Minimum review window.** A booking is refused when `expires_at - now` would be under 30
-  minutes (proposed), so a request cannot be created already expired (`starts_at - lead` is at
+  minutes (`min_review_minutes`, default 30, editable), so a request cannot be created already expired (`starts_at - lead` is at
   least "now" by the lead rule, so a slot just past the lead time would otherwise have a zero
   window).
 - Idempotency: public booking POSTs require an `Idempotency-Key` (UUID); same key and same body
@@ -129,39 +130,41 @@ and the time (invariant 4); expiry is the system actor with reason `ONLINE_REQUE
 (the constraint names the value). A booking creates **no** patient, visit, service line, invoice
 or payment (asserted by row counts), so the seven invariants are untouched.
 
-### F. [DESIGN DECISION, owner may veto] Abuse limits for guest booking
+### F. [DECIDED 2026-10-29] Abuse limits for guest booking
 Guests are anonymous and the phone is unverified, so the per-phone cap alone is spoofable (change a
-digit). Added limits, all editable in the settings row, with proposed defaults:
-- **Pending requests per doctor per day:** at most 10 `requested` rows for one doctor on one
+digit). Added limits, all editable in the settings row, with the defaults the owner accepted:
+- **Pending requests per doctor per day:** at most 10 (`max_pending_per_doctor_day`) `requested` rows for one doctor on one
   day; further attempts are refused with `ONLINE_DOCTOR_DAY_FULL`, so a flood cannot lock a whole
   day out of real patients.
-- **Requests per client address per day:** at most 5 (the address is `client_ip`, which needs the
+- **Requests per client address per day:** at most 5 (`max_requests_per_address_day`; the address is `client_ip`, which needs the
   proxy configuration of 0028 decision 6), on top of the existing per-address 429 limits.
 - **Bulk "reject all from this phone".** An inbox action that rejects every open request with the
   same normalized phone in one audited operation (one reason code, one note, the actor, the time on
   each row). It does not block the phone; automatic blocking stays out of V1 as decided.
 - **Offline proof-of-work instead of a CAPTCHA.** The booking form asks `GET /api/portal/challenge`
   (a signed, expiring, single-use challenge) and the browser finds a nonce so that
-  `SHA-256(challenge + nonce)` has N leading zero bits (proposed 18, adjustable, raised for an
+  `SHA-256(challenge + nonce)` has N leading zero bits (`pow_difficulty_bits`, default 18, adjustable, raised for an
   address that is near its caps); the POST carries challenge and nonce and the server verifies in
   constant time. No third-party service, so it works on a LAN and offline. Two honest limits: it
   slows scripted floods, it does not stop a determined attacker (the caps, reception review and
   expiry are the real defense); and `crypto.subtle` exists only in secure contexts, while a LAN
   install may serve plain HTTP, so the hash runs in a bundled pure-JavaScript SHA-256 in a worker.
 
-### G. [DESIGN DECISION, owner may veto] Staff actions and retention
+### G. [DECIDED 2026-10-29] Staff actions and retention
 - **Reissue guest PIN** (inbox, reason required, audited): the old PIN stops working, a new one is
   shown once to the staff member, who reads it to the guest.
 - **Cancel on behalf** of a booker (reason code and note), the same service as any cancellation.
-- **Retention.** `guest_retention_days` (proposed 90, editable): the hourly `maintenance` anonymizes
+- **Retention.** `guest_retention_days` (default 90, editable): the hourly `maintenance` anonymizes
   guest bookings that were never linked to a file and ended `cancelled` or `expired` more than that
   long ago (`contact_name` replaced by a fixed placeholder so the has-person check still holds,
   `contact_phone` and `notes` cleared, `GuestBookingAccess` deleted), and writes one `PortalEvent`
   with counts only. **Limit, stated plainly:** the appointment history table
   (`visits_appointmentevent`) is append-only by trigger (ARCHITECTURE 4.9), so the earlier copies
-  of the name and phone in that history are not erased. Whether that satisfies the center's data
-  duty is the owner's call; the alternative (exclude the contact fields from tracking for guest
-  rows, or lift the trigger for this one purge) costs audit integrity and is not proposed.
+  of the name and phone in that history are not erased. **The owner accepted this on 2026-10-29**
+  (section K, decision 3): audit integrity wins over erasing the earlier copies. The alternatives
+  (exclude the contact fields from tracking for guest rows, or lift the trigger for this one purge)
+  are not built. The administrator guide states that guest names and phones remain in the
+  appointment history after the purge.
 - **The confirmation screen shares the reference** with a `wa.me` link
   (`https://wa.me/?text=<message with the reference>`) so the guest can send it to themselves or
   family. The message contains the reference and the center's page address, **never the PIN**.
@@ -188,12 +191,31 @@ inbox: they have the reference and the WhatsApp message reception may send.
 Branches; online payment and fee display; service-level booking (lab, procedures: V1 books doctor
 consultation slots only); SMS and e-mail; map embeds; automatic blocking by no-show.
 
+### K. Owner decisions of 2026-10-29 (binding)
+1. **`require_approval` on a new install versus an existing one.** The Phase 1 data migration that
+   creates the `PublicSiteSettings` row seeds `require_approval = true` on a **new install** and
+   `require_approval = false` on an **existing install**, so registered patients of a center that
+   already uses portal booking keep booking instantly until the administrator turns approval on.
+   **Detection:** the migration counts the rows of `patients.Patient` (table `patients_patient`)
+   at the moment it runs. One or more rows = existing install (a center that has registered at
+   least one patient already has data); zero rows = new install. The migration depends on the
+   latest `patients` migration, so the table always exists when it counts. A fresh install runs
+   every migration on an empty database before any seed command (`seed_demo`, `seed_e2e`,
+   `createsuperuser`), so it always sees zero patients and gets `true`. The migration runs once:
+   later changes of the patient count do not touch the row; only the administrator does.
+2. **Topology** (ADR 0028 decision 3): website, booking, portal and staff app on one name and one
+   host; no public listener; security from the switches, authentication separation and throttles.
+3. **Guest data in the append-only appointment history** after the retention purge: accepted and
+   documented (section G).
+4. **Defaults accepted**, every one editable by the administrator in the settings row:
+   `max_pending_per_doctor_day` 10, `max_requests_per_address_day` 5, `pow_difficulty_bits` 18,
+   `guest_retention_days` 90, `min_review_minutes` 30.
+
 ## Consequences
-- Existing portal booking changes behavior on upgrade: with `require_approval` on by default, a
-  signed-in patient's booking is now `requested`, not `booked`. The data migration seeds the
-  settings row so that an install which already uses portal booking is told in the release notes;
-  the owner may prefer to seed `require_approval = false` for existing installs (open question in
-  the impact document).
+- Existing portal booking keeps its behavior on upgrade: an existing install is seeded with
+  `require_approval = false` (K1), so signed-in patients still book instantly until the
+  administrator turns approval on in `/administration/public-site`. A new install starts with
+  approval on. The release notes say both.
 - New or changed tests are listed per phase in `docs/inspection/public-site-impact.md`.
 - Limitations for handover: no SMS/e-mail; guest phone unverified until arrival; consultation slots
   only; the site is down when the center's internet is down (fallback page only); no online payment.
