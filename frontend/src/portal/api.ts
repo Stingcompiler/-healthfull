@@ -117,6 +117,21 @@ export function useBookAppointment() {
   });
 }
 
+export function useRescheduleAppointment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: { doctor_id: number; starts_at: string } }) =>
+      unwrap(
+        api.POST("/api/portal/appointments/{appointment_id}/reschedule", {
+          params: { path: { appointment_id: id } },
+          body,
+        }),
+      ),
+    meta: PORTAL_META,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: portalKeys.all }),
+  });
+}
+
 export function useCancelAppointment() {
   const queryClient = useQueryClient();
   return useMutation({

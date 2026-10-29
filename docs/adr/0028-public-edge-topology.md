@@ -121,6 +121,12 @@ closed: with the tunnel down nothing else is reachable. The edge is opt-in per c
 Phase 6, and is **not used** on an internet-facing deployment, where the host's own name already
 serves the whole app (decision 3).
 
+**[DECIDED 2026-10-29, owner] Tunnel provider: WireGuard to the vendor's OVH host.** For a
+LAN-only install that wants the public site, the center's server opens a WireGuard tunnel to the
+vendor's existing OVH host, whose Caddy is the edge of this decision. No managed third-party
+tunnel (Cloudflare Tunnel or similar) is used. Built in Phase 6; nothing changes before then.
+This closes open item 2 of `docs/inspection/public-site-impact.md`.
+
 ARCHITECTURE section 8 is amended by this sentence: *the application itself makes no outbound
 request; an optional tunnel process outside the application may carry inbound traffic to it.* The
 rule "no runtime internet dependency" is otherwise unchanged: the pages work on the LAN with the

@@ -146,6 +146,10 @@ def _patient_paths(world: dict[str, Any]) -> dict[str, tuple[str, str]]:
             "post",
             f"/api/portal/appointments/{a['appointment']['id']}/cancel",
         ),
+        "portal_reschedule_appointment": (
+            "post",
+            f"/api/portal/appointments/{a['appointment']['id']}/reschedule",
+        ),
         "portal_list_doctors": ("get", "/api/portal/doctors"),
         "portal_list_booking_days": ("get", "/api/portal/doctors/1/days"),
         "portal_list_slots": ("get", "/api/portal/doctors/1/slots?on=2026-10-10"),

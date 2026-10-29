@@ -52,6 +52,7 @@ from apps.portal.schemas import (
     PortalPrescriptionsOut,
     PortalReceiptDetailOut,
     PortalReceiptOut,
+    PortalRescheduleIn,
     PortalResultOut,
     PortalResultSummaryOut,
     PortalRevokeCodeIn,
@@ -429,8 +430,10 @@ def list_appointments(request: HttpRequest) -> Any:
     operation_id=_patient_op("portal_book_appointment"),
     summary="Book a free slot of a doctor's schedule",
     description=(
-        "409 `ONLINE_BOOKING_DISABLED`, `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, "
-        "`PORTAL_ALREADY_BOOKED`, `APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule."
+        "Status `requested` (waiting for reception) while approval is required, else "
+        "`booked`. 409 `ONLINE_BOOKING_DISABLED`, `PORTAL_SLOT_UNAVAILABLE`, "
+        "`PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, `ONLINE_REVIEW_WINDOW_TOO_SHORT`, "
+        "`APPOINTMENT_CONFLICT`; 404 for a doctor not offered online or without a schedule."
     ),
 )
 def book_appointment(request: HttpRequest, payload: PortalBookIn) -> Status[Any]:
@@ -442,12 +445,38 @@ def book_appointment(request: HttpRequest, payload: PortalBookIn) -> Status[Any]
 
 
 @portal_router.post(
+    "/appointments/{appointment_id}/reschedule",
+    auth=portal_auth,
+    response={201: PortalAppointmentOut, **_WRITE},
+    operation_id=_patient_op("portal_reschedule_appointment"),
+    summary="Move one's own confirmed booking to another free slot before the cut-off",
+    description=(
+        "The old booking becomes `rescheduled`; the answer is the new one (`requested` while "
+        "approval is required). 409 `ONLINE_BOOKING_DISABLED`, `PORTAL_RESCHEDULE_DISABLED`, "
+        "`PORTAL_RESCHEDULE_TOO_LATE`, `APPOINTMENT_NOT_BOOKED` and the booking refusals; "
+        "404 if not one's own or the doctor is not offered online."
+    ),
+)
+def reschedule_appointment(
+    request: HttpRequest, appointment_id: int, payload: PortalRescheduleIn
+) -> Status[Any]:
+    who = principal(request)
+    moved = services.reschedule_appointment(
+        who, appointment_id, starts_at=payload.starts_at, doctor_id=payload.doctor_id
+    )
+    return Status(201, queries.appointment(who, moved.pk))
+
+
+@portal_router.post(
     "/appointments/{appointment_id}/cancel",
     auth=portal_auth,
     response={200: PortalAppointmentOut, **_WRITE},
     operation_id=_patient_op("portal_cancel_appointment"),
     summary="Cancel one's own future appointment before the cut-off",
-    description="409 `PORTAL_CANCEL_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`; 404 if not one's own.",
+    description=(
+        "A confirmed booking or a request waiting for reception. 409 `PORTAL_CANCEL_TOO_LATE`, "
+        "`APPOINTMENT_NOT_BOOKED`; 404 if not one's own."
+    ),
 )
 def cancel_appointment(request: HttpRequest, appointment_id: int) -> Any:
     who = principal(request)

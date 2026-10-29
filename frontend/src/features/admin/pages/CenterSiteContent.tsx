@@ -332,7 +332,12 @@ export function CenterDoctorProfiles() {
                           pickName({ ar: d.department_ar, en: d.department_en }, language)}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                      {d.online_bookable ? (
+                        <Badge variant="info" data-testid="doctor-online-bookable">
+                          {t("centerPage.doctorProfiles.bookableBadge")}
+                        </Badge>
+                      ) : null}
                       <Badge variant={filled ? "success" : "neutral"}>
                         {filled ? t("centerPage.doctorProfiles.complete") : t("centerPage.doctorProfiles.incomplete")}
                       </Badge>
@@ -373,6 +378,7 @@ const doctorSchema = z.object({
   bio_ar: z.string().trim().max(400),
   bio_en: z.string().trim().max(400),
   photo: z.string(),
+  online_bookable: z.boolean(),
 });
 type DoctorValues = z.infer<typeof doctorSchema>;
 
@@ -390,6 +396,7 @@ function DoctorProfileDialog({ doctor, onClose }: { doctor: DoctorSiteProfileOut
       bio_ar: doctor.bio_ar,
       bio_en: doctor.bio_en,
       photo: doctor.photo_id === null ? "none" : String(doctor.photo_id),
+      online_bookable: doctor.online_bookable,
     },
   });
   return (
@@ -455,6 +462,16 @@ function DoctorProfileDialog({ doctor, onClose }: { doctor: DoctorSiteProfileOut
             label: pickName({ ar: m.alt_ar, en: m.alt_en }, language) || `#${String(m.id)}`,
           })),
         ]}
+      />
+      <SwitchField
+        control={form.control}
+        name="online_bookable"
+        label={t("centerPage.doctorProfiles.bookable")}
+        description={
+          doctor.has_schedule
+            ? t("centerPage.doctorProfiles.bookableHint")
+            : t("centerPage.doctorProfiles.bookableNoSchedule")
+        }
       />
     </FormDialog>
   );

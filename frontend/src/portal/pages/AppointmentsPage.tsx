@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, CalendarPlus } from "lucide-react";
+import { CalendarClock, CalendarDays, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -20,12 +20,17 @@ import type { PillTone } from "../lib/tones";
 import { usePick } from "../lib/ui";
 import type { PortalAppointment } from "../types";
 
-const STATUS_TONE: Record<PortalAppointment["status"], PillTone> = {
-  booked: "info",
-  arrived: "success",
-  no_show: "warning",
-  cancelled: "neutral",
-  rescheduled: "neutral",
+/** Patient-facing status (server `display_status`, plan section 5) and its tone. */
+const DISPLAY_TONE: Record<PortalAppointment["display_status"], PillTone> = {
+  awaiting_approval: "warning",
+  confirmed: "info",
+  received: "success",
+  moved: "neutral",
+  cancelled_by_you: "neutral",
+  cancelled_by_center: "neutral",
+  declined: "danger",
+  expired: "neutral",
+  missed: "warning",
 };
 
 function AppointmentCard({ appointment, upcoming }: { appointment: PortalAppointment; upcoming: boolean }) {
@@ -49,8 +54,36 @@ function AppointmentCard({ appointment, upcoming }: { appointment: PortalAppoint
             {pick(appointment.doctor.department_ar, appointment.doctor.department_en)}
           </p>
         </div>
-        <Pill tone={STATUS_TONE[appointment.status]}>{t(`appointments.status.${appointment.status}`)}</Pill>
+        <Pill tone={DISPLAY_TONE[appointment.display_status]}>
+          {t(`appointments.display.${appointment.display_status}`)}
+        </Pill>
       </div>
+      {upcoming && appointment.status === "requested" && appointment.expires_at ? (
+        <p className="text-xs text-pretty text-muted" data-testid="appointment-awaiting">
+          {t("appointments.awaitingHint", { time: formatDate(appointment.expires_at, language, "datetime") })}
+        </p>
+      ) : null}
+      {upcoming && appointment.can_reschedule && getSiteConfig().onlineBooking ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {appointment.reschedule_until ? (
+            <p className="text-xs text-muted">
+              {t("appointments.rescheduleUntil", {
+                time: formatDate(appointment.reschedule_until, language, "datetime"),
+              })}
+            </p>
+          ) : null}
+          <Button asChild variant="outline" size="sm">
+            <Link
+              to="/portal/appointments/$appointmentId/reschedule"
+              params={{ appointmentId: String(appointment.id) }}
+              data-testid="appointment-reschedule"
+            >
+              <CalendarClock aria-hidden="true" />
+              {t("appointments.reschedule")}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
       {upcoming ? (
         appointment.can_cancel && appointment.cancel_until ? (
           <div className="flex flex-wrap items-center justify-between gap-2">

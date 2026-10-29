@@ -30,7 +30,7 @@ interface BaseFieldProps<T extends FieldValues> {
 }
 
 export interface TextFieldProps<T extends FieldValues> extends BaseFieldProps<T> {
-  type?: "text" | "email" | "tel" | "number" | "search" | "url";
+  type?: "text" | "email" | "tel" | "number" | "search" | "url" | "date" | "time";
   placeholder?: string;
   autoComplete?: string;
   inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];

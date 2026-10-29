@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -23,6 +23,9 @@ const RANGES = {
   horizon_days: [1, 365],
   max_open: [1, 20],
   cancel_cutoff_hours: [0, 168],
+  reschedule_cutoff_hours: [0, 168],
+  request_ttl_hours: [1, 168],
+  min_review_minutes: [0, 1440],
 } as const;
 
 type RuleName = keyof typeof RANGES;
@@ -42,6 +45,11 @@ const schema = z.object({
   horizon_days: wholeIn(RANGES.horizon_days),
   max_open: wholeIn(RANGES.max_open),
   cancel_cutoff_hours: wholeIn(RANGES.cancel_cutoff_hours),
+  reschedule_allowed: z.boolean(),
+  reschedule_cutoff_hours: wholeIn(RANGES.reschedule_cutoff_hours),
+  require_approval: z.boolean(),
+  request_ttl_hours: wholeIn(RANGES.request_ttl_hours),
+  min_review_minutes: wholeIn(RANGES.min_review_minutes),
   reason: z.string().trim().min(1, vmsg("validation.required")).max(300),
 });
 type Values = z.infer<typeof schema>;
@@ -55,6 +63,11 @@ function toValues(row: PublicSiteSettingsOut): Values {
     horizon_days: String(row.horizon_days),
     max_open: String(row.max_open),
     cancel_cutoff_hours: String(row.cancel_cutoff_hours),
+    reschedule_allowed: row.reschedule_allowed,
+    reschedule_cutoff_hours: String(row.reschedule_cutoff_hours),
+    require_approval: row.require_approval,
+    request_ttl_hours: String(row.request_ttl_hours),
+    min_review_minutes: String(row.min_review_minutes),
     reason: "",
   };
 }
@@ -69,6 +82,11 @@ function toBody(values: Values): PublicSiteSettingsIn {
     horizon_days: Number(values.horizon_days),
     max_open: Number(values.max_open),
     cancel_cutoff_hours: Number(values.cancel_cutoff_hours),
+    reschedule_allowed: values.reschedule_allowed,
+    reschedule_cutoff_hours: Number(values.reschedule_cutoff_hours),
+    require_approval: values.require_approval,
+    request_ttl_hours: Number(values.request_ttl_hours),
+    min_review_minutes: Number(values.min_review_minutes),
   };
 }
 
@@ -132,6 +150,8 @@ function PublicSiteForm({ row }: { row: PublicSiteSettingsOut }) {
     { name: "max_open", label: t("admin:publicSite.maxOpen") },
     { name: "cancel_cutoff_hours", label: t("admin:publicSite.cutoff") },
   ];
+  const rescheduleOn = useWatch({ control: form.control, name: "reschedule_allowed" });
+  const approvalOn = useWatch({ control: form.control, name: "require_approval" });
 
   return (
     <Form {...form}>
@@ -197,6 +217,58 @@ function PublicSiteForm({ row }: { row: PublicSiteSettingsOut }) {
               />
             ))}
           </div>
+        </section>
+
+        <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="ps-approval">
+          <div>
+            <h2 id="ps-approval" className="font-semibold text-fg">
+              {t("admin:publicSite.approvalTitle")}
+            </h2>
+            <p className="text-sm text-pretty text-muted">{t("admin:publicSite.approvalHint")}</p>
+          </div>
+          <SwitchField
+            control={form.control}
+            name="require_approval"
+            label={t("admin:publicSite.requireApproval")}
+            description={t("admin:publicSite.requireApprovalHint")}
+          />
+          {approvalOn ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                control={form.control}
+                name="request_ttl_hours"
+                label={t("admin:publicSite.requestTtl")}
+                description={t("admin:publicSite.requestTtlHint")}
+                inputMode="numeric"
+                dir="ltr"
+              />
+              <TextField
+                control={form.control}
+                name="min_review_minutes"
+                label={t("admin:publicSite.minReview")}
+                description={t("admin:publicSite.minReviewHint")}
+                inputMode="numeric"
+                dir="ltr"
+              />
+            </div>
+          ) : null}
+          <SwitchField
+            control={form.control}
+            name="reschedule_allowed"
+            label={t("admin:publicSite.rescheduleAllowed")}
+            description={t("admin:publicSite.rescheduleAllowedHint")}
+          />
+          {rescheduleOn ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                control={form.control}
+                name="reschedule_cutoff_hours"
+                label={t("admin:publicSite.rescheduleCutoff")}
+                inputMode="numeric"
+                dir="ltr"
+              />
+            </div>
+          ) : null}
         </section>
 
         <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)">

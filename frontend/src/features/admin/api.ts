@@ -520,6 +520,33 @@ export function useSetSchedule() {
   );
 }
 
+// --- Doctor time off (ADR 0029 C) -----------------------------------------------------------
+
+const timeOffKey = (doctorId: number) => ["admin", "time-off", doctorId] as const;
+
+export function useTimeOff(doctorId: number) {
+  return useQuery({
+    queryKey: timeOffKey(doctorId),
+    queryFn: () =>
+      unwrap(api.GET("/api/visits/doctors/{doctor_id}/time-off", { params: { path: { doctor_id: doctorId } } })),
+  });
+}
+
+export function useAddTimeOff(doctorId: number) {
+  return useAdminMutation(
+    (body: { starts_at: string; ends_at: string; reason_ar: string; reason_en: string }) =>
+      unwrap(api.POST("/api/visits/doctors/{doctor_id}/time-off", { params: { path: { doctor_id: doctorId } }, body })),
+    [timeOffKey(doctorId)],
+  );
+}
+
+export function useRemoveTimeOff(doctorId: number) {
+  return useAdminMutation(
+    (id: number) => unwrap(api.DELETE("/api/visits/time-off/{time_off_id}", { params: { path: { time_off_id: id } } })),
+    [timeOffKey(doctorId)],
+  );
+}
+
 // --- Reason codes -----------------------------------------------------------------------------
 
 export function useReasonCodes(category?: ReasonCategory) {

@@ -94,9 +94,13 @@ def seed_center_page(author: User) -> None:
 
 
 def seed_public_site(author: User) -> None:
-    """Every public switch on (a new install starts with them off)."""
+    """Every public switch on (a new install starts with them off), and booking instant like
+    an existing install (approval off, ADR 0029 K1); specs that need approval switch it on."""
     PublicSiteSettings.load()
     with pghistory.context(user=author.pk, reason="public site: sample dataset"):
         PublicSiteSettings.objects.filter(pk=PublicSiteSettings.SINGLETON_PK).update(
-            site_enabled=True, online_booking_enabled=True, patient_tracking_enabled=True
+            site_enabled=True,
+            online_booking_enabled=True,
+            patient_tracking_enabled=True,
+            require_approval=False,
         )

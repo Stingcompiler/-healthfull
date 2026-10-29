@@ -24,6 +24,7 @@
     "no_show": "Not present"
   },
   "appointmentStatus": {
+    "requested": "Online request",
     "booked": "Booked",
     "arrived": "Arrived",
     "cancelled": "Cancelled",
@@ -204,6 +205,12 @@
     "noShowConfirm": "The {{time}} appointment of {{name}} will be marked as a no show.",
     "loadFailed": "The appointments could not be loaded",
     "freeSlots_one": "1 free slot",
-    "freeSlots_other": "{{count}} free slots"
+    "freeSlots_other": "{{count}} free slots",
+    "approve": "Approve",
+    "decline": "Decline",
+    "declineTitle": "Decline this online request?",
+    "declined": "The request was declined.",
+    "approved": "The booking is confirmed.",
+    "requestExpires": "Waiting for reception; lapses at {{time}}."
   }
 }

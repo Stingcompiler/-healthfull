@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarPlus,
   CalendarX2,
+  Check,
   CheckCircle2,
   DoorOpen,
   MoreHorizontal,
@@ -41,11 +42,12 @@ import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
 
-import { useAgenda, useAppointmentNoShow, useVisitOptions } from "../api";
+import { useAgenda, useAppointmentNoShow, useApproveOnlineBooking, useVisitOptions } from "../api";
 import {
   BookAppointmentDialog,
   CancelAppointmentDialog,
   CheckInDialog,
+  RejectOnlineBookingDialog,
   RescheduleDialog,
   type BookSlot,
 } from "../components/AppointmentDialogs";
@@ -54,6 +56,7 @@ import { useDeviceChoice } from "../lib";
 import type { AgendaItem, Appointment } from "../types";
 
 const STATUS_VARIANT = {
+  requested: "warning",
   booked: "info",
   arrived: "success",
   cancelled: "outline",
@@ -78,6 +81,9 @@ export function AppointmentsPage() {
   const noShow = useAppointmentNoShow();
   const canCheckIn = usePermission("visits.create");
   const canBook = usePermission("visits.manage_appointments");
+  const canReview = usePermission("visits.manage_online_bookings");
+  const approve = useApproveOnlineBooking();
+  const [declining, setDeclining] = useState<Appointment | null>(null);
 
   const [booking, setBooking] = useState<BookSlot | null>(null);
   const [rescheduling, setRescheduling] = useState<Appointment | null>(null);
@@ -88,6 +94,15 @@ export function AppointmentsPage() {
 
   const items = agenda.data?.items ?? [];
   const groups = useMemo(() => groupFreeSlots(agenda.data?.items ?? []), [agenda.data]);
+
+  const approveRequest = async (a: Appointment) => {
+    try {
+      await approve.mutateAsync(a.id);
+      toast.success(t("appointments.approved"));
+    } catch (e) {
+      toast.error(translateError(toApiError(e)));
+    }
+  };
 
   const markNoShow = async (a: Appointment) => {
     try {
@@ -226,6 +241,9 @@ export function AppointmentsPage() {
                     appointment={group.appointment}
                     canCheckIn={canCheckIn}
                     canManage={canBook}
+                    canReview={canReview}
+                    onApprove={(a) => void approveRequest(a)}
+                    onDecline={setDeclining}
                     onCheckIn={setCheckingIn}
                     onReschedule={setRescheduling}
                     onCancel={setCancelling}
@@ -290,6 +308,12 @@ export function AppointmentsPage() {
           if (!open) setCancelling(null);
         }}
       />
+      <RejectOnlineBookingDialog
+        appointment={declining}
+        onOpenChange={(open) => {
+          if (!open) setDeclining(null);
+        }}
+      />
       <CheckInDialog
         appointment={checkingIn}
         onOpenChange={(open) => {
@@ -352,6 +376,9 @@ function AppointmentRow({
   appointment: a,
   canCheckIn,
   canManage,
+  canReview,
+  onApprove,
+  onDecline,
   onCheckIn,
   onReschedule,
   onCancel,
@@ -361,6 +388,9 @@ function AppointmentRow({
   appointment: Appointment;
   canCheckIn: boolean;
   canManage: boolean;
+  canReview: boolean;
+  onApprove: (a: Appointment) => void;
+  onDecline: (a: Appointment) => void;
   onCheckIn: (a: Appointment) => void;
   onReschedule: (a: Appointment) => void;
   onCancel: (a: Appointment) => void;
@@ -398,6 +428,11 @@ function AppointmentRow({
           ) : null}
         </span>
         {a.notes ? <p className="text-sm break-words text-fg">{a.notes}</p> : null}
+        {a.status === "requested" && a.expires_at ? (
+          <p className="text-xs text-muted" data-testid="request-expires">
+            {t("appointments.requestExpires", { time: formatDate(a.expires_at, language, "datetime") })}
+          </p>
+        ) : null}
         {a.status === "cancelled" && (a.cancel_reason || a.cancel_note) ? (
           <p className="text-xs break-words text-muted">
             {t("appointments.cancelledBecause", {
@@ -466,6 +501,30 @@ function AppointmentRow({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
+        </div>
+      ) : a.status === "requested" && canReview ? (
+        <div className="flex items-center gap-2 max-sm:basis-full max-sm:justify-end" data-testid="request-actions">
+          <Button
+            size="sm"
+            onClick={() => {
+              onApprove(a);
+            }}
+            data-testid="request-approve"
+          >
+            <Check aria-hidden="true" />
+            {t("appointments.approve")}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              onDecline(a);
+            }}
+            data-testid="request-decline"
+          >
+            <Ban aria-hidden="true" />
+            {t("appointments.decline")}
+          </Button>
         </div>
       ) : a.status === "arrived" ? (
         <CheckCircle2 className="size-5 text-success" aria-hidden="true" />

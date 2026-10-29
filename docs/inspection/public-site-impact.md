@@ -79,7 +79,7 @@ Every row of the plan's table holds, with the corrections noted. "Where" cites t
   - The constraint WHERE clause names `requested`, so `REQUESTED` and the constraint belong in one migration (the plan puts the status in Phase 4 but the constraint in Phase 3; see section 4, contradiction 2). `choice_check("status", ...)` (`models.py:270`) must also change.
   - `pghistory` tracks `Appointment` (`@track_history()`, `models.py:217`); the event table copies columns but not constraints, so the constraint does not touch it.
 
-**Verdict:** safe, provided the migration pre-checks and reports conflicts. No product change to staff booking is needed because overbooking is not a feature today. If reception wants an "urgent double-book", that would be a new, audited override and would conflict with this constraint; ask the owner once (section 7, still open item 1).
+**Verdict:** safe, provided the migration pre-checks and reports conflicts. No product change to staff booking is needed because overbooking is not a feature today. **The owner decided on 2026-10-29 that there is no overbooking, ever** (section 7, item 1, closed); built in Phase 3 (`visits/0005`).
 
 ### (b) Permission guarding the center page, and the migration for `core.manage_public_site`
 
@@ -348,11 +348,11 @@ and Phase 6 only adds the edge runbook. Each phase still ships with `ship-featur
 
 ### Still open
 
-1. **Urgent double-booking:** is there any real need for staff to overbook a slot? If yes, it needs a
-   separate audited override and a different constraint design; if no, nothing changes. Needed
-   before Phase 3.
-2. **Tunnel provider** for LAN installs (WireGuard to a vendor VPS recommended; a managed tunnel is
-   the alternative). Needed before Phase 6.
+1. ~~**Urgent double-booking.**~~ **Closed 2026-10-29 (owner): no overbooking, ever.** The
+   exclusion constraint is absolute with no override; urgent patients come through the walk-in
+   visit and the queue. ADR 0029 C.
+2. ~~**Tunnel provider** for LAN installs.~~ **Closed 2026-10-29 (owner): WireGuard to the vendor's
+   OVH host** (Phase 6). ADR 0028 decision 5.
 3. **Not verified (no server access, by instruction):** the OVH host Caddy and compose Caddy
    forwarding headers (ADR 0028 decision 6, to check before the public switches go on at OVH);
    whether production or demo data contains overlapping booked appointments; the `portal_event`

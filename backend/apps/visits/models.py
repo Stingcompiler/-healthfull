@@ -11,10 +11,19 @@ from __future__ import annotations
 from typing import ClassVar
 
 from django.conf import settings
+from django.contrib.postgres.constraints import ExclusionConstraint
+from django.contrib.postgres.fields import DateTimeRangeField, RangeOperators
 from django.db import models
 from django.db.models import F, Q
 
 from apps.core.db import choice_check, track_history
+
+
+class TsTzRange(models.Func):
+    """``tstzrange(start, end)``: half-open ``[start, end)``, for the exclusion constraints."""
+
+    function = "TSTZRANGE"
+    output_field = DateTimeRangeField()
 
 
 class VisitType(models.TextChoices):
@@ -207,6 +216,9 @@ class QueueEntry(models.Model):
 
 
 class AppointmentStatus(models.TextChoices):
+    """States and edges: ``domain.appointments`` (ADR 0029 E)."""
+
+    REQUESTED = "requested", "Requested online, waiting for reception"
     BOOKED = "booked", "Booked"
     ARRIVED = "arrived", "Arrived (converted to a visit)"
     CANCELLED = "cancelled", "Cancelled"
@@ -214,9 +226,24 @@ class AppointmentStatus(models.TextChoices):
     RESCHEDULED = "rescheduled", "Rescheduled"
 
 
+#: Statuses that keep a doctor's slot taken (the exclusion constraint's WHERE).
+SLOT_HOLDING_STATUSES = (AppointmentStatus.REQUESTED, AppointmentStatus.BOOKED)
+
+
+class AppointmentSource(models.TextChoices):
+    STAFF = "staff", "Booked by staff"
+    PORTAL = "portal", "Booked by a signed-in patient"
+    GUEST = "guest", "Booked by a guest without a file"
+
+
 @track_history()
 class Appointment(models.Model):
-    """A booked slot with a doctor (FEATURES 2.5, V1?). Converted to a visit on arrival."""
+    """A booked slot with a doctor (FEATURES 2.5). Converted to a visit on arrival.
+
+    Two appointments of one doctor that hold a slot (``booked`` or ``requested``) never
+    overlap: the service checks under the doctor's row lock and the database refuses the rest
+    (``visits_appointment_no_overlap``, ADR 0029 C; there is no overbooking).
+    """
 
     patient = models.ForeignKey(
         "patients.Patient",
@@ -243,6 +270,16 @@ class Appointment(models.Model):
     rescheduled_from = models.OneToOneField(
         "self", on_delete=models.PROTECT, null=True, blank=True, related_name="rescheduled_to"
     )
+    source = models.CharField(
+        max_length=10, choices=AppointmentSource.choices, default=AppointmentSource.STAFF
+    )
+    expires_at = models.DateTimeField(
+        null=True, blank=True, help_text="An online request lapses then (ADR 0029 A8)."
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
     notes = models.CharField(max_length=300, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
@@ -280,6 +317,24 @@ class Appointment(models.Model):
                 | Q(cancelled_at__isnull=False, cancelled_by__isnull=False),
                 name="visits_appointment_cancel_documented",
             ),
+            choice_check("source", AppointmentSource, "visits_appointment_source_valid"),
+            models.CheckConstraint(
+                condition=~Q(status=AppointmentStatus.REQUESTED) | Q(expires_at__isnull=False),
+                name="visits_appointment_request_expires",
+            ),
+            models.CheckConstraint(
+                condition=Q(approved_by__isnull=True, approved_at__isnull=True)
+                | Q(approved_by__isnull=False, approved_at__isnull=False),
+                name="visits_appointment_approval_documented",
+            ),
+            ExclusionConstraint(
+                name="visits_appointment_no_overlap",
+                expressions=[
+                    ("doctor", RangeOperators.EQUAL),
+                    (TsTzRange("starts_at", "ends_at"), RangeOperators.OVERLAPS),
+                ],
+                condition=Q(status__in=SLOT_HOLDING_STATUSES),
+            ),
         ]
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["doctor", "starts_at"], name="visits_appt_doctor_idx"),
@@ -289,6 +344,47 @@ class Appointment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.doctor_id} @ {self.starts_at:%Y-%m-%d %H:%M}"
+
+
+@track_history()
+class DoctorTimeOff(models.Model):
+    """A period a doctor does not see patients (leave, conference, ...): no slot inside it is
+    offered or booked (ADR 0029 C). Two periods of one doctor never overlap."""
+
+    doctor = models.ForeignKey(
+        "core.DoctorProfile", on_delete=models.CASCADE, related_name="time_off"
+    )
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    reason_ar = models.CharField(max_length=200, blank=True)
+    reason_en = models.CharField(max_length=200, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "doctor time off"
+        verbose_name_plural = "doctor time off"
+        ordering: ClassVar[list[str]] = ["doctor", "starts_at"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(ends_at__gt=F("starts_at")), name="visits_time_off_positive"
+            ),
+            models.CheckConstraint(
+                condition=~Q(reason_ar="") | ~Q(reason_en=""), name="visits_time_off_has_reason"
+            ),
+            ExclusionConstraint(
+                name="visits_time_off_no_overlap",
+                expressions=[
+                    ("doctor", RangeOperators.EQUAL),
+                    (TsTzRange("starts_at", "ends_at"), RangeOperators.OVERLAPS),
+                ],
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.doctor_id} off {self.starts_at:%Y-%m-%d %H:%M}-{self.ends_at:%H:%M}"
 
 
 @track_history()

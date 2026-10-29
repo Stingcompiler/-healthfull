@@ -22,7 +22,10 @@ VisitTypeCode = Literal["new", "follow_up", "emergency", "pharmacy_sale", "inpat
 VisitStatusCode = Literal["open", "closed", "cancelled"]
 QueueStatusCode = Literal["waiting", "called", "in_progress", "done", "no_show", "cancelled"]
 QueueAction = Literal["call", "start", "finish", "no_show", "requeue"]
-AppointmentStatusCode = Literal["booked", "arrived", "cancelled", "no_show", "rescheduled"]
+AppointmentStatusCode = Literal[
+    "requested", "booked", "arrived", "cancelled", "no_show", "rescheduled"
+]
+AppointmentSourceCode = Literal["staff", "portal", "guest"]
 LineStateCode = Literal["requested", "invoiced", "paid", "performed", "cancelled"]
 
 
@@ -347,6 +350,12 @@ class AppointmentOut(Schema):
     starts_at: datetime
     ends_at: datetime
     status: AppointmentStatusCode
+    source: AppointmentSourceCode
+    expires_at: datetime | None = Field(
+        ..., description="An online request (status requested) lapses then (ADR 0029 A8)"
+    )
+    approved_at: datetime | None
+    approved_by: UserRefOut | None
     rescheduled_from_id: int | None
     notes: str
     visit_id: int | None = Field(..., description="The visit opened at check-in")
@@ -407,6 +416,39 @@ class AppointmentCancelIn(Schema):
 
     reason_code: str = Field(..., max_length=40)
     note: str = Field("", max_length=300)
+
+
+class OnlineBookingRejectIn(Schema):
+    """Decline an online request with an ``appointment_cancel`` reason code (default
+    ``ONLINE_REJECTED``) and a note (invariant 4)."""
+
+    reason_code: str = Field("ONLINE_REJECTED", max_length=40)
+    note: str = Field("", max_length=300)
+
+
+class TimeOffIn(Schema):
+    starts_at: datetime
+    ends_at: datetime
+    reason_ar: str = Field("", max_length=200)
+    reason_en: str = Field("", max_length=200)
+
+
+class TimeOffOut(Schema):
+    id: int
+    doctor_id: int
+    starts_at: datetime
+    ends_at: datetime
+    reason_ar: str
+    reason_en: str
+    created_by: UserRefOut
+    created_at: datetime
+
+
+class TimeOffAddedOut(Schema):
+    time_off: TimeOffOut
+    appointments: list[AppointmentOut] = Field(
+        ..., description="Bookings already inside the period: move or cancel them with the patient"
+    )
 
 
 class CheckInIn(Schema):

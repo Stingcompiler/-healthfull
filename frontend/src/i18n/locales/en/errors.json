@@ -474,5 +474,15 @@
   "FAQ_QUESTION_REQUIRED": "Give the question in Arabic or English.",
   "FAQ_ANSWER_REQUIRED": "Give the answer in Arabic or English.",
   "TESTIMONIAL_TEXT_REQUIRED": "Give the words in Arabic or English.",
-  "TESTIMONIAL_ALREADY_APPROVED": "This testimonial is already approved."
+  "TESTIMONIAL_ALREADY_APPROVED": "This testimonial is already approved.",
+  "DOCTOR_TIME_OFF": "The doctor is away at that time. Choose another time.",
+  "APPOINTMENT_NOT_REQUESTED": "Only a booking waiting for approval can be approved or declined.",
+  "TIME_OFF_INVALID_RANGE": "Time off must end after it starts.",
+  "TIME_OFF_IN_PAST": "Time off must end in the future.",
+  "TIME_OFF_REASON_REQUIRED": "Give the reason for the time off.",
+  "TIME_OFF_OVERLAP": "This period overlaps another time off of the doctor.",
+  "ONLINE_REVIEW_WINDOW_TOO_SHORT": "That time is too close for reception to confirm. Choose a time at least {{minutes}} minutes later.",
+  "ONLINE_REQUEST_EXPIRED": "This request expired before it was approved; the time was released.",
+  "PORTAL_RESCHEDULE_DISABLED": "Changing the time online is not offered. Please call the center.",
+  "PORTAL_RESCHEDULE_TOO_LATE": "The time can be changed online up to {{cutoff_hours}} hours before. Please call the center."
 }

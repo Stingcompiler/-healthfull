@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Building2, CalendarClock, DoorOpen, Pencil, Plus, Stethoscope, Trash2 } from "lucide-react";
+import { Building2, CalendarClock, CalendarOff, DoorOpen, Pencil, Plus, Stethoscope, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -40,6 +40,7 @@ import { AdminPage, QueryState } from "../components/AdminPage";
 import { ListEmpty } from "../components/ListEmpty";
 import { ActiveBadge, Code, FormDialog } from "../components/FormDialog";
 import { DepartmentLabel } from "../components/DepartmentLabel";
+import { TimeOffDialog } from "../components/TimeOffDialog";
 import { useDepartmentById, useLocalName, usePersonName } from "../hooks";
 import { CLOCK_TIME, normalizeClockTime } from "../dates";
 import { sortWeekdays, WEEK_ORDER } from "../weekdays";
@@ -403,6 +404,7 @@ function DoctorsTab() {
   const departmentById = useDepartmentById();
   const [editing, setEditing] = useState<DoctorOut | "new" | null>(null);
   const [scheduling, setScheduling] = useState<DoctorOut | null>(null);
+  const [timeOff, setTimeOff] = useState<DoctorOut | null>(null);
   const columns = useMemo<ColumnDef<DoctorOut>[]>(
     () => [
       {
@@ -502,6 +504,13 @@ function DoctorsTab() {
                 setScheduling(d);
               },
             },
+            {
+              label: t("timeOff.action"),
+              icon: <CalendarOff />,
+              onSelect: () => {
+                setTimeOff(d);
+              },
+            },
           ]}
         />
       </QueryState>
@@ -510,6 +519,14 @@ function DoctorsTab() {
           doctor={editing === "new" ? null : editing}
           onClose={() => {
             setEditing(null);
+          }}
+        />
+      ) : null}
+      {timeOff ? (
+        <TimeOffDialog
+          doctor={timeOff}
+          onClose={() => {
+            setTimeOff(null);
           }}
         />
       ) : null}

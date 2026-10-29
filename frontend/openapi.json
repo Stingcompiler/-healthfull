@@ -823,6 +823,28 @@
       },
       "AppointmentOut": {
         "properties": {
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "cancel_note": {
             "title": "Cancel Note",
             "type": "string"
@@ -856,6 +878,19 @@
             "title": "Ends At",
             "type": "string"
           },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An online request (status requested) lapses then (ADR 0029 A8)",
+            "title": "Expires At"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -885,6 +920,15 @@
             ],
             "title": "Rescheduled From Id"
           },
+          "source": {
+            "enum": [
+              "staff",
+              "portal",
+              "guest"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
           "starts_at": {
             "format": "date-time",
             "title": "Starts At",
@@ -892,6 +936,7 @@
           },
           "status": {
             "enum": [
+              "requested",
               "booked",
               "arrived",
               "cancelled",
@@ -924,6 +969,10 @@
           "starts_at",
           "ends_at",
           "status",
+          "source",
+          "expires_at",
+          "approved_at",
+          "approved_by",
           "rescheduled_from_id",
           "notes",
           "visit_id",
@@ -9166,6 +9215,11 @@
             "title": "Department En",
             "type": "string"
           },
+          "has_schedule": {
+            "description": "Has active weekly hours (needed to book online)",
+            "title": "Has Schedule",
+            "type": "boolean"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -9177,6 +9231,11 @@
           "name_en": {
             "title": "Name En",
             "type": "string"
+          },
+          "online_bookable": {
+            "description": "Offered for online booking (ADR 0029 B)",
+            "title": "Online Bookable",
+            "type": "boolean"
           },
           "photo_id": {
             "anyOf": [
@@ -9219,7 +9278,9 @@
           "qualifications_en",
           "bio_ar",
           "bio_en",
-          "photo_id"
+          "photo_id",
+          "online_bookable",
+          "has_schedule"
         ],
         "title": "DoctorSiteProfileOut",
         "type": "object"
@@ -9249,6 +9310,17 @@
               }
             ],
             "title": "Bio En"
+          },
+          "online_bookable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Online Bookable"
           },
           "photo_id": {
             "anyOf": [
@@ -16009,6 +16081,25 @@
         "title": "NursingVisitParams",
         "type": "object"
       },
+      "OnlineBookingRejectIn": {
+        "description": "Decline an online request with an ``appointment_cancel`` reason code (default\n``ONLINE_REJECTED``) and a note (invariant 4).",
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "default": "ONLINE_REJECTED",
+            "maxLength": 40,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "title": "OnlineBookingRejectIn",
+        "type": "object"
+      },
       "OpenInvoiceOut": {
         "properties": {
           "invoice_id": {
@@ -20427,6 +20518,10 @@
             "title": "Can Cancel",
             "type": "boolean"
           },
+          "can_reschedule": {
+            "title": "Can Reschedule",
+            "type": "boolean"
+          },
           "cancel_until": {
             "anyOf": [
               {
@@ -20439,6 +20534,22 @@
             ],
             "title": "Cancel Until"
           },
+          "display_status": {
+            "description": "What the patient is told (domain.portal_status)",
+            "enum": [
+              "awaiting_approval",
+              "confirmed",
+              "received",
+              "moved",
+              "cancelled_by_you",
+              "cancelled_by_center",
+              "declined",
+              "expired",
+              "missed"
+            ],
+            "title": "Display Status",
+            "type": "string"
+          },
           "doctor": {
             "$ref": "#/components/schemas/PortalDoctorOut"
           },
@@ -20447,9 +20558,34 @@
             "title": "Ends At",
             "type": "string"
           },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A request waiting for reception lapses then (ADR 0029 A8)",
+            "title": "Expires At"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "reschedule_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reschedule Until"
           },
           "starts_at": {
             "format": "date-time",
@@ -20458,6 +20594,7 @@
           },
           "status": {
             "enum": [
+              "requested",
               "booked",
               "arrived",
               "no_show",
@@ -20473,9 +20610,13 @@
           "starts_at",
           "ends_at",
           "status",
+          "display_status",
+          "expires_at",
           "doctor",
           "can_cancel",
-          "cancel_until"
+          "cancel_until",
+          "can_reschedule",
+          "reschedule_until"
         ],
         "title": "PortalAppointmentOut",
         "type": "object"
@@ -20582,12 +20723,27 @@
           "max_open": {
             "title": "Max Open",
             "type": "integer"
+          },
+          "require_approval": {
+            "title": "Require Approval",
+            "type": "boolean"
+          },
+          "reschedule_allowed": {
+            "title": "Reschedule Allowed",
+            "type": "boolean"
+          },
+          "reschedule_cutoff_hours": {
+            "title": "Reschedule Cutoff Hours",
+            "type": "integer"
           }
         },
         "required": [
           "max_open",
           "cancel_cutoff_hours",
-          "horizon_days"
+          "horizon_days",
+          "reschedule_allowed",
+          "reschedule_cutoff_hours",
+          "require_approval"
         ],
         "title": "PortalBookingRulesOut",
         "type": "object"
@@ -22043,6 +22199,33 @@
           "status"
         ],
         "title": "PortalReceiptOut",
+        "type": "object"
+      },
+      "PortalRescheduleIn": {
+        "properties": {
+          "doctor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Another doctor; default the same one",
+            "title": "Doctor Id"
+          },
+          "starts_at": {
+            "description": "Exactly a `starts_at` from the slots list",
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at"
+        ],
+        "title": "PortalRescheduleIn",
         "type": "object"
       },
       "PortalResultOut": {
@@ -30515,6 +30698,109 @@
           }
         },
         "title": "TestimonialPatch",
+        "type": "object"
+      },
+      "TimeOffAddedOut": {
+        "properties": {
+          "appointments": {
+            "description": "Bookings already inside the period: move or cancel them with the patient",
+            "items": {
+              "$ref": "#/components/schemas/AppointmentOut"
+            },
+            "title": "Appointments",
+            "type": "array"
+          },
+          "time_off": {
+            "$ref": "#/components/schemas/TimeOffOut"
+          }
+        },
+        "required": [
+          "time_off",
+          "appointments"
+        ],
+        "title": "TimeOffAddedOut",
+        "type": "object"
+      },
+      "TimeOffIn": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "reason_ar": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Reason Ar",
+            "type": "string"
+          },
+          "reason_en": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Reason En",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "TimeOffIn",
+        "type": "object"
+      },
+      "TimeOffOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/UserRefOut"
+          },
+          "doctor_id": {
+            "title": "Doctor Id",
+            "type": "integer"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "reason_ar": {
+            "title": "Reason Ar",
+            "type": "string"
+          },
+          "reason_en": {
+            "title": "Reason En",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "doctor_id",
+          "starts_at",
+          "ends_at",
+          "reason_ar",
+          "reason_en",
+          "created_by",
+          "created_at"
+        ],
+        "title": "TimeOffOut",
         "type": "object"
       },
       "TimelineOut": {
@@ -63552,7 +63838,7 @@
         ]
       },
       "post": {
-        "description": "409 `ONLINE_BOOKING_DISABLED`, `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, `APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule.",
+        "description": "Status `requested` (waiting for reception) while approval is required, else `booked`. 409 `ONLINE_BOOKING_DISABLED`, `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, `ONLINE_REVIEW_WINDOW_TOO_SHORT`, `APPOINTMENT_CONFLICT`; 404 for a doctor not offered online or without a schedule.",
         "operationId": "portal_book_appointment",
         "parameters": [],
         "requestBody": {
@@ -63640,7 +63926,7 @@
     },
     "/api/portal/appointments/{appointment_id}/cancel": {
       "post": {
-        "description": "409 `PORTAL_CANCEL_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`; 404 if not one's own.",
+        "description": "A confirmed booking or a request waiting for reception. 409 `PORTAL_CANCEL_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`; 404 if not one's own.",
         "operationId": "portal_cancel_appointment",
         "parameters": [
           {
@@ -63721,6 +64007,104 @@
           }
         ],
         "summary": "Cancel one's own future appointment before the cut-off",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/appointments/{appointment_id}/reschedule": {
+      "post": {
+        "description": "The old booking becomes `rescheduled`; the answer is the new one (`requested` while approval is required). 409 `ONLINE_BOOKING_DISABLED`, `PORTAL_RESCHEDULE_DISABLED`, `PORTAL_RESCHEDULE_TOO_LATE`, `APPOINTMENT_NOT_BOOKED` and the booking refusals; 404 if not one's own or the doctor is not offered online.",
+        "operationId": "portal_reschedule_appointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalRescheduleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalAppointmentOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "PortalAuth": []
+          }
+        ],
+        "summary": "Move one's own confirmed booking to another free slot before the cut-off",
         "tags": [
           "portal"
         ]
@@ -70067,7 +70451,7 @@
     },
     "/api/visits/appointments": {
       "post": {
-        "description": "409 APPOINTMENT_CONFLICT (details.appointments), OUTSIDE_SCHEDULE, INVALID_SLOT, APPOINTMENT_IN_PAST, PATIENT_OR_CONTACT_REQUIRED, DOCTOR_INACTIVE.",
+        "description": "409 APPOINTMENT_CONFLICT (details.appointments), OUTSIDE_SCHEDULE, DOCTOR_TIME_OFF, INVALID_SLOT, APPOINTMENT_IN_PAST, PATIENT_OR_CONTACT_REQUIRED, DOCTOR_INACTIVE. There is no overbooking: an urgent patient is a walk-in visit (ADR 0029 C).",
         "operationId": "visits_book_appointment",
         "parameters": [],
         "requestBody": {
@@ -70316,7 +70700,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Booked appointments of a patient that have not ended yet",
+        "summary": "Booked appointments and open online requests of a patient that have not ended",
         "tags": [
           "visits"
         ]
@@ -70704,7 +71088,7 @@
     },
     "/api/visits/appointments/{appointment_id}/reschedule": {
       "post": {
-        "description": "409 APPOINTMENT_NOT_BOOKED, APPOINTMENT_CONFLICT, OUTSIDE_SCHEDULE.",
+        "description": "409 APPOINTMENT_NOT_BOOKED, APPOINTMENT_CONFLICT, OUTSIDE_SCHEDULE, DOCTOR_TIME_OFF.",
         "operationId": "visits_reschedule_appointment",
         "parameters": [
           {
@@ -70795,6 +71179,183 @@
           }
         ],
         "summary": "Move a booking to another slot (the old one is kept as rescheduled)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/doctors/{doctor_id}/time-off": {
+      "get": {
+        "operationId": "visits_list_time_off",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doctor_id",
+            "required": true,
+            "schema": {
+              "title": "Doctor Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TimeOffOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "A doctor's time off that has not ended yet",
+        "tags": [
+          "visits"
+        ]
+      },
+      "post": {
+        "description": "Bookings already inside the period are returned, not cancelled. 409 TIME_OFF_INVALID_RANGE, TIME_OFF_IN_PAST, TIME_OFF_REASON_REQUIRED, TIME_OFF_OVERLAP.",
+        "operationId": "visits_add_time_off",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doctor_id",
+            "required": true,
+            "schema": {
+              "title": "Doctor Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeOffIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeOffAddedOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Block a period of a doctor's calendar (no slot inside it is offered or booked)",
         "tags": [
           "visits"
         ]
@@ -71502,6 +72063,192 @@
         ]
       }
     },
+    "/api/visits/online-bookings/{appointment_id}/approve": {
+      "post": {
+        "description": "409 APPOINTMENT_NOT_REQUESTED, ONLINE_REQUEST_EXPIRED.",
+        "operationId": "visits_approve_online_booking",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Confirm an online request (requested -> booked, who and when recorded)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/online-bookings/{appointment_id}/reject": {
+      "post": {
+        "description": "409 APPOINTMENT_NOT_REQUESTED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
+        "operationId": "visits_reject_online_booking",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnlineBookingRejectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Decline an online request with a reason code and a note",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
     "/api/visits/options": {
       "get": {
         "operationId": "visits_get_options",
@@ -72072,6 +72819,86 @@
           }
         ],
         "summary": "What the 80 mm queue token slip prints",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/time-off/{time_off_id}": {
+      "delete": {
+        "operationId": "visits_remove_time_off",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "time_off_id",
+            "required": true,
+            "schema": {
+              "title": "Time Off Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Give a period of time off back to the doctor's calendar",
         "tags": [
           "visits"
         ]

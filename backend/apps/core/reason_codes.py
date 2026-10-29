@@ -128,6 +128,16 @@ REASON_CODES: tuple[ReasonDef, ...] = (
     # Dispense returns (FEATURES 8.4, ADR 0018). Seeded by migration 0013.
     ReasonDef("stock_adjust", "PATIENT_RETURNED", "أعاده المريض", "Returned by the patient"),
     ReasonDef("stock_adjust", "DISPENSED_IN_ERROR", "صُرف بالخطأ", "Dispensed in error"),
+    # Online booking requests (ADR 0029 E). Seeded by migration 0022.
+    ReasonDef(
+        "appointment_cancel", "ONLINE_REJECTED", "رفض الاستقبال طلب الحجز", "Declined by reception"
+    ),
+    ReasonDef(
+        "appointment_cancel",
+        "ONLINE_REQUEST_EXPIRED",
+        "انتهت مهلة طلب الحجز دون رد",
+        "Online request expired unanswered",
+    ),
 )
 
 #: Codes added after ``0007_seed_reason_codes``, with the migration that seeds them.
@@ -135,6 +145,7 @@ LATER_SEEDS: dict[str, tuple[str, ...]] = {
     "0009_reason_categories_merge_appointment": ("patient_merge", "appointment_cancel"),
     "0012_admission_cancel_reasons": ("admission_cancel",),
     "0013_dispense_return_reasons": ("stock_adjust",),
+    "0022_doctor_online_bookable": ("appointment_cancel",),
 }
 
 

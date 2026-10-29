@@ -56,6 +56,16 @@ def percent_field(**kwargs: Any) -> models.DecimalField[Any, Any]:
 # --- Constraints -------------------------------------------------------------------------
 
 
+def violated_constraint(exc: BaseException) -> str | None:
+    """The name of the constraint an ``IntegrityError`` reports (psycopg's diagnostics), so a
+    service can turn its own backstop (for example an exclusion constraint, SQLSTATE 23P01)
+    into a specific domain error instead of the generic ``409 CONFLICT``."""
+    cause = exc.__cause__ or exc
+    diag = getattr(cause, "diag", None)
+    name = getattr(diag, "constraint_name", None)
+    return str(name) if name else None
+
+
 def choice_check(
     field: str, choices: type[models.TextChoices], name: str
 ) -> models.CheckConstraint:

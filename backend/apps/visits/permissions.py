@@ -99,6 +99,13 @@ register_permission(
 )
 
 register_permission(
+    "visits.manage_online_bookings",
+    label_ar="مراجعة طلبات الحجز عبر الإنترنت (قبول أو رفض)",
+    label_en="Review online booking requests (approve or decline)",
+    default_roles={RECEPTIONIST, MANAGER, ADMIN},
+)
+
+register_permission(
     "visits.manage_schedules",
     label_ar="إدارة جداول الأطباء",
     label_en="Manage doctor schedules",

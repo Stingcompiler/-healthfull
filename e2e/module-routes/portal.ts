@@ -34,18 +34,37 @@ function portalRoute(
 export const routes: readonly AppRoute[] = [
   // Public: the patient sign-in (the center page at /portal is in e2e/routes.ts).
   appRoute("portal-sign-in", "/portal/sign-in", { auth: false }),
-  portalRoute("portal-home", "/portal/home", (page) => page.getByTestId("home-balance")),
-  portalRoute("portal-appointments", "/portal/appointments", (page) => page.getByTestId("appointment-row").first()),
-  portalRoute("portal-book", "/portal/appointments/new", (page) => page.getByTestId("book-doctor").first()),
-  portalRoute("portal-results", "/portal/results", (page) => page.getByTestId("result-row").first()),
+  portalRoute("portal-home", "/portal/home", (page) =>
+    page.getByTestId("home-balance"),
+  ),
+  portalRoute("portal-appointments", "/portal/appointments", (page) =>
+    page.getByTestId("appointment-row").first(),
+  ),
+  portalRoute("portal-book", "/portal/appointments/new", (page) =>
+    page.getByTestId("book-doctor").first(),
+  ),
+  portalRoute(
+    "portal-reschedule",
+    "/portal/appointments/$appointmentId/reschedule",
+    (page) => page.getByTestId("book-day").first(),
+    (who) =>
+      `/portal/appointments/${String(who.appointment?.id ?? 0)}/reschedule`,
+  ),
+  portalRoute("portal-results", "/portal/results", (page) =>
+    page.getByTestId("result-row").first(),
+  ),
   portalRoute(
     "portal-result",
     "/portal/results/$lineId",
     (page) => page.getByTestId("result-values"),
     (who) => `/portal/results/${String(who.approved_line)}`,
   ),
-  portalRoute("portal-prescriptions", "/portal/prescriptions", (page) => page.getByTestId("prescription-item").first()),
-  portalRoute("portal-invoices", "/portal/invoices", (page) => page.getByTestId("receipt-row").first()),
+  portalRoute("portal-prescriptions", "/portal/prescriptions", (page) =>
+    page.getByTestId("prescription-item").first(),
+  ),
+  portalRoute("portal-invoices", "/portal/invoices", (page) =>
+    page.getByTestId("receipt-row").first(),
+  ),
   portalRoute(
     "portal-invoice",
     "/portal/invoices/$invoiceId",

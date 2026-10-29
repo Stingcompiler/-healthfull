@@ -1365,6 +1365,18 @@ def booking_rules() -> BookingRules:
         horizon_days=row.horizon_days,
         max_open=row.max_open,
         cancel_cutoff_hours=row.cancel_cutoff_hours,
+        reschedule_allowed=row.reschedule_allowed,
+        reschedule_cutoff_hours=row.reschedule_cutoff_hours,
+    )
+
+
+def request_rules() -> public_rules.RequestRules:
+    """Whether online bookings wait for reception, and how long a request lives (ADR 0029)."""
+    row = public_site_settings()
+    return public_rules.request_rules(
+        require_approval=row.require_approval,
+        request_ttl_hours=row.request_ttl_hours,
+        min_review_minutes=row.min_review_minutes,
     )
 
 
@@ -1692,6 +1704,7 @@ def delete_testimonial(actor: User, testimonial_id: int) -> None:
 
 
 _DOCTOR_SITE_FIELDS = {
+    "online_bookable",
     "qualifications_ar",
     "qualifications_en",
     "bio_ar",
@@ -1708,7 +1721,8 @@ def list_doctor_site_profiles() -> QuerySet[DoctorProfile]:
 
 def update_doctor_site_profile(actor: User, doctor_id: int, **fields: Any) -> DoctorProfile:
     """The doctor's qualifications, short biography (at most 400 characters) and photo on the
-    website. Nothing else of the clinical profile changes here.
+    website, and whether the doctor is offered for online booking (``online_bookable``, ADR
+    0029 B). Nothing else of the clinical profile changes here.
 
     Raises:
         DomainError: ``MEDIA_KIND_MISMATCH`` (the photo is not a doctor image),

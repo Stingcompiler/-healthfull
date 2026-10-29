@@ -36,11 +36,12 @@ from types import ModuleType
 from typing import Any
 
 import pghistory
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Exists, Max, OuterRef, Q, QuerySet
 from django.utils import timezone
 
 from apps.catalog.models import Service, ServiceKind
+from apps.core.db import violated_constraint
 from apps.core.models import (
     CenterProfile,
     Department,
@@ -63,15 +64,18 @@ from apps.patients.models import Patient, PatientCoverage
 from apps.payments.approvals import ApproverLogin, resolve_second_approver
 from apps.visits.models import (
     ACTIVE_QUEUE_STATUSES,
+    SLOT_HOLDING_STATUSES,
     Admission,
     AdmissionStatus,
     Appointment,
+    AppointmentSource,
     AppointmentStatus,
     Bed,
     BedCharge,
     BedStatus,
     BedStay,
     DoctorSchedule,
+    DoctorTimeOff,
     QueueEntry,
     QueueStatus,
     Visit,
@@ -79,6 +83,8 @@ from apps.visits.models import (
     VisitType,
 )
 from apps.visits.schedules import SessionInput, replace_weekly_schedule, schedule_prefetch
+from domain import appointments as dappt
+from domain import availability as davail
 from domain import coverage as dc
 from domain import inpatient as dinp
 from domain import queue as dq
@@ -97,6 +103,7 @@ __all__ = [
     "DisplayEntry",
     "LineView",
     "SessionInput",
+    "TimeOffView",
     "TimelineEvent",
     "TimelineItem",
     "TokenSlip",
@@ -104,9 +111,11 @@ __all__ = [
     "VisitView",
     "WaitingRoom",
     "WardView",
+    "add_time_off",
     "admit",
     "admit_patient",
     "appointment_day",
+    "approve_online_booking",
     "available_slots",
     "bed_board",
     "bed_charge_dates",
@@ -133,16 +142,22 @@ __all__ = [
     "create_visit",
     "discharge",
     "enqueue",
+    "expire_requests",
     "finish_consultation",
     "follow_up_discount_percent",
     "follow_up_origin",
     "is_ready",
+    "list_time_off",
+    "lock_doctors",
     "mark_appointment_no_show",
     "mark_no_show",
+    "move_appointment",
     "move_entry",
     "open_visit",
     "queue",
     "reassign_future_appointments",
+    "reject_online_booking",
+    "remove_time_off",
     "replace_weekly_schedule",
     "requeue",
     "reschedule_appointment",
@@ -647,6 +662,24 @@ def cancel_queue_entry(entry: QueueEntry, *, actor: User) -> QueueEntry:
 
 
 # --- appointments ---------------------------------------------------------------------------
+#
+# A doctor's slots (ADR 0029 C): availability is the weekly schedule minus appointments that
+# hold a slot (``booked``, and ``requested`` until it expires) minus the doctor's time off.
+# Every booking takes the doctor's row lock, expires that doctor's due requests (lazy expiry),
+# then checks the slot; the database exclusion constraint ``visits_appointment_no_overlap``
+# is the backstop and its violation is answered ``APPOINTMENT_CONFLICT``. There is no
+# overbooking (owner decision of 2026-10-29): an urgent patient is a walk-in visit.
+# Lock order: doctors (by id), then appointments.
+
+_NO_OVERLAP = "visits_appointment_no_overlap"
+_TIME_OFF_NO_OVERLAP = "visits_time_off_no_overlap"
+
+
+def _held(now: datetime) -> Q:
+    """Appointments that keep their slot at ``now``."""
+    return Q(status=AppointmentStatus.BOOKED) | Q(
+        status=AppointmentStatus.REQUESTED, expires_at__gt=now
+    )
 
 
 def _slot_minutes(doctor: DoctorProfile, start: datetime) -> int:
@@ -682,8 +715,10 @@ def _check_slot(
         raise DomainError("INVALID_SLOT", "An appointment ends after it starts")
     if not _within_schedule(doctor, start, end):
         raise DomainError("OUTSIDE_SCHEDULE", "The doctor does not work at that time")
+    if DoctorTimeOff.objects.filter(doctor=doctor, starts_at__lt=end, ends_at__gt=start).exists():
+        raise DomainError("DOCTOR_TIME_OFF", "The doctor is away at that time")
     clash = Appointment.objects.filter(
-        doctor=doctor, status=AppointmentStatus.BOOKED, starts_at__lt=end, ends_at__gt=start
+        _held(timezone.now()), doctor=doctor, starts_at__lt=end, ends_at__gt=start
     )
     if exclude_id is not None:
         clash = clash.exclude(pk=exclude_id)
@@ -693,6 +728,51 @@ def _check_slot(
             "The doctor already has an appointment in that slot",
             appointments=list(clash.values_list("pk", flat=True)),
         )
+
+
+def lock_doctors(*doctor_ids: int) -> None:
+    """Take the booking lock of each doctor, in id order (two moves never deadlock)."""
+    for pk in sorted(set(doctor_ids)):
+        DoctorProfile.objects.select_for_update().get(pk=pk)
+
+
+def _system_actor() -> User:
+    """The system user named on what nobody did by hand (a request that expired)."""
+    from apps.portal.services import portal_actor  # the portal imports this module
+
+    return portal_actor()
+
+
+def _expire_due(now: datetime, *, doctor: DoctorProfile | None = None) -> int:
+    """Cancel ``requested`` bookings whose expiry has passed (reason
+    ``ONLINE_REQUEST_EXPIRED``, the system actor, ADR 0029 C). Returns how many."""
+    due = Appointment.objects.filter(status=AppointmentStatus.REQUESTED, expires_at__lte=now)
+    if doctor is not None:
+        due = due.filter(doctor=doctor)
+    ids = list(due.select_for_update().values_list("pk", flat=True))
+    if not ids:
+        return 0
+    reason = ReasonCode.objects.get(
+        category=ReasonCategory.APPOINTMENT_CANCEL, code="ONLINE_REQUEST_EXPIRED"
+    )
+    actor = _system_actor()
+    with pghistory.context(user=actor.pk, reason="online request expired"):
+        return Appointment.objects.filter(pk__in=ids).update(
+            status=AppointmentStatus.CANCELLED,
+            cancelled_at=now,
+            cancelled_by=actor,
+            cancel_reason=reason,
+            cancel_note="Expired before reception answered",
+            updated_at=now,
+        )
+
+
+def expire_requests(now: datetime | None = None) -> int:
+    """Hourly sweep (``manage.py maintenance``): expire every due request. The booking
+    service already expires a doctor's due requests under the doctor lock before it checks a
+    slot, and the slot reads ignore them, so this only tidies (ADR 0029 C)."""
+    with transaction.atomic():
+        return _expire_due(_now(now))
 
 
 def book_appointment(
@@ -707,36 +787,64 @@ def book_appointment(
     department: Department | None = None,
     notes: str = "",
     rescheduled_from: Appointment | None = None,
+    source: str = AppointmentSource.STAFF,
+    expires_at: datetime | None = None,
 ) -> Appointment:
-    """Book a slot (FEATURES 2.5). Overlapping booked slots of the doctor are refused.
+    """Book a slot (FEATURES 2.5). Overlapping slot-holding bookings of the doctor, the
+    doctor's time off and times outside the schedule are refused. With ``expires_at`` the
+    booking is an online request (``requested``, ADR 0029) that holds the slot until then.
 
     Raises:
         DomainError: ``PATIENT_OR_CONTACT_REQUIRED``, ``INVALID_SLOT``, ``OUTSIDE_SCHEDULE``,
-            ``APPOINTMENT_CONFLICT``, ``APPOINTMENT_IN_PAST``, ``DOCTOR_INACTIVE``.
+            ``DOCTOR_TIME_OFF``, ``APPOINTMENT_CONFLICT``, ``APPOINTMENT_IN_PAST``,
+            ``DOCTOR_INACTIVE``.
     """
     if patient is None and not contact_name.strip():
         raise DomainError("PATIENT_OR_CONTACT_REQUIRED", "Book for a patient or a named contact")
     if not doctor.active:
         raise DomainError("DOCTOR_INACTIVE", "The doctor is not active")
-    if starts_at < timezone.now() - timedelta(minutes=5):
+    now = timezone.now()
+    if starts_at < now - timedelta(minutes=5):
         raise DomainError("APPOINTMENT_IN_PAST", "Appointments are booked in the future")
     end = ends_at or starts_at + timedelta(minutes=_slot_minutes(doctor, starts_at))
+    status = AppointmentStatus.BOOKED if expires_at is None else AppointmentStatus.REQUESTED
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="book appointment"):
         # One booking at a time per doctor, so two clerks cannot take the same slot.
-        DoctorProfile.objects.select_for_update().get(pk=doctor.pk)
+        lock_doctors(doctor.pk)
+        _expire_due(now, doctor=doctor)
         _check_slot(doctor, starts_at, end)
-        return Appointment.objects.create(
-            patient=patient,
-            contact_name=contact_name.strip(),
-            contact_phone=contact_phone.strip(),
-            doctor=doctor,
-            department=department or doctor.department,
-            starts_at=starts_at,
-            ends_at=end,
-            notes=notes.strip()[:300],
-            created_by=actor,
-            rescheduled_from=rescheduled_from,
-        )
+        try:
+            with transaction.atomic():
+                return Appointment.objects.create(
+                    patient=patient,
+                    contact_name=contact_name.strip(),
+                    contact_phone=contact_phone.strip(),
+                    doctor=doctor,
+                    department=department or doctor.department,
+                    starts_at=starts_at,
+                    ends_at=end,
+                    status=status,
+                    source=source,
+                    expires_at=expires_at,
+                    notes=notes.strip()[:300],
+                    created_by=actor,
+                    rescheduled_from=rescheduled_from,
+                )
+        except IntegrityError as exc:
+            # The database backstop (a writer that skipped the lock): the same answer.
+            if violated_constraint(exc) == _NO_OVERLAP:
+                raise DomainError(
+                    "APPOINTMENT_CONFLICT", "The doctor already has an appointment in that slot"
+                ) from exc
+            raise
+
+
+def _locked(appointment: Appointment, target: str) -> Appointment:
+    """The appointment, row-locked, checked to allow the ``target`` state
+    (``domain.appointments``)."""
+    locked = Appointment.objects.select_for_update().get(pk=appointment.pk)
+    dappt.check_transition(locked.status, target)
+    return locked
 
 
 def _booked(appointment: Appointment) -> Appointment:
@@ -744,6 +852,51 @@ def _booked(appointment: Appointment) -> Appointment:
     if locked.status != AppointmentStatus.BOOKED:
         raise DomainError("APPOINTMENT_NOT_BOOKED", "The appointment is not open")
     return locked
+
+
+def move_appointment(
+    appointment: Appointment,
+    *,
+    starts_at: datetime,
+    actor: User,
+    doctor: DoctorProfile | None = None,
+    ends_at: datetime | None = None,
+    reason: str = "reschedule",
+    check: Callable[[Appointment], datetime | None] | None = None,
+) -> Appointment:
+    """Move a booking to ``starts_at`` (with ``doctor``, default the same one): the old row
+    becomes ``rescheduled`` and the new one links back to it, in one transaction holding both
+    doctors' locks in id order, then the appointment's (ADR 0029). ``check`` runs on the
+    locked old row before anything changes; when it returns a time, the new booking is an
+    online request that expires then.
+
+    Raises:
+        DomainError: ``APPOINTMENT_NOT_BOOKED`` and every refusal of :func:`book_appointment`.
+    """
+    current = Appointment.objects.only("pk", "doctor_id").get(pk=appointment.pk)
+    target = doctor or current.doctor
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=reason):
+        lock_doctors(current.doctor_id, target.pk)
+        old = _locked(appointment, AppointmentStatus.RESCHEDULED)
+        expires_at = check(old) if check is not None else None
+        same_doctor = target.pk == old.doctor_id
+        duration = old.ends_at - old.starts_at
+        old.status = AppointmentStatus.RESCHEDULED
+        old.save(update_fields=["status", "updated_at"])
+        return book_appointment(
+            doctor=target,
+            starts_at=starts_at,
+            ends_at=ends_at or (starts_at + duration if same_doctor else None),
+            actor=actor,
+            patient=old.patient,
+            contact_name=old.contact_name,
+            contact_phone=old.contact_phone,
+            department=old.department if same_doctor else None,
+            notes=old.notes,
+            rescheduled_from=old,
+            source=old.source,
+            expires_at=expires_at,
+        )
 
 
 def reschedule_appointment(
@@ -754,23 +907,25 @@ def reschedule_appointment(
     ends_at: datetime | None = None,
 ) -> Appointment:
     """Move a booking: the old one becomes ``rescheduled`` and links to the new one."""
-    with transaction.atomic(), pghistory.context(user=actor.pk, reason="reschedule"):
-        old = _booked(appointment)
-        duration = old.ends_at - old.starts_at
-        old.status = AppointmentStatus.RESCHEDULED
-        old.save(update_fields=["status", "updated_at"])
-        return book_appointment(
-            doctor=old.doctor,
-            starts_at=starts_at,
-            ends_at=ends_at or starts_at + duration,
-            actor=actor,
-            patient=old.patient,
-            contact_name=old.contact_name,
-            contact_phone=old.contact_phone,
-            department=old.department,
-            notes=old.notes,
-            rescheduled_from=old,
-        )
+    return move_appointment(appointment, starts_at=starts_at, ends_at=ends_at, actor=actor)
+
+
+def _cancel_locked(locked: Appointment, actor: User, reason: ReasonCode, note: str) -> None:
+    locked.status = AppointmentStatus.CANCELLED
+    locked.cancelled_at = timezone.now()
+    locked.cancelled_by = actor
+    locked.cancel_reason = reason
+    locked.cancel_note = note.strip()[:300]
+    locked.save(
+        update_fields=[
+            "status",
+            "cancelled_at",
+            "cancelled_by",
+            "cancel_reason",
+            "cancel_note",
+            "updated_at",
+        ]
+    )
 
 
 def cancel_appointment(
@@ -780,37 +935,66 @@ def cancel_appointment(
     reason_code: ReasonCode | str | None = None,
     note: str = "",
 ) -> Appointment:
-    """Cancel a booking with an ``appointment_cancel`` reason code and the caller's words
-    (invariant 4: reason, who, when).
+    """Cancel a booking or an online request with an ``appointment_cancel`` reason code and
+    the caller's words (invariant 4: reason, who, when).
 
     Raises:
         DomainError: ``APPOINTMENT_NOT_BOOKED``, ``REASON_REQUIRED``, ``REASON_UNKNOWN``,
             ``REASON_NOTE_REQUIRED``.
     """
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="cancel appointment"):
-        locked = _booked(appointment)
+        locked = _locked(appointment, AppointmentStatus.CANCELLED)
         reason = resolve_reason(reason_code, ReasonCategory.APPOINTMENT_CANCEL, note)
-        locked.status = AppointmentStatus.CANCELLED
-        locked.cancelled_at = timezone.now()
-        locked.cancelled_by = actor
-        locked.cancel_reason = reason
-        locked.cancel_note = note.strip()[:300]
-        locked.save(
-            update_fields=[
-                "status",
-                "cancelled_at",
-                "cancelled_by",
-                "cancel_reason",
-                "cancel_note",
-                "updated_at",
-            ]
-        )
+        _cancel_locked(locked, actor, reason, note)
+    return locked
+
+
+def approve_online_booking(appointment: Appointment, *, actor: User) -> Appointment:
+    """Reception confirms an online request: ``requested -> booked`` with who and when
+    (ADR 0029 E). Refused once its expiry has passed, swept or not.
+
+    Raises:
+        DomainError: ``APPOINTMENT_NOT_REQUESTED``, ``ONLINE_REQUEST_EXPIRED``.
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="approve online booking"):
+        locked = Appointment.objects.select_for_update().get(pk=appointment.pk)
+        now = timezone.now()
+        dappt.check_approval(locked.status, locked.expires_at, now=now)
+        locked.status = AppointmentStatus.BOOKED
+        locked.approved_by = actor
+        locked.approved_at = now
+        locked.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
+    return locked
+
+
+def reject_online_booking(
+    appointment: Appointment,
+    *,
+    actor: User,
+    reason_code: ReasonCode | str | None = "ONLINE_REJECTED",
+    note: str = "",
+) -> Appointment:
+    """Reception declines an online request: ``requested -> cancelled`` with an
+    ``appointment_cancel`` reason code, a note, who and when (invariant 4, ADR 0029 E).
+
+    Raises:
+        DomainError: ``APPOINTMENT_NOT_REQUESTED``, ``REASON_REQUIRED``, ``REASON_UNKNOWN``,
+            ``REASON_NOTE_REQUIRED``.
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="reject online booking"):
+        locked = Appointment.objects.select_for_update().get(pk=appointment.pk)
+        if locked.status != AppointmentStatus.REQUESTED:
+            raise DomainError(
+                "APPOINTMENT_NOT_REQUESTED", "Only a booking waiting for approval can be declined"
+            )
+        reason = resolve_reason(reason_code, ReasonCategory.APPOINTMENT_CANCEL, note)
+        _cancel_locked(locked, actor, reason, note)
     return locked
 
 
 def mark_appointment_no_show(appointment: Appointment, *, actor: User) -> Appointment:
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="appointment no show"):
-        locked = _booked(appointment)
+        locked = _locked(appointment, AppointmentStatus.NO_SHOW)
         locked.status = AppointmentStatus.NO_SHOW
         locked.save(update_fields=["status", "updated_at"])
     return locked
@@ -838,34 +1022,138 @@ def convert_appointment(
         )
 
 
-def available_slots(doctor: DoctorProfile, on: date) -> list[tuple[datetime, datetime]]:
-    """Free slots of the doctor's schedule on ``on`` (empty without a schedule)."""
+def available_slots(
+    doctor: DoctorProfile, on: date, *, now: datetime | None = None
+) -> list[tuple[datetime, datetime]]:
+    """Free slots of the doctor's schedule on ``on`` (empty without a schedule): the
+    schedule minus slot-holding appointments minus time off (``domain.availability``)."""
     tz = timezone.get_current_timezone()
-    booked = list(
+    day_start = datetime.combine(on, time.min, tzinfo=tz)
+    day_end = day_start + timedelta(days=1)
+    busy = list(
         Appointment.objects.filter(
-            doctor=doctor,
-            status=AppointmentStatus.BOOKED,
-            starts_at__date__lte=on,
-            ends_at__date__gte=on,
+            _held(_now(now)), doctor=doctor, starts_at__lt=day_end, ends_at__gt=day_start
         ).values_list("starts_at", "ends_at")
     )
-    out: list[tuple[datetime, datetime]] = []
+    busy += list(
+        DoctorTimeOff.objects.filter(
+            doctor=doctor, starts_at__lt=day_end, ends_at__gt=day_start
+        ).values_list("starts_at", "ends_at")
+    )
     schedules = (
         DoctorSchedule.objects.filter(doctor=doctor, weekday=on.weekday(), active=True)
         .filter(Q(valid_from__isnull=True) | Q(valid_from__lte=on))
         .filter(Q(valid_to__isnull=True) | Q(valid_to__gte=on))
         .order_by("start_time")
     )
-    for sched in schedules:
-        start = datetime.combine(on, sched.start_time, tzinfo=tz)
-        stop = datetime.combine(on, sched.end_time, tzinfo=tz)
-        step = timedelta(minutes=sched.slot_minutes)
-        while start + step <= stop:
-            end = start + step
-            if not any(s < end and e > start for s, e in booked):
-                out.append((start, end))
-            start = end
-    return out
+    sessions = [
+        davail.Session(
+            start=datetime.combine(on, sched.start_time, tzinfo=tz),
+            end=datetime.combine(on, sched.end_time, tzinfo=tz),
+            step=timedelta(minutes=sched.slot_minutes),
+        )
+        for sched in schedules
+    ]
+    return davail.free_slots(sessions, busy)
+
+
+# --- doctor time off (ADR 0029 C) -----------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class TimeOffView:
+    time_off: DoctorTimeOff
+    #: Slot-holding appointments inside the period (to reschedule or cancel by hand).
+    appointments: list[Appointment]
+
+
+def list_time_off(doctor_id: int, *, now: datetime | None = None) -> list[DoctorTimeOff]:
+    """The doctor's time off that has not ended yet, soonest first."""
+    return list(
+        DoctorTimeOff.objects.select_related("created_by")
+        .filter(doctor_id=doctor_id, ends_at__gt=_now(now))
+        .order_by("starts_at", "id")
+    )
+
+
+def add_time_off(
+    actor: User,
+    doctor_id: int,
+    *,
+    starts_at: datetime,
+    ends_at: datetime,
+    reason_ar: str = "",
+    reason_en: str = "",
+) -> TimeOffView:
+    """Block a period of a doctor's calendar: no slot inside it is offered or booked from
+    now on. Bookings already inside it stay as they are and are returned so reception can
+    move or cancel them with the patient (nothing is cancelled silently).
+
+    Raises:
+        DomainError: ``TIME_OFF_INVALID_RANGE``, ``TIME_OFF_IN_PAST``,
+            ``TIME_OFF_REASON_REQUIRED``, ``TIME_OFF_OVERLAP``.
+    """
+    # A time without an offset is the center's local time (as the staff screens send it).
+    starts_at, ends_at = (
+        t if timezone.is_aware(t) else timezone.make_aware(t) for t in (starts_at, ends_at)
+    )
+    if ends_at <= starts_at:
+        raise DomainError("TIME_OFF_INVALID_RANGE", "Time off ends after it starts")
+    if ends_at <= timezone.now():
+        raise DomainError("TIME_OFF_IN_PAST", "Time off must end in the future")
+    reason_ar, reason_en = " ".join(reason_ar.split()), " ".join(reason_en.split())
+    if not reason_ar and not reason_en:
+        raise DomainError("TIME_OFF_REASON_REQUIRED", "Say why the doctor is away")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="doctor time off"):
+        lock_doctors(doctor_id)
+        clash = DoctorTimeOff.objects.filter(
+            doctor_id=doctor_id, starts_at__lt=ends_at, ends_at__gt=starts_at
+        )
+        if clash.exists():
+            raise DomainError(
+                "TIME_OFF_OVERLAP",
+                "This period overlaps another time off of the doctor",
+                time_off=list(clash.values_list("pk", flat=True)),
+            )
+        try:
+            with transaction.atomic():
+                row = DoctorTimeOff.objects.create(
+                    doctor_id=doctor_id,
+                    starts_at=starts_at,
+                    ends_at=ends_at,
+                    reason_ar=reason_ar[:200],
+                    reason_en=reason_en[:200],
+                    created_by=actor,
+                )
+        except IntegrityError as exc:
+            if violated_constraint(exc) == _TIME_OFF_NO_OVERLAP:
+                raise DomainError(
+                    "TIME_OFF_OVERLAP", "This period overlaps another time off of the doctor"
+                ) from exc
+            raise
+        inside = list(
+            _appointment_rows()
+            .filter(
+                _held(timezone.now()),
+                doctor_id=doctor_id,
+                starts_at__lt=ends_at,
+                ends_at__gt=starts_at,
+            )
+            .order_by("starts_at", "id")
+        )
+    return TimeOffView(time_off=row, appointments=inside)
+
+
+def remove_time_off(actor: User, time_off_id: int) -> None:
+    """Give the period back to the calendar (the history keeps the removed row).
+
+    Raises:
+        DoctorTimeOff.DoesNotExist: unknown period (404).
+    """
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="remove doctor time off"):
+        row = DoctorTimeOff.objects.select_for_update().get(pk=time_off_id)
+        lock_doctors(row.doctor_id)
+        row.delete()
 
 
 # --- minimal inpatient ----------------------------------------------------------------------
@@ -1429,14 +1717,15 @@ def change_coverage(
 
 
 def reassign_future_appointments(source: Patient, target: Patient, *, actor: User) -> int:
-    """Move a merged file's future booked appointments to the surviving file (FEATURES 1.4).
+    """Move a merged file's future booked appointments and open online requests to the
+    surviving file (FEATURES 1.4).
 
     Called by ``apps.patients.services.merge_patients``. Returns how many moved.
     """
     moved = 0
     with transaction.atomic(), pghistory.context(user=actor.pk, reason="merge: appointments"):
         for appt in Appointment.objects.select_for_update().filter(
-            patient=source, status=AppointmentStatus.BOOKED, starts_at__gte=timezone.now()
+            patient=source, status__in=SLOT_HOLDING_STATUSES, starts_at__gte=timezone.now()
         ):
             appt.patient = target
             appt.save(update_fields=["patient", "updated_at"])
@@ -1653,9 +1942,10 @@ def visit_options() -> VisitOptions:
             )
         ),
         appointment_cancel_reasons=list(
-            ReasonCode.objects.filter(
-                category=ReasonCategory.APPOINTMENT_CANCEL, active=True
-            ).order_by("sort_order", "code")
+            ReasonCode.objects.filter(category=ReasonCategory.APPOINTMENT_CANCEL, active=True)
+            # Only the system cancels with the expiry reason (ADR 0029 C).
+            .exclude(code="ONLINE_REQUEST_EXPIRED")
+            .order_by("sort_order", "code")
         ),
         follow_up_window_days=Policy.load().follow_up_window_days,
     )
@@ -1937,9 +2227,14 @@ def token_slip(entry: QueueEntry) -> TokenSlip:
 
 # --- appointment day view -------------------------------------------------------------------
 
-#: Appointment statuses that keep their slot on the day view.
+#: Appointment statuses that keep their slot on the day view (a request until it expires).
 _HOLDS_SLOT = frozenset(
-    {AppointmentStatus.BOOKED, AppointmentStatus.ARRIVED, AppointmentStatus.NO_SHOW}
+    {
+        AppointmentStatus.REQUESTED,
+        AppointmentStatus.BOOKED,
+        AppointmentStatus.ARRIVED,
+        AppointmentStatus.NO_SHOW,
+    }
 )
 
 
@@ -1963,7 +2258,7 @@ class DayAgenda:
 
 def _appointment_rows() -> QuerySet[Appointment]:
     return Appointment.objects.select_related(
-        "patient", "department", "doctor__user", "converted_visit", "cancel_reason"
+        "patient", "department", "doctor__user", "converted_visit", "cancel_reason", "approved_by"
     )
 
 
@@ -1976,11 +2271,18 @@ def appointment_day(doctor: DoctorProfile, on: date, *, now: datetime | None = N
         .filter(doctor=doctor, starts_at__gte=start, starts_at__lt=start + timedelta(days=1))
         .order_by("starts_at", "id")
     )
-    held = [(a.starts_at, a.ends_at) for a in appointments if a.status in _HOLDS_SLOT]
     moment = _now(now)
+    held = [
+        (a.starts_at, a.ends_at)
+        for a in appointments
+        if a.status in _HOLDS_SLOT
+        and not (
+            a.status == AppointmentStatus.REQUESTED and dappt.is_expired(a.expires_at, now=moment)
+        )
+    ]
     items = [
         AgendaItem(s, e, None)
-        for s, e in available_slots(doctor, on)
+        for s, e in available_slots(doctor, on, now=moment)
         if e > moment and not any(hs < e and he > s for hs, he in held)
     ]
     items.extend(AgendaItem(a.starts_at, a.ends_at, a) for a in appointments)
@@ -2054,13 +2356,15 @@ def check_in(
 
 
 def upcoming_appointments(patient: Patient, *, now: datetime | None = None) -> list[Appointment]:
-    """Booked appointments of the person (every merged file) that have not ended yet."""
+    """Booked appointments and live online requests of the person (every merged file) that
+    have not ended yet (a request shows its status; it is checked in once approved)."""
+    moment = _now(now)
     return list(
         _appointment_rows()
         .filter(
+            _held(moment),
             patient_id__in=patient_services.person_file_ids(patient),
-            status=AppointmentStatus.BOOKED,
-            ends_at__gt=_now(now),
+            ends_at__gt=moment,
         )
         .order_by("starts_at", "id")
     )
