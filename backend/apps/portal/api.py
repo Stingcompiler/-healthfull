@@ -6,7 +6,13 @@ Three kinds of operation:
   cookie, scoped to ``/api/portal``) and read or change only the signed-in person's own
   rows: anyone else's id answers 404 ``NOT_FOUND``, never 403.
 * Public operations (``auth=None``): sign-in, sign-out, the receipt check, the center page and
-  identity. Unsafe ones still pass the API-wide CSRF guard.
+  identity, the doctor, day and slot reads of online booking (free times only), the booking
+  challenge, a guest's booking and sign-in. Unsafe ones still pass the API-wide CSRF guard
+  (the token comes from ``GET /api/auth/csrf``, ADR 0028 decision 3).
+* Guest operations (ADR 0029 D) authenticate with :data:`~apps.portal.security.guest_auth`
+  (cookie ``hospital_guest``, path ``/api/portal/guest``) and reach only the guest's one
+  booking. Neither the patient cookie nor a staff session opens them, and the guest cookie
+  opens nothing else.
 
 The administrator switches of ADR 0028/0029 are enforced by the services and queries these
 operations call (``apps.core.services.require_*``): the center page answers 404
@@ -25,15 +31,20 @@ from datetime import date
 from typing import Any
 
 from django.http import HttpRequest, HttpResponse, HttpResponseBase
-from ninja import Query, Router, Status
+from ninja import Header, Query, Router, Status
 
 from api.permissions import require_perm
 from api.ping import add_ping
 from api.schemas import ErrorOut
 from api.security import session_auth
 from apps.core import services as core
-from apps.portal import conf, queries, services
+from apps.portal import conf, guest, queries, services
 from apps.portal.schemas import (
+    GuestBookingCreatedOut,
+    GuestBookingIn,
+    GuestBookingOut,
+    GuestRescheduleIn,
+    GuestSignInIn,
     PortalAccessCodesOut,
     PortalAppointmentOut,
     PortalAppointmentsOut,
@@ -41,6 +52,7 @@ from apps.portal.schemas import (
     PortalBookIn,
     PortalCenterIdentityOut,
     PortalCenterPageOut,
+    PortalChallengeOut,
     PortalCodeSlipOut,
     PortalDoctorOut,
     PortalInvoiceDetailOut,
@@ -61,7 +73,7 @@ from apps.portal.schemas import (
     PortalSummaryOut,
     PortalVerifyOut,
 )
-from apps.portal.security import portal_auth, principal
+from apps.portal.security import guest_auth, guest_principal, portal_auth, principal
 
 portal_router = Router(tags=["portal"])
 add_ping(portal_router, "portal")
@@ -95,10 +107,17 @@ _WRITE: dict[int, type[ErrorOut]] = {
 
 #: Operations a patient calls with the portal cookie (every other one is public or staff).
 PATIENT_OPERATIONS: set[str] = set()
+#: Operations a guest calls with the guest cookie (ADR 0029 D).
+GUEST_OPERATIONS: set[str] = set()
 
 
 def _patient_op(operation_id: str) -> str:
     PATIENT_OPERATIONS.add(operation_id)
+    return operation_id
+
+
+def _guest_op(operation_id: str) -> str:
+    GUEST_OPERATIONS.add(operation_id)
     return operation_id
 
 
@@ -486,38 +505,207 @@ def cancel_appointment(request: HttpRequest, appointment_id: int) -> Any:
 
 @portal_router.get(
     "/doctors",
-    auth=portal_auth,
-    response={200: list[PortalDoctorOut], 401: ErrorOut, 409: ErrorOut},
-    operation_id=_patient_op("portal_list_doctors"),
-    summary="Doctors who take online bookings",
-    description="409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
+    auth=None,
+    response={200: list[PortalDoctorOut], 409: ErrorOut, 429: ErrorOut},
+    operation_id="portal_list_doctors",
+    summary="Doctors who take online bookings (public)",
+    description=(
+        "No sign-in: patients and guests read the same list. 409 `ONLINE_BOOKING_DISABLED` "
+        "while online booking is switched off; 429 after too many reads from one address."
+    ),
 )
 def list_doctors(request: HttpRequest) -> Any:
+    services.check_public_page_rate(request)
     return queries.booking_doctors()
 
 
 @portal_router.get(
     "/doctors/{doctor_id}/days",
-    auth=portal_auth,
-    response={200: list[date], **_READ},
-    operation_id=_patient_op("portal_list_booking_days"),
-    summary="Days with free slots, from today to the booking horizon",
-    description="409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
+    auth=None,
+    response={200: list[date], 404: ErrorOut, 409: ErrorOut, 429: ErrorOut},
+    operation_id="portal_list_booking_days",
+    summary="Days with free slots, from today to the booking horizon (public)",
+    description=(
+        "No sign-in. 404 for a doctor not offered online; 409 `ONLINE_BOOKING_DISABLED`; 429 "
+        "after too many reads from one address."
+    ),
 )
 def list_booking_days(request: HttpRequest, doctor_id: int) -> Any:
+    services.check_public_page_rate(request)
     return queries.booking_days(doctor_id)
 
 
 @portal_router.get(
     "/doctors/{doctor_id}/slots",
-    auth=portal_auth,
-    response={200: PortalSlotsOut, **_READ, 422: ErrorOut},
-    operation_id=_patient_op("portal_list_slots"),
-    summary="A doctor's free slots on one day that can be booked online",
-    description="409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
+    auth=None,
+    response={200: PortalSlotsOut, 404: ErrorOut, 409: ErrorOut, 422: ErrorOut, 429: ErrorOut},
+    operation_id="portal_list_slots",
+    summary="A doctor's free slots on one day that can be booked online (public)",
+    description=(
+        "No sign-in: only free times, never who holds the others. 404 for a doctor not "
+        "offered online; 409 `ONLINE_BOOKING_DISABLED`; 429 after too many reads."
+    ),
 )
 def list_slots(request: HttpRequest, doctor_id: int, on: date) -> Any:
+    services.check_public_page_rate(request)
     return queries.booking_slots(doctor_id, on)
+
+
+# --- public: guest booking (ADR 0029 D, F) --------------------------------------------------
+
+
+def _set_guest_cookie(response: HttpResponse, token: str) -> None:
+    response.set_cookie(
+        conf.GUEST_COOKIE_NAME,
+        token,
+        max_age=int(conf.guest_session_absolute().total_seconds()),
+        path=conf.GUEST_COOKIE_PATH,
+        secure=conf.cookie_secure(),
+        httponly=True,
+        samesite="Strict",
+    )
+
+
+@portal_router.get(
+    "/challenge",
+    auth=None,
+    response={200: PortalChallengeOut, 409: ErrorOut, 429: ErrorOut},
+    operation_id="portal_get_booking_challenge",
+    summary="A proof-of-work challenge for the guest booking form (signed, single use)",
+    description=(
+        "Find a nonce (letters and digits, at most 64) so that SHA-256(challenge + nonce) "
+        "starts with `bits` zero bits, then send both with the booking. 409 "
+        "`ONLINE_BOOKING_DISABLED`, `GUEST_BOOKING_DISABLED`; 429 after too many reads."
+    ),
+)
+def get_booking_challenge(request: HttpRequest) -> Any:
+    services.check_public_page_rate(request)
+    return guest.issue_challenge(request)
+
+
+@portal_router.post(
+    "/guest-bookings",
+    auth=None,
+    response={
+        201: GuestBookingCreatedOut,
+        400: ErrorOut,
+        403: ErrorOut,
+        404: ErrorOut,
+        409: ErrorOut,
+        422: ErrorOut,
+        429: ErrorOut,
+    },
+    operation_id="portal_create_guest_booking",
+    summary="Book a free slot without a file; answers the reference and the PIN (shown once)",
+    description=(
+        "Needs the `Idempotency-Key` header (a UUID kept across retries): the same key and "
+        "body answers the stored result again (`replayed`), another body 409 "
+        "`IDEMPOTENCY_MISMATCH`; no key 400 `IDEMPOTENCY_KEY_REQUIRED`. Status `requested` "
+        "while approval is required, else `booked`. 409 `ONLINE_BOOKING_DISABLED`, "
+        "`GUEST_BOOKING_DISABLED`, `GUEST_NAME_REQUIRED`, `GUEST_PHONE_INVALID`, `POW_INVALID`, "
+        "`POW_EXPIRED`, `POW_ALREADY_USED`, `PORTAL_SLOT_UNAVAILABLE`, "
+        "`ONLINE_REVIEW_WINDOW_TOO_SHORT`, `PORTAL_ALREADY_BOOKED`, `GUEST_PHONE_LIMIT`, "
+        "`ONLINE_DOCTOR_DAY_FULL`, `APPOINTMENT_CONFLICT`; 404 for a doctor not offered online; "
+        "429 `RATE_LIMITED` after the address's daily requests. Creates no patient file, visit, "
+        "order, invoice or payment. Needs X-CSRFToken."
+    ),
+)
+def create_guest_booking(
+    request: HttpRequest,
+    payload: GuestBookingIn,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+) -> Status[Any]:
+    created = guest.create_booking(
+        request,
+        idempotency_key=idempotency_key,
+        doctor_id=payload.doctor_id,
+        starts_at=payload.starts_at,
+        contact_name=payload.contact_name,
+        contact_phone=payload.contact_phone,
+        challenge=payload.challenge,
+        nonce=payload.nonce,
+    )
+    return Status(201, created)
+
+
+@portal_router.post(
+    "/guest-bookings/sign-in",
+    auth=None,
+    response={200: GuestBookingOut, 401: ErrorOut, 403: ErrorOut, 409: ErrorOut, 429: ErrorOut},
+    operation_id="portal_guest_sign_in",
+    summary="Open one's guest booking with its reference and PIN",
+    description=(
+        "Sets the guest cookie (HttpOnly, SameSite=Strict, path /api/portal/guest). Every "
+        "refusal is 401 `GUEST_INVALID_CREDENTIALS` (also for a booking locked after 5 wrong "
+        "PINs: reception issues a new PIN); 429 `RATE_LIMITED` for an address; 409 "
+        "`ONLINE_BOOKING_DISABLED`. Needs X-CSRFToken."
+    ),
+)
+def guest_sign_in(request: HttpRequest, response: HttpResponse, payload: GuestSignInIn) -> Any:
+    token, who = guest.sign_in(request, reference=payload.reference, pin=payload.pin)
+    _set_guest_cookie(response, token)
+    return guest.booking_view(who)
+
+
+@portal_router.post(
+    "/guest/sign-out",
+    auth=None,
+    response={204: None, 403: ErrorOut},
+    operation_id="portal_guest_sign_out",
+    summary="End the guest session (idempotent) and clear its cookie",
+)
+def guest_sign_out(request: HttpRequest, response: HttpResponse) -> Status[None]:
+    guest.sign_out(request, request.COOKIES.get(conf.GUEST_COOKIE_NAME))
+    response.delete_cookie(conf.GUEST_COOKIE_NAME, path=conf.GUEST_COOKIE_PATH, samesite="Strict")
+    return Status(204, None)
+
+
+# --- guest: the one booking ----------------------------------------------------------------
+
+
+@portal_router.get(
+    "/guest/booking",
+    auth=guest_auth,
+    response={200: GuestBookingOut, 401: ErrorOut, 404: ErrorOut, 409: ErrorOut},
+    operation_id=_guest_op("portal_get_guest_booking"),
+    summary="The signed-in guest's booking: status, time, doctor, what may still be done",
+    description="409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
+)
+def get_guest_booking(request: HttpRequest) -> Any:
+    return guest.booking_view(guest_principal(request))
+
+
+@portal_router.post(
+    "/guest/booking/cancel",
+    auth=guest_auth,
+    response={200: GuestBookingOut, **_WRITE},
+    operation_id=_guest_op("portal_cancel_guest_booking"),
+    summary="Cancel the guest's booking or request before the cut-off",
+    description=(
+        "409 `PORTAL_CANCEL_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`, `ONLINE_BOOKING_DISABLED`."
+    ),
+)
+def cancel_guest_booking(request: HttpRequest) -> Any:
+    return guest.cancel(request, guest_principal(request))
+
+
+@portal_router.post(
+    "/guest/booking/reschedule",
+    auth=guest_auth,
+    response={200: GuestBookingOut, **_WRITE, 429: ErrorOut},
+    operation_id=_guest_op("portal_reschedule_guest_booking"),
+    summary="Move the guest's confirmed booking to another free slot before the cut-off",
+    description=(
+        "The old booking becomes `rescheduled`, the reference and PIN now open the new one "
+        "(`requested` while approval is required). 409 `PORTAL_RESCHEDULE_DISABLED`, "
+        "`PORTAL_RESCHEDULE_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`, `GUEST_BOOKING_DISABLED` and "
+        "the booking refusals; 404 for a doctor not offered online."
+    ),
+)
+def reschedule_guest_booking(request: HttpRequest, payload: GuestRescheduleIn) -> Any:
+    return guest.reschedule(
+        request, guest_principal(request), starts_at=payload.starts_at, doctor_id=payload.doctor_id
+    )
 
 
 @portal_router.get(

@@ -610,6 +610,30 @@ def logout(request: HttpRequest, token: str | None) -> None:
 # --- appointments --------------------------------------------------------------------------
 
 
+def notify_requested(appointment: Appointment) -> None:
+    """Tell reception a new online request waits (``online_booking_requested``)."""
+    if appointment.status != AppointmentStatus.REQUESTED:
+        return
+    core.notify_kind(
+        "online_booking_requested",
+        appointment_id=appointment.pk,
+        doctor_id=appointment.doctor_id,
+        starts_at=appointment.starts_at.isoformat(),
+        source=appointment.source,
+    )
+
+
+def notify_cancelled(appointment: Appointment) -> None:
+    """Tell reception a booker cancelled online (``online_booking_cancelled_by_patient``)."""
+    core.notify_kind(
+        "online_booking_cancelled_by_patient",
+        appointment_id=appointment.pk,
+        doctor_id=appointment.doctor_id,
+        starts_at=appointment.starts_at.isoformat(),
+        source=appointment.source,
+    )
+
+
 def bookable_doctor(doctor_id: int) -> DoctorProfile:
     """An active doctor offered online (``online_bookable``, ADR 0029 B) with an active
     weekly schedule (only those take portal bookings).
@@ -719,7 +743,7 @@ def book_appointment(
         expires = _check_new_slot(
             doctor, start, files=files, now=now, rules=rules, requests=requests
         )
-        return visits.book_appointment(
+        booked = visits.book_appointment(
             doctor=doctor,
             starts_at=start,
             actor=actor,
@@ -728,6 +752,8 @@ def book_appointment(
             source=AppointmentSource.PORTAL,
             expires_at=expires,
         )
+        notify_requested(booked)
+        return booked
 
 
 def reschedule_appointment(
@@ -787,7 +813,7 @@ def reschedule_appointment(
                 moving=old.pk,
             )
 
-        return visits.move_appointment(
+        moved = visits.move_appointment(
             current,
             starts_at=start,
             doctor=doctor,
@@ -795,6 +821,17 @@ def reschedule_appointment(
             reason="portal reschedule",
             check=check,
         )
+        _event(
+            PortalEventKind.BOOKING_RESCHEDULED,
+            None,
+            patient=person,
+            file_no=person.file_no,
+            appointment=moved.pk,
+            moved_from=current.pk,
+            status=moved.status,
+        )
+        notify_requested(moved)
+        return moved
 
 
 def cancel_appointment(principal: PortalPrincipal, appointment_id: int) -> Appointment:
@@ -826,12 +863,14 @@ def cancel_appointment(principal: PortalPrincipal, appointment_id: int) -> Appoi
             now=timezone.now(),
             rules=core.booking_rules(),
         )
-        return visits.cancel_appointment(
+        cancelled = visits.cancel_appointment(
             appointment,
             actor=actor,
             reason_code="PATIENT_REQUEST",
             note="Cancelled by the patient on the portal",
         )
+        notify_cancelled(cancelled)
+        return cancelled
 
 
 # --- housekeeping --------------------------------------------------------------------------

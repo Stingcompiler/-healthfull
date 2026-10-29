@@ -6,8 +6,8 @@ import json
 
 from api.security import SessionAuth
 from apps.core.management.commands.export_openapi import render_schema
-from apps.portal.api import PATIENT_OPERATIONS
-from apps.portal.security import PortalAuth
+from apps.portal.api import GUEST_OPERATIONS, PATIENT_OPERATIONS
+from apps.portal.security import GuestAuth, PortalAuth
 from conftest import router_operations
 
 PUBLIC = {
@@ -22,6 +22,14 @@ PUBLIC = {
     "portal_get_center_identity",
     # The website's images (ADR 0029 H).
     "portal_get_center_media",
+    # Online booking reads (free times only) and guest booking (ADR 0029 D, F).
+    "portal_list_doctors",
+    "portal_list_booking_days",
+    "portal_list_slots",
+    "portal_get_booking_challenge",
+    "portal_create_guest_booking",
+    "portal_guest_sign_in",
+    "portal_guest_sign_out",
 }
 STAFF = {
     "portal_get_ping": None,
@@ -46,10 +54,15 @@ def _security_by_operation() -> dict[str, list[str]]:
 def test_router_surface_is_pinned() -> None:
     ops = router_operations("/portal")
     by_id = {op_id: perm for _, _, op_id, perm in ops}
-    assert set(by_id) == PATIENT_OPERATIONS | PUBLIC | set(STAFF)
+    assert set(by_id) == PATIENT_OPERATIONS | GUEST_OPERATIONS | PUBLIC | set(STAFF)
+    assert {
+        "portal_get_guest_booking",
+        "portal_cancel_guest_booking",
+        "portal_reschedule_guest_booking",
+    } == GUEST_OPERATIONS
     for op_id, perm in STAFF.items():
         assert by_id[op_id] == perm
-    for op_id in PATIENT_OPERATIONS | PUBLIC:
+    for op_id in PATIENT_OPERATIONS | GUEST_OPERATIONS | PUBLIC:
         assert by_id[op_id] is None  # staff permission codes never apply on the portal
 
 
@@ -58,8 +71,12 @@ def test_each_operation_uses_the_right_kind_of_auth() -> None:
     portal_scheme = PortalAuth.__name__
     staff_scheme = SessionAuth.__name__
     assert portal_scheme != staff_scheme
+    guest_scheme = GuestAuth.__name__
+    assert guest_scheme not in {portal_scheme, staff_scheme}
     for op_id in PATIENT_OPERATIONS:
         assert security[op_id] == [portal_scheme], op_id
+    for op_id in GUEST_OPERATIONS:
+        assert security[op_id] == [guest_scheme], op_id
     for op_id in PUBLIC:
         assert security[op_id] == [], op_id
     for op_id in STAFF:

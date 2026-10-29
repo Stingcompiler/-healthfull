@@ -10274,6 +10274,373 @@
         "title": "GoodsReceiptOut",
         "type": "object"
       },
+      "GuestBookingCreatedOut": {
+        "properties": {
+          "display_status": {
+            "enum": [
+              "awaiting_approval",
+              "confirmed",
+              "received",
+              "moved",
+              "cancelled_by_you",
+              "cancelled_by_center",
+              "declined",
+              "expired",
+              "missed"
+            ],
+            "title": "Display Status",
+            "type": "string"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/PortalDoctorOut"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "pin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Six digits, shown once. A replay gives it again unless staff issued a new PIN since (then null).",
+            "title": "Pin"
+          },
+          "reference": {
+            "description": "Shown as ABCDE-FGH23; typed back case-insensitive",
+            "title": "Reference",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "True when this answers a retried request",
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "share_url": {
+            "description": "wa.me link with the reference, never the PIN",
+            "title": "Share Url",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "requested",
+              "booked",
+              "arrived",
+              "no_show",
+              "cancelled",
+              "rescheduled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference",
+          "pin",
+          "status",
+          "display_status",
+          "starts_at",
+          "ends_at",
+          "expires_at",
+          "doctor",
+          "share_url",
+          "replayed"
+        ],
+        "title": "GuestBookingCreatedOut",
+        "type": "object"
+      },
+      "GuestBookingIn": {
+        "properties": {
+          "challenge": {
+            "maxLength": 120,
+            "title": "Challenge",
+            "type": "string"
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "title": "Contact Name",
+            "type": "string"
+          },
+          "contact_phone": {
+            "maxLength": 30,
+            "title": "Contact Phone",
+            "type": "string"
+          },
+          "doctor_id": {
+            "title": "Doctor Id",
+            "type": "integer"
+          },
+          "nonce": {
+            "maxLength": 64,
+            "title": "Nonce",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "doctor_id",
+          "starts_at",
+          "contact_name",
+          "contact_phone",
+          "challenge",
+          "nonce"
+        ],
+        "title": "GuestBookingIn",
+        "type": "object"
+      },
+      "GuestBookingOut": {
+        "properties": {
+          "can_cancel": {
+            "title": "Can Cancel",
+            "type": "boolean"
+          },
+          "can_reschedule": {
+            "title": "Can Reschedule",
+            "type": "boolean"
+          },
+          "cancel_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Until"
+          },
+          "contact_name": {
+            "title": "Contact Name",
+            "type": "string"
+          },
+          "display_status": {
+            "enum": [
+              "awaiting_approval",
+              "confirmed",
+              "received",
+              "moved",
+              "cancelled_by_you",
+              "cancelled_by_center",
+              "declined",
+              "expired",
+              "missed"
+            ],
+            "title": "Display Status",
+            "type": "string"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/PortalDoctorOut"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "phone_masked": {
+            "title": "Phone Masked",
+            "type": "string"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "reschedule_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reschedule Until"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/GuestBookingRulesOut"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "requested",
+              "booked",
+              "arrived",
+              "no_show",
+              "cancelled",
+              "rescheduled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference",
+          "status",
+          "display_status",
+          "starts_at",
+          "ends_at",
+          "expires_at",
+          "doctor",
+          "contact_name",
+          "phone_masked",
+          "can_cancel",
+          "cancel_until",
+          "can_reschedule",
+          "reschedule_until",
+          "rules"
+        ],
+        "title": "GuestBookingOut",
+        "type": "object"
+      },
+      "GuestBookingRulesOut": {
+        "properties": {
+          "cancel_cutoff_hours": {
+            "title": "Cancel Cutoff Hours",
+            "type": "integer"
+          },
+          "require_approval": {
+            "title": "Require Approval",
+            "type": "boolean"
+          },
+          "reschedule_allowed": {
+            "title": "Reschedule Allowed",
+            "type": "boolean"
+          },
+          "reschedule_cutoff_hours": {
+            "title": "Reschedule Cutoff Hours",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cancel_cutoff_hours",
+          "reschedule_allowed",
+          "reschedule_cutoff_hours",
+          "require_approval"
+        ],
+        "title": "GuestBookingRulesOut",
+        "type": "object"
+      },
+      "GuestPinReissueIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 300,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "GuestPinReissueIn",
+        "type": "object"
+      },
+      "GuestPinReissuedOut": {
+        "properties": {
+          "booking": {
+            "$ref": "#/components/schemas/OnlineBookingOut"
+          },
+          "pin": {
+            "description": "Six digits, shown once: read it to the guest",
+            "title": "Pin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pin",
+          "booking"
+        ],
+        "title": "GuestPinReissuedOut",
+        "type": "object"
+      },
+      "GuestRescheduleIn": {
+        "properties": {
+          "doctor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Default: the same doctor",
+            "title": "Doctor Id"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at"
+        ],
+        "title": "GuestRescheduleIn",
+        "type": "object"
+      },
+      "GuestSignInIn": {
+        "properties": {
+          "pin": {
+            "maxLength": 12,
+            "title": "Pin",
+            "type": "string"
+          },
+          "reference": {
+            "maxLength": 20,
+            "title": "Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference",
+          "pin"
+        ],
+        "title": "GuestSignInIn",
+        "type": "object"
+      },
       "HandoverCancelIn": {
         "properties": {
           "note": {
@@ -16081,6 +16448,330 @@
         "title": "NursingVisitParams",
         "type": "object"
       },
+      "OnlineBookingBulkRejectIn": {
+        "description": "Decline every open guest request with this booking's phone (ADR 0029 F).",
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "default": "ONLINE_REJECTED",
+            "maxLength": 40,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "title": "OnlineBookingBulkRejectIn",
+        "type": "object"
+      },
+      "OnlineBookingBulkRejectOut": {
+        "properties": {
+          "bookings": {
+            "items": {
+              "$ref": "#/components/schemas/OnlineBookingOut"
+            },
+            "title": "Bookings",
+            "type": "array"
+          },
+          "rejected": {
+            "title": "Rejected",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rejected",
+          "bookings"
+        ],
+        "title": "OnlineBookingBulkRejectOut",
+        "type": "object"
+      },
+      "OnlineBookingCancelIn": {
+        "description": "Cancel on the booker's behalf with an ``appointment_cancel`` reason code and a note.",
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason_code": {
+            "maxLength": 40,
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason_code"
+        ],
+        "title": "OnlineBookingCancelIn",
+        "type": "object"
+      },
+      "OnlineBookingLinkIn": {
+        "properties": {
+          "patient_id": {
+            "title": "Patient Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "patient_id"
+        ],
+        "title": "OnlineBookingLinkIn",
+        "type": "object"
+      },
+      "OnlineBookingOut": {
+        "description": "A row of the reception inbox (ADR 0029): the appointment, and what reception needs to\nanswer the booker.",
+        "properties": {
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancel_note": {
+            "title": "Cancel Note",
+            "type": "string"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_name": {
+            "title": "Contact Name",
+            "type": "string"
+          },
+          "contact_phone": {
+            "title": "Contact Phone",
+            "type": "string"
+          },
+          "department": {
+            "$ref": "#/components/schemas/VisitDepartmentOut"
+          },
+          "display_status": {
+            "description": "What the booker is told (portal status)",
+            "title": "Display Status",
+            "type": "string"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/VisitDoctorOut"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An online request (status requested) lapses then (ADR 0029 A8)",
+            "title": "Expires At"
+          },
+          "guest_locked": {
+            "description": "Locked after wrong PINs: issue a new PIN",
+            "title": "Guest Locked",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "patient": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PatientBriefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone_open_requests": {
+            "description": "Guest requests of the same phone still waiting (for decline-all)",
+            "title": "Phone Open Requests",
+            "type": "integer"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A guest booking's reference; null otherwise",
+            "title": "Reference"
+          },
+          "rescheduled_from_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rescheduled From Id"
+          },
+          "source": {
+            "enum": [
+              "staff",
+              "portal",
+              "guest"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "requested",
+              "booked",
+              "arrived",
+              "cancelled",
+              "no_show",
+              "rescheduled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The visit opened at check-in",
+            "title": "Visit Id"
+          },
+          "whatsapp_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "https://wa.me/<phone>?text=<bilingual status message, never the PIN>; null without a usable phone. Opened by reception; nothing is sent by the server.",
+            "title": "Whatsapp Url"
+          }
+        },
+        "required": [
+          "id",
+          "patient",
+          "contact_name",
+          "contact_phone",
+          "doctor",
+          "department",
+          "starts_at",
+          "ends_at",
+          "status",
+          "source",
+          "expires_at",
+          "approved_at",
+          "approved_by",
+          "rescheduled_from_id",
+          "notes",
+          "visit_id",
+          "cancel_reason",
+          "cancel_note",
+          "reference",
+          "guest_locked",
+          "display_status",
+          "whatsapp_url",
+          "phone_open_requests"
+        ],
+        "title": "OnlineBookingOut",
+        "type": "object"
+      },
+      "OnlineBookingParams": {
+        "properties": {
+          "day": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Local day; default from today on",
+            "title": "Day"
+          },
+          "doctor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctor Id"
+          },
+          "status": {
+            "default": "requested",
+            "enum": [
+              "requested",
+              "booked",
+              "arrived",
+              "cancelled",
+              "rescheduled",
+              "no_show",
+              "all"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "OnlineBookingParams",
+        "type": "object"
+      },
       "OnlineBookingRejectIn": {
         "description": "Decline an online request with an ``appointment_cancel`` reason code (default\n``ONLINE_REJECTED``) and a note (invariant 4).",
         "properties": {
@@ -21043,6 +21734,32 @@
           "cancellation_policy_en"
         ],
         "title": "PortalCenterPageOut",
+        "type": "object"
+      },
+      "PortalChallengeOut": {
+        "properties": {
+          "bits": {
+            "description": "Leading zero bits SHA-256(challenge + nonce) must have",
+            "title": "Bits",
+            "type": "integer"
+          },
+          "challenge": {
+            "description": "Send back as is with the nonce",
+            "title": "Challenge",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "challenge",
+          "bits",
+          "expires_at"
+        ],
+        "title": "PortalChallengeOut",
         "type": "object"
       },
       "PortalClinicDayOut": {
@@ -33127,6 +33844,11 @@
       }
     },
     "securitySchemes": {
+      "GuestAuth": {
+        "in": "cookie",
+        "name": "hospital_guest",
+        "type": "apiKey"
+      },
       "PortalAuth": {
         "in": "cookie",
         "name": "hospital_portal",
@@ -64330,9 +65052,52 @@
         ]
       }
     },
+    "/api/portal/challenge": {
+      "get": {
+        "description": "Find a nonce (letters and digits, at most 64) so that SHA-256(challenge + nonce) starts with `bits` zero bits, then send both with the booking. 409 `ONLINE_BOOKING_DISABLED`, `GUEST_BOOKING_DISABLED`; 429 after too many reads.",
+        "operationId": "portal_get_booking_challenge",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalChallengeOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "A proof-of-work challenge for the guest booking form (signed, single use)",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
     "/api/portal/doctors": {
       "get": {
-        "description": "409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
+        "description": "No sign-in: patients and guests read the same list. 409 `ONLINE_BOOKING_DISABLED` while online booking is switched off; 429 after too many reads from one address.",
         "operationId": "portal_list_doctors",
         "parameters": [],
         "responses": {
@@ -64350,16 +65115,6 @@
             },
             "description": "OK"
           },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorOut"
-                }
-              }
-            },
-            "description": "Unauthorized"
-          },
           "409": {
             "content": {
               "application/json": {
@@ -64369,14 +65124,19 @@
               }
             },
             "description": "Conflict"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
           }
         },
-        "security": [
-          {
-            "PortalAuth": []
-          }
-        ],
-        "summary": "Doctors who take online bookings",
+        "summary": "Doctors who take online bookings (public)",
         "tags": [
           "portal"
         ]
@@ -64384,7 +65144,7 @@
     },
     "/api/portal/doctors/{doctor_id}/days": {
       "get": {
-        "description": "409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
+        "description": "No sign-in. 404 for a doctor not offered online; 409 `ONLINE_BOOKING_DISABLED`; 429 after too many reads from one address.",
         "operationId": "portal_list_booking_days",
         "parameters": [
           {
@@ -64408,6 +65168,325 @@
                   },
                   "title": "Response",
                   "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Days with free slots, from today to the booking horizon (public)",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/doctors/{doctor_id}/slots": {
+      "get": {
+        "description": "No sign-in: only free times, never who holds the others. 404 for a doctor not offered online; 409 `ONLINE_BOOKING_DISABLED`; 429 after too many reads.",
+        "operationId": "portal_list_slots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doctor_id",
+            "required": true,
+            "schema": {
+              "title": "Doctor Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "on",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "On",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalSlotsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "A doctor's free slots on one day that can be booked online (public)",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/guest-bookings": {
+      "post": {
+        "description": "Needs the `Idempotency-Key` header (a UUID kept across retries): the same key and body answers the stored result again (`replayed`), another body 409 `IDEMPOTENCY_MISMATCH`; no key 400 `IDEMPOTENCY_KEY_REQUIRED`. Status `requested` while approval is required, else `booked`. 409 `ONLINE_BOOKING_DISABLED`, `GUEST_BOOKING_DISABLED`, `GUEST_NAME_REQUIRED`, `GUEST_PHONE_INVALID`, `POW_INVALID`, `POW_EXPIRED`, `POW_ALREADY_USED`, `PORTAL_SLOT_UNAVAILABLE`, `ONLINE_REVIEW_WINDOW_TOO_SHORT`, `PORTAL_ALREADY_BOOKED`, `GUEST_PHONE_LIMIT`, `ONLINE_DOCTOR_DAY_FULL`, `APPOINTMENT_CONFLICT`; 404 for a doctor not offered online; 429 `RATE_LIMITED` after the address's daily requests. Creates no patient file, visit, order, invoice or payment. Needs X-CSRFToken.",
+        "operationId": "portal_create_guest_booking",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestBookingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestBookingCreatedOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Book a free slot without a file; answers the reference and the PIN (shown once)",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/guest-bookings/sign-in": {
+      "post": {
+        "description": "Sets the guest cookie (HttpOnly, SameSite=Strict, path /api/portal/guest). Every refusal is 401 `GUEST_INVALID_CREDENTIALS` (also for a booking locked after 5 wrong PINs: reception issues a new PIN); 429 `RATE_LIMITED` for an address; 409 `ONLINE_BOOKING_DISABLED`. Needs X-CSRFToken.",
+        "operationId": "portal_guest_sign_in",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestSignInIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestBookingOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "summary": "Open one's guest booking with its reference and PIN",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/guest/booking": {
+      "get": {
+        "description": "409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
+        "operationId": "portal_get_guest_booking",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestBookingOut"
                 }
               }
             },
@@ -64446,46 +65525,26 @@
         },
         "security": [
           {
-            "PortalAuth": []
+            "GuestAuth": []
           }
         ],
-        "summary": "Days with free slots, from today to the booking horizon",
+        "summary": "The signed-in guest's booking: status, time, doctor, what may still be done",
         "tags": [
           "portal"
         ]
       }
     },
-    "/api/portal/doctors/{doctor_id}/slots": {
-      "get": {
-        "description": "409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
-        "operationId": "portal_list_slots",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "doctor_id",
-            "required": true,
-            "schema": {
-              "title": "Doctor Id",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "on",
-            "required": true,
-            "schema": {
-              "format": "date",
-              "title": "On",
-              "type": "string"
-            }
-          }
-        ],
+    "/api/portal/guest/booking/cancel": {
+      "post": {
+        "description": "409 `PORTAL_CANCEL_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`, `ONLINE_BOOKING_DISABLED`.",
+        "operationId": "portal_cancel_guest_booking",
+        "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PortalSlotsOut"
+                  "$ref": "#/components/schemas/GuestBookingOut"
                 }
               }
             },
@@ -64500,6 +65559,16 @@
               }
             },
             "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
           },
           "404": {
             "content": {
@@ -64534,10 +65603,133 @@
         },
         "security": [
           {
-            "PortalAuth": []
+            "GuestAuth": []
           }
         ],
-        "summary": "A doctor's free slots on one day that can be booked online",
+        "summary": "Cancel the guest's booking or request before the cut-off",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/guest/booking/reschedule": {
+      "post": {
+        "description": "The old booking becomes `rescheduled`, the reference and PIN now open the new one (`requested` while approval is required). 409 `PORTAL_RESCHEDULE_DISABLED`, `PORTAL_RESCHEDULE_TOO_LATE`, `APPOINTMENT_NOT_BOOKED`, `GUEST_BOOKING_DISABLED` and the booking refusals; 404 for a doctor not offered online.",
+        "operationId": "portal_reschedule_guest_booking",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestRescheduleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestBookingOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "security": [
+          {
+            "GuestAuth": []
+          }
+        ],
+        "summary": "Move the guest's confirmed booking to another free slot before the cut-off",
+        "tags": [
+          "portal"
+        ]
+      }
+    },
+    "/api/portal/guest/sign-out": {
+      "post": {
+        "operationId": "portal_guest_sign_out",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "summary": "End the guest session (idempotent) and clear its cookie",
         "tags": [
           "portal"
         ]
@@ -72063,6 +73255,133 @@
         ]
       }
     },
+    "/api/visits/online-bookings": {
+      "get": {
+        "description": "status `requested` (default) lists the requests still waiting, oldest expiry first; other statuses by time. Without `day`, requested and booked list from now on. At most 200 rows.",
+        "operationId": "visits_list_online_bookings",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "requested",
+              "enum": [
+                "requested",
+                "booked",
+                "arrived",
+                "cancelled",
+                "rescheduled",
+                "no_show",
+                "all"
+              ],
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Local day; default from today on",
+            "in": "query",
+            "name": "day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Local day; default from today on",
+              "title": "Day"
+            }
+          },
+          {
+            "in": "query",
+            "name": "doctor_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Doctor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OnlineBookingOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "The reception inbox: bookings made online by patients and guests",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
     "/api/visits/online-bookings/{appointment_id}/approve": {
       "post": {
         "description": "409 APPOINTMENT_NOT_REQUESTED, ONLINE_REQUEST_EXPIRED.",
@@ -72083,7 +73402,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentOut"
+                  "$ref": "#/components/schemas/OnlineBookingOut"
                 }
               }
             },
@@ -72151,6 +73470,300 @@
         ]
       }
     },
+    "/api/visits/online-bookings/{appointment_id}/cancel": {
+      "post": {
+        "description": "409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
+        "operationId": "visits_cancel_online_booking",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnlineBookingCancelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Cancel an online booking or request on the booker's behalf (reason and note)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/online-bookings/{appointment_id}/link-patient": {
+      "post": {
+        "description": "Explicit and audited; never automatic by name or phone. 409 APPOINTMENT_PATIENT_MISMATCH (another file is linked), APPOINTMENT_NOT_BOOKED.",
+        "operationId": "visits_link_online_booking_patient",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnlineBookingLinkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Link a booking made without a file to the patient's file (reception checked them)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/online-bookings/{appointment_id}/reissue-pin": {
+      "post": {
+        "description": "Unlocks a booking locked after wrong PINs and ends the guest's open sessions. 409 REASON_REQUIRED, NOT_A_GUEST_BOOKING.",
+        "operationId": "visits_reissue_guest_pin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestPinReissueIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestPinReissuedOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Issue a new PIN for a guest booking (shown once; the old PIN stops working)",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
     "/api/visits/online-bookings/{appointment_id}/reject": {
       "post": {
         "description": "409 APPOINTMENT_NOT_REQUESTED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
@@ -72181,7 +73794,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentOut"
+                  "$ref": "#/components/schemas/OnlineBookingOut"
                 }
               }
             },
@@ -72244,6 +73857,104 @@
           }
         ],
         "summary": "Decline an online request with a reason code and a note",
+        "tags": [
+          "visits"
+        ]
+      }
+    },
+    "/api/visits/online-bookings/{appointment_id}/reject-phone": {
+      "post": {
+        "description": "Does not block the phone. 409 GUEST_PHONE_INVALID, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED.",
+        "operationId": "visits_reject_online_bookings_from_phone",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appointment_id",
+            "required": true,
+            "schema": {
+              "title": "Appointment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnlineBookingBulkRejectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingBulkRejectOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Decline every open guest request with this booking's phone (one reason, one note)",
         "tags": [
           "visits"
         ]

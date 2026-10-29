@@ -426,6 +426,65 @@ class OnlineBookingRejectIn(Schema):
     note: str = Field("", max_length=300)
 
 
+class OnlineBookingOut(AppointmentOut):
+    """A row of the reception inbox (ADR 0029): the appointment, and what reception needs to
+    answer the booker."""
+
+    reference: str | None = Field(..., description="A guest booking's reference; null otherwise")
+    guest_locked: bool = Field(..., description="Locked after wrong PINs: issue a new PIN")
+    display_status: str = Field(..., description="What the booker is told (portal status)")
+    whatsapp_url: str | None = Field(
+        ...,
+        description=(
+            "https://wa.me/<phone>?text=<bilingual status message, never the PIN>; null without "
+            "a usable phone. Opened by reception; nothing is sent by the server."
+        ),
+    )
+    phone_open_requests: int = Field(
+        ..., description="Guest requests of the same phone still waiting (for decline-all)"
+    )
+
+
+class OnlineBookingParams(Schema):
+    status: Literal[
+        "requested", "booked", "arrived", "cancelled", "rescheduled", "no_show", "all"
+    ] = "requested"
+    day: date | None = Field(None, description="Local day; default from today on")
+    doctor_id: int | None = None
+
+
+class OnlineBookingCancelIn(Schema):
+    """Cancel on the booker's behalf with an ``appointment_cancel`` reason code and a note."""
+
+    reason_code: str = Field(..., max_length=40)
+    note: str = Field("", max_length=300)
+
+
+class OnlineBookingLinkIn(Schema):
+    patient_id: int
+
+
+class GuestPinReissueIn(Schema):
+    reason: str = Field(..., max_length=300)
+
+
+class GuestPinReissuedOut(Schema):
+    pin: str = Field(..., description="Six digits, shown once: read it to the guest")
+    booking: OnlineBookingOut
+
+
+class OnlineBookingBulkRejectIn(Schema):
+    """Decline every open guest request with this booking's phone (ADR 0029 F)."""
+
+    reason_code: str = Field("ONLINE_REJECTED", max_length=40)
+    note: str = Field("", max_length=300)
+
+
+class OnlineBookingBulkRejectOut(Schema):
+    rejected: int
+    bookings: list[OnlineBookingOut]
+
+
 class TimeOffIn(Schema):
     starts_at: datetime
     ends_at: datetime

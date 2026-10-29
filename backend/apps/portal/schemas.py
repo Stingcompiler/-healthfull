@@ -43,22 +43,28 @@ class PortalDoctorOut(Schema):
     department_en: str
 
 
+BookingStatusCode = Literal["requested", "booked", "arrived", "no_show", "cancelled", "rescheduled"]
+BookingDisplayCode = Literal[
+    "awaiting_approval",
+    "confirmed",
+    "received",
+    "moved",
+    "cancelled_by_you",
+    "cancelled_by_center",
+    "declined",
+    "expired",
+    "missed",
+]
+
+
 class PortalAppointmentOut(Schema):
     id: int
     starts_at: datetime
     ends_at: datetime
-    status: Literal["requested", "booked", "arrived", "no_show", "cancelled", "rescheduled"]
-    display_status: Literal[
-        "awaiting_approval",
-        "confirmed",
-        "received",
-        "moved",
-        "cancelled_by_you",
-        "cancelled_by_center",
-        "declined",
-        "expired",
-        "missed",
-    ] = Field(..., description="What the patient is told (domain.portal_status)")
+    status: BookingStatusCode
+    display_status: BookingDisplayCode = Field(
+        ..., description="What the patient is told (domain.portal_status)"
+    )
     expires_at: datetime | None = Field(
         ..., description="A request waiting for reception lapses then (ADR 0029 A8)"
     )
@@ -478,3 +484,74 @@ class PortalAccessCodesOut(Schema):
 
 class PortalRevokeCodeIn(Schema):
     note: str = Field(..., min_length=1, max_length=300, description="Why the code is revoked")
+
+
+# --- guest booking (ADR 0029 D, F) ---------------------------------------------------------
+
+
+class PortalChallengeOut(Schema):
+    challenge: str = Field(..., description="Send back as is with the nonce")
+    bits: int = Field(..., description="Leading zero bits SHA-256(challenge + nonce) must have")
+    expires_at: datetime
+
+
+class GuestBookingIn(Schema):
+    doctor_id: int
+    starts_at: datetime
+    contact_name: str = Field(..., max_length=200)
+    contact_phone: str = Field(..., max_length=30)
+    challenge: str = Field(..., max_length=120)
+    nonce: str = Field(..., max_length=64)
+
+
+class GuestBookingCreatedOut(Schema):
+    reference: str = Field(..., description="Shown as ABCDE-FGH23; typed back case-insensitive")
+    pin: str | None = Field(
+        ...,
+        description=(
+            "Six digits, shown once. A replay gives it again unless staff issued a new PIN "
+            "since (then null)."
+        ),
+    )
+    status: BookingStatusCode
+    display_status: BookingDisplayCode
+    starts_at: datetime
+    ends_at: datetime
+    expires_at: datetime | None
+    doctor: PortalDoctorOut
+    share_url: str = Field(..., description="wa.me link with the reference, never the PIN")
+    replayed: bool = Field(..., description="True when this answers a retried request")
+
+
+class GuestSignInIn(Schema):
+    reference: str = Field(..., max_length=20)
+    pin: str = Field(..., max_length=12)
+
+
+class GuestBookingRulesOut(Schema):
+    cancel_cutoff_hours: int
+    reschedule_allowed: bool
+    reschedule_cutoff_hours: int
+    require_approval: bool
+
+
+class GuestBookingOut(Schema):
+    reference: str
+    status: BookingStatusCode
+    display_status: BookingDisplayCode
+    starts_at: datetime
+    ends_at: datetime
+    expires_at: datetime | None
+    doctor: PortalDoctorOut
+    contact_name: str
+    phone_masked: str
+    can_cancel: bool
+    cancel_until: datetime | None
+    can_reschedule: bool
+    reschedule_until: datetime | None
+    rules: GuestBookingRulesOut
+
+
+class GuestRescheduleIn(Schema):
+    starts_at: datetime
+    doctor_id: int | None = Field(None, description="Default: the same doctor")

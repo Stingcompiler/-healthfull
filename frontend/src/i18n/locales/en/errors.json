@@ -484,5 +484,17 @@
   "ONLINE_REVIEW_WINDOW_TOO_SHORT": "That time is too close for reception to confirm. Choose a time at least {{minutes}} minutes later.",
   "ONLINE_REQUEST_EXPIRED": "This request expired before it was approved; the time was released.",
   "PORTAL_RESCHEDULE_DISABLED": "Changing the time online is not offered. Please call the center.",
-  "PORTAL_RESCHEDULE_TOO_LATE": "The time can be changed online up to {{cutoff_hours}} hours before. Please call the center."
+  "PORTAL_RESCHEDULE_TOO_LATE": "The time can be changed online up to {{cutoff_hours}} hours before. Please call the center.",
+  "GUEST_BOOKING_DISABLED": "Booking without a patient file is not offered online. Please call the center.",
+  "GUEST_NAME_REQUIRED": "Enter the name of the person who will come.",
+  "GUEST_PHONE_INVALID": "Enter a phone number like 0912 345 678.",
+  "GUEST_PHONE_LIMIT": "This phone number already has {{limit}} open bookings. Cancel one to book another.",
+  "ONLINE_DOCTOR_DAY_FULL": "This doctor has too many requests waiting on that day. Choose another day.",
+  "POW_INVALID": "The form check did not pass. Reload the page and try again.",
+  "POW_EXPIRED": "The form waited too long. Try again.",
+  "POW_ALREADY_USED": "This form was already sent. Reload the page and try again.",
+  "IDEMPOTENCY_KEY_REQUIRED": "The request is missing its retry key. Reload the page and try again.",
+  "IDEMPOTENCY_MISMATCH": "This request was already sent with different details. Reload the page and try again.",
+  "GUEST_INVALID_CREDENTIALS": "The booking reference or PIN is not right.",
+  "NOT_A_GUEST_BOOKING": "Only a current guest booking has a reference and PIN."
 }

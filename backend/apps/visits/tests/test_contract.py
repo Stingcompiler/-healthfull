@@ -50,6 +50,21 @@ OPERATIONS = {
         "post",
         "/api/visits/online-bookings/{appointment_id}/reject",
     ): "visits_reject_online_booking",
+    # The reception inbox (ADR 0029, Phase 4a).
+    ("get", "/api/visits/online-bookings"): "visits_list_online_bookings",
+    ("post", "/api/visits/online-bookings/{appointment_id}/cancel"): "visits_cancel_online_booking",
+    (
+        "post",
+        "/api/visits/online-bookings/{appointment_id}/reject-phone",
+    ): "visits_reject_online_bookings_from_phone",
+    (
+        "post",
+        "/api/visits/online-bookings/{appointment_id}/link-patient",
+    ): "visits_link_online_booking_patient",
+    (
+        "post",
+        "/api/visits/online-bookings/{appointment_id}/reissue-pin",
+    ): "visits_reissue_guest_pin",
     ("get", "/api/visits/doctors/{doctor_id}/time-off"): "visits_list_time_off",
     ("post", "/api/visits/doctors/{doctor_id}/time-off"): "visits_add_time_off",
     ("delete", "/api/visits/time-off/{time_off_id}"): "visits_remove_time_off",
