@@ -1093,6 +1093,10 @@ def add_time_off(
         DomainError: ``TIME_OFF_INVALID_RANGE``, ``TIME_OFF_IN_PAST``,
             ``TIME_OFF_REASON_REQUIRED``, ``TIME_OFF_OVERLAP``.
     """
+    # A time without an offset is the center's local time (as the staff screens send it).
+    starts_at, ends_at = (
+        t if timezone.is_aware(t) else timezone.make_aware(t) for t in (starts_at, ends_at)
+    )
     if ends_at <= starts_at:
         raise DomainError("TIME_OFF_INVALID_RANGE", "Time off ends after it starts")
     if ends_at <= timezone.now():
@@ -1938,9 +1942,10 @@ def visit_options() -> VisitOptions:
             )
         ),
         appointment_cancel_reasons=list(
-            ReasonCode.objects.filter(
-                category=ReasonCategory.APPOINTMENT_CANCEL, active=True
-            ).order_by("sort_order", "code")
+            ReasonCode.objects.filter(category=ReasonCategory.APPOINTMENT_CANCEL, active=True)
+            # Only the system cancels with the expiry reason (ADR 0029 C).
+            .exclude(code="ONLINE_REQUEST_EXPIRED")
+            .order_by("sort_order", "code")
         ),
         follow_up_window_days=Policy.load().follow_up_window_days,
     )

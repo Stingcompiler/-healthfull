@@ -217,6 +217,34 @@ export function useCancelAppointment() {
   });
 }
 
+/** Reception confirms an online request (ADR 0029 E; the inbox screen is Phase 4). */
+export function useApproveOnlineBooking() {
+  const invalidate = useInvalidateVisits();
+  return useMutation({
+    mutationFn: (id: number) =>
+      unwrap(
+        api.POST("/api/visits/online-bookings/{appointment_id}/approve", {
+          params: { path: { appointment_id: id } },
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRejectOnlineBooking() {
+  const invalidate = useInvalidateVisits();
+  return useMutation({
+    mutationFn: ({ id, reasonCode, note }: { id: number; reasonCode: string; note: string }) =>
+      unwrap(
+        api.POST("/api/visits/online-bookings/{appointment_id}/reject", {
+          params: { path: { appointment_id: id } },
+          body: { reason_code: reasonCode, note },
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
 export function useAppointmentNoShow() {
   const invalidate = useInvalidateVisits();
   return useMutation({

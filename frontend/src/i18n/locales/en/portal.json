@@ -73,13 +73,20 @@
     "cancelUntil": "You can cancel online until {{time}}.",
     "tooLate": "It is too late to cancel online. Please call the center.",
     "rules": "You can hold up to {{max, bidi}} upcoming appointments and book up to {{days, bidi}} days ahead.",
-    "status": {
-      "booked": "Booked",
-      "arrived": "Attended",
-      "no_show": "Missed",
-      "cancelled": "Cancelled",
-      "rescheduled": "Moved"
-    }
+    "display": {
+      "awaiting_approval": "Awaiting approval",
+      "confirmed": "Confirmed",
+      "received": "You were received",
+      "moved": "Moved",
+      "cancelled_by_you": "Cancelled by you",
+      "cancelled_by_center": "Cancelled by the center",
+      "declined": "Declined by the center",
+      "expired": "Request expired",
+      "missed": "Missed"
+    },
+    "awaitingHint": "Reception will confirm this request. If nobody answers by {{time}}, it lapses and the time is freed.",
+    "reschedule": "Change time",
+    "rescheduleUntil": "You can change the time online until {{time}}."
   },
   "book": {
     "title": "Book an appointment",
@@ -95,7 +102,12 @@
     "confirm": "Book this time",
     "summary": "{{doctor}}, {{date}} at {{time}}",
     "booked": "Your appointment is booked.",
-    "back": "Back to appointments"
+    "back": "Back to appointments",
+    "requested": "Your request was sent. Reception will confirm it.",
+    "moved": "Your appointment was moved.",
+    "rescheduleTitle": "Change the time",
+    "rescheduleDescription": "Your current appointment: {{date}} at {{time}}. Choose a new free time; the old one is released.",
+    "confirmMove": "Move to this time"
   },
   "results": {
     "title": "Lab results",

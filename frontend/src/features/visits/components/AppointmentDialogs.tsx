@@ -37,6 +37,7 @@ import {
   useBookAppointment,
   useCancelAppointment,
   useCheckIn,
+  useRejectOnlineBooking,
   useRescheduleAppointment,
   useVisitOptions,
 } from "../api";
@@ -375,6 +376,53 @@ function CancelBody({
       onSubmit={async ({ code, note }) => {
         await cancel.mutateAsync({ id: appointment.id, reasonCode: code, note });
         toast.success(t("appointments.cancelled"));
+      }}
+    />
+  );
+}
+
+export function RejectOnlineBookingDialog({
+  appointment,
+  onOpenChange,
+}: {
+  appointment: Appointment | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return appointment ? <RejectBody appointment={appointment} onOpenChange={onOpenChange} /> : null;
+}
+
+/** Decline an online request with a reason code and a note (invariant 4, ADR 0029 E). */
+function RejectBody({
+  appointment,
+  onOpenChange,
+}: {
+  appointment: Appointment;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useTranslation(["visits", "common"]);
+  const language = useLanguage();
+  const reject = useRejectOnlineBooking();
+  const options = useVisitOptions();
+  const all = options.data?.appointment_cancel_reasons ?? [];
+  // The online-request reason first, then the usual ones.
+  const sorted = [
+    ...all.filter((r) => r.code === "ONLINE_REJECTED"),
+    ...all.filter((r) => r.code !== "ONLINE_REJECTED"),
+  ];
+  const reasons = sorted.map((r) => ({ code: r.code, label: pickName({ ar: r.label_ar, en: r.label_en }, language) }));
+  return (
+    <ReasonDialog
+      open
+      onOpenChange={onOpenChange}
+      title={t("appointments.declineTitle")}
+      description={`${appointmentWho(appointment, language)} · ${formatDate(appointment.starts_at, language, "datetime")}`}
+      reasons={reasons}
+      noteRequired={false}
+      destructive
+      confirmLabel={t("appointments.decline")}
+      onSubmit={async ({ code, note }) => {
+        await reject.mutateAsync({ id: appointment.id, reasonCode: code, note });
+        toast.success(t("appointments.declined"));
       }}
     />
   );

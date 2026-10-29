@@ -777,7 +777,11 @@
       "noPhotos": "Upload an image as a doctor photo above to choose it here.",
       "none": "No doctors yet.",
       "complete": "Profile filled",
-      "incomplete": "No profile yet"
+      "incomplete": "No profile yet",
+      "bookable": "Offered for online booking",
+      "bookableHint": "Patients can book this doctor's free times online while online booking is on.",
+      "bookableNoSchedule": "This doctor has no weekly hours yet, so no time is offered until hours are set.",
+      "bookableBadge": "Online booking"
     },
     "siteList": {
       "shown": "Shown on the page",
@@ -812,6 +816,42 @@
     "liveNone": "Nothing is public",
     "liveSite": "Website",
     "liveBooking": "Booking",
-    "liveTracking": "Patient sign-in"
+    "liveTracking": "Patient sign-in",
+    "approvalTitle": "Approval and changes",
+    "approvalHint": "How online bookings are confirmed and moved. No double booking is ever allowed: an urgent patient comes as a walk-in visit.",
+    "requireApproval": "Reception approves every online booking",
+    "requireApprovalHint": "A booking waits as a request that holds its time until reception approves or declines it, or it lapses.",
+    "requestTtl": "A request lapses after (hours)",
+    "requestTtlHint": "Never later than the earliest-booking time before the appointment.",
+    "minReview": "Shortest time to answer (minutes)",
+    "minReviewHint": "Times closer than this are not offered while approval is on.",
+    "rescheduleAllowed": "Patients may change the time online",
+    "rescheduleAllowedHint": "A signed-in patient moves a confirmed booking to another free time.",
+    "rescheduleCutoff": "Change the time online until (hours before)"
+  },
+  "timeOff": {
+    "action": "Time off",
+    "title": "Time off: {{name}}",
+    "hint": "No time inside these periods is offered or booked. Existing bookings stay; move or cancel them with the patient.",
+    "current": "Coming time off",
+    "none": "No time off planned.",
+    "new": "Add a period",
+    "fromDay": "From day",
+    "fromTime": "From time",
+    "toDay": "To day",
+    "toTime": "To time",
+    "reasonAr": "Reason (Arabic)",
+    "reasonEn": "Reason (English)",
+    "add": "Add time off",
+    "added": "The time off was added.",
+    "remove": "Remove",
+    "removeTitle": "Remove this time off?",
+    "removeDescription": "Its times become bookable again.",
+    "removed": "The time off was removed.",
+    "endAfterStart": "The end must be after the start.",
+    "reasonRequired": "Give the reason in Arabic or English.",
+    "affectedTitle_one": "{{count}} booking falls in this period",
+    "affectedTitle_other": "{{count}} bookings fall in this period",
+    "affectedHint": "They were not cancelled. Open the appointments page to move or cancel them with the patients."
   }
 }

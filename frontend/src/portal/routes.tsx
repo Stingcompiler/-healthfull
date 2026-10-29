@@ -5,7 +5,7 @@ import { getSiteConfig } from "@/lib/site";
 
 import { portalMeQuery } from "./api";
 import { AppointmentsPage } from "./pages/AppointmentsPage";
-import { BookAppointmentPage } from "./pages/BookAppointmentPage";
+import { BookAppointmentPage, RescheduleAppointmentPage } from "./pages/BookAppointmentPage";
 import { CenterPage } from "./pages/CenterPage";
 import { HomePage } from "./pages/HomePage";
 import { InvoicePage } from "./pages/InvoicePage";
@@ -111,6 +111,15 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     },
     component: BookAppointmentPage,
   });
+  const reschedule = createRoute({
+    getParentRoute: () => authed,
+    path: "/appointments/$appointmentId/reschedule",
+    beforeLoad: () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
+      if (!getSiteConfig().onlineBooking) throw redirect({ to: "/portal/appointments" });
+    },
+    component: RescheduleAppointmentPage,
+  });
   const results = createRoute({ getParentRoute: () => authed, path: "/results", component: ResultsPage });
   const result = createRoute({ getParentRoute: () => authed, path: "/results/$lineId", component: ResultPage });
   const prescriptions = createRoute({
@@ -142,7 +151,18 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     portal.addChildren([
       center,
       login,
-      authed.addChildren([home, appointments, book, results, result, prescriptions, invoices, invoice, receipt]),
+      authed.addChildren([
+        home,
+        appointments,
+        book,
+        reschedule,
+        results,
+        result,
+        prescriptions,
+        invoices,
+        invoice,
+        receipt,
+      ]),
     ]),
     verify,
   ] as const;

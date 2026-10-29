@@ -24,6 +24,7 @@
     "no_show": "لم يحضر"
   },
   "appointmentStatus": {
+    "requested": "طلب عبر الإنترنت",
     "booked": "محجوز",
     "arrived": "حضر",
     "cancelled": "ملغى",
@@ -216,6 +217,12 @@
     "freeSlots_two": "موعدان متاحان",
     "freeSlots_few": "{{count}} مواعيد متاحة",
     "freeSlots_many": "{{count}} موعداً متاحاً",
-    "freeSlots_other": "{{count}} موعد متاح"
+    "freeSlots_other": "{{count}} موعد متاح",
+    "approve": "قبول",
+    "decline": "رفض",
+    "declineTitle": "رفض طلب الحجز هذا؟",
+    "declined": "تم رفض الطلب.",
+    "approved": "تم تأكيد الحجز.",
+    "requestExpires": "بانتظار الاستقبال؛ يسقط الطلب في {{time}}."
   }
 }

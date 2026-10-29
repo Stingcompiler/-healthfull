@@ -474,5 +474,15 @@
   "FAQ_QUESTION_REQUIRED": "اكتب السؤال بالعربية أو الإنجليزية.",
   "FAQ_ANSWER_REQUIRED": "اكتب الإجابة بالعربية أو الإنجليزية.",
   "TESTIMONIAL_TEXT_REQUIRED": "اكتب نص الرأي بالعربية أو الإنجليزية.",
-  "TESTIMONIAL_ALREADY_APPROVED": "هذا الرأي معتمد بالفعل."
+  "TESTIMONIAL_ALREADY_APPROVED": "هذا الرأي معتمد بالفعل.",
+  "DOCTOR_TIME_OFF": "الطبيب في إجازة في ذلك الوقت. اختر وقتاً آخر.",
+  "APPOINTMENT_NOT_REQUESTED": "لا يُقبل أو يُرفض إلا حجز ينتظر الموافقة.",
+  "TIME_OFF_INVALID_RANGE": "يجب أن تنتهي الإجازة بعد بدايتها.",
+  "TIME_OFF_IN_PAST": "يجب أن تنتهي الإجازة في المستقبل.",
+  "TIME_OFF_REASON_REQUIRED": "اكتب سبب الإجازة.",
+  "TIME_OFF_OVERLAP": "هذه الفترة تتداخل مع إجازة أخرى للطبيب.",
+  "ONLINE_REVIEW_WINDOW_TOO_SHORT": "هذا الوقت قريب جداً ولا يتسع لتأكيد الاستقبال. اختر وقتاً بعده بـ{{minutes}} دقيقة على الأقل.",
+  "ONLINE_REQUEST_EXPIRED": "انتهت مهلة هذا الطلب قبل الموافقة عليه وأُتيح وقته لغيره.",
+  "PORTAL_RESCHEDULE_DISABLED": "تغيير الموعد عبر الإنترنت غير متاح. يرجى الاتصال بالمركز.",
+  "PORTAL_RESCHEDULE_TOO_LATE": "يمكن تغيير الموعد عبر الإنترنت حتى {{cutoff_hours}} ساعة قبله. يرجى الاتصال بالمركز."
 }
