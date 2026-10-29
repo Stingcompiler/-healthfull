@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarPlus, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { CalendarPlus, Check, ExternalLink, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,7 +9,12 @@ import { ChevronNext } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { useCenterPage, type CenterDoctor, type CenterPage as CenterPageData } from "@/lib/center/api";
+import {
+  useCenterPage,
+  type CenterDoctor,
+  type CenterImage,
+  type CenterPage as CenterPageData,
+} from "@/lib/center/api";
 import { useCenterName, useOpenStatusText } from "@/lib/center/hooks";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useLanguage } from "@/lib/i18n-hooks";
@@ -96,36 +101,87 @@ function StatusChip({ page }: { page: CenterPageData }) {
  * The single identity block: logo or monogram, name, today's status, a short about line and the
  * one action. Tinted with the theme's soft brand surface (no gradient: ui-profile).
  */
+/** An image the center uploaded, with its size reserved so nothing jumps while it loads. */
+function SiteImage({
+  image,
+  className,
+  eager,
+  alt,
+}: {
+  image: CenterImage;
+  className?: string;
+  eager?: boolean;
+  alt?: string;
+}) {
+  const pick = usePick();
+  const [broken, setBroken] = useState(false);
+  if (broken) return null;
+  return (
+    <img
+      src={image.url}
+      alt={alt ?? pick(image.alt_ar, image.alt_en)}
+      width={image.width}
+      height={image.height}
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
+      className={cn("bg-subtle object-cover", className)}
+      onError={() => {
+        setBroken(true);
+      }}
+    />
+  );
+}
+
+/**
+ * The single identity block: logo or monogram, name, today's status, the center's opening words
+ * and the one action, with the hero image beside it on large screens. Tinted with the theme's
+ * soft brand surface (no gradient: ui-profile).
+ */
 function Hero({ page, name }: { page: CenterPageData | undefined; name: string }) {
   const { t } = useTranslation("portal");
   const pick = usePick();
-  const about = page ? pick(page.about_ar, page.about_en) : "";
+  const title = page ? pick(page.hero_title_ar, page.hero_title_en) : "";
+  const text = page ? pick(page.hero_text_ar, page.hero_text_en) : "";
+  const image = page?.hero_image ?? null;
   return (
     <section
-      className="rounded-card border border-border bg-primary-soft p-5 sm:p-6 lg:p-10"
+      className="overflow-hidden rounded-card border border-border bg-primary-soft"
       aria-labelledby="center-name"
       data-testid="center-hero"
     >
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
-        <div className="flex min-w-0 flex-col gap-4 lg:max-w-2xl">
-          <div className="flex items-center gap-4">
-            <CenterMark page={page} name={name} />
-            <h1
-              id="center-name"
-              className="min-w-0 text-[1.75rem] leading-tight font-bold text-balance break-words text-fg sm:text-4xl lg:text-[2.5rem]"
-            >
-              {name}
-            </h1>
+      <div
+        className={cn(
+          "grid",
+          image && "lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] xl:grid-cols-[minmax(0,1fr)_30rem]",
+        )}
+      >
+        <div className="flex min-w-0 flex-col gap-6 p-5 sm:p-6 lg:justify-center lg:p-10">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <CenterMark page={page} name={name} />
+              <h1
+                id="center-name"
+                className="min-w-0 text-[1.75rem] leading-tight font-bold text-balance break-words text-fg sm:text-4xl lg:text-[2.5rem]"
+              >
+                {name}
+              </h1>
+            </div>
+            {page ? <StatusChip page={page} /> : null}
+            {title ? (
+              <p className="text-lg font-semibold text-balance text-fg lg:text-xl" data-testid="center-hero-title">
+                {title}
+              </p>
+            ) : null}
+            {text ? <p className="text-base text-pretty text-fg lg:text-lg">{text}</p> : null}
           </div>
-          {page ? <StatusChip page={page} /> : null}
-          {about ? <p className="text-base text-pretty text-fg lg:text-lg">{about}</p> : null}
+          {getSiteConfig().patientTracking ? (
+            <div className="flex flex-col gap-2 sm:max-w-sm">
+              <SignInAction />
+              <p className="text-sm text-pretty text-muted">{t("center.signInHint")}</p>
+            </div>
+          ) : null}
         </div>
-        {getSiteConfig().patientTracking ? (
-          <div className="flex flex-col gap-2 lg:w-80 lg:shrink-0">
-            <SignInAction />
-            <p className="text-sm text-pretty text-muted">{t("center.signInHint")}</p>
-          </div>
-        ) : null}
+        {image ? <SiteImage image={image} eager className="aspect-[4/3] h-full max-h-80 w-full lg:max-h-none" /> : null}
       </div>
     </section>
   );
@@ -139,7 +195,7 @@ function QuickActions({ page }: { page: CenterPageData }) {
   const pick = usePick();
   const me = usePortalMe();
   const signedIn = Boolean(me.data);
-  const hasAddress = Boolean(page.address || pick(page.directions_ar, page.directions_en));
+  const hasAddress = Boolean(page.address || pick(page.directions_ar, page.directions_en) || page.maps_url);
   const items: ReactNode[] = [];
   if (page.phone_uri) {
     items.push(
@@ -254,6 +310,8 @@ function DoctorCard({ doctor, todayWeekday }: { doctor: CenterDoctor; todayWeekd
   const language = useLanguage();
   const pick = usePick();
   const name = pick(doctor.name_ar, doctor.name_en);
+  const qualifications = pick(doctor.qualifications_ar, doctor.qualifications_en);
+  const bio = pick(doctor.bio_ar, doctor.bio_en);
   const subtitle = [
     ...new Set(
       [pick(doctor.specialty_ar, doctor.specialty_en), pick(doctor.department_ar, doctor.department_en)].filter(
@@ -264,18 +322,33 @@ function DoctorCard({ doctor, todayWeekday }: { doctor: CenterDoctor; todayWeekd
   return (
     <li className="card-surface flex min-w-0 flex-col gap-4 p-4 lg:p-5" data-testid="center-doctor">
       <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          // ui-allow: the circle holds the doctor's initials (text that identifies a person), not an icon
-          className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-primary-soft text-base font-semibold text-primary-strong"
-        >
-          {initialsOf(name) || "·"}
-        </span>
+        {doctor.photo ? (
+          <SiteImage
+            image={doctor.photo}
+            alt={t("center.photoOf", { name })}
+            className="size-14 shrink-0 rounded-full"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            // ui-allow: the circle holds the doctor's initials (text that identifies a person), not an icon
+            className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-primary-soft text-base font-semibold text-primary-strong"
+          >
+            {initialsOf(name) || "·"}
+          </span>
+        )}
         <div className="min-w-0">
           <p className="text-base font-semibold text-balance break-words text-fg">{name}</p>
           {subtitle ? <p className="text-sm text-muted">{subtitle}</p> : null}
         </div>
       </div>
+      {qualifications ? (
+        <p className="text-sm text-fg" data-testid="center-doctor-qualifications">
+          <span className="sr-only">{t("center.qualifications")}: </span>
+          {qualifications}
+        </p>
+      ) : null}
+      {bio ? <p className="text-sm text-pretty text-muted">{bio}</p> : null}
       <ul className="flex flex-col gap-2.5">
         {groupClinicDays(doctor.clinic_days).map((group) => (
           <li key={group.weekdays.join("-")} className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -317,20 +390,236 @@ function Doctors({ page }: { page: CenterPageData }) {
 function Departments({ page }: { page: CenterPageData }) {
   const { t } = useTranslation("portal");
   const pick = usePick();
+  const withServices = page.departments.some((d) => d.services.length > 0);
   return (
     <section className="flex flex-col gap-3" data-testid="center-departments">
-      <SectionTitle>{t("center.departments")}</SectionTitle>
-      <ul className="flex flex-wrap gap-2">
-        {page.departments.map((d) => (
+      <SectionTitle>{withServices ? t("center.services") : t("center.departments")}</SectionTitle>
+      {withServices ? (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {page.departments.map((d) => (
+            <li key={d.id} className="card-surface flex min-w-0 flex-col gap-2 p-4" data-testid="center-department">
+              <p className="text-base font-semibold break-words text-fg">{pick(d.name_ar, d.name_en)}</p>
+              {d.services.length > 0 ? (
+                <ul className="flex flex-col gap-1" data-testid="center-services">
+                  {d.services.map((service) => (
+                    <li key={service.id} className="flex items-start gap-2 text-sm text-fg">
+                      <Check className="mt-0.5 size-4 shrink-0 text-primary-strong" aria-hidden="true" />
+                      <span className="min-w-0 break-words">{pick(service.name_ar, service.name_en)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="flex flex-wrap gap-2">
+          {page.departments.map((d) => (
+            <li
+              key={d.id}
+              className="inline-flex min-h-9 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-fg"
+            >
+              {pick(d.name_ar, d.name_en)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function About({ page }: { page: CenterPageData }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  const about = pick(page.about_ar, page.about_en);
+  return (
+    <section className="flex flex-col gap-3" data-testid="center-about" aria-labelledby="center-about-title">
+      <h2 id="center-about-title" className="text-lg font-semibold text-fg lg:text-xl">
+        {t("center.about")}
+      </h2>
+      {about ? <p className="text-base text-pretty whitespace-pre-line text-fg">{about}</p> : null}
+      {page.gallery.length > 0 ? (
+        <ul
+          className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+          aria-label={t("center.gallery")}
+          data-testid="center-gallery"
+        >
+          {page.gallery.map((image) => (
+            <li key={image.id} className="min-w-0">
+              <SiteImage image={image} className="aspect-[4/3] w-full rounded-control" />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+function Facilities({ page }: { page: CenterPageData }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  return (
+    <section className="flex flex-col gap-3" data-testid="center-facilities">
+      <SectionTitle>{t("center.facilities")}</SectionTitle>
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {page.facilities.map((f, index) => (
           <li
-            key={d.id}
-            className="inline-flex min-h-9 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-fg"
+            key={index}
+            className="flex min-h-11 items-center gap-2 rounded-control border border-border bg-surface px-3 py-2 text-sm font-medium text-fg"
           >
-            {pick(d.name_ar, d.name_en)}
+            <Check className="size-4 shrink-0 text-primary-strong" aria-hidden="true" />
+            <span className="min-w-0 break-words">{pick(f.name_ar, f.name_en)}</span>
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+function Reasons({ page }: { page: CenterPageData }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  return (
+    <section className="flex flex-col gap-3" data-testid="center-reasons">
+      <SectionTitle>{t("center.reasons")}</SectionTitle>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {page.reasons.map((r, index) => {
+          const text = pick(r.text_ar, r.text_en);
+          return (
+            <li key={index} className="card-surface flex min-w-0 flex-col gap-1 p-4">
+              <p className="text-base font-semibold break-words text-fg">{pick(r.title_ar, r.title_en)}</p>
+              {text ? <p className="text-sm text-pretty text-muted">{text}</p> : null}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** "Fees are paid at reception" and the cancellation policy (ADR 0029 A5: no fees online). */
+function FeesNote({ page }: { page: CenterPageData }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  const policy = pick(page.cancellation_policy_ar, page.cancellation_policy_en);
+  return (
+    <section className="card-surface flex min-w-0 flex-col gap-2 p-4 lg:p-5" data-testid="center-fees">
+      <SectionTitle>{t("center.fees.title")}</SectionTitle>
+      <p className="text-sm text-pretty text-fg">{t("center.fees.text")}</p>
+      {policy ? (
+        <div className="flex flex-col gap-1 border-t border-border pt-2">
+          <p className="text-sm font-semibold text-fg">{t("center.fees.cancellation")}</p>
+          <p className="text-sm text-pretty whitespace-pre-line text-muted">{policy}</p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function Insurance({ page }: { page: CenterPageData }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  return (
+    <section className="card-surface flex min-w-0 flex-col gap-3 p-4 lg:p-5" data-testid="center-insurance">
+      <SectionTitle>{t("center.insurance")}</SectionTitle>
+      <ul className="flex flex-wrap gap-2">
+        {page.insurance.map((p) => (
+          <li
+            key={p.id}
+            className="inline-flex min-h-9 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-fg"
+          >
+            {pick(p.name_ar, p.name_en)}
+          </li>
+        ))}
+      </ul>
+      <p className="text-sm text-pretty text-muted">{t("center.insuranceHint")}</p>
+    </section>
+  );
+}
+
+function Faq({ page }: { page: CenterPageData }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  return (
+    <section className="flex flex-col gap-3" data-testid="center-faq" aria-labelledby="center-faq-title">
+      <h2 id="center-faq-title" className="text-lg font-semibold text-fg lg:text-xl">
+        {t("center.faq")}
+      </h2>
+      <div className="card-surface flex flex-col divide-y divide-border">
+        {page.faq.map((q) => (
+          <details key={q.id} className="group min-w-0 px-4 lg:px-5" data-testid="center-faq-item">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-semibold text-fg focus-ring lg:text-base">
+              <span className="min-w-0 break-words">{pick(q.question_ar, q.question_en)}</span>
+              <span aria-hidden="true" className="shrink-0 text-muted transition-transform group-open:rotate-45">
+                +
+              </span>
+            </summary>
+            <p className="pb-4 text-sm text-pretty whitespace-pre-line text-muted lg:text-base">
+              {pick(q.answer_ar, q.answer_en)}
+            </p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Testimonials({ page }: { page: CenterPageData }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  return (
+    <section className="flex flex-col gap-3" data-testid="center-testimonials">
+      <SectionTitle>{t("center.testimonials")}</SectionTitle>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {page.testimonials.map((item) => {
+          const author = pick(item.author_ar, item.author_en);
+          return (
+            <li key={item.id} className="min-w-0">
+              <figure className="card-surface flex h-full flex-col gap-3 p-4 lg:p-5">
+                <blockquote className="text-base text-pretty text-fg">{pick(item.text_ar, item.text_en)}</blockquote>
+                {author ? <figcaption className="text-sm text-muted">{author}</figcaption> : null}
+              </figure>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function Accessibility({ text }: { text: string }) {
+  const { t } = useTranslation("portal");
+  return (
+    <section className="card-surface flex min-w-0 flex-col gap-2 p-4 lg:p-5" data-testid="center-accessibility">
+      <SectionTitle>{t("center.accessibility")}</SectionTitle>
+      <p className="text-sm text-pretty whitespace-pre-line text-fg lg:text-base">{text}</p>
+    </section>
+  );
+}
+
+/** The page's own footer: privacy and cancellation policies, opened on demand. */
+function Policies({ page }: { page: CenterPageData }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  const items = [
+    { key: "privacy" as const, text: pick(page.privacy_ar, page.privacy_en) },
+    { key: "cancellation" as const, text: pick(page.cancellation_policy_ar, page.cancellation_policy_en) },
+  ].filter((item) => item.text);
+  if (items.length === 0) return null;
+  return (
+    <nav aria-label={t("center.policies.label")} className="flex flex-col gap-2" data-testid="center-policies">
+      {items.map((item) => (
+        <details key={item.key} className="group card-surface min-w-0 px-4">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-sm font-medium text-fg focus-ring">
+            {t(`center.policies.${item.key}`)}
+            <span aria-hidden="true" className="text-muted transition-transform group-open:rotate-45">
+              +
+            </span>
+          </summary>
+          <p className="pb-3 text-sm text-pretty whitespace-pre-line text-muted">{item.text}</p>
+        </details>
+      ))}
+    </nav>
   );
 }
 
@@ -400,13 +689,13 @@ function Contact({ page }: { page: CenterPageData }) {
   const { t } = useTranslation("portal");
   const pick = usePick();
   const directions = pick(page.directions_ar, page.directions_en);
-  const hasContact = Boolean(page.phone_uri || page.whatsapp || page.email);
+  const hasContact = Boolean(page.phone_uri || page.whatsapp || page.email || page.maps_url);
   const hasAddress = Boolean(page.address || directions);
   if (!hasContact && !hasAddress) return null;
   return (
     <section className="card-surface flex min-w-0 flex-col gap-3 p-4 lg:p-5" data-testid="center-contact">
       <SectionTitle>{t("center.contact")}</SectionTitle>
-      <ul className="flex flex-col gap-2">
+      <ul className="grid gap-2 md:grid-cols-2">
         {page.phone_uri ? (
           <li>
             <a href={page.phone_uri} className={contactLink} data-testid="center-phone">
@@ -442,7 +731,11 @@ function Contact({ page }: { page: CenterPageData }) {
           </li>
         ) : null}
         {hasAddress ? (
-          <li id={ADDRESS_ID} className="flex scroll-mt-24 items-start gap-3 px-1 pt-1" data-testid="center-address">
+          <li
+            id={ADDRESS_ID}
+            className="flex scroll-mt-24 items-start gap-3 px-1 pt-1 md:col-span-2"
+            data-testid="center-address"
+          >
             <span className="mt-0.5 shrink-0 text-muted">
               <MapPin className="size-4" aria-hidden="true" />
             </span>
@@ -451,6 +744,25 @@ function Contact({ page }: { page: CenterPageData }) {
               {page.address ? <span className="text-sm font-medium text-pretty text-fg">{page.address}</span> : null}
               {directions ? <span className="text-sm text-pretty text-muted">{directions}</span> : null}
             </span>
+          </li>
+        ) : null}
+        {page.maps_url ? (
+          <li>
+            {/* A plain link the visitor's phone opens, like wa.me: nothing is embedded or fetched. */}
+            <a
+              href={page.maps_url}
+              rel="noopener noreferrer"
+              target="_blank"
+              className={contactLink}
+              data-testid="center-maps"
+            >
+              <ContactLine icon={<MapPin className="size-4" aria-hidden="true" />} label={t("center.address")}>
+                <span className="flex items-center gap-1.5">
+                  {t("center.maps")}
+                  <ExternalLink className="size-3.5" aria-hidden="true" />
+                </span>
+              </ContactLine>
+            </a>
           </li>
         ) : null}
       </ul>
@@ -526,12 +838,14 @@ function Loading() {
 }
 
 /**
- * The center page at the portal's door (before sign-in): who the center is, when it is open,
- * its doctors and clinic days, notices and how to reach it, and one action: sign in to one's
- * file (ADR 0023, D-0017, D-0020). Phones get one stacked column with quick actions and a sticky
- * bottom bar; from lg a main column (notices, doctors, departments) beside a side column (hours,
- * contact, how to sign in). Every section comes from the center's settings and existing data; an
- * empty or hidden section is left out, never shown as a placeholder.
+ * The center website at the portal's door (before sign-in), ADR 0023, 0029 H, D-0017, D-0020,
+ * D-0021. Sections in this order: hero, notices, about (with gallery), facilities, reasons,
+ * departments with service names, doctors (qualifications, photo, clinic days), hours with
+ * "fees are paid at reception" and the cancellation policy, insurers, FAQ, testimonials,
+ * accessibility, contact with a plain maps link, and the policies footer. Phones read one column
+ * in that order with quick actions and a sticky bottom bar; from lg the hours, fees and sign-in
+ * guide sit in a side column beside the content. An empty or hidden section is left out, never
+ * shown as a placeholder. No prices anywhere.
  */
 export function CenterPage() {
   const { t } = useTranslation(["portal", "errors"]);
@@ -545,17 +859,32 @@ export function CenterPage() {
   useDocumentTitle(name);
 
   const hasNotices = Boolean(page && page.announcements.length > 0);
+  const hasAbout = Boolean(page && (pick(page.about_ar, page.about_en) || page.gallery.length > 0));
+  const hasFacilities = Boolean(page && page.facilities.length > 0);
+  const hasReasons = Boolean(page && page.reasons.length > 0);
   const hasDoctors = Boolean(page && page.doctors.length > 0);
   const hasDepartments = Boolean(page && page.departments.length > 0);
   const hasHours = Boolean(page && page.hours.length > 0);
+  const hasInsurance = Boolean(page && page.insurance.length > 0);
+  const hasFaq = Boolean(page && page.faq.length > 0);
+  const hasTestimonials = Boolean(page && page.testimonials.length > 0);
+  const accessibility = page ? pick(page.accessibility_ar, page.accessibility_en) : "";
   const hasContact = Boolean(
     page &&
-    (page.phone_uri || page.whatsapp || page.email || page.address || pick(page.directions_ar, page.directions_en)),
+    (page.phone_uri ||
+      page.whatsapp ||
+      page.email ||
+      page.address ||
+      page.maps_url ||
+      pick(page.directions_ar, page.directions_en)),
   );
-  const hasMain = hasNotices || hasDoctors || hasDepartments;
+  // The fees line belongs with something to visit or book; a policy alone also brings it.
+  const hasFees = Boolean(
+    page && (hasDoctors || hasDepartments || pick(page.cancellation_policy_ar, page.cancellation_policy_en)),
+  );
+  const hasMain = hasAbout || hasFacilities || hasReasons || hasDoctors || hasDepartments;
   // Patient sign-in switched off (ADR 0029): the page keeps its facts and drops every sign-in call.
   const tracking = getSiteConfig().patientTracking;
-
   return (
     <div className="flex min-w-0 flex-col gap-5 lg:gap-8" data-testid="center-page">
       <Hero page={page} name={name} />
@@ -569,12 +898,17 @@ export function CenterPage() {
       ) : page ? (
         <>
           <QuickActions page={page} />
+          {hasNotices ? <Announcements page={page} /> : null}
+          {/* Phones read one column in the page's order: about, facilities, reasons, services,
+              doctors, then hours, fees and the sign-in guide. From lg those three sit beside. */}
           {hasMain ? (
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
               <div className="flex min-w-0 flex-col gap-5 lg:gap-8">
-                {hasNotices ? <Announcements page={page} /> : null}
-                {hasDoctors ? <Doctors page={page} /> : null}
+                {hasAbout ? <About page={page} /> : null}
+                {hasFacilities ? <Facilities page={page} /> : null}
+                {hasReasons ? <Reasons page={page} /> : null}
                 {hasDepartments ? <Departments page={page} /> : null}
+                {hasDoctors ? <Doctors page={page} /> : null}
               </div>
               {/* Sticky only when the column fits the screen's height; else it scrolls with the page. */}
               <div
@@ -582,22 +916,28 @@ export function CenterPage() {
                 data-testid="center-side"
               >
                 {hasHours ? <Hours page={page} /> : null}
-                {hasContact ? <Contact page={page} /> : null}
+                {hasFees ? <FeesNote page={page} /> : null}
                 {tracking ? <HowToSignIn /> : null}
               </div>
             </div>
           ) : (
             <div className="flex flex-col gap-5 lg:gap-8" data-testid="center-side">
-              {hasHours || hasContact ? (
+              {hasHours || hasFees ? (
                 <div className="grid gap-5 md:grid-cols-2 md:items-start lg:gap-8">
                   {hasHours ? <Hours page={page} /> : null}
-                  {hasContact ? <Contact page={page} /> : null}
+                  {hasFees ? <FeesNote page={page} /> : null}
                 </div>
               ) : null}
               {tracking ? <HowToSignIn wide /> : null}
             </div>
           )}
+          {hasInsurance ? <Insurance page={page} /> : null}
+          {hasFaq ? <Faq page={page} /> : null}
+          {hasTestimonials ? <Testimonials page={page} /> : null}
+          {accessibility ? <Accessibility text={accessibility} /> : null}
+          {hasContact ? <Contact page={page} /> : null}
           {tracking ? <EndBand /> : null}
+          <Policies page={page} />
         </>
       ) : null}
       {tracking ? <StickyBar /> : null}

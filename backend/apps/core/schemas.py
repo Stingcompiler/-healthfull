@@ -256,6 +256,22 @@ class CenterDayHours(Schema):
     closes: HHMM | None = None
 
 
+class CenterFacilityRow(Schema):
+    """One facility of the center (at most 20)."""
+
+    name_ar: str = Field("", max_length=80)
+    name_en: str = Field("", max_length=80)
+
+
+class CenterReasonRow(Schema):
+    """One reason to choose the center (at most 8)."""
+
+    title_ar: str = Field("", max_length=80)
+    title_en: str = Field("", max_length=80)
+    text_ar: str = Field("", max_length=200)
+    text_en: str = Field("", max_length=200)
+
+
 class CenterPageOut(Schema):
     about_ar: str
     about_en: str
@@ -273,6 +289,25 @@ class CenterPageOut(Schema):
     show_address: bool
     hidden_department_ids: list[int]
     hidden_doctor_ids: list[int]
+    hero_title_ar: str
+    hero_title_en: str
+    hero_text_ar: str
+    hero_text_en: str
+    facilities: list[CenterFacilityRow]
+    reasons: list[CenterReasonRow]
+    accessibility_ar: str
+    accessibility_en: str
+    privacy_ar: str
+    privacy_en: str
+    cancellation_policy_ar: str
+    cancellation_policy_en: str
+    maps_url: str = Field(..., description="A plain https link opened by the visitor's phone")
+    show_services: bool
+    show_insurance: bool
+    show_faq: bool
+    show_testimonials: bool
+    show_facilities: bool
+    show_policies: bool
     updated_at: datetime | None
 
 
@@ -293,6 +328,25 @@ class CenterPageIn(Schema):
     show_address: bool = True
     hidden_department_ids: list[int] = Field(default_factory=list, max_length=500)
     hidden_doctor_ids: list[int] = Field(default_factory=list, max_length=500)
+    hero_title_ar: str = Field("", max_length=120)
+    hero_title_en: str = Field("", max_length=120)
+    hero_text_ar: str = Field("", max_length=300)
+    hero_text_en: str = Field("", max_length=300)
+    facilities: list[CenterFacilityRow] = Field(default_factory=list, max_length=20)
+    reasons: list[CenterReasonRow] = Field(default_factory=list, max_length=8)
+    accessibility_ar: str = Field("", max_length=600)
+    accessibility_en: str = Field("", max_length=600)
+    privacy_ar: str = Field("", max_length=2000)
+    privacy_en: str = Field("", max_length=2000)
+    cancellation_policy_ar: str = Field("", max_length=1000)
+    cancellation_policy_en: str = Field("", max_length=1000)
+    maps_url: str = Field("", max_length=500)
+    show_services: bool = True
+    show_insurance: bool = True
+    show_faq: bool = True
+    show_testimonials: bool = True
+    show_facilities: bool = True
+    show_policies: bool = True
 
 
 class PublicSiteSettingsOut(Schema):
@@ -393,6 +447,190 @@ class AnnouncementPatch(PatchSchema):
     ends_on: date | None = None
     active: bool | None = None
     sort_order: int | None = Field(None, ge=0, le=32767)
+
+
+MediaKind = Literal["hero", "gallery", "doctor"]
+
+
+class CenterMediaOut(Schema):
+    """An image of the website, uploaded by staff (PNG, JPEG or WebP, at most 2 MB)."""
+
+    id: int
+    kind: MediaKind
+    content_type: str
+    width: int
+    height: int
+    size_bytes: int
+    alt_ar: str
+    alt_en: str
+    sort_order: int
+    active: bool
+    url: str = Field(..., description="Staff preview of the image (works with the site off)")
+    created_at: datetime
+    updated_at: datetime
+
+    @staticmethod
+    def resolve_url(obj: Any) -> str:
+        return f"/api/core/center-media/{obj.pk}/file?v={obj.updated_at:%Y%m%d%H%M%S%f}"
+
+
+class CenterMediaPatch(PatchSchema):
+    alt_ar: str | None = Field(None, max_length=200)
+    alt_en: str | None = Field(None, max_length=200)
+    sort_order: int | None = Field(None, ge=0, le=32767)
+    active: bool | None = None
+
+
+class CenterFaqOut(Schema):
+    id: int
+    question_ar: str
+    question_en: str
+    answer_ar: str
+    answer_en: str
+    sort_order: int
+    active: bool
+    updated_at: datetime
+
+
+class CenterFaqIn(Schema):
+    question_ar: str = Field("", max_length=200)
+    question_en: str = Field("", max_length=200)
+    answer_ar: str = Field("", max_length=1000)
+    answer_en: str = Field("", max_length=1000)
+    sort_order: int = Field(0, ge=0, le=32767)
+    active: bool = True
+
+
+class CenterFaqPatch(PatchSchema):
+    question_ar: str | None = Field(None, max_length=200)
+    question_en: str | None = Field(None, max_length=200)
+    answer_ar: str | None = Field(None, max_length=1000)
+    answer_en: str | None = Field(None, max_length=1000)
+    sort_order: int | None = Field(None, ge=0, le=32767)
+    active: bool | None = None
+
+
+class TestimonialOut(Schema):
+    id: int
+    text_ar: str
+    text_en: str
+    author_ar: str
+    author_en: str
+    sort_order: int
+    active: bool
+    approved: bool = Field(..., description="Shown on the website only when approved and active")
+    approved_by_name: str | None
+    approved_at: datetime | None
+    updated_at: datetime
+
+    @staticmethod
+    def resolve_approved(obj: Any) -> bool:
+        return obj.approved_at is not None
+
+    @staticmethod
+    def resolve_approved_by_name(obj: Any) -> str | None:
+        user = obj.approved_by
+        if user is None:
+            return None
+        return str(user.display_name_en or user.display_name_ar or user.username)
+
+
+class TestimonialIn(Schema):
+    text_ar: str = Field("", max_length=400)
+    text_en: str = Field("", max_length=400)
+    author_ar: str = Field("", max_length=80)
+    author_en: str = Field("", max_length=80)
+    sort_order: int = Field(0, ge=0, le=32767)
+    active: bool = True
+
+
+class TestimonialPatch(PatchSchema):
+    text_ar: str | None = Field(None, max_length=400)
+    text_en: str | None = Field(None, max_length=400)
+    author_ar: str | None = Field(None, max_length=80)
+    author_en: str | None = Field(None, max_length=80)
+    sort_order: int | None = Field(None, ge=0, le=32767)
+    active: bool | None = None
+
+
+class DoctorSiteProfileOut(Schema):
+    """A doctor as the website administration sees it (no prices, no account data)."""
+
+    id: int
+    name_ar: str
+    name_en: str
+    specialty_ar: str
+    specialty_en: str
+    department_ar: str
+    department_en: str
+    active: bool
+    qualifications_ar: str
+    qualifications_en: str
+    bio_ar: str
+    bio_en: str
+    photo_id: int | None
+
+    @staticmethod
+    def resolve_name_ar(obj: Any) -> str:
+        return str(obj.user.display_name_ar)
+
+    @staticmethod
+    def resolve_name_en(obj: Any) -> str:
+        return str(obj.user.display_name_en)
+
+    @staticmethod
+    def resolve_department_ar(obj: Any) -> str:
+        return str(obj.department.name_ar)
+
+    @staticmethod
+    def resolve_department_en(obj: Any) -> str:
+        return str(obj.department.name_en)
+
+
+class DoctorSiteProfilePatch(PatchSchema):
+    NULLABLE: ClassVar[frozenset[str]] = frozenset({"photo_id"})
+
+    qualifications_ar: str | None = Field(None, max_length=200)
+    qualifications_en: str | None = Field(None, max_length=200)
+    bio_ar: str | None = Field(None, max_length=400)
+    bio_en: str | None = Field(None, max_length=400)
+    photo_id: int | None = None
+
+
+class SitePayerOut(Schema):
+    id: int
+    code: str
+    name_ar: str
+    name_en: str
+    active: bool
+    show_on_site: bool
+
+
+class SiteServiceOut(Schema):
+    """A service's name and department only: the website never shows a price."""
+
+    id: int
+    code: str
+    name_ar: str
+    name_en: str
+    kind: str
+    department_id: int | None
+    department_ar: str
+    department_en: str
+    active: bool
+    show_on_site: bool
+
+    @staticmethod
+    def resolve_department_ar(obj: Any) -> str:
+        return str(obj.department.name_ar) if obj.department else ""
+
+    @staticmethod
+    def resolve_department_en(obj: Any) -> str:
+        return str(obj.department.name_en) if obj.department else ""
+
+
+class ShowOnSiteIn(Schema):
+    show_on_site: bool
 
 
 Percent = Annotated[int, Field(ge=0, le=100)]

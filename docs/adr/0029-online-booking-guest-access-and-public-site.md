@@ -179,6 +179,22 @@ prices, no registration or tax numbers and no staff beyond the doctors shown. A 
 `GET /api/portal/center-identity` (name and logo only) serves the staff sign-in even when
 `site_enabled` is off.
 
+**Phase 2 as built (2026-10-29).** `CenterPage` gained the hero, facilities (at most 20 rows),
+reasons (at most 8), accessibility, privacy and cancellation policy texts, `maps_url` (a plain
+`https://` link, `domain.center_content.maps_link`) and the switches `show_services`,
+`show_insurance`, `show_faq`, `show_testimonials`, `show_facilities`, `show_policies`. Reasons and
+accessibility have no switch: an empty value hides them. `CenterMedia` images are PNG, JPEG or
+WebP judged by their bytes (`domain.images` walks the PNG chunks with their CRCs, the JPEG segments
+and the WebP RIFF header; no imaging library was added), at most 2 MB and 8000 pixels a side, at
+most 100 kept. `GET /api/portal/center-media/{id}` answers only while the website is on, only for
+an active image, and a doctor photo only while that doctor is on the page; it counts against the
+same per-address limit as the page. `core.approve_testimonial` defaults to the manager **and the
+administrator** (the permission sweep requires the administrator to hold every code); editing a
+testimonial's words or author withdraws its approval. Service names appear under their departments
+only (a service without a department is not listed); the administration lists consultation, lab and
+procedure services (drugs, consumables and beds are not offered). Gallery images follow
+`show_about`; the hero image always shows when one is active. Layout: D-0021.
+
 ### I. Patient channel
 No SMS or e-mail in V1. The patient is told in the page and in a portal inbox
 (`portal.PatientNotice`, written in the same transaction as the event through one

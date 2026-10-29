@@ -1387,3 +1387,50 @@ def preview_coverage(
         ceiling_amount=ceiling_amount,
     )
     return dc.split_line(gross, ZERO, rule)
+
+
+# --- On the public website (ADR 0029 H) -------------------------------------------------------
+
+
+def site_payers() -> QuerySet[Payer]:
+    """Payers with their website flag, for the center page administration (names only)."""
+    return Payer.objects.order_by("name_en", "code")
+
+
+def site_services() -> QuerySet[Service]:
+    """Services with their website flag (names and department only, never a price)."""
+    return Service.objects.select_related("department").order_by(
+        "department__sort_order", "department__code", "kind", "sort_order", "code"
+    )
+
+
+def set_payer_on_site(actor: User, payer_id: int, *, show_on_site: bool) -> Payer:
+    """Show or hide a payer's name among the accepted insurers of the public website."""
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="payer on website"):
+        payer = Payer.objects.select_for_update().get(pk=payer_id)
+        payer.show_on_site = show_on_site
+        payer.save(update_fields=["show_on_site", "updated_at"])
+    return payer
+
+
+def set_service_on_site(actor: User, service_id: int, *, show_on_site: bool) -> Service:
+    """Show or hide a service's name under its department on the public website."""
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason="service on website"):
+        service = Service.objects.select_for_update().get(pk=service_id)
+        service.show_on_site = show_on_site
+        service.save(update_fields=["show_on_site", "updated_at"])
+    return Service.objects.select_related("department").get(pk=service_id)
+
+
+def public_services(department_ids: Collection[int]) -> list[Service]:
+    """Active services marked for the website in the given departments (names only)."""
+    return list(
+        Service.objects.filter(
+            active=True, show_on_site=True, department_id__in=list(department_ids)
+        ).order_by("department_id", "sort_order", "name_en", "code")
+    )
+
+
+def public_payers() -> list[Payer]:
+    """Active payers marked for the website (names only, no contract terms)."""
+    return list(Payer.objects.filter(active=True, show_on_site=True).order_by("name_en", "code"))

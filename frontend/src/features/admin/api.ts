@@ -14,8 +14,15 @@ import type {
   AnnouncementIn,
   AnnouncementPatch,
   BulkUpdateIn,
+  CenterFaqIn,
+  CenterFaqPatch,
+  CenterMediaPatch,
   CenterPageIn,
   CenterProfileIn,
+  DoctorSiteProfilePatch,
+  MediaKind,
+  TestimonialIn,
+  TestimonialPatch,
   CoveragePreviewIn,
   CoverageRuleIn,
   CoverageRulePatch,
@@ -57,6 +64,12 @@ export const adminKeys = {
   center: ["admin", "center"] as const,
   centerPage: ["admin", "center-page"] as const,
   announcements: ["admin", "announcements"] as const,
+  centerMedia: ["admin", "center-media"] as const,
+  centerFaq: ["admin", "center-faq"] as const,
+  testimonials: ["admin", "testimonials"] as const,
+  doctorSite: ["admin", "doctor-site"] as const,
+  sitePayers: ["admin", "site-payers"] as const,
+  siteServices: ["admin", "site-services"] as const,
   policy: ["admin", "policy"] as const,
   publicSite: ["admin", "public-site"] as const,
   departments: ["admin", "departments"] as const,
@@ -220,6 +233,155 @@ export function useSaveAnnouncement() {
             }),
           ),
     [adminKeys.announcements, centerPageKey],
+  );
+}
+
+// --- Website content (ADR 0029 H) ----------------------------------------------------------
+
+export function useCenterMedia() {
+  return useQuery({ queryKey: adminKeys.centerMedia, queryFn: () => unwrap(api.GET("/api/core/center-media")) });
+}
+
+export function useUploadCenterMedia() {
+  return useAdminMutation(
+    ({ file, kind, alt_ar, alt_en }: { file: File; kind: MediaKind; alt_ar: string; alt_en: string }) =>
+      unwrap(
+        api.POST("/api/core/center-media", {
+          body: { file: file as unknown as string, kind, alt_ar, alt_en },
+          bodySerializer: (body) => {
+            const form = new FormData();
+            form.append("file", body.file as unknown as Blob);
+            form.append("kind", body.kind);
+            form.append("alt_ar", body.alt_ar ?? "");
+            form.append("alt_en", body.alt_en ?? "");
+            return form;
+          },
+        }),
+      ),
+    [adminKeys.centerMedia, centerPageKey],
+  );
+}
+
+export function useUpdateCenterMedia() {
+  return useAdminMutation(
+    ({ id, body }: { id: number; body: CenterMediaPatch }) =>
+      unwrap(api.PATCH("/api/core/center-media/{media_id}", { params: { path: { media_id: id } }, body })),
+    [adminKeys.centerMedia, centerPageKey],
+  );
+}
+
+export function useDeleteCenterMedia() {
+  return useAdminMutation(
+    (id: number) => unwrap(api.DELETE("/api/core/center-media/{media_id}", { params: { path: { media_id: id } } })),
+    [adminKeys.centerMedia, adminKeys.doctorSite, centerPageKey],
+  );
+}
+
+export function useCenterFaq() {
+  return useQuery({ queryKey: adminKeys.centerFaq, queryFn: () => unwrap(api.GET("/api/core/center-faq")) });
+}
+
+export function useSaveCenterFaq() {
+  return useAdminMutation(
+    ({ id, body }: { id?: number; body: CenterFaqIn | CenterFaqPatch }) =>
+      id === undefined
+        ? unwrap(api.POST("/api/core/center-faq", { body: body as CenterFaqIn }))
+        : unwrap(api.PATCH("/api/core/center-faq/{faq_id}", { params: { path: { faq_id: id } }, body })),
+    [adminKeys.centerFaq, centerPageKey],
+  );
+}
+
+export function useDeleteCenterFaq() {
+  return useAdminMutation(
+    (id: number) => unwrap(api.DELETE("/api/core/center-faq/{faq_id}", { params: { path: { faq_id: id } } })),
+    [adminKeys.centerFaq, centerPageKey],
+  );
+}
+
+export function useTestimonials() {
+  return useQuery({ queryKey: adminKeys.testimonials, queryFn: () => unwrap(api.GET("/api/core/testimonials")) });
+}
+
+export function useSaveTestimonial() {
+  return useAdminMutation(
+    ({ id, body }: { id?: number; body: TestimonialIn | TestimonialPatch }) =>
+      id === undefined
+        ? unwrap(api.POST("/api/core/testimonials", { body: body as TestimonialIn }))
+        : unwrap(
+            api.PATCH("/api/core/testimonials/{testimonial_id}", {
+              params: { path: { testimonial_id: id } },
+              body,
+            }),
+          ),
+    [adminKeys.testimonials, centerPageKey],
+  );
+}
+
+export function useApproveTestimonial() {
+  return useAdminMutation(
+    (id: number) =>
+      unwrap(api.POST("/api/core/testimonials/{testimonial_id}/approve", { params: { path: { testimonial_id: id } } })),
+    [adminKeys.testimonials, centerPageKey],
+  );
+}
+
+export function useDeleteTestimonial() {
+  return useAdminMutation(
+    (id: number) =>
+      unwrap(api.DELETE("/api/core/testimonials/{testimonial_id}", { params: { path: { testimonial_id: id } } })),
+    [adminKeys.testimonials, centerPageKey],
+  );
+}
+
+export function useDoctorSiteProfiles() {
+  return useQuery({
+    queryKey: adminKeys.doctorSite,
+    queryFn: () => unwrap(api.GET("/api/core/center-page/doctors")),
+  });
+}
+
+export function useUpdateDoctorSiteProfile() {
+  return useAdminMutation(
+    ({ id, body }: { id: number; body: DoctorSiteProfilePatch }) =>
+      unwrap(api.PATCH("/api/core/center-page/doctors/{doctor_id}", { params: { path: { doctor_id: id } }, body })),
+    [adminKeys.doctorSite, centerPageKey],
+  );
+}
+
+export function useSitePayers() {
+  return useQuery({ queryKey: adminKeys.sitePayers, queryFn: () => unwrap(api.GET("/api/core/center-page/payers")) });
+}
+
+export function useSetPayerOnSite() {
+  return useAdminMutation(
+    ({ id, show }: { id: number; show: boolean }) =>
+      unwrap(
+        api.PUT("/api/core/center-page/payers/{payer_id}", {
+          params: { path: { payer_id: id } },
+          body: { show_on_site: show },
+        }),
+      ),
+    [adminKeys.sitePayers, centerPageKey],
+  );
+}
+
+export function useSiteServices() {
+  return useQuery({
+    queryKey: adminKeys.siteServices,
+    queryFn: () => unwrap(api.GET("/api/core/center-page/services")),
+  });
+}
+
+export function useSetServiceOnSite() {
+  return useAdminMutation(
+    ({ id, show }: { id: number; show: boolean }) =>
+      unwrap(
+        api.PUT("/api/core/center-page/services/{service_id}", {
+          params: { path: { service_id: id } },
+          body: { show_on_site: show },
+        }),
+      ),
+    [adminKeys.siteServices, centerPageKey],
   );
 }
 

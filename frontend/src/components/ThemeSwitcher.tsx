@@ -91,7 +91,8 @@ export function ThemeSwitcher({ variant = "menu", labelled = false, className }:
               variant="ghost"
               size={labelled ? "default" : "icon"}
               className={cn(labelled && "px-2.5 max-sm:min-w-11", className)}
-              aria-label={t("theme.change")}
+              // WCAG 2.5.3: a visible label is part of the accessible name (axe label-content-name-mismatch).
+              aria-label={labelled ? `${t(`theme.${theme}`)}, ${t("theme.change")}` : t("theme.change")}
             >
               <CurrentIcon />
               {labelled ? <span className="hidden sm:inline">{t(`theme.${theme}`)}</span> : null}

@@ -175,6 +175,14 @@ register_permission(
     default_roles={roles.ADMIN, roles.MANAGER},
 )
 register_permission(
+    "core.approve_testimonial",
+    label_ar="اعتماد آراء المراجعين قبل نشرها في موقع المركز",
+    label_en="Approve testimonials before they show on the center website",
+    # The manager approves (ADR 0029 A6); the administrator holds every code by design
+    # (``test_permission_sweep``: the admin is refused nothing).
+    default_roles={roles.ADMIN, roles.MANAGER},
+)
+register_permission(
     "core.view_audit",
     label_ar="عرض سجل التدقيق",
     label_en="View audit trail",

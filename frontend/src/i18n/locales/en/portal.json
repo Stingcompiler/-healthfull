@@ -308,7 +308,31 @@
       }
     },
     "bookHint": "after you sign in",
-    "doctorsToday": "In clinic today"
+    "doctorsToday": "In clinic today",
+    "about": "About the center",
+    "gallery": "Photos of the center",
+    "facilities": "Facilities",
+    "reasons": "Why patients choose us",
+    "services": "Services",
+    "otherServices": "Services",
+    "qualifications": "Qualifications",
+    "insurance": "Insurance accepted",
+    "insuranceHint": "Bring your insurance card. Reception confirms your cover before the visit.",
+    "faq": "Questions and answers",
+    "testimonials": "What patients say",
+    "accessibility": "Accessibility",
+    "maps": "Open in maps",
+    "fees": {
+      "title": "Fees and appointments",
+      "text": "Fees are paid at reception. Prices are not shown online.",
+      "cancellation": "Cancellation policy"
+    },
+    "policies": {
+      "label": "Policies",
+      "privacy": "Privacy",
+      "cancellation": "Cancellation policy"
+    },
+    "photoOf": "Photo of {{name}}"
   },
   "off": {
     "title": "Online services are not available",

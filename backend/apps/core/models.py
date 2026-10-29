@@ -246,6 +246,29 @@ class CenterPage(SingletonModel):
     show_address = models.BooleanField(default=True)
     hidden_department_ids = models.JSONField(default=list, blank=True)
     hidden_doctor_ids = models.JSONField(default=list, blank=True)
+    # --- Website content (ADR 0029 H, Phase 2). Rules: ``domain.center_content``. ---
+    hero_title_ar = models.CharField(max_length=120, blank=True)
+    hero_title_en = models.CharField(max_length=120, blank=True)
+    hero_text_ar = models.TextField(max_length=300, blank=True)
+    hero_text_en = models.TextField(max_length=300, blank=True)
+    #: At most 20 ``{name_ar, name_en}`` rows (``domain.center_content.FACILITY_ROW``).
+    facilities = models.JSONField(default=list, blank=True)
+    #: At most 8 ``{title_ar, title_en, text_ar, text_en}`` rows ("why us").
+    reasons = models.JSONField(default=list, blank=True)
+    accessibility_ar = models.TextField(max_length=600, blank=True)
+    accessibility_en = models.TextField(max_length=600, blank=True)
+    privacy_ar = models.TextField(max_length=2000, blank=True)
+    privacy_en = models.TextField(max_length=2000, blank=True)
+    cancellation_policy_ar = models.TextField(max_length=1000, blank=True)
+    cancellation_policy_en = models.TextField(max_length=1000, blank=True)
+    #: A plain https link the visitor's phone opens (never embedded or fetched).
+    maps_url = models.CharField(max_length=500, blank=True)
+    show_services = models.BooleanField(default=True)
+    show_insurance = models.BooleanField(default=True)
+    show_faq = models.BooleanField(default=True)
+    show_testimonials = models.BooleanField(default=True)
+    show_facilities = models.BooleanField(default=True)
+    show_policies = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta(SingletonModel.Meta):
@@ -351,6 +374,119 @@ class Announcement(models.Model):
 
     def __str__(self) -> str:
         return self.title_en or self.title_ar
+
+
+class CenterMediaKind(models.TextChoices):
+    HERO = "hero", "Hero image"
+    GALLERY = "gallery", "Gallery image"
+    DOCTOR = "doctor", "Doctor photo"
+
+
+@pghistory.track(*_full_history())
+class CenterMedia(models.Model):
+    """An image of the public website, uploaded by staff (ADR 0029 H): PNG, JPEG or WebP, at most
+    2 MB, checked by its bytes (``domain.images``). Served by
+    ``GET /api/portal/center-media/{id}?v=``; the website never links an external image."""
+
+    kind = models.CharField(max_length=10, choices=CenterMediaKind.choices)
+    file = models.FileField(upload_to="center/media/")
+    content_type = models.CharField(max_length=20)
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    size_bytes = models.PositiveIntegerField()
+    alt_ar = models.CharField(max_length=200, blank=True)
+    alt_en = models.CharField(max_length=200, blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "center media"
+        verbose_name_plural = "center media"
+        ordering: ClassVar[list[str]] = ["kind", "sort_order", "id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(kind__in=CenterMediaKind.values), name="core_centermedia_kind_valid"
+            ),
+            models.CheckConstraint(
+                condition=Q(size_bytes__lte=2 * 1024 * 1024), name="core_centermedia_max_2mb"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.kind} #{self.pk}"
+
+
+@pghistory.track(*_full_history())
+class CenterFaq(models.Model):
+    """A question and its answer on the public website (bilingual, ordered, can be hidden)."""
+
+    question_ar = models.CharField(max_length=200, blank=True)
+    question_en = models.CharField(max_length=200, blank=True)
+    answer_ar = models.TextField(max_length=1000, blank=True)
+    answer_en = models.TextField(max_length=1000, blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "center FAQ entry"
+        ordering: ClassVar[list[str]] = ["sort_order", "id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=~Q(question_ar="") | ~Q(question_en=""),
+                name="core_centerfaq_has_question",
+            ),
+            models.CheckConstraint(
+                condition=~Q(answer_ar="") | ~Q(answer_en=""), name="core_centerfaq_has_answer"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.question_en or self.question_ar
+
+
+@pghistory.track(*_full_history())
+class Testimonial(models.Model):
+    """What a patient said, entered by staff and shown only once approved (ADR 0029 A6).
+
+    The public never submits one. Approval needs ``core.approve_testimonial``; editing the text
+    or the author takes the approval back (``domain.center_content``).
+    """
+
+    text_ar = models.TextField(max_length=400, blank=True)
+    text_en = models.TextField(max_length=400, blank=True)
+    author_ar = models.CharField(max_length=80, blank=True)
+    author_en = models.CharField(max_length=80, blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    active = models.BooleanField(default=True)
+    approved_by = models.ForeignKey(
+        User, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering: ClassVar[list[str]] = ["sort_order", "id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=~Q(text_ar="") | ~Q(text_en=""), name="core_testimonial_has_text"
+            ),
+            models.CheckConstraint(
+                condition=Q(approved_by__isnull=True, approved_at__isnull=True)
+                | Q(approved_by__isnull=False, approved_at__isnull=False),
+                name="core_testimonial_approval_documented",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return (self.text_en or self.text_ar)[:40]
 
 
 class PrintDocument(models.TextChoices):
@@ -664,6 +800,19 @@ class DoctorProfile(models.Model):
         help_text="Consultation fee service (kind 'consultation') for visits with this doctor.",
     )
     active = models.BooleanField(default=True)
+    # --- On the public website (ADR 0029 H) ---
+    qualifications_ar = models.CharField(max_length=200, blank=True)
+    qualifications_en = models.CharField(max_length=200, blank=True)
+    bio_ar = models.TextField(max_length=400, blank=True)
+    bio_en = models.TextField(max_length=400, blank=True)
+    photo = models.ForeignKey(
+        "core.CenterMedia",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="doctors",
+        help_text="A CenterMedia image of kind 'doctor'.",
+    )
 
     class Meta:
         ordering: ClassVar[list[str]] = ["user__username"]

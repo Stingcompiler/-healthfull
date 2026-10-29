@@ -250,6 +250,35 @@ def get_center_logo(request: HttpRequest) -> HttpResponse:
     return response
 
 
+@portal_router.get(
+    "/center-media/{media_id}",
+    auth=None,
+    response={200: None, 404: ErrorOut, 429: ErrorOut},
+    operation_id="portal_get_center_media",
+    summary="An image of the center website (hero, gallery, a shown doctor's photo)",
+    description=(
+        "No sign-in. Only images the center uploaded and shows; 404 for anything else and "
+        "`SITE_DISABLED` while the website is off. The URL carries the image's version, so it "
+        "may be cached for an hour. 429 after too many reads from one address."
+    ),
+    openapi_extra={
+        "responses": {
+            200: {
+                "description": "The image",
+                "content": {"image/*": {"schema": {"type": "string", "format": "binary"}}},
+            }
+        }
+    },
+)
+def get_center_media(request: HttpRequest, media_id: int) -> HttpResponse:
+    services.check_public_page_rate(request)
+    data, content_type = core.public_center_media(media_id)
+    response = HttpResponse(data, content_type=content_type)
+    response["Cache-Control"] = "public, max-age=3600"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
 # --- staff: issue an access code -----------------------------------------------------------
 
 

@@ -164,6 +164,8 @@ class Service(models.Model):
     description = models.TextField(blank=True)
     active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
+    #: Its name appears under its department on the public website (never its price, ADR 0029 H).
+    show_on_site = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -368,6 +370,8 @@ class Payer(models.Model):
     address = models.CharField(max_length=300, blank=True)
     notes = models.TextField(blank=True)
     active = models.BooleanField(default=True)
+    #: Its name appears among the accepted insurers on the public website (ADR 0029 H).
+    show_on_site = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

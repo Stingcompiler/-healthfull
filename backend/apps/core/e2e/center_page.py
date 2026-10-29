@@ -3,8 +3,16 @@
 from __future__ import annotations
 
 import pghistory
+from django.utils import timezone
 
-from apps.core.models import Announcement, CenterPage, PublicSiteSettings, User
+from apps.core.models import (
+    Announcement,
+    CenterFaq,
+    CenterPage,
+    PublicSiteSettings,
+    Testimonial,
+    User,
+)
 from domain.center_page import hours_json, parse_hours
 
 #: Saturday to Thursday 08:00-20:00, Friday closed (weekday 4), as most Sudanese clinics.
@@ -29,7 +37,52 @@ def seed_center_page(author: User) -> None:
         page.email = "info@center.example.test"
         page.directions_ar = "شرق الموقف الرئيسي، المبنى الأبيض بجوار الصيدلية."
         page.directions_en = "East of the main bus stop, the white building next to the pharmacy."
+        page.hero_title_ar = "رعاية قريبة منك، كل أيام الأسبوع"
+        page.hero_title_en = "Care close to home, every day of the week"
+        page.hero_text_ar = "عيادات وطب أسرة ومختبر وصيدلية في مبنى واحد."
+        page.hero_text_en = "Clinics, family medicine, a laboratory and a pharmacy in one building."
+        page.facilities = [
+            {"name_ar": "مختبر", "name_en": "Laboratory"},
+            {"name_ar": "صيدلية", "name_en": "Pharmacy"},
+            {"name_ar": "غرفة انتظار مكيفة", "name_en": "Air-conditioned waiting room"},
+        ]
+        page.reasons = [
+            {
+                "title_ar": "نتائج المختبر في نفس اليوم",
+                "title_en": "Same-day lab results",
+                "text_ar": "معظم التحاليل الروتينية تظهر قبل نهاية الدوام.",
+                "text_en": "Most routine tests are ready before closing time.",
+            },
+        ]
+        page.accessibility_ar = "مدخل بلا درج وكرسي متحرك عند الاستقبال."
+        page.accessibility_en = "Step-free entrance and a wheelchair at the door."
+        page.privacy_ar = "بياناتك محفوظة في خادم المركز ولا تُشارك إلا بإذنك أو بحكم القانون."
+        page.privacy_en = (
+            "Your data stays on the center's server and is shared only with your consent or by law."
+        )
+        page.cancellation_policy_ar = "ألغِ موعدك قبل يوم على الأقل ليُعطى لمريض آخر."
+        page.cancellation_policy_en = (
+            "Cancel at least a day before so the slot can go to another patient."
+        )
         page.save()
+    if not CenterFaq.objects.exists():
+        CenterFaq.objects.create(
+            question_ar="هل أحتاج إلى موعد؟",
+            question_en="Do I need an appointment?",
+            answer_ar="لا، يمكنك الحضور في ساعات العمل. الموعد يقلل الانتظار.",
+            answer_en="No, you can come during opening hours. An appointment shortens the wait.",
+            created_by=author,
+        )
+    if not Testimonial.objects.exists():
+        Testimonial.objects.create(
+            text_ar="تعامل لطيف ونتيجة التحليل في نفس اليوم.",
+            text_en="Kind staff and my test result the same day.",
+            author_ar="مراجعة من الخرطوم",
+            author_en="A patient from Khartoum",
+            created_by=author,
+            approved_by=author,
+            approved_at=timezone.now(),
+        )
     if not Announcement.objects.exists():
         Announcement.objects.create(
             title_ar="المختبر يفتح من الساعة 7 صباحًا",

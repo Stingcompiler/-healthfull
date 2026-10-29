@@ -207,6 +207,8 @@ OPEN_OPERATIONS = frozenset(
         "portal_get_center_logo",
         # The center name and logo even with the website switched off (ADR 0029 H).
         "portal_get_center_identity",
+        # The website's images (ADR 0029 H, Phase 2).
+        "portal_get_center_media",
     }
 )
 
@@ -261,6 +263,8 @@ def test_only_whitelisted_operations_are_public(schema: dict[str, Any]) -> None:
         "portal_get_center_logo",
         # The center name and logo even with the website switched off (ADR 0029 H).
         "portal_get_center_identity",
+        # The website's images (ADR 0029 H, Phase 2).
+        "portal_get_center_media",
     }
 
 
