@@ -15,7 +15,7 @@ from django.utils import timezone
 from apps.core.e2e.fixtures import Json, Params, fixture, patient_json
 from apps.core.services import require_permission
 from apps.visits import services as visits
-from apps.visits.models import Admission, AdmissionStatus, Bed
+from apps.visits.models import Admission, AdmissionStatus, AppointmentSource, Bed
 from domain.errors import DomainError
 
 
@@ -69,3 +69,48 @@ def nursing_discharge_all(p: Params) -> Json:
         visits.discharge(adm, actor=actor, summary="e2e clean-up")
         done.append(adm.number)
     return {"discharged": done}
+
+
+@fixture(
+    "online_request",
+    summary=(
+        "An online booking request (status requested, ADR 0029 E) for a caller named "
+        "`contact_name` with `doctor` (default doctor) in the first free slot from `days_ahead` "
+        "days after today on (default 2, the next 14 days are tried), expiring in two hours, as "
+        "the portal's system user."
+    ),
+    params=("doctor", "days_ahead", "contact_name"),
+)
+def online_request(p: Params) -> Json:
+    from apps.portal.services import portal_actor
+
+    doctor = p.doctor("doctor", default="doctor")
+    if doctor is None:
+        raise DomainError("FIXTURE_PARAM_INVALID", "A doctor is required")
+    ahead = p.integer("days_ahead")
+    first = timezone.localdate() + timedelta(days=2 if ahead is None else ahead)
+    for offset in range(14):
+        day = first + timedelta(days=offset)
+        slots = visits.available_slots(doctor, day)
+        if slots:
+            break
+    else:
+        raise DomainError("FIXTURE_PARAM_INVALID", "The doctor has no free slot in two weeks")
+    start, _ = slots[0]
+    row = visits.book_appointment(
+        doctor=doctor,
+        starts_at=start,
+        actor=portal_actor(),
+        contact_name=p.text("contact_name", "Online caller"),
+        contact_phone="0912345678",
+        source=AppointmentSource.PORTAL,
+        expires_at=timezone.now() + timedelta(hours=2),
+    )
+    return {
+        "id": row.pk,
+        "starts_at": row.starts_at.isoformat(),
+        "day": day.isoformat(),
+        "doctor_id": doctor.pk,
+        "doctor_name_en": doctor.user.display_name_en,
+        "doctor_name_ar": doctor.user.display_name_ar,
+    }

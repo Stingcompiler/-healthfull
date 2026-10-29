@@ -37,6 +37,12 @@ export const routes: readonly AppRoute[] = [
   portalRoute("portal-home", "/portal/home", (page) => page.getByTestId("home-balance")),
   portalRoute("portal-appointments", "/portal/appointments", (page) => page.getByTestId("appointment-row").first()),
   portalRoute("portal-book", "/portal/appointments/new", (page) => page.getByTestId("book-doctor").first()),
+  portalRoute(
+    "portal-reschedule",
+    "/portal/appointments/$appointmentId/reschedule",
+    (page) => page.getByTestId("book-day").first(),
+    (who) => `/portal/appointments/${String(who.appointment?.id ?? 0)}/reschedule`,
+  ),
   portalRoute("portal-results", "/portal/results", (page) => page.getByTestId("result-row").first()),
   portalRoute(
     "portal-result",

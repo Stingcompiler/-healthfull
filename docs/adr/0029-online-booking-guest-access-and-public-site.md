@@ -105,6 +105,62 @@ evidence with file and line citations.
   returns the stored answer, same key and a different body is `409 IDEMPOTENCY_MISMATCH`; rows
   expire after 24 h.
 
+- **[DECIDED 2026-10-29, owner] No overbooking, ever.** The doctor/time exclusion constraint
+  is absolute: there is no override flag, parameter or role, for staff or anyone. An urgent
+  patient is seen through the existing walk-in path (a visit and the queue), which takes no
+  appointment slot. This closes open item 1 of `docs/inspection/public-site-impact.md`.
+
+**Phase 3 as built (2026-10-29).**
+- `AppointmentStatus.REQUESTED`, `Appointment.source` (`staff|portal|guest`), `expires_at`,
+  `approved_by/approved_at` (both or neither, a check), a check that a request has an expiry,
+  `btree_gist` and `visits_appointment_no_overlap` land in one migration
+  (`visits/0005`), whose `verify_no_overlaps` step stops with the list of overlapping pairs
+  (doctor, both ids, both times) and changes nothing. The state machine and expiry rules are
+  `domain.appointments` (Hypothesis-tested edge by edge); availability is
+  `domain.availability.free_slots` (Hypothesis over schedules x time off x bookings).
+- Every booking takes the doctor's row lock, expires that doctor's due requests (system actor,
+  reason `ONLINE_REQUEST_EXPIRED`), checks the slot, and inserts inside a savepoint; an exclusion
+  violation (`violated_constraint`, SQLSTATE 23P01) is answered `APPOINTMENT_CONFLICT`. The
+  hourly `maintenance` run sweeps the rest (`visits.expire_requests`). The system actor is the
+  portal's inactive system user (`portal-system`), the user online requests are created by.
+- While approval is on, the portal offers only slots at least `lead + min_review_minutes`
+  ahead (`domain.public_site.offered_booking_rules`) and still refuses a request whose review
+  window would be short (`ONLINE_REVIEW_WINDOW_TOO_SHORT`, also when `request_ttl_hours` is
+  shorter than the window).
+- Minimal staff endpoints so requests are never stuck before the Phase 4 inbox:
+  `POST /api/visits/online-bookings/{id}/approve` and `/reject` (`visits.manage_online_bookings`,
+  default receptionist, manager, administrator; reject carries a reason code of
+  `appointment_cancel`, default `ONLINE_REJECTED`, a note, actor and time). The doctor's day
+  view shows requests with Approve and Decline. `ONLINE_REQUEST_EXPIRED` is never offered in a
+  staff reason list.
+- **Reschedule by a signed-in patient** (`POST /api/portal/appointments/{id}/reschedule`):
+  only a confirmed (`booked`) booking moves (a request is cancelled and booked again); the new
+  slot is validated like a booking (open count and same-day rule exclude the moved one), and the
+  new booking follows `require_approval` like any online booking (it waits for reception when
+  approval is on, so the old slot is released at once). Lock order: person, both doctors by id,
+  then the appointment; staff reschedule now takes the doctor lock before the appointment too.
+- `DoctorTimeOff` (doctor, starts/ends, reason ar/en, at least one; created_by; history;
+  `visits_time_off_no_overlap`). Adding a period never cancels bookings inside it: they are
+  returned so reception moves or cancels them with the patient. Staff booking inside time off
+  is refused (`DOCTOR_TIME_OFF`). Endpoints and the screen (a "Time off" action on the doctors'
+  schedule list at `/administration/departments`) use `core.manage_departments`, the
+  permission of the schedule editor on that page (`visits.manage_schedules` stays unused).
+- **`online_bookable` on existing installs.** `visits/0005` sets it true for every doctor who
+  can be booked on the portal today (active, active user, active weekly schedule) **only when
+  online booking is already on** in the settings row (which ADR K1 seeds on for an existing
+  install); otherwise (a new install, or booking off) nobody is offered until the administrator
+  ticks the doctor in the center page's doctor profile ("Offered for online booking",
+  `core.manage_public_site`). Registered patients of a center that books online today are not
+  cut off, consistent with K1.
+- The reason codes `ONLINE_REJECTED` and `ONLINE_REQUEST_EXPIRED` are seeded (`core/0022`).
+  The plan's `PATIENT_RESCHEDULE` was not added: a reschedule is the `rescheduled` state and
+  the link, not a cancellation, so it needs no cancel reason.
+- The portal shows the patient-facing status (`display_status`, `domain.portal_status`,
+  booking family): awaiting approval, confirmed, you were received, moved, cancelled by you,
+  cancelled by the center, declined, request expired, missed.
+- `PortalEvent.kind` and `PortalThrottle.scope` were **not** widened: Phase 3 writes no new
+  event kind or throttle scope; the widening ships with the guest kinds in Phase 4.
+
 ### D. Identity of a guest
 A guest booking is an `Appointment` with `contact_name`, `contact_phone`, `patient = NULL`,
 `source = guest`. The confirmation screen shows a **booking reference (10 base32 characters)** and
