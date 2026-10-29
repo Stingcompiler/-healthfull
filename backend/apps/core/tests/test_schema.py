@@ -47,6 +47,8 @@ APPEND_ONLY = {
 }
 
 #: Mutable but deliberately untracked (documented reason in each model's docstring/comment).
+#: Reviewed for the public site Phase 2 (ADR 0029 H): CenterMedia, CenterFaq and Testimonial are
+#: user-visible content, so they are tracked and deliberately NOT listed here.
 UNTRACKED = {
     ("core", "Sequence"),  # counters; documents carry their numbers
     ("core", "Notification"),
