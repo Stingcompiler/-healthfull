@@ -15,7 +15,7 @@ from pathlib import Path
 import django_stubs_ext
 from django.core.exceptions import ImproperlyConfigured
 
-from config.env import env_bool, env_int, env_list, env_str
+from config.env import env_bool, env_int, env_list, env_networks, env_str
 from config.logs import build_logging
 
 # Allows ``ModelAdmin[Model]``-style generics at runtime (typing only).
@@ -221,6 +221,12 @@ SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", False)
 SECURE_HSTS_SECONDS = env_int("DJANGO_HSTS_SECONDS", 0)
 #: Read the client IP from X-Forwarded-For (only behind our own reverse proxy).
 TRUST_X_FORWARDED_FOR = env_bool("DJANGO_TRUST_X_FORWARDED_FOR", False)
+#: Our own proxy hops, skipped when reading X-Forwarded-For from the right
+#: (apps.core.services.client_ip, ADR 0028 decision 6). Networks separated by commas or spaces;
+#: "private_ranges" (the default) as in Caddy: the compose network and host-side proxy hops are
+#: private, a visitor on the internet is not. On the LAN, where every address is private, the
+#: leftmost entry is used, which the compose Caddy wrote itself (it trusts no peer by default).
+TRUSTED_PROXIES = env_networks("DJANGO_TRUSTED_PROXIES", "private_ranges")
 if env_bool("DJANGO_TRUST_X_FORWARDED_PROTO", False):
     # Only behind our own reverse proxy (Caddy) which sets this header.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

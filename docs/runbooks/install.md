@@ -106,6 +106,37 @@ rebuilt: edit `.env`, then `infra/compose.sh up -d` (recreates `app`). To check:
 `curl -s http://<server>/api/ops/site` answers `{"marketing":true,...}`. To turn it off, set `0`
 (or remove the line) and recreate `app`. The page never prints a password or an account.
 
+### Behind a host reverse proxy — خلف وكيل عكسي على الخادم
+
+A center's LAN install needs nothing here: the stack's own Caddy (`web`) is the edge and leaves
+`CADDY_TRUSTED_PROXIES` empty, so it replaces any `X-Forwarded-For` a workstation sends with the
+workstation's real address (nobody on the LAN can pose as another address).
+
+On an internet-facing server where another reverse proxy (for example the host's own Caddy)
+terminates TLS and forwards to `web` on `127.0.0.1:<HTTP_PORT>`, `web` would replace the visitor's
+address set by that proxy with the proxy's own (the Docker network gateway): every visitor then
+looks like one address, so one bad actor can trip the per-address sign-in and booking limits for
+everybody, and the audit log loses the real addresses (ADR 0028 decision 6). Then:
+
+1. The outer proxy must **overwrite** `X-Forwarded-For` with the connection address. Caddy's
+   `reverse_proxy` does this by default (it trusts no peer unless told to); nginx needs
+   `proxy_set_header X-Forwarded-For $remote_addr;` (not `$proxy_add_x_forwarded_for`).
+2. `BIND_IP=127.0.0.1`, so only processes on the server reach `web`.
+3. In `.env`: `CADDY_TRUSTED_PROXIES=private_ranges` (or, narrower, the Docker network's subnet:
+   `sudo docker network inspect <project>_default --format '{{(index .IPAM.Config 0).Subnet}}'`).
+   Keep `DJANGO_TRUST_X_FORWARDED_FOR=1`; `DJANGO_TRUSTED_PROXIES` stays at its default
+   (`private_ranges`). Then `infra/compose.sh up -d web` (recreates `web`, no rebuild).
+4. Check (read-only on the server): sign in once from a phone on mobile data, note the phone's
+   public address, and read the last sign-in events:
+   ```bash
+   infra/compose.sh exec -T app python manage.py shell -c "from apps.core.models import AuthEvent; [print(e.created_at, e.kind, e.username, e.ip_address) for e in AuthEvent.objects.order_by('-id')[:5]]"
+   ```
+   The phone's sign-in shows the phone's public address, not `172.x.x.x`. Before the change every
+   event shows the same `172.x.x.x` gateway address.
+
+Never set `CADDY_TRUSTED_PROXIES` when `web` is published on the LAN (`BIND_IP` not loopback):
+every LAN client is on a private range and could then choose the address the app records.
+
 ### Database roles — أدوار قاعدة البيانات
 
 The application never connects to PostgreSQL as an all-powerful account. Three roles exist:

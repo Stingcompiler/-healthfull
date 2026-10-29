@@ -8,12 +8,24 @@
 #   APP_UPSTREAM         Django upstream, default app:8000
 #   DEVICE_AGENT_ORIGIN  local device agent origin allowed by the CSP, default http://127.0.0.1:9123
 #   CADDY_MAX_BODY       request body limit (Excel imports), default 25MB
+#   CADDY_TRUSTED_PROXIES  peers whose X-Forwarded-For this Caddy keeps (ADR 0028 decision 6).
+#                        Empty (default) = trust nobody: this Caddy is the edge and replaces the
+#                        header with the connection address, so a LAN client cannot forge it.
+#                        Behind a host reverse proxy, the address(es) that proxy connects from,
+#                        space separated CIDRs or "private_ranges" (docs/runbooks/install.md
+#                        "Behind a host reverse proxy").
 
 {
 	# Every certificate comes from Caddy's local CA: the server never contacts Let's Encrypt.
 	local_certs
 	# Inside a container there is no system trust store to install the CA into.
 	skip_install_trust
+	servers {
+		# Without a trusted peer, reverse_proxy overwrites X-Forwarded-For with the peer
+		# address; from a trusted peer it appends the peer to the header it received. An empty
+		# list is valid Caddy and trusts nobody (infra/tests/test_caddy_trusted_proxies.sh).
+		trusted_proxies static {$CADDY_TRUSTED_PROXIES}
+	}
 }
 
 (security_headers) {
@@ -56,6 +68,7 @@ http://127.0.0.1:8081 {
 		reverse_proxy {$APP_UPSTREAM:app:8000} {
 			# X-Forwarded-For/-Proto/-Host are set by Caddy; Django trusts them only when
 			# DJANGO_TRUST_X_FORWARDED_PROTO / DJANGO_TRUST_X_FORWARDED_FOR are enabled.
+			# X-Forwarded-For is overwritten unless the peer is in CADDY_TRUSTED_PROXIES.
 			transport http {
 				dial_timeout 5s
 				response_header_timeout 120s

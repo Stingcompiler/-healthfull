@@ -7,6 +7,8 @@ from typing import Any
 
 import pytest
 from django.utils import timezone
+from hypothesis import given
+from hypothesis import strategies as st
 
 from apps.core.models import AuthEvent, AuthEventKind, Policy, User
 from apps.core.permissions import PERMISSIONS
@@ -539,6 +541,82 @@ def test_client_ip_honours_forwarded_for_only_when_trusted(settings: Any) -> Non
     assert client_ip(request) == "203.0.113.9"
     assert client_ip(RequestFactory().get("/", REMOTE_ADDR="10.0.0.2")) == "10.0.0.2"
     assert client_ip(RequestFactory().get("/", REMOTE_ADDR="")) is None
+
+
+def _xff_request(header: str) -> Any:
+    from django.test import RequestFactory
+
+    return RequestFactory().get("/", REMOTE_ADDR="172.18.0.3", HTTP_X_FORWARDED_FOR=header)
+
+
+def test_client_ip_forged_leading_entry_does_not_win_behind_trusted_chain(settings: Any) -> None:
+    """ADR 0028 decision 6: an appended chain is read from the right, skipping our proxies.
+
+    A visitor at 203.0.113.9 sends ``X-Forwarded-For: 198.51.100.66``. If any proxy appends
+    instead of overwriting, the header reaches the app as
+    ``198.51.100.66, 203.0.113.9, 172.18.0.1`` (the last one being the compose Caddy's peer).
+    """
+    from apps.core.services import client_ip
+    from config.env import env_networks
+
+    settings.TRUST_X_FORWARDED_FOR = True
+    chain = "198.51.100.66, 203.0.113.9, 172.18.0.1"
+    # Default trusted set (private ranges) and an explicit, narrower one agree.
+    assert client_ip(_xff_request(chain)) == "203.0.113.9"
+    settings.TRUSTED_PROXIES = env_networks("P", "", {"P": "172.18.0.0/16"})
+    assert client_ip(_xff_request(chain)) == "203.0.113.9"
+    # Several trusted hops are all skipped.
+    settings.TRUSTED_PROXIES = env_networks("P", "", {"P": "172.18.0.0/16 10.9.0.0/16"})
+    assert client_ip(_xff_request("198.51.100.66, 203.0.113.9, 10.9.0.4, 172.18.0.1")) == (
+        "203.0.113.9"
+    )
+    # Nothing trusted: the entry the nearest proxy wrote (its own peer) is the answer.
+    settings.TRUSTED_PROXIES = ()
+    assert client_ip(_xff_request(chain)) == "172.18.0.1"
+
+
+_PUBLIC_V4 = st.ip_addresses(v=4).filter(lambda a: a.is_global)
+_ANY_TEXT = st.one_of(
+    st.ip_addresses().map(str), st.text(alphabet="0123456789abcdef.:x ", max_size=12)
+)
+
+
+@given(
+    forged=st.lists(_ANY_TEXT, max_size=4),
+    client=_PUBLIC_V4,
+    hops=st.lists(st.sampled_from(["172.18.0.1", "10.9.0.4", "127.0.0.1"]), min_size=1, max_size=3),
+)
+def test_forwarded_client_never_returns_a_forged_entry(
+    forged: list[str], client: Any, hops: list[str]
+) -> None:
+    """Whatever a visitor puts in front, the address our first hop wrote is the answer."""
+    from apps.core.services import _forwarded_client
+    from config.env import env_networks
+
+    header = ", ".join([*forged, str(client), *hops])
+    trusted = env_networks("P", "private_ranges", {})
+    assert _forwarded_client(header, trusted) == str(client)
+
+
+def test_client_ip_lan_edge_and_all_trusted_chains(settings: Any) -> None:
+    """On the LAN the compose Caddy is the edge and writes one private address: that is it."""
+    from apps.core.services import client_ip
+
+    settings.TRUST_X_FORWARDED_FOR = True
+    assert client_ip(_xff_request("192.168.1.25")) == "192.168.1.25"
+    # Every hop is a trusted (private) address: the leftmost is the one the edge saw.
+    assert client_ip(_xff_request("192.168.1.25, 172.18.0.1")) == "192.168.1.25"
+
+
+def test_client_ip_stops_at_a_malformed_entry(settings: Any) -> None:
+    """A value that is not an address was never written by our proxies: do not look past it."""
+    from apps.core.services import client_ip
+
+    settings.TRUST_X_FORWARDED_FOR = True
+    # Left of the junk is the visitor's own text: never used.
+    assert client_ip(_xff_request("198.51.100.66, junk, 172.18.0.1")) == "172.18.0.1"
+    assert client_ip(_xff_request("198.51.100.66, 203.0.113.9:443")) == "172.18.0.3"
+    assert client_ip(_xff_request(" , ")) == "172.18.0.3"
 
 
 def test_client_ip_ignores_forwarded_values_that_are_not_addresses(settings: Any) -> None:

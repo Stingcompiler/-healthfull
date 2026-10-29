@@ -14,7 +14,7 @@ import structlog
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-from config.env import env_bool, env_int, env_list, env_str
+from config.env import env_bool, env_int, env_list, env_networks, env_str
 from config.logs import build_logging
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -64,6 +64,26 @@ def test_env_list() -> None:
     assert env_list("L", ["a"], {}) == ["a"]
     assert env_list("L", ["a"], {"L": "x, y,,z ,"}) == ["x", "y", "z"]
     assert env_list("L", ["a"], {"L": ""}) == []
+
+
+def test_env_networks() -> None:
+    from ipaddress import ip_network
+
+    private = env_networks("N", "private_ranges", {})
+    assert ip_network("172.16.0.0/12") in private
+    assert ip_network("127.0.0.0/8") in private
+    assert ip_network("::1/128") in private
+    assert env_networks("N", "private_ranges", {"N": ""}) == ()
+    # Caddy's space-separated form and Django's comma-separated form both work.
+    assert env_networks("N", "", {"N": "172.18.0.0/16 10.0.0.1, 2001:db8::/32"}) == (
+        ip_network("172.18.0.0/16"),
+        ip_network("10.0.0.1/32"),
+        ip_network("2001:db8::/32"),
+    )
+    # Host bits are allowed, as in Caddy (172.18.0.1/16 means the whole /16).
+    assert env_networks("N", "", {"N": "172.18.0.1/16"}) == (ip_network("172.18.0.0/16"),)
+    with pytest.raises(ImproperlyConfigured, match="N"):
+        env_networks("N", "", {"N": "172.18.0.0/16 not-a-network"})
 
 
 def test_env_helpers_read_os_environ(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -174,7 +194,8 @@ def test_production_settings_from_env() -> None:
         "'secure': s.SESSION_COOKIE_SECURE, 'csrf_secure': s.CSRF_COOKIE_SECURE,"
         "'origins': s.CSRF_TRUSTED_ORIGINS, 'docs': s.API_DOCS_ENABLED,"
         "'storage': s.STORAGES['staticfiles']['BACKEND'], 'version': s.APP_VERSION,"
-        "'proxy': getattr(s, 'SECURE_PROXY_SSL_HEADER', None), 'xff': s.TRUST_X_FORWARDED_FOR}))"
+        "'proxy': getattr(s, 'SECURE_PROXY_SSL_HEADER', None), 'xff': s.TRUST_X_FORWARDED_FOR,"
+        "'proxies': [str(n) for n in s.TRUSTED_PROXIES]}))"
     )
     result = _run_settings(
         {
@@ -185,6 +206,7 @@ def test_production_settings_from_env() -> None:
             "DJANGO_SECURE_COOKIES": "1",
             "DJANGO_TRUST_X_FORWARDED_PROTO": "1",
             "DJANGO_TRUST_X_FORWARDED_FOR": "1",
+            "DJANGO_TRUSTED_PROXIES": "172.18.0.0/16",
             "DB_NAME": "e2e_hospital_abcdef12",
             "PGHOST": "db",
             "PGPORT": "5433",
@@ -208,6 +230,7 @@ def test_production_settings_from_env() -> None:
         "version": "2026.10.1",
         "proxy": ["HTTP_X_FORWARDED_PROTO", "https"],
         "xff": True,
+        "proxies": ["172.18.0.0/16"],
     }
 
 
