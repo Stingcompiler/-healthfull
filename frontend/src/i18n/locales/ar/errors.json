@@ -461,5 +461,18 @@
   "NO_PRESCRIPTION": "لا توجد أدوية موصوفة في هذه الزيارة لطباعتها.",
   "SITE_DISABLED": "موقع المركز متوقف حالياً.",
   "ONLINE_BOOKING_DISABLED": "الحجز عبر الإنترنت متوقف. اتصل بالمركز للحجز.",
-  "PORTAL_DISABLED": "دخول المرضى متوقف في هذا المركز."
+  "PORTAL_DISABLED": "دخول المرضى متوقف في هذا المركز.",
+  "CENTER_ROWS_INVALID": "راجع القائمة: 20 مرفقًا و8 أسباب على الأكثر، ولكل منها عنوان.",
+  "CENTER_MAPS_URL_INVALID": "أدخل رابط خريطة يبدأ بـ https://.",
+  "MEDIA_TOO_LARGE": "يجب ألا يتجاوز حجم الصورة 2 ميغابايت.",
+  "MEDIA_INVALID_IMAGE": "الملف ليس صورة PNG أو JPEG أو WebP، أو أنه تالف.",
+  "MEDIA_IMAGE_TOO_BIG": "أبعاد الصورة كبيرة: 8000 بكسل على الأكثر لكل ضلع.",
+  "MEDIA_KIND_INVALID": "اختر مكان استخدام الصورة.",
+  "MEDIA_LIMIT_REACHED": "في الموقع 100 صورة. احذف واحدة قبل إضافة أخرى.",
+  "MEDIA_KIND_MISMATCH": "اختر صورة رُفعت كصورة طبيب.",
+  "MEDIA_NOT_FOUND": "هذه الصورة لم تعد موجودة.",
+  "FAQ_QUESTION_REQUIRED": "اكتب السؤال بالعربية أو الإنجليزية.",
+  "FAQ_ANSWER_REQUIRED": "اكتب الإجابة بالعربية أو الإنجليزية.",
+  "TESTIMONIAL_TEXT_REQUIRED": "اكتب نص الرأي بالعربية أو الإنجليزية.",
+  "TESTIMONIAL_ALREADY_APPROVED": "هذا الرأي معتمد بالفعل."
 }

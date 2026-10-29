@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "@tanstack/react-router";
-import { ExternalLink, Pencil, Plus } from "lucide-react";
+import { ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
-import { useForm, useWatch, type UseFormReturn } from "react-hook-form";
+import { useFieldArray, useForm, useWatch, type UseFormReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -47,13 +47,22 @@ import { DateField } from "../components/DateField";
 import { FormDialog } from "../components/FormDialog";
 import { centerDate, CLOCK_TIME, normalizeClockTime } from "../dates";
 import type { AnnouncementOut, CenterPageOut } from "../types";
+import {
+  CenterDoctorProfiles,
+  CenterFaqList,
+  CenterImages,
+  SitePayersChoices,
+  SiteServicesChoices,
+  TestimonialsList,
+} from "./CenterSiteContent";
 
 /**
- * The public center page of the patient portal (/portal): fixed sections, not a page builder.
- * Name, logo, address and the main phone come from the center settings; departments and
- * doctors with their clinic days from the departments screen. Here: a short text, opening
- * hours, WhatsApp and e-mail, directions, which sections show, what to keep off the page, and
- * the notices.
+ * The public center website (/portal and /): fixed sections, not a page builder (ADR 0023,
+ * 0029 H). Name, logo, address and the main phone come from the center settings; departments and
+ * doctors with their clinic days from the departments screen. Here: opening words, a short text,
+ * facilities and reasons, opening hours, contact, directions and a map link, which service and
+ * insurer names show, accessibility and policies, which sections show, what to keep off the
+ * page, then images, doctors' website profiles, questions, testimonials and notices.
  */
 export function CenterPageSettingsPage() {
   const { t } = useTranslation("admin");
@@ -72,6 +81,10 @@ export function CenterPageSettingsPage() {
       }
     >
       <PageSettings />
+      <CenterImages />
+      <CenterDoctorProfiles />
+      <CenterFaqList />
+      <TestimonialsList />
       <Announcements />
     </AdminPage>
   );
@@ -94,6 +107,19 @@ const daySchema = z
     }
   });
 
+const facilitySchema = z
+  .object({ name_ar: z.string().trim().max(80), name_en: z.string().trim().max(80) })
+  .refine((r) => r.name_ar || r.name_en, { path: ["name_ar"], message: vmsg("admin:centerPage.rowTitleRule") });
+
+const reasonSchema = z
+  .object({
+    title_ar: z.string().trim().max(80),
+    title_en: z.string().trim().max(80),
+    text_ar: z.string().trim().max(200),
+    text_en: z.string().trim().max(200),
+  })
+  .refine((r) => r.title_ar || r.title_en, { path: ["title_ar"], message: vmsg("admin:centerPage.rowTitleRule") });
+
 const pageSchema = z.object({
   about_ar: z.string().max(600),
   about_en: z.string().max(600),
@@ -112,6 +138,32 @@ const pageSchema = z.object({
   show_address: z.boolean(),
   hidden_department_ids: z.array(z.number()),
   hidden_doctor_ids: z.array(z.number()),
+  hero_title_ar: z.string().max(120),
+  hero_title_en: z.string().max(120),
+  hero_text_ar: z.string().max(300),
+  hero_text_en: z.string().max(300),
+  facilities: z.array(facilitySchema).max(20),
+  reasons: z.array(reasonSchema).max(8),
+  accessibility_ar: z.string().max(600),
+  accessibility_en: z.string().max(600),
+  privacy_ar: z.string().max(2000),
+  privacy_en: z.string().max(2000),
+  cancellation_policy_ar: z.string().max(1000),
+  cancellation_policy_en: z.string().max(1000),
+  maps_url: z.union([
+    z.literal(""),
+    z
+      .string()
+      .trim()
+      .max(500)
+      .regex(/^https:\/\/\S+$/, vmsg("admin:centerPage.mapsRule")),
+  ]),
+  show_services: z.boolean(),
+  show_insurance: z.boolean(),
+  show_faq: z.boolean(),
+  show_testimonials: z.boolean(),
+  show_facilities: z.boolean(),
+  show_policies: z.boolean(),
 });
 type PageValues = z.infer<typeof pageSchema>;
 
@@ -147,6 +199,30 @@ function pageValues(page: CenterPageOut): PageValues {
     show_address: page.show_address,
     hidden_department_ids: page.hidden_department_ids,
     hidden_doctor_ids: page.hidden_doctor_ids,
+    hero_title_ar: page.hero_title_ar,
+    hero_title_en: page.hero_title_en,
+    hero_text_ar: page.hero_text_ar,
+    hero_text_en: page.hero_text_en,
+    facilities: page.facilities.map((r) => ({ name_ar: r.name_ar, name_en: r.name_en })),
+    reasons: page.reasons.map((r) => ({
+      title_ar: r.title_ar,
+      title_en: r.title_en,
+      text_ar: r.text_ar,
+      text_en: r.text_en,
+    })),
+    accessibility_ar: page.accessibility_ar,
+    accessibility_en: page.accessibility_en,
+    privacy_ar: page.privacy_ar,
+    privacy_en: page.privacy_en,
+    cancellation_policy_ar: page.cancellation_policy_ar,
+    cancellation_policy_en: page.cancellation_policy_en,
+    maps_url: page.maps_url,
+    show_services: page.show_services,
+    show_insurance: page.show_insurance,
+    show_faq: page.show_faq,
+    show_testimonials: page.show_testimonials,
+    show_facilities: page.show_facilities,
+    show_policies: page.show_policies,
   };
 }
 
@@ -224,6 +300,36 @@ function PageForm({ page }: { page: CenterPageOut }) {
           </AlertCard>
         ) : null}
         <IdentityNote />
+        <SectionCard title={t("admin:centerPage.hero")} hint={t("admin:centerPage.heroHint")} testId="section-hero">
+          <div className="grid gap-4 md:grid-cols-2">
+            <TextField
+              control={form.control}
+              name="hero_title_ar"
+              label={t("admin:centerPage.heroTitleAr")}
+              dir="rtl"
+            />
+            <TextField
+              control={form.control}
+              name="hero_title_en"
+              label={t("admin:centerPage.heroTitleEn")}
+              dir="ltr"
+            />
+            <TextareaField
+              control={form.control}
+              name="hero_text_ar"
+              label={t("admin:centerPage.heroTextAr")}
+              dir="rtl"
+              rows={2}
+            />
+            <TextareaField
+              control={form.control}
+              name="hero_text_en"
+              label={t("admin:centerPage.heroTextEn")}
+              dir="ltr"
+              rows={2}
+            />
+          </div>
+        </SectionCard>
         <SectionCard
           title={t("admin:centerPage.about")}
           hint={t("admin:centerPage.aboutHint")}
@@ -246,6 +352,21 @@ function PageForm({ page }: { page: CenterPageOut }) {
               rows={3}
             />
           </div>
+        </SectionCard>
+        <SectionCard
+          title={t("admin:centerPage.facilities")}
+          hint={t("admin:centerPage.facilitiesHint")}
+          toggle={toggle("show_facilities")}
+          testId="section-facilities"
+        >
+          <FacilitiesEditor form={form} />
+        </SectionCard>
+        <SectionCard
+          title={t("admin:centerPage.reasons")}
+          hint={t("admin:centerPage.reasonsHint")}
+          testId="section-reasons"
+        >
+          <ReasonsEditor form={form} />
         </SectionCard>
         <SectionCard
           title={t("admin:centerPage.hours")}
@@ -304,6 +425,16 @@ function PageForm({ page }: { page: CenterPageOut }) {
               rows={2}
             />
           </div>
+          <TextField
+            control={form.control}
+            name="maps_url"
+            label={t("admin:centerPage.mapsUrl")}
+            description={t("admin:centerPage.mapsUrlHint")}
+            type="url"
+            inputMode="url"
+            dir="ltr"
+            optional
+          />
         </SectionCard>
         <SectionCard
           title={t("admin:centerPage.departments")}
@@ -314,12 +445,99 @@ function PageForm({ page }: { page: CenterPageOut }) {
           <DepartmentChoices form={form} />
         </SectionCard>
         <SectionCard
+          title={t("admin:centerPage.services")}
+          hint={t("admin:centerPage.servicesHint")}
+          toggle={toggle("show_services")}
+          testId="section-services"
+        >
+          <SiteServicesChoices />
+        </SectionCard>
+        <SectionCard
           title={t("admin:centerPage.doctors")}
           hint={t("admin:centerPage.doctorsHint")}
           toggle={toggle("show_doctors")}
           testId="section-doctors"
         >
           <DoctorChoices form={form} />
+        </SectionCard>
+        <SectionCard
+          title={t("admin:centerPage.insurance")}
+          hint={t("admin:centerPage.insuranceHint")}
+          toggle={toggle("show_insurance")}
+          testId="section-insurance"
+        >
+          <SitePayersChoices />
+        </SectionCard>
+        <SectionCard
+          title={t("admin:centerPage.faqSection")}
+          hint={t("admin:centerPage.faqSectionHint")}
+          toggle={toggle("show_faq")}
+          testId="section-faq"
+        />
+        <SectionCard
+          title={t("admin:centerPage.testimonialsSection")}
+          hint={t("admin:centerPage.testimonialsSectionHint")}
+          toggle={toggle("show_testimonials")}
+          testId="section-testimonials"
+        />
+        <SectionCard
+          title={t("admin:centerPage.accessibility")}
+          hint={t("admin:centerPage.accessibilityHint")}
+          testId="section-accessibility"
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <TextareaField
+              control={form.control}
+              name="accessibility_ar"
+              label={t("admin:centerPage.textAr")}
+              dir="rtl"
+              rows={2}
+            />
+            <TextareaField
+              control={form.control}
+              name="accessibility_en"
+              label={t("admin:centerPage.textEn")}
+              dir="ltr"
+              rows={2}
+            />
+          </div>
+        </SectionCard>
+        <SectionCard
+          title={t("admin:centerPage.policies")}
+          hint={t("admin:centerPage.policiesHint")}
+          toggle={toggle("show_policies")}
+          testId="section-policies"
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <TextareaField
+              control={form.control}
+              name="cancellation_policy_ar"
+              label={t("admin:centerPage.cancellationAr")}
+              dir="rtl"
+              rows={3}
+            />
+            <TextareaField
+              control={form.control}
+              name="cancellation_policy_en"
+              label={t("admin:centerPage.cancellationEn")}
+              dir="ltr"
+              rows={3}
+            />
+            <TextareaField
+              control={form.control}
+              name="privacy_ar"
+              label={t("admin:centerPage.privacyAr")}
+              dir="rtl"
+              rows={4}
+            />
+            <TextareaField
+              control={form.control}
+              name="privacy_en"
+              label={t("admin:centerPage.privacyEn")}
+              dir="ltr"
+              rows={4}
+            />
+          </div>
         </SectionCard>
         <SectionCard
           title={t("admin:centerPage.announcementsSection")}
@@ -334,6 +552,130 @@ function PageForm({ page }: { page: CenterPageOut }) {
         </div>
       </form>
     </Form>
+  );
+}
+
+function FacilitiesEditor({ form }: { form: UseFormReturn<PageValues> }) {
+  const { t } = useTranslation("admin");
+  const rows = useFieldArray({ control: form.control, name: "facilities" });
+  return (
+    <div className="flex flex-col gap-3" data-testid="facilities-editor">
+      {rows.fields.length > 0 ? (
+        <ul className="flex flex-col divide-y divide-border">
+          {rows.fields.map((field, index) => (
+            <li key={field.id} className="grid gap-3 py-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <TextField
+                control={form.control}
+                name={`facilities.${index}.name_ar`}
+                label={t("centerPage.facilityAr")}
+                dir="rtl"
+              />
+              <TextField
+                control={form.control}
+                name={`facilities.${index}.name_en`}
+                label={t("centerPage.facilityEn")}
+                dir="ltr"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-fit"
+                onClick={() => {
+                  rows.remove(index);
+                }}
+              >
+                <Trash2 aria-hidden="true" />
+                {t("centerPage.removeRow")}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {rows.fields.length < 20 ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-fit"
+          data-testid="facility-add"
+          onClick={() => {
+            rows.append({ name_ar: "", name_en: "" });
+          }}
+        >
+          <Plus aria-hidden="true" />
+          {t("centerPage.addFacility")}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function ReasonsEditor({ form }: { form: UseFormReturn<PageValues> }) {
+  const { t } = useTranslation("admin");
+  const rows = useFieldArray({ control: form.control, name: "reasons" });
+  return (
+    <div className="flex flex-col gap-3" data-testid="reasons-editor">
+      {rows.fields.length > 0 ? (
+        <ul className="flex flex-col divide-y divide-border">
+          {rows.fields.map((field, index) => (
+            <li key={field.id} className="flex flex-col gap-3 py-3">
+              <div className="grid gap-3 md:grid-cols-2">
+                <TextField
+                  control={form.control}
+                  name={`reasons.${index}.title_ar`}
+                  label={t("centerPage.reasonTitleAr")}
+                  dir="rtl"
+                />
+                <TextField
+                  control={form.control}
+                  name={`reasons.${index}.title_en`}
+                  label={t("centerPage.reasonTitleEn")}
+                  dir="ltr"
+                />
+                <TextField
+                  control={form.control}
+                  name={`reasons.${index}.text_ar`}
+                  label={t("centerPage.reasonTextAr")}
+                  dir="rtl"
+                  optional
+                />
+                <TextField
+                  control={form.control}
+                  name={`reasons.${index}.text_en`}
+                  label={t("centerPage.reasonTextEn")}
+                  dir="ltr"
+                  optional
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-fit"
+                onClick={() => {
+                  rows.remove(index);
+                }}
+              >
+                <Trash2 aria-hidden="true" />
+                {t("centerPage.removeRow")}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {rows.fields.length < 8 ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-fit"
+          data-testid="reason-add"
+          onClick={() => {
+            rows.append({ title_ar: "", title_en: "", text_ar: "", text_en: "" });
+          }}
+        >
+          <Plus aria-hidden="true" />
+          {t("centerPage.addReason")}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 

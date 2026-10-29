@@ -1,6 +1,7 @@
 /**
- * The public center page (`GET /api/portal/center-page`): identity, hours, departments,
- * doctors, notices and contact, readable without any sign-in. Used by the portal and by the
+ * The public center page (`GET /api/portal/center-page`): identity, hours, departments with
+ * service names, doctors, notices, contact and the website content of ADR 0029 H (hero,
+ * facilities, reasons, insurers, FAQ, testimonials, policies), readable without any sign-in. Used by the portal and by the
  * staff sign-in page. Its key is outside the portal's, so signing out of the portal keeps it.
  * It is read only while the center website is switched on (the server answers 404
  * `SITE_DISABLED` otherwise); the name and logo come from `center-identity`, which always answers.
@@ -17,6 +18,7 @@ export type CenterToday = components["schemas"]["PortalTodayOut"];
 export type CenterDoctor = components["schemas"]["PortalPublicDoctorOut"];
 export type CenterClinicDay = components["schemas"]["PortalClinicDayOut"];
 export type CenterAnnouncement = components["schemas"]["PortalAnnouncementOut"];
+export type CenterImage = components["schemas"]["PortalPublicImageOut"];
 
 export const centerPageKey = ["center-page"] as const;
 

@@ -461,5 +461,18 @@
   "NO_PRESCRIPTION": "This visit has no prescribed medicine to print.",
   "SITE_DISABLED": "The center website is switched off.",
   "ONLINE_BOOKING_DISABLED": "Online booking is switched off. Call the center to book.",
-  "PORTAL_DISABLED": "Patient sign-in is switched off at this center."
+  "PORTAL_DISABLED": "Patient sign-in is switched off at this center.",
+  "CENTER_ROWS_INVALID": "Check the list: at most 20 facilities and 8 reasons, each with a title.",
+  "CENTER_MAPS_URL_INVALID": "Give a map link that starts with https://.",
+  "MEDIA_TOO_LARGE": "The image must be 2 MB or smaller.",
+  "MEDIA_INVALID_IMAGE": "The file is not a PNG, JPEG or WebP image, or it is damaged.",
+  "MEDIA_IMAGE_TOO_BIG": "The image is too large: at most 8000 pixels on each side.",
+  "MEDIA_KIND_INVALID": "Choose where the image is used.",
+  "MEDIA_LIMIT_REACHED": "The website holds 100 images. Remove one before adding another.",
+  "MEDIA_KIND_MISMATCH": "Choose an image uploaded as a doctor photo.",
+  "MEDIA_NOT_FOUND": "That image no longer exists.",
+  "FAQ_QUESTION_REQUIRED": "Give the question in Arabic or English.",
+  "FAQ_ANSWER_REQUIRED": "Give the answer in Arabic or English.",
+  "TESTIMONIAL_TEXT_REQUIRED": "Give the words in Arabic or English.",
+  "TESTIMONIAL_ALREADY_APPROVED": "This testimonial is already approved."
 }
