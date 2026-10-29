@@ -102,9 +102,9 @@ def test_staff_approval_and_rejection_show_to_the_patient(
     _settings(require_approval=True)
     client = signed_in["a"]
     doctor = _doctor()
-    first, second = _slots(client, doctor.pk, skip_days=4)[:1] + _slots(
-        client, doctor.pk, skip_days=5
-    )[:1]
+    first, second = (
+        _slots(client, doctor.pk, skip_days=4)[:1] + _slots(client, doctor.pk, skip_days=5)[:1]
+    )
     one = _book(client, doctor.pk, first["starts_at"]).json()
     two = _book(client, doctor.pk, second["starts_at"]).json()
     clerk = User.objects.get(username="reception")

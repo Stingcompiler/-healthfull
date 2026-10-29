@@ -20,7 +20,9 @@ from domain.errors import DomainError
 
 pytestmark = pytest.mark.django_db
 
-migration = importlib.import_module("apps.visits.migrations.0005_online_requests_time_off_no_overlap")
+migration = importlib.import_module(
+    "apps.visits.migrations.0005_online_requests_time_off_no_overlap"
+)
 
 
 def _at(day_offset: int, hour: int, minute: int = 0) -> datetime:
@@ -128,7 +130,9 @@ def test_reject_records_reason_note_actor_time(doctor: Any, clerk: Any) -> None:
     assert rejected.cancel_note == "doctor is fully booked"
     assert rejected.cancelled_by == clerk
     assert rejected.cancelled_at is not None
-    booked = vs.book_appointment(doctor=doctor, starts_at=_at(2, 11, 15), actor=clerk, contact_name="y")
+    booked = vs.book_appointment(
+        doctor=doctor, starts_at=_at(2, 11, 15), actor=clerk, contact_name="y"
+    )
     with pytest.raises(DomainError) as exc:
         vs.reject_online_booking(booked, actor=clerk)
     assert exc.value.code == "APPOINTMENT_NOT_REQUESTED"
@@ -191,15 +195,15 @@ def test_time_off_rules(doctor: Any, clerk: Any) -> None:
         return vs.add_time_off(clerk, doctor.pk, starts_at=start, ends_at=end, reason_en=reason)
 
     add(_at(6, 9), _at(6, 12))
-    cases = [
-        ((_at(6, 11), _at(6, 13)), "TIME_OFF_OVERLAP"),
-        ((_at(7, 10), _at(7, 9)), "TIME_OFF_INVALID_RANGE"),
-        ((_at(-2, 9), _at(-1, 9)), "TIME_OFF_IN_PAST"),
-        ((_at(8, 9), _at(8, 10), " "), "TIME_OFF_REASON_REQUIRED"),
+    cases: list[tuple[datetime, datetime, str, str]] = [
+        (_at(6, 11), _at(6, 13), "Leave", "TIME_OFF_OVERLAP"),
+        (_at(7, 10), _at(7, 9), "Leave", "TIME_OFF_INVALID_RANGE"),
+        (_at(-2, 9), _at(-1, 9), "Leave", "TIME_OFF_IN_PAST"),
+        (_at(8, 9), _at(8, 10), " ", "TIME_OFF_REASON_REQUIRED"),
     ]
-    for args, code in cases:
+    for start, end, reason, code in cases:
         with pytest.raises(DomainError) as exc:
-            add(*args)
+            add(start, end, reason)
         assert exc.value.code == code
     add(_at(6, 12), _at(6, 13))  # back to back is fine (half-open ranges)
 
@@ -239,9 +243,7 @@ def test_time_off_api_needs_permission_and_reports_bookings(
     assert other.get(url).json() == []
 
 
-def test_online_booking_api_permission_and_actions(
-    make_user: Any, doctor: Any, clerk: Any
-) -> None:
+def test_online_booking_api_permission_and_actions(make_user: Any, doctor: Any, clerk: Any) -> None:
     req = _request(doctor, clerk, _at(2, 9, 45), timezone.now() + timedelta(hours=2))
     req2 = _request(doctor, clerk, _at(2, 11, 45), timezone.now() + timedelta(hours=2))
     nurse, reception = ApiClient(), ApiClient()
@@ -279,9 +281,12 @@ def test_direct_sql_insert_of_an_overlapping_row_is_refused(doctor: Any, clerk: 
         return [doctor.pk, doctor.department_id, start, end, status, expires, clerk.pk]
 
     for status in ("booked", "requested"):
-        with pytest.raises(IntegrityError) as exc, transaction.atomic():
-            with connection.cursor() as cur:
-                cur.execute(insert, row(_at(2, 9, 5), _at(2, 9, 20), status))
+        with (
+            pytest.raises(IntegrityError) as exc,
+            transaction.atomic(),
+            connection.cursor() as cur,
+        ):
+            cur.execute(insert, row(_at(2, 9, 5), _at(2, 9, 20), status))
         assert "visits_appointment_no_overlap" in str(exc.value)
     # Back to back is legal (half-open ranges).
     with transaction.atomic(), connection.cursor() as cur:
@@ -304,7 +309,9 @@ def test_no_overlap_precheck_names_conflicts_and_changes_nothing(doctor: Any, cl
         migration.verify_overlaps_absent(cursor)  # clean data: does not raise
         # Data as it could exist before the constraint (rolled back with the test). The ALTER
         # comes first: a table with pending deferred trigger events cannot be altered.
-        cursor.execute("ALTER TABLE visits_appointment DROP CONSTRAINT visits_appointment_no_overlap")
+        cursor.execute(
+            "ALTER TABLE visits_appointment DROP CONSTRAINT visits_appointment_no_overlap"
+        )
 
     def row(name: str, start: datetime, end: datetime) -> Appointment:
         return Appointment.objects.create(
@@ -359,14 +366,10 @@ def test_eight_concurrent_bookings_of_one_slot_make_exactly_one_row(make_user: A
         with lock:
             results.append(outcome)
 
-    threads = [
-        threading.Thread(target=book, args=(c, i % 2 == 0)) for i, c in enumerate(clerks)
-    ]
+    threads = [threading.Thread(target=book, args=(c, i % 2 == 0)) for i, c in enumerate(clerks)]
     for t in threads:
         t.start()
     for t in threads:
         t.join(timeout=60)
     assert sorted(results) == ["APPOINTMENT_CONFLICT"] * 7 + ["ok"], results
-    assert (
-        Appointment.objects.filter(doctor=doc, status__in=["booked", "requested"]).count() == 1
-    )
+    assert Appointment.objects.filter(doctor=doc, status__in=["booked", "requested"]).count() == 1
