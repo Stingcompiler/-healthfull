@@ -764,3 +764,15 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   spec reading the name from the page answer, two label/state bugs in the new spec), all 28 re-run passed after
   the fixes. Not yet built (later phases): approval, guest booking, the abuse limits' enforcement.
 - [x] Public site Phase 1: switches and enforcement.
+- 2026-10-29: public site work order, Phase 2 (website content) on `feat/public-site-phase2-content`
+  (ADR 0029 H, D-0021): `CenterPage` hero/facilities/reasons/accessibility/policies/maps link and six
+  switches; `CenterMedia` (PNG/JPEG/WebP <= 2 MB, checked by content in `domain.images`), `CenterFaq`,
+  `Testimonial` (approval under new `core.approve_testimonial`), doctor qualifications/bio/photo,
+  `Payer`/`Service.show_on_site`; all tracked by pghistory; `GET /api/portal/center-media/{id}`;
+  public answer extended (pinned fields, never prices); admin sections at `/administration/center-page`;
+  `CenterPage.tsx` sections in the fixed order. Results: `make check` green (backend 2560 passed,
+  frontend 646 passed, lint/types/lint-ui/api drift clean); `make e2e` for
+  `@portal|@marketing|@public-site|admin-payers|admin-price-lists` 152 passed (center page: full/sparse/
+  empty x 375/768/1280 x 3 themes x ar/en with axe, 65 tests). A first broader run beside `make check`
+  timed out on four `@responsive` admin routes under machine load; they passed alone.
+- [x] Public site Phase 2: website content.
