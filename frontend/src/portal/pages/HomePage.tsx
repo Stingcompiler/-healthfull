@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { isZeroAmount } from "@/lib/format";
+import { getSiteConfig } from "@/lib/site";
 
 import { usePortalMe, useSummary } from "../api";
 import { PortalPage, PortalSection, Row } from "../components/PortalPage";
@@ -131,11 +132,13 @@ export function HomePage() {
                   ) : (
                     <p className="text-sm text-muted">{t("home.noAppointment")}</p>
                   )}
-                  <Button asChild variant={next ? "outline" : "default"} className="w-full">
-                    <Link to="/portal/appointments/new" data-testid="home-book">
-                      {t("home.book")}
-                    </Link>
-                  </Button>
+                  {getSiteConfig().onlineBooking ? (
+                    <Button asChild variant={next ? "outline" : "default"} className="w-full">
+                      <Link to="/portal/appointments/new" data-testid="home-book">
+                        {t("home.book")}
+                      </Link>
+                    </Button>
+                  ) : null}
                 </PortalSection>
 
                 <PortalSection

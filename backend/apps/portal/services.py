@@ -38,6 +38,7 @@ from django.db.models import Q
 from django.http import HttpRequest
 from django.utils import timezone
 
+from apps.core import services as core
 from apps.core.models import CenterProfile, DoctorProfile, User
 from apps.core.services import client_ip
 from apps.patients import services as patients
@@ -74,6 +75,8 @@ __all__ = [
     "bookable_doctor",
     "cancel_appointment",
     "check_public_page_rate",
+    "current_session",
+    "end_all_sessions",
     "issue_access_code",
     "issue_access_code_for_patient",
     "issue_slip_for_patient",
@@ -214,7 +217,8 @@ def issue_access_code(
 
     Raises:
         Payment.DoesNotExist: no such payment (404).
-        DomainError: ``PORTAL_PHONE_REQUIRED`` (the file has no phone to sign in with).
+        DomainError: ``PORTAL_PHONE_REQUIRED`` (the file has no phone to sign in with),
+            ``PORTAL_DISABLED`` (patient sign-in is switched off).
     """
     payment = Payment.objects.select_related("patient").get(pk=payment_id)
     return _issue(payment.patient, actor=actor, request=request, payment=payment.number)
@@ -229,7 +233,7 @@ def issue_access_code_for_patient(
 
     Raises:
         Patient.DoesNotExist: no such file (404).
-        DomainError: ``PORTAL_PHONE_REQUIRED``.
+        DomainError: ``PORTAL_PHONE_REQUIRED``, ``PORTAL_DISABLED``.
     """
     patient = patients.resolve(Patient.objects.get(pk=patient_id))
     return _issue(patient, actor=actor, request=request, payment="")
@@ -238,6 +242,8 @@ def issue_access_code_for_patient(
 def _issue(
     patient: Patient, *, actor: User, request: HttpRequest | None, payment: str
 ) -> IssuedCode:
+    # A code is useless while patients cannot sign in (ADR 0029 B, plan D4).
+    core.require_tracking()
     if not (patient.phone_norm or patient.phone_alt_norm):
         raise DomainError(
             "PORTAL_PHONE_REQUIRED", "Add a phone number to the file before giving portal access"
@@ -496,10 +502,12 @@ def login(request: HttpRequest, *, file_no: str, phone: str, code: str) -> Login
     """Sign a patient in and start a portal session.
 
     Raises:
-        DomainError: ``PORTAL_INVALID_CREDENTIALS`` (401), ``PORTAL_LOCKED`` (423, with
+        DomainError: ``PORTAL_DISABLED`` (patient sign-in is switched off, before any
+            check), ``PORTAL_INVALID_CREDENTIALS`` (401), ``PORTAL_LOCKED`` (423, with
             ``retry_after_seconds``) or ``RATE_LIMITED`` (429). Bookkeeping is committed
             before the raise.
     """
+    core.require_tracking()
     with transaction.atomic(), pghistory.context(reason="portal sign-in"):
         outcome = _attempt(request, file_no=file_no, phone=phone, code=code, now=timezone.now())
     if isinstance(outcome, DomainError):
@@ -508,11 +516,37 @@ def login(request: HttpRequest, *, file_no: str, phone: str, code: str) -> Login
 
 
 def authenticate(token: str | None) -> PortalPrincipal | None:
-    """The principal of a live portal session token, or None.
+    """The principal of a live portal session token, or None (the portal auth of every patient
+    operation).
 
     An idle, expired or revoked session (its code revoked by a newer receipt) is ended here.
     Use refreshes ``last_seen_at`` (at most every 30 seconds).
+
+    Raises:
+        DomainError: ``PORTAL_DISABLED`` while patient sign-in is switched off, with or
+            without a token, so every patient operation answers it.
     """
+    core.require_tracking()
+    return _live_session(token)
+
+
+def current_session(token: str | None) -> PortalPrincipal | None:
+    """Like :func:`authenticate` for the public "am I signed in" read: never raises, and is
+    None while patient sign-in is switched off."""
+    if not core.public_switches().patient_tracking:
+        return None
+    return _live_session(token)
+
+
+def end_all_sessions(*, reason: str) -> int:
+    """End every live portal session (patient tracking switched off). Rows stay as the record.
+    Returns how many ended."""
+    return PortalSession.objects.filter(ended_at__isnull=True).update(
+        ended_at=timezone.now(), end_reason=reason[:20]
+    )
+
+
+def _live_session(token: str | None) -> PortalPrincipal | None:
     if not token or len(token) > 128:
         return None
     session = (
@@ -590,14 +624,17 @@ def book_appointment(
 
     Raises:
         DoctorProfile.DoesNotExist: unknown doctor or one without a schedule (404).
-        DomainError: ``PORTAL_SLOT_UNAVAILABLE``, ``PORTAL_BOOKING_LIMIT``,
-            ``PORTAL_ALREADY_BOOKED``, ``APPOINTMENT_CONFLICT`` (taken meanwhile).
+        DomainError: ``PORTAL_DISABLED``, ``ONLINE_BOOKING_DISABLED`` (switched off),
+            ``PORTAL_SLOT_UNAVAILABLE``, ``PORTAL_BOOKING_LIMIT``, ``PORTAL_ALREADY_BOOKED``,
+            ``APPOINTMENT_CONFLICT`` (taken meanwhile).
     """
+    core.require_tracking()
+    core.require_online_booking()
     doctor = bookable_doctor(doctor_id)
     start = starts_at if timezone.is_aware(starts_at) else timezone.make_aware(starts_at)
     now = timezone.now()
     day = timezone.localtime(start).date()
-    rules = conf.booking_rules()
+    rules = core.booking_rules()
     actor = portal_actor()
     with (
         transaction.atomic(),
@@ -633,10 +670,15 @@ def book_appointment(
 def cancel_appointment(principal: PortalPrincipal, appointment_id: int) -> Appointment:
     """Cancel the person's own future booking before the cut-off (reason ``PATIENT_REQUEST``).
 
+    Works while online booking is off (a patient may still cancel what they hold), not while
+    patient sign-in is off.
+
     Raises:
         Appointment.DoesNotExist: not one of the person's appointments (404).
-        DomainError: ``APPOINTMENT_NOT_BOOKED``, ``PORTAL_CANCEL_TOO_LATE``.
+        DomainError: ``PORTAL_DISABLED``, ``APPOINTMENT_NOT_BOOKED``,
+            ``PORTAL_CANCEL_TOO_LATE``.
     """
+    core.require_tracking()
     actor = portal_actor()
     with (
         transaction.atomic(),
@@ -651,7 +693,7 @@ def cancel_appointment(principal: PortalPrincipal, appointment_id: int) -> Appoi
             appointment.starts_at,
             booked=appointment.status == AppointmentStatus.BOOKED,
             now=timezone.now(),
-            rules=conf.booking_rules(),
+            rules=core.booking_rules(),
         )
         return visits.cancel_appointment(
             appointment,

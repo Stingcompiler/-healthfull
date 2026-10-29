@@ -1,13 +1,15 @@
-"""Portal settings (ADR 0016). Each reads ``settings.<NAME>`` when present (``.env`` through
-``config.settings`` or a test override), else the default here."""
+"""Portal abuse-control and session settings (ADR 0016). Each reads ``settings.<NAME>`` when
+present (``.env`` through ``config.settings`` or a test override), else the default here.
+
+The booking rules (lead time, horizon, open bookings, cancel cut-off) are no longer here: they
+live in ``core.PublicSiteSettings`` and the administrator edits them (ADR 0029 B); read them
+with ``apps.core.services.booking_rules``."""
 
 from __future__ import annotations
 
 from datetime import timedelta
 
 from django.conf import settings
-
-from domain.portal import BookingRules
 
 COOKIE_NAME = "hospital_portal"
 
@@ -63,15 +65,6 @@ def page_rule() -> tuple[int, timedelta]:
     return (
         _int("PORTAL_PAGE_IP_MAX", 300),
         timedelta(seconds=_int("PORTAL_PAGE_IP_WINDOW_SECONDS", 10 * 60)),
-    )
-
-
-def booking_rules() -> BookingRules:
-    return BookingRules(
-        lead=timedelta(minutes=_int("PORTAL_BOOKING_LEAD_MINUTES", 60)),
-        horizon_days=_int("PORTAL_BOOKING_HORIZON_DAYS", 30),
-        max_open=_int("PORTAL_MAX_OPEN_APPOINTMENTS", 3),
-        cancel_cutoff=timedelta(hours=_int("PORTAL_CANCEL_CUTOFF_HOURS", 2)),
     )
 
 

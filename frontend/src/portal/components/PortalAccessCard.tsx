@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { pickName } from "@/lib/names";
+import { getSiteConfig } from "@/lib/site";
 
 import { usePatientPortalCodes, useRevokePortalCode } from "../staff-api";
 
@@ -87,7 +88,7 @@ function PortalAccessBody({ patientId }: { patientId: number }) {
             </Button>
           </Can>
         ) : null}
-        {codes.data?.has_phone ? (
+        {codes.data?.has_phone && getSiteConfig().patientTracking ? (
           <Button asChild variant="outline">
             <Link
               to="/patients/$patientId/portal-code"

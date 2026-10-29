@@ -1,6 +1,7 @@
 import { createRoute, redirect, type AnyRoute } from "@tanstack/react-router";
 
 import type { RouterContext } from "@/app/router-context";
+import { getSiteConfig } from "@/lib/site";
 
 import { portalMeQuery } from "./api";
 import { AppointmentsPage } from "./pages/AppointmentsPage";
@@ -14,6 +15,7 @@ import { PrescriptionsPage } from "./pages/PrescriptionsPage";
 import { ReceiptPage } from "./pages/ReceiptPage";
 import { ResultPage } from "./pages/ResultPage";
 import { ResultsPage } from "./pages/ResultsPage";
+import { ServicesOffPage } from "./pages/ServicesOffPage";
 import { VerifyPage } from "./pages/VerifyPage";
 import { PortalAuthedLayout } from "./PortalAuthedLayout";
 import { PortalLayout } from "./PortalLayout";
@@ -33,7 +35,21 @@ export interface VerifySearch {
  * own session (never the staff one). /portal is the public center page; /portal/sign-in the
  * patient sign-in. /verify/$token is the public receipt check behind the QR
  * printed on every receipt (FEATURES 15.1).
+ *
+ * The administrator's switches (ADR 0029, plan D4; read from `GET /api/ops/site`, enforced by
+ * the server) choose what opens: the website off sends `/portal` to the sign-in while patient
+ * sign-in is on, else to a one-line "not available" page; patient sign-in off sends every
+ * patient page back to `/portal`; online booking off sends the booking page to the list.
  */
+function PortalEntry() {
+  return getSiteConfig().centerSite ? <CenterPage /> : <ServicesOffPage />;
+}
+
+function requireTracking() {
+  // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
+  if (!getSiteConfig().patientTracking) throw redirect({ to: "/portal" });
+}
+
 export function routes<TParent extends AnyRoute>(parent: TParent) {
   const portal = createRoute({
     getParentRoute: () => parent,
@@ -42,7 +58,16 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
   });
 
   // The portal's door: the public center page, open with or without a session.
-  const center = createRoute({ getParentRoute: () => portal, path: "/", component: CenterPage });
+  const center = createRoute({
+    getParentRoute: () => portal,
+    path: "/",
+    beforeLoad: () => {
+      const site = getSiteConfig();
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
+      if (!site.centerSite && site.patientTracking) throw redirect({ to: "/portal/sign-in" });
+    },
+    component: PortalEntry,
+  });
 
   const login = createRoute({
     getParentRoute: () => portal,
@@ -50,6 +75,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     validateSearch: (search: Record<string, unknown>): PortalLoginSearch =>
       search.reason === "expired" || search.reason === "signed-out" ? { reason: search.reason } : {},
     beforeLoad: async ({ context }) => {
+      requireTracking();
       const me = await (context as RouterContext).queryClient.query({ ...portalMeQuery, staleTime: 0 });
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
       if (me) throw redirect({ to: "/portal/home" });
@@ -61,6 +87,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     getParentRoute: () => portal,
     id: "portal-signed-in",
     beforeLoad: async ({ context }) => {
+      requireTracking();
       const me = await (context as RouterContext).queryClient.query({ ...portalMeQuery, staleTime: 30_000 });
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
       if (!me) throw redirect({ to: "/portal/sign-in", search: { reason: "expired" } });
@@ -78,6 +105,10 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
   const book = createRoute({
     getParentRoute: () => authed,
     path: "/appointments/new",
+    beforeLoad: () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
+      if (!getSiteConfig().onlineBooking) throw redirect({ to: "/portal/appointments" });
+    },
     component: BookAppointmentPage,
   });
   const results = createRoute({ getParentRoute: () => authed, path: "/results", component: ResultsPage });

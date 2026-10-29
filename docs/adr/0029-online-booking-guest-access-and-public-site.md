@@ -203,6 +203,13 @@ consultation slots only); SMS and e-mail; map embeds; automatic blocking by no-s
    every migration on an empty database before any seed command (`seed_demo`, `seed_e2e`,
    `createsuperuser`), so it always sees zero patients and gets `true`. The migration runs once:
    later changes of the patient count do not touch the row; only the administrator does.
+   **Phase 1 implementation note (2026-10-29):** the same detection seeds the switches, because an
+   existing install already runs the patient portal and its booking (ADR 0016) and "registered
+   patients keep booking instantly" needs both on: an existing install is seeded with
+   `online_booking_enabled` and `patient_tracking_enabled` **on** and `site_enabled` **off** (so
+   `/` does not change until an administrator switches the website on, ADR 0028 decision 4; the
+   center page at `/portal` is hidden until then). A new install has all three off (0028
+   decision 1). Code: `domain.public_site.initial_values`, migration `core/0020_public_site_seed`.
 2. **Topology** (ADR 0028 decision 3): website, booking, portal and staff app on one name and one
    host; no public listener; security from the switches, authentication separation and throttles.
 3. **Guest data in the append-only appointment history** after the retention purge: accepted and

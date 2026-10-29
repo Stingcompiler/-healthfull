@@ -1,4 +1,5 @@
-"""``GET /api/ops/site`` (ADR 0027): the marketing page is a deployment switch, off by default."""
+"""``GET /api/ops/site`` (ADR 0027, 0028): the marketing page is a deployment switch, off by
+default; the center's own switches come from the settings row, off on a new install."""
 
 from __future__ import annotations
 
@@ -7,15 +8,18 @@ from typing import Any
 import pytest
 from django.test import Client
 
+from apps.core.models import PublicSiteSettings
 from config.env import env_bool
 
 pytestmark = pytest.mark.django_db
+
+OFF = {"center_site": False, "online_booking": False, "patient_tracking": False}
 
 
 def test_marketing_is_off_by_default() -> None:
     assert env_bool("MARKETING_SITE", False, {}) is False
     body = Client().get("/api/ops/site").json()
-    assert body == {"marketing": False, "contact_email": None, "contact_whatsapp": None}
+    assert body == {"marketing": False, "contact_email": None, "contact_whatsapp": None, **OFF}
 
 
 def test_needs_no_session_or_csrf() -> None:
@@ -32,6 +36,7 @@ def test_on_returns_the_contact_values(settings: Any) -> None:
         "marketing": True,
         "contact_email": "sales@example.org",
         "contact_whatsapp": "249912345678",
+        **OFF,
     }
 
 
@@ -40,7 +45,7 @@ def test_on_without_contact_shows_none(settings: Any) -> None:
     settings.MARKETING_CONTACT_EMAIL = ""
     settings.MARKETING_CONTACT_WHATSAPP = ""
     body = Client().get("/api/ops/site").json()
-    assert body == {"marketing": True, "contact_email": None, "contact_whatsapp": None}
+    assert body == {"marketing": True, "contact_email": None, "contact_whatsapp": None, **OFF}
 
 
 @pytest.mark.parametrize(
@@ -67,4 +72,21 @@ def test_off_hides_the_contact_values(settings: Any) -> None:
         "marketing": False,
         "contact_email": None,
         "contact_whatsapp": None,
+        **OFF,
     }
+
+
+@pytest.mark.parametrize("marketing", [False, True])
+def test_the_center_switches_follow_the_settings_row(settings: Any, marketing: bool) -> None:
+    settings.MARKETING_SITE = marketing
+    PublicSiteSettings.load()
+    PublicSiteSettings.objects.filter(pk=1).update(
+        site_enabled=True, online_booking_enabled=False, patient_tracking_enabled=True
+    )
+    body = Client().get("/api/ops/site").json()
+    assert body["marketing"] is marketing
+    assert (body["center_site"], body["online_booking"], body["patient_tracking"]) == (
+        True,
+        False,
+        True,
+    )

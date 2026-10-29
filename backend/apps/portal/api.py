@@ -5,8 +5,14 @@ Three kinds of operation:
 * Patient operations authenticate with :data:`~apps.portal.security.portal_auth` (the portal
   cookie, scoped to ``/api/portal``) and read or change only the signed-in person's own
   rows: anyone else's id answers 404 ``NOT_FOUND``, never 403.
-* Public operations (``auth=None``): sign-in, sign-out and the receipt check. Unsafe ones
-  still pass the API-wide CSRF guard.
+* Public operations (``auth=None``): sign-in, sign-out, the receipt check, the center page and
+  identity. Unsafe ones still pass the API-wide CSRF guard.
+
+The administrator switches of ADR 0028/0029 are enforced by the services and queries these
+operations call (``apps.core.services.require_*``): the center page answers 404
+``SITE_DISABLED`` with the website off; the booking reads and the booking answer 409
+``ONLINE_BOOKING_DISABLED`` with online booking off; sign-in, every patient operation and
+issuing an access code answer 409 ``PORTAL_DISABLED`` with patient sign-in off.
 * Staff operations use the staff session and a permission code: issuing an access code from
   the cashier's receipt, and the module ping.
 """
@@ -33,6 +39,7 @@ from apps.portal.schemas import (
     PortalAppointmentsOut,
     PortalBalanceOut,
     PortalBookIn,
+    PortalCenterIdentityOut,
     PortalCenterPageOut,
     PortalCodeSlipOut,
     PortalDoctorOut,
@@ -75,7 +82,8 @@ def _no_store(run: Callable[..., HttpResponseBase]) -> Callable[..., HttpRespons
 
 portal_router.add_decorator(_no_store, mode="view")
 
-_READ: dict[int, type[ErrorOut]] = {401: ErrorOut, 404: ErrorOut}
+#: Every patient operation also answers 409 ``PORTAL_DISABLED`` while sign-in is switched off.
+_READ: dict[int, type[ErrorOut]] = {401: ErrorOut, 404: ErrorOut, 409: ErrorOut}
 _WRITE: dict[int, type[ErrorOut]] = {
     401: ErrorOut,
     403: ErrorOut,
@@ -115,6 +123,7 @@ def _set_cookie(response: HttpResponse, token: str) -> None:
         200: PortalMeOut,
         401: ErrorOut,
         403: ErrorOut,
+        409: ErrorOut,
         422: ErrorOut,
         423: ErrorOut,
         429: ErrorOut,
@@ -124,7 +133,8 @@ def _set_cookie(response: HttpResponse, token: str) -> None:
     description=(
         "Sets the portal session cookie (HttpOnly, SameSite=Strict, path /api/portal). Every "
         "refusal is 401 `PORTAL_INVALID_CREDENTIALS`; 423 `PORTAL_LOCKED` after repeated "
-        "failures for a file number; 429 `RATE_LIMITED` for an address. Needs X-CSRFToken."
+        "failures for a file number; 429 `RATE_LIMITED` for an address; 409 `PORTAL_DISABLED` "
+        "while patient sign-in is switched off. Needs X-CSRFToken."
     ),
 )
 def login(request: HttpRequest, response: HttpResponse, payload: PortalLoginIn) -> Any:
@@ -143,11 +153,12 @@ def login(request: HttpRequest, response: HttpResponse, payload: PortalLoginIn) 
     summary="Whether this browser holds a live portal session, and whose",
     description=(
         "Always 200, so the sign-in page can ask without an error: `signed_in` false and `me` "
-        "null without a live session (an idle or revoked one is ended here)."
+        "null without a live session (an idle or revoked one is ended here) and while patient "
+        "sign-in is switched off."
     ),
 )
 def get_session(request: HttpRequest) -> Any:
-    who = services.authenticate(request.COOKIES.get(conf.COOKIE_NAME))
+    who = services.current_session(request.COOKIES.get(conf.COOKIE_NAME))
     return {"signed_in": who is not None, "me": queries.me(who) if who is not None else None}
 
 
@@ -187,18 +198,31 @@ def verify_receipt(
 @portal_router.get(
     "/center-page",
     auth=None,
-    response={200: PortalCenterPageOut, 429: ErrorOut},
+    response={200: PortalCenterPageOut, 404: ErrorOut, 429: ErrorOut},
     operation_id="portal_get_center_page",
     summary="The public center page: identity, hours, departments, doctors, notices, contact",
     description=(
         "No sign-in. Only public fields: never prices and never staff other than the doctors "
-        "shown. Hidden or empty sections come back empty. 429 after too many reads from one "
-        "address."
+        "shown. Hidden or empty sections come back empty. 404 `SITE_DISABLED` while the center "
+        "website is switched off; 429 after too many reads from one address."
     ),
 )
 def get_center_page(request: HttpRequest) -> Any:
     services.check_public_page_rate(request)
     return queries.center_page()
+
+
+@portal_router.get(
+    "/center-identity",
+    auth=None,
+    response={200: PortalCenterIdentityOut, 429: ErrorOut},
+    operation_id="portal_get_center_identity",
+    summary="The center's name and logo (staff sign-in, portal header); answers with the site off",
+    description="No sign-in. 429 after too many reads from one address (shared with the page).",
+)
+def get_center_identity(request: HttpRequest) -> Any:
+    services.check_public_page_rate(request)
+    return queries.center_identity()
 
 
 @portal_router.get(
@@ -235,7 +259,10 @@ def get_center_logo(request: HttpRequest) -> HttpResponse:
     response={201: PortalIssuedCodeOut, **_WRITE},
     operation_id="portal_issue_access_code",
     summary="Issue a portal access code for the patient of a receipt (shown once)",
-    description="Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.",
+    description=(
+        "Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`, `PORTAL_DISABLED` "
+        "(patient sign-in is switched off)."
+    ),
 )
 @require_perm("portal.issue_access_code")
 def issue_access_code(request: HttpRequest, payload: PortalIssueCodeIn) -> Status[Any]:
@@ -296,7 +323,10 @@ def list_patient_access_codes(request: HttpRequest, patient_id: int) -> Any:
     response={201: PortalCodeSlipOut, **_WRITE},
     operation_id="portal_issue_patient_access_code",
     summary="Issue a portal access code from the patient's file for a printed slip (shown once)",
-    description="Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.",
+    description=(
+        "Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`, `PORTAL_DISABLED` "
+        "(patient sign-in is switched off)."
+    ),
 )
 @require_perm("portal.issue_access_code")
 def issue_patient_access_code(request: HttpRequest, patient_id: int) -> Status[Any]:
@@ -333,7 +363,7 @@ def revoke_access_code(request: HttpRequest, code_id: int, payload: PortalRevoke
 @portal_router.get(
     "/me",
     auth=portal_auth,
-    response={200: PortalMeOut, 401: ErrorOut},
+    response={200: PortalMeOut, 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_get_me"),
     summary="The signed-in patient's profile summary",
 )
@@ -344,7 +374,7 @@ def get_me(request: HttpRequest) -> Any:
 @portal_router.get(
     "/summary",
     auth=portal_auth,
-    response={200: PortalSummaryOut, 401: ErrorOut},
+    response={200: PortalSummaryOut, 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_get_summary"),
     summary="Home cards: next appointment, latest results, balance",
 )
@@ -355,7 +385,7 @@ def get_summary(request: HttpRequest) -> Any:
 @portal_router.get(
     "/appointments",
     auth=portal_auth,
-    response={200: PortalAppointmentsOut, 401: ErrorOut},
+    response={200: PortalAppointmentsOut, 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_list_appointments"),
     summary="The patient's upcoming and past appointments",
 )
@@ -370,8 +400,8 @@ def list_appointments(request: HttpRequest) -> Any:
     operation_id=_patient_op("portal_book_appointment"),
     summary="Book a free slot of a doctor's schedule",
     description=(
-        "409 `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, "
-        "`APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule."
+        "409 `ONLINE_BOOKING_DISABLED`, `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, "
+        "`PORTAL_ALREADY_BOOKED`, `APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule."
     ),
 )
 def book_appointment(request: HttpRequest, payload: PortalBookIn) -> Status[Any]:
@@ -399,9 +429,10 @@ def cancel_appointment(request: HttpRequest, appointment_id: int) -> Any:
 @portal_router.get(
     "/doctors",
     auth=portal_auth,
-    response={200: list[PortalDoctorOut], 401: ErrorOut},
+    response={200: list[PortalDoctorOut], 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_list_doctors"),
     summary="Doctors who take online bookings",
+    description="409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
 )
 def list_doctors(request: HttpRequest) -> Any:
     return queries.booking_doctors()
@@ -413,6 +444,7 @@ def list_doctors(request: HttpRequest) -> Any:
     response={200: list[date], **_READ},
     operation_id=_patient_op("portal_list_booking_days"),
     summary="Days with free slots, from today to the booking horizon",
+    description="409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
 )
 def list_booking_days(request: HttpRequest, doctor_id: int) -> Any:
     return queries.booking_days(doctor_id)
@@ -424,6 +456,7 @@ def list_booking_days(request: HttpRequest, doctor_id: int) -> Any:
     response={200: PortalSlotsOut, **_READ, 422: ErrorOut},
     operation_id=_patient_op("portal_list_slots"),
     summary="A doctor's free slots on one day that can be booked online",
+    description="409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.",
 )
 def list_slots(request: HttpRequest, doctor_id: int, on: date) -> Any:
     return queries.booking_slots(doctor_id, on)
@@ -432,7 +465,7 @@ def list_slots(request: HttpRequest, doctor_id: int, on: date) -> Any:
 @portal_router.get(
     "/results",
     auth=portal_auth,
-    response={200: list[PortalResultSummaryOut], 401: ErrorOut},
+    response={200: list[PortalResultSummaryOut], 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_list_results"),
     summary="The patient's approved lab results, newest first",
 )
@@ -454,7 +487,7 @@ def get_result(request: HttpRequest, line_id: int) -> Any:
 @portal_router.get(
     "/prescriptions",
     auth=portal_auth,
-    response={200: PortalPrescriptionsOut, 401: ErrorOut},
+    response={200: PortalPrescriptionsOut, 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_get_prescriptions"),
     summary="Prescriptions with dosing instructions, and lab preparation instructions",
 )
@@ -465,7 +498,7 @@ def get_prescriptions(request: HttpRequest) -> Any:
 @portal_router.get(
     "/invoices",
     auth=portal_auth,
-    response={200: list[PortalInvoiceOut], 401: ErrorOut},
+    response={200: list[PortalInvoiceOut], 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_list_invoices"),
     summary="The patient's approved invoices: their share, paid and outstanding",
 )
@@ -487,7 +520,7 @@ def get_invoice(request: HttpRequest, invoice_id: int) -> Any:
 @portal_router.get(
     "/receipts",
     auth=portal_auth,
-    response={200: list[PortalReceiptOut], 401: ErrorOut},
+    response={200: list[PortalReceiptOut], 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_list_receipts"),
     summary="The patient's receipts with their status",
 )
@@ -509,7 +542,7 @@ def get_receipt(request: HttpRequest, payment_id: int) -> Any:
 @portal_router.get(
     "/balance",
     auth=portal_auth,
-    response={200: PortalBalanceOut, 401: ErrorOut},
+    response={200: PortalBalanceOut, 401: ErrorOut, 409: ErrorOut},
     operation_id=_patient_op("portal_get_balance"),
     summary="What the patient owes and holds as credit",
 )

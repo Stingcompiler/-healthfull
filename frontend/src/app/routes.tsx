@@ -4,6 +4,7 @@
  *
  *   root
  *   ├── /login, /sign-in, /change-password  (features/auth; /login is the product page when MARKETING_SITE is on, ADR 0027)
+ *   │   (/ without a staff session: the center website when switched on, else the product page, ADR 0028)
  *   ├── /portal/*                        (portal, mobile-first, public)
  *   ├── /display/queue                   visits: waiting-room kiosk (signed in, no shell)
  *   └── _app  (auth guard + AppShell)
@@ -38,8 +39,9 @@ import { kioskRoutes as visitsKioskRoutes, routes as visitsRoutes } from "@/feat
 import { routes as portalRoutes } from "@/portal/routes";
 
 import { meQueryOptions } from "@/lib/auth/api";
-import { isMarketingSite } from "@/lib/site";
+import { rootPublicView } from "@/lib/site";
 import { LazyMarketingPage } from "@/features/marketing/LazyMarketingPage";
+import { CenterSiteRoot } from "@/portal/CenterSiteRoot";
 
 import { isKioskOnly, requireAppUser } from "./guards";
 import { AppLayout } from "./layouts/AppLayout";
@@ -55,26 +57,31 @@ export const rootRoute = createRootRouteWithContext<RouterContext>()({
 });
 
 function AppEntry() {
-  const { marketingRoot } = appRoute.useRouteContext();
-  return marketingRoot ? <LazyMarketingPage /> : <AppLayout />;
+  const { publicRoot } = appRoute.useRouteContext();
+  if (publicRoot === "center") return <CenterSiteRoot />;
+  if (publicRoot === "marketing") return <LazyMarketingPage />;
+  return <AppLayout />;
 }
 
 export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "_app",
   beforeLoad: async ({ context, location }) => {
-    // Marketing mode (ADR 0027): a visitor with no staff session who opens the site root sees the
-    // product page there. The session is read first, so a signed-in user never sees it flash.
-    if (isMarketingSite() && location.pathname === "/") {
+    // A visitor with no staff session who opens the site root sees a public page there (ADR 0028
+    // decision 4): the center website when the administrator switched it on, else the vendor's
+    // product page in marketing mode (ADR 0027), else the sign-in. The session is read first, so
+    // a signed-in user never sees a public page flash.
+    const publicView = location.pathname === "/" ? rootPublicView() : null;
+    if (publicView) {
       const session = await context.queryClient.query({ ...meQueryOptions, staleTime: "static" });
-      if (!session) return { marketingRoot: true };
+      if (!session) return { publicRoot: publicView };
     }
     const me = await requireAppUser({ context, location });
     if (isKioskOnly(me)) {
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
       throw redirect({ to: "/display/queue" });
     }
-    return { marketingRoot: false };
+    return { publicRoot: null };
   },
   component: AppEntry,
 });

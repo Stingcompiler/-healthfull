@@ -14,6 +14,7 @@ import { PayersPage } from "./pages/PayersPage";
 import { PoliciesPage } from "./pages/PoliciesPage";
 import { PriceListPage } from "./pages/PriceListPage";
 import { PriceListsPage } from "./pages/PriceListsPage";
+import { PublicSitePage } from "./pages/PublicSitePage";
 import { ReasonCodesPage } from "./pages/ReasonCodesPage";
 import { RolesPage } from "./pages/RolesPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -36,6 +37,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     path: "/center-page",
     component: CenterPageSettingsPage,
   });
+  const publicSite = createRoute({ getParentRoute: () => admin, path: "/public-site", component: PublicSitePage });
   const policies = createRoute({ getParentRoute: () => admin, path: "/policies", component: PoliciesPage });
   const departments = createRoute({ getParentRoute: () => admin, path: "/departments", component: DepartmentsPage });
   const reasonCodes = createRoute({ getParentRoute: () => admin, path: "/reason-codes", component: ReasonCodesPage });
@@ -60,6 +62,7 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
       roles,
       settings,
       centerPage,
+      publicSite,
       policies,
       departments,
       reasonCodes,

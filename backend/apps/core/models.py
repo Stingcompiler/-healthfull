@@ -21,6 +21,7 @@ from django.db.models import F, Q
 from django.utils import timezone
 
 from apps.core.roles import ROLE_CODES
+from domain import public_site as public_site_rules
 from domain.errors import DomainError
 from domain.lockout import LockState, is_locked
 from domain.throttle import WindowState
@@ -252,6 +253,69 @@ class CenterPage(SingletonModel):
 
     def __str__(self) -> str:
         return "Center page"
+
+
+def _rule(name: str, help_text: str) -> models.PositiveIntegerField[int, int]:
+    low, high = public_site_rules.RULE_RANGES[name]
+    return models.PositiveIntegerField(
+        default=public_site_rules.RULE_DEFAULTS[name],
+        validators=[MinValueValidator(low), MaxValueValidator(high)],
+        help_text=help_text,
+    )
+
+
+@pghistory.track(pghistory.InsertEvent(), pghistory.UpdateEvent())
+class PublicSiteSettings(SingletonModel):
+    """What the public reaches, and the online booking rules (ADR 0028, 0029).
+
+    Three switches, all off on a new install: the center website, online booking, and patient
+    sign-in with tracking. The service layer enforces them (``apps.core.services.require_*``).
+    The booking rules were environment settings before (``PORTAL_BOOKING_*``); the creating
+    migration copied their values. Ranges and defaults: ``domain.public_site``. Every save
+    carries a reason in the history (``update_public_site_settings``).
+    """
+
+    site_enabled = models.BooleanField(default=False)
+    online_booking_enabled = models.BooleanField(default=False)
+    patient_tracking_enabled = models.BooleanField(default=False)
+
+    lead_minutes = _rule("lead_minutes", "Earliest online booking after now, in minutes.")
+    horizon_days = _rule("horizon_days", "Last day a patient can book online, from today.")
+    max_open = _rule("max_open", "Future online bookings one person may hold.")
+    cancel_cutoff_hours = _rule(
+        "cancel_cutoff_hours", "A booking is cancelled online at least this long before it."
+    )
+    reschedule_allowed = models.BooleanField(default=True)
+    reschedule_cutoff_hours = _rule("reschedule_cutoff_hours", "Same family as the cancel cut-off.")
+    require_approval = models.BooleanField(
+        default=True, help_text="Online bookings wait for reception's approval (ADR 0029 A2)."
+    )
+    request_ttl_hours = _rule("request_ttl_hours", "An unanswered request expires after this.")
+    guest_booking_enabled = models.BooleanField(default=True)
+    max_guest_bookings_per_phone = _rule(
+        "max_guest_bookings_per_phone", "Open guest bookings per phone number."
+    )
+    max_pending_per_doctor_day = _rule(
+        "max_pending_per_doctor_day", "Requests waiting for approval per doctor per day."
+    )
+    max_requests_per_address_day = _rule(
+        "max_requests_per_address_day", "Online requests per client address per day."
+    )
+    pow_difficulty_bits = _rule("pow_difficulty_bits", "Proof-of-work leading zero bits.")
+    guest_retention_days = _rule(
+        "guest_retention_days", "Unlinked ended guest bookings are anonymized after this."
+    )
+    min_review_minutes = _rule(
+        "min_review_minutes", "Shortest time reception has to answer a request."
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta(SingletonModel.Meta):
+        verbose_name = "public site settings"
+        verbose_name_plural = "public site settings"
+
+    def __str__(self) -> str:
+        return "Public site settings"
 
 
 @pghistory.track(*_full_history())

@@ -20,6 +20,7 @@ from apps.core.models import (
     Notification,
     Policy,
     PrintTemplate,
+    PublicSiteSettings,
     ReasonCode,
     Role,
     RolePermission,
@@ -135,7 +136,10 @@ class RoleAdmin(admin.ModelAdmin[Role]):
         return False
 
 
-class SingletonAdmin[M: CenterProfile | CenterPage | Policy](admin.ModelAdmin[M]):
+type _Singleton = CenterProfile | CenterPage | Policy | PublicSiteSettings
+
+
+class SingletonAdmin[M: _Singleton](admin.ModelAdmin[M]):
     def has_add_permission(self, request: HttpRequest) -> bool:
         return not self.model._default_manager.exists()
 
@@ -151,6 +155,23 @@ class CenterProfileAdmin(SingletonAdmin[CenterProfile]):
 @admin.register(CenterPage)
 class CenterPageAdmin(SingletonAdmin[CenterPage]):
     list_display = ("show_hours", "show_doctors", "show_announcements", "updated_at")
+
+
+@admin.register(PublicSiteSettings)
+class PublicSiteSettingsAdmin(SingletonAdmin[PublicSiteSettings]):
+    """Read-only here: changes go through /administration/public-site, which records a reason
+    and ends portal sessions when patient sign-in is switched off (ADR 0029)."""
+
+    list_display = (
+        "site_enabled",
+        "online_booking_enabled",
+        "patient_tracking_enabled",
+        "require_approval",
+        "updated_at",
+    )
+
+    def has_change_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return False
 
 
 @admin.register(Announcement)

@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getSiteConfig, isMarketingSite, isSignInPath, loadSiteConfig, setSiteConfig, signInPath } from "./site";
+import {
+  getSiteConfig,
+  isMarketingSite,
+  isSignInPath,
+  loadSiteConfig,
+  rootPublicView,
+  setSiteConfig,
+  signInPath,
+} from "./site";
 
 afterEach(() => {
   setSiteConfig(null);
@@ -29,7 +37,14 @@ describe("site switches (ADR 0027)", () => {
 
   it("reads the server answer, contact values included", async () => {
     await loadSiteConfig(answer({ marketing: true, contact_email: "a@b.org", contact_whatsapp: "249912345678" }));
-    expect(getSiteConfig()).toEqual({ marketing: true, contactEmail: "a@b.org", contactWhatsapp: "249912345678" });
+    expect(getSiteConfig()).toEqual({
+      marketing: true,
+      contactEmail: "a@b.org",
+      contactWhatsapp: "249912345678",
+      centerSite: false,
+      onlineBooking: false,
+      patientTracking: false,
+    });
   });
 
   it("only a literal true turns it on", async () => {
@@ -44,5 +59,37 @@ describe("site switches (ADR 0027)", () => {
     setSiteConfig({ marketing: true });
     await loadSiteConfig(() => Promise.reject(new Error("offline")));
     expect(isMarketingSite()).toBe(false);
+  });
+});
+
+describe("center switches (ADR 0028, 0029)", () => {
+  it("reads the three switches; only a literal true turns one on", async () => {
+    await loadSiteConfig(
+      answer({ marketing: false, center_site: true, online_booking: "yes", patient_tracking: true }),
+    );
+    expect(getSiteConfig()).toMatchObject({ centerSite: true, onlineBooking: false, patientTracking: true });
+  });
+
+  it("are off when the server does not answer", async () => {
+    setSiteConfig({ centerSite: true, onlineBooking: true, patientTracking: true });
+    await loadSiteConfig(() => Promise.reject(new Error("offline")));
+    expect(getSiteConfig()).toMatchObject({ centerSite: false, onlineBooking: false, patientTracking: false });
+  });
+
+  it("puts the center website ahead of the sales page at the root", () => {
+    expect(rootPublicView()).toBeNull();
+    setSiteConfig({ marketing: true });
+    expect(rootPublicView()).toBe("marketing");
+    setSiteConfig({ marketing: true, centerSite: true });
+    expect(rootPublicView()).toBe("center");
+    setSiteConfig({ centerSite: true });
+    expect(rootPublicView()).toBe("center");
+  });
+
+  it("leaves the sign-in address to the marketing switch alone", () => {
+    setSiteConfig({ centerSite: true });
+    expect(signInPath()).toBe("/login");
+    setSiteConfig({ centerSite: true, marketing: true });
+    expect(signInPath()).toBe("/sign-in");
   });
 });

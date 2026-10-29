@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
   Stethoscope,
   Tags,
+  ToggleRight,
   UserCog,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +25,7 @@ export type AdminSectionId =
   | "roles"
   | "settings"
   | "centerPage"
+  | "publicSite"
   | "policies"
   | "departments"
   | "reasonCodes"
@@ -70,8 +72,15 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     id: "centerPage",
     to: "/administration/center-page",
     icon: Globe,
-    permission: "core.manage_settings",
+    permission: "core.manage_public_site",
     navKey: "adminCenterPage",
+  },
+  {
+    id: "publicSite",
+    to: "/administration/public-site",
+    icon: ToggleRight,
+    permission: "core.manage_public_site",
+    navKey: "adminPublicSite",
   },
   {
     id: "policies",

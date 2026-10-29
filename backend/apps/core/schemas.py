@@ -295,6 +295,58 @@ class CenterPageIn(Schema):
     hidden_doctor_ids: list[int] = Field(default_factory=list, max_length=500)
 
 
+class PublicSiteSettingsOut(Schema):
+    """The public site switches and online booking rules (ADR 0028, 0029)."""
+
+    site_enabled: bool = Field(..., description="The center website at / and /portal")
+    online_booking_enabled: bool = Field(..., description="Doctor, day and slot reads; booking")
+    patient_tracking_enabled: bool = Field(..., description="Patient sign-in and patient pages")
+    lead_minutes: int
+    horizon_days: int
+    max_open: int
+    cancel_cutoff_hours: int
+    reschedule_allowed: bool
+    reschedule_cutoff_hours: int
+    require_approval: bool
+    request_ttl_hours: int
+    guest_booking_enabled: bool
+    max_guest_bookings_per_phone: int
+    max_pending_per_doctor_day: int
+    max_requests_per_address_day: int
+    pow_difficulty_bits: int
+    guest_retention_days: int
+    min_review_minutes: int
+    updated_at: datetime | None
+
+
+class PublicSiteSettingsIn(Schema):
+    """A change of the public site settings: omitted or null fields keep their value; the
+    reason is required and kept in the history. Ranges: 422 with the field."""
+
+    reason: str = Field(..., max_length=300)
+    site_enabled: bool | None = None
+    online_booking_enabled: bool | None = None
+    patient_tracking_enabled: bool | None = None
+    lead_minutes: int | None = None
+    horizon_days: int | None = None
+    max_open: int | None = None
+    cancel_cutoff_hours: int | None = None
+    reschedule_allowed: bool | None = None
+    reschedule_cutoff_hours: int | None = None
+    require_approval: bool | None = None
+    request_ttl_hours: int | None = None
+    guest_booking_enabled: bool | None = None
+    max_guest_bookings_per_phone: int | None = None
+    max_pending_per_doctor_day: int | None = None
+    max_requests_per_address_day: int | None = None
+    pow_difficulty_bits: int | None = None
+    guest_retention_days: int | None = None
+    min_review_minutes: int | None = None
+
+    def changes(self) -> dict[str, Any]:
+        return {k: v for k, v in self.dict().items() if v is not None and k != "reason"}
+
+
 class AnnouncementOut(Schema):
     id: int
     title_ar: str

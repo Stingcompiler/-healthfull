@@ -7,7 +7,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey 
 
 import { api, unwrap } from "@/lib/api/client";
 import { authKeys } from "@/lib/auth/api";
-import { centerPageKey } from "@/lib/center/api";
+import { centerIdentityKey, centerPageKey } from "@/lib/center/api";
+import { setSiteConfig, getSiteConfig } from "@/lib/site";
 
 import type {
   AnnouncementIn,
@@ -29,6 +30,7 @@ import type {
   PayerIn,
   PayerPatch,
   PolicyIn,
+  PublicSiteSettingsIn,
   PriceChangeIn,
   PriceListIn,
   PrintTemplateIn,
@@ -56,6 +58,7 @@ export const adminKeys = {
   centerPage: ["admin", "center-page"] as const,
   announcements: ["admin", "announcements"] as const,
   policy: ["admin", "policy"] as const,
+  publicSite: ["admin", "public-site"] as const,
   departments: ["admin", "departments"] as const,
   banks: ["admin", "banks"] as const,
   rooms: ["admin", "rooms"] as const,
@@ -160,7 +163,10 @@ export function useCenterProfile() {
 }
 
 export function useUpdateCenterProfile() {
-  return useAdminMutation((body: CenterProfileIn) => unwrap(api.PUT("/api/core/center", { body })), [adminKeys.center]);
+  return useAdminMutation(
+    (body: CenterProfileIn) => unwrap(api.PUT("/api/core/center", { body })),
+    [adminKeys.center, centerIdentityKey],
+  );
 }
 
 export function useUploadLogo() {
@@ -176,12 +182,12 @@ export function useUploadLogo() {
           },
         }),
       ),
-    [adminKeys.center],
+    [adminKeys.center, centerIdentityKey],
   );
 }
 
 export function useDeleteLogo() {
-  return useAdminMutation(() => unwrap(api.DELETE("/api/core/center/logo")), [adminKeys.center]);
+  return useAdminMutation(() => unwrap(api.DELETE("/api/core/center/logo")), [adminKeys.center, centerIdentityKey]);
 }
 
 // --- Public center page (portal) ----------------------------------------------------------
@@ -214,6 +220,29 @@ export function useSaveAnnouncement() {
             }),
           ),
     [adminKeys.announcements, centerPageKey],
+  );
+}
+
+// --- Public site switches and online booking rules (ADR 0028, 0029) -----------------------
+
+export function usePublicSiteSettings() {
+  return useQuery({ queryKey: adminKeys.publicSite, queryFn: () => unwrap(api.GET("/api/core/public-site")) });
+}
+
+export function useUpdatePublicSiteSettings() {
+  return useAdminMutation(
+    async (body: PublicSiteSettingsIn) => {
+      const saved = await unwrap(api.PUT("/api/core/public-site", { body }));
+      // The switches the SPA read at start follow the save in this tab; other tabs on reload.
+      setSiteConfig({
+        ...getSiteConfig(),
+        centerSite: saved.site_enabled,
+        onlineBooking: saved.online_booking_enabled,
+        patientTracking: saved.patient_tracking_enabled,
+      });
+      return saved;
+    },
+    [adminKeys.publicSite, centerPageKey],
   );
 }
 

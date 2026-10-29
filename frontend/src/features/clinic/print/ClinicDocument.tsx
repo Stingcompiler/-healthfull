@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ageFromBirthDate } from "@/lib/age";
-import { useCenterPage } from "@/lib/center/api";
+import { useCenterIdentity } from "@/lib/center/api";
 import { formatDate } from "@/lib/format";
 import { pickName } from "@/lib/names";
 
@@ -44,7 +44,7 @@ export function ClinicDocument({
 }) {
   const { i18n } = useTranslation();
   const t = i18n.getFixedT(lang, "clinic");
-  const center = useCenterPage();
+  const center = useCenterIdentity();
   const name = (ar: string, en: string) => pickName({ ar, en }, lang);
   const p = data.patient;
   const age = p.date_of_birth ? ageFromBirthDate(p.date_of_birth) : null;

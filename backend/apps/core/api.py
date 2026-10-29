@@ -30,6 +30,7 @@ from apps.core.models import (
     CenterProfile,
     DoctorProfile,
     Policy,
+    PublicSiteSettings,
     ReasonCode,
     Room,
     User,
@@ -64,6 +65,8 @@ from apps.core.schemas import (
     PrintDocumentCode,
     PrintTemplateIn,
     PrintTemplateOut,
+    PublicSiteSettingsIn,
+    PublicSiteSettingsOut,
     ReasonCodeIn,
     ReasonCodeListParams,
     ReasonCodeOut,
@@ -405,6 +408,39 @@ def get_center_logo(request: HttpRequest) -> HttpResponse:
     return response
 
 
+# --- Public site switches and online booking rules (ADR 0028, 0029) -----------------------
+
+
+@core_router.get(
+    "/public-site",
+    response={200: PublicSiteSettingsOut, **_READ},
+    operation_id="core_get_public_site_settings",
+    summary="The public site switches and the online booking rules",
+)
+@require_perm("core.manage_public_site")
+def get_public_site_settings(request: HttpRequest) -> PublicSiteSettings:
+    return services.public_site_settings()
+
+
+@core_router.put(
+    "/public-site",
+    response={200: PublicSiteSettingsOut, **_WRITE},
+    operation_id="core_update_public_site_settings",
+    summary="Change the public site switches or the online booking rules (reason required)",
+    description=(
+        "Omitted fields keep their value. 409 REASON_REQUIRED; 422 for a value out of range. "
+        "Switching patient tracking off ends every live portal session."
+    ),
+)
+@require_perm("core.manage_public_site")
+def update_public_site_settings(
+    request: HttpRequest, payload: PublicSiteSettingsIn
+) -> PublicSiteSettings:
+    return services.update_public_site_settings(
+        _current_user(request), reason=payload.reason, **payload.changes()
+    )
+
+
 # --- Center page of the patient portal ----------------------------------------------------
 
 
@@ -414,7 +450,7 @@ def get_center_logo(request: HttpRequest) -> HttpResponse:
     operation_id="core_get_center_page",
     summary="The public center page's sections (hours, contact, texts, what shows)",
 )
-@require_perm("core.manage_settings")
+@require_perm("core.manage_public_site")
 def get_center_page(request: HttpRequest) -> CenterPage:
     return services.center_page()
 
@@ -429,7 +465,7 @@ def get_center_page(request: HttpRequest) -> CenterPage:
         "malformed e-mail."
     ),
 )
-@require_perm("core.manage_settings")
+@require_perm("core.manage_public_site")
 def update_center_page(request: HttpRequest, payload: CenterPageIn) -> CenterPage:
     return services.update_center_page(_current_user(request), **payload.dict())
 
@@ -440,7 +476,7 @@ def update_center_page(request: HttpRequest, payload: CenterPageIn) -> CenterPag
     operation_id="core_list_announcements",
     summary="Announcements of the center page, shown or not",
 )
-@require_perm("core.manage_settings")
+@require_perm("core.manage_public_site")
 def list_announcements(request: HttpRequest) -> list[Announcement]:
     return list(services.list_announcements())
 
@@ -452,7 +488,7 @@ def list_announcements(request: HttpRequest) -> list[Announcement]:
     summary="Add an announcement to the center page",
     description="409 ANNOUNCEMENT_TITLE_REQUIRED, ANNOUNCEMENT_DATES_INVALID.",
 )
-@require_perm("core.manage_settings")
+@require_perm("core.manage_public_site")
 def create_announcement(request: HttpRequest, payload: AnnouncementIn) -> Status[Announcement]:
     return Status(201, services.create_announcement(_current_user(request), **payload.dict()))
 
@@ -464,7 +500,7 @@ def create_announcement(request: HttpRequest, payload: AnnouncementIn) -> Status
     summary="Edit, reorder, end or hide an announcement",
     description="409 ANNOUNCEMENT_TITLE_REQUIRED, ANNOUNCEMENT_DATES_INVALID.",
 )
-@require_perm("core.manage_settings")
+@require_perm("core.manage_public_site")
 def update_announcement(
     request: HttpRequest, announcement_id: int, payload: AnnouncementPatch
 ) -> Announcement:

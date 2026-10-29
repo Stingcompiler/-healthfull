@@ -67,6 +67,10 @@
     "audit": {
       "title": "Audit trail",
       "description": "Who changed what and when, with the reason, for every record."
+    },
+    "publicSite": {
+      "title": "Public site & booking",
+      "description": "Switch the center website, online booking and patient sign-in on or off, and set the booking rules."
     }
   },
   "common": {
@@ -647,5 +651,32 @@
       "ended": "Ended",
       "hidden": "Hidden"
     }
+  },
+  "publicSite": {
+    "switches": "What the public can reach",
+    "switchesHint": "Each switch is enforced by the server. With all three off, nothing of this center is public.",
+    "site": "Center website",
+    "siteHint": "Shows the center page at the site address (/) and at /portal. Its content is edited on the center page screen.",
+    "booking": "Online booking",
+    "bookingHint": "Signed-in patients choose a doctor, a day and a free slot. Patients can still cancel their bookings when this is off.",
+    "tracking": "Patient sign-in",
+    "trackingHint": "Patients sign in to see their appointments, results, prescriptions and bills. Turning it off signs every patient out and stops new access codes.",
+    "editContent": "Edit the center page",
+    "rules": "Online booking rules",
+    "rulesHint": "Apply to every booking made by a patient online.",
+    "lead": "Earliest booking after now (minutes)",
+    "horizon": "Bookable days ahead",
+    "maxOpen": "Future bookings per patient",
+    "cutoff": "Cancel online until (hours before)",
+    "reason": "Reason for the change",
+    "reasonHint": "Kept in the audit trail with your name and the time.",
+    "range": "Enter a whole number from {{min}} to {{max}}.",
+    "saved": "Public site settings saved.",
+    "save": "Save settings",
+    "liveTitle": "Live now",
+    "liveNone": "Nothing is public",
+    "liveSite": "Website",
+    "liveBooking": "Booking",
+    "liveTracking": "Patient sign-in"
   }
 }

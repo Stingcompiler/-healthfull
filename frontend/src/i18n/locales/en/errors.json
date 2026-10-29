@@ -458,5 +458,8 @@
   "RESULT_FROZEN": "The result is approved and cannot be changed. Issue an amended version to correct it.",
   "STOCK_BALANCE_DERIVED": "Stock on hand comes only from stock moves and is never edited directly. Use a stock adjustment.",
   "STOCK_ITEM_MISMATCH": "The selected batch is for another item. Reload the page and try again.",
-  "NO_PRESCRIPTION": "This visit has no prescribed medicine to print."
+  "NO_PRESCRIPTION": "This visit has no prescribed medicine to print.",
+  "SITE_DISABLED": "The center website is switched off.",
+  "ONLINE_BOOKING_DISABLED": "Online booking is switched off. Call the center to book.",
+  "PORTAL_DISABLED": "Patient sign-in is switched off at this center."
 }

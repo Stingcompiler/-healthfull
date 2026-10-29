@@ -1,13 +1,13 @@
 import { useState } from "react";
 
 import { BrandMark } from "@/components/BrandMark";
-import { useCenterPage } from "@/lib/center/api";
+import { useCenterIdentity } from "@/lib/center/api";
 import { useCenterName } from "@/lib/center/hooks";
 import { cn } from "@/lib/utils";
 
 /** The center's logo, or the app mark when there is none or it fails to load. Sized up front. */
 export function CenterLogo({ size = "md", className }: { size?: "md" | "lg"; className?: string }) {
-  const center = useCenterPage();
+  const center = useCenterIdentity();
   const [broken, setBroken] = useState(false);
   const logo = broken ? null : (center.data?.logo_url ?? null);
   const box = size === "lg" ? "size-14" : "size-9";

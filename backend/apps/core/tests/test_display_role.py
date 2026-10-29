@@ -47,9 +47,21 @@ UNGUARDED_STAFF = {
     # The public center page and its logo (ADR 0023): no session of any kind.
     "portal_get_center_page",
     "portal_get_center_logo",
+    "portal_get_center_identity",
 }
 
 PORTAL_PATIENT_PREFIX = "/api/portal/"
+
+
+@pytest.fixture(autouse=True)
+def _patient_sign_in_on(db: None) -> None:
+    """Patient sign-in on (a new install has it off, and patient operations would answer 409
+    ``PORTAL_DISABLED`` before authentication): this sweep proves the session isolation. The
+    switches are proved in ``apps/portal/tests/test_switches.py``."""
+    from apps.core.models import PublicSiteSettings
+
+    PublicSiteSettings.load()
+    PublicSiteSettings.objects.filter(pk=1).update(patient_tracking_enabled=True)
 
 
 def test_the_role_is_seeded_with_labels_and_holds_only_the_feed(make_user: Any) -> None:

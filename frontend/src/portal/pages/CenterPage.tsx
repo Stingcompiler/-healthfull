@@ -15,6 +15,7 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { initialsOf } from "@/lib/initials";
 import { cn } from "@/lib/utils";
+import { getSiteConfig } from "@/lib/site";
 import { formatClock, groupClinicDays, WEEK_ORDER, weekdayName } from "@/lib/weekdays";
 
 import { usePortalMe } from "../api";
@@ -119,10 +120,12 @@ function Hero({ page, name }: { page: CenterPageData | undefined; name: string }
           {page ? <StatusChip page={page} /> : null}
           {about ? <p className="text-base text-pretty text-fg lg:text-lg">{about}</p> : null}
         </div>
-        <div className="flex flex-col gap-2 lg:w-80 lg:shrink-0">
-          <SignInAction />
-          <p className="text-sm text-pretty text-muted">{t("center.signInHint")}</p>
-        </div>
+        {getSiteConfig().patientTracking ? (
+          <div className="flex flex-col gap-2 lg:w-80 lg:shrink-0">
+            <SignInAction />
+            <p className="text-sm text-pretty text-muted">{t("center.signInHint")}</p>
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -166,7 +169,9 @@ function QuickActions({ page }: { page: CenterPageData }) {
       </Button>,
     );
   }
-  if (page.doctors.length > 0) {
+  // Booking needs a patient session today, so both switches must be on (ADR 0029).
+  const { onlineBooking, patientTracking } = getSiteConfig();
+  if (page.doctors.length > 0 && onlineBooking && patientTracking) {
     items.push(
       <Button key="book" asChild variant="outline" className={actionClass}>
         <Link to={signedIn ? "/portal/appointments/new" : "/portal/sign-in"} data-testid="quick-book">
@@ -531,11 +536,13 @@ function Loading() {
 export function CenterPage() {
   const { t } = useTranslation(["portal", "errors"]);
   const translateError = useTranslateError();
-  const name = useCenterName();
+  const identityName = useCenterName();
   const center = useCenterPage();
   const pick = usePick();
-  useDocumentTitle(name);
   const page = center.data;
+  // The page answer carries the center's name; the identity read is the fallback while it loads.
+  const name = (page ? pick(page.name_ar, page.name_en) : "") || identityName;
+  useDocumentTitle(name);
 
   const hasNotices = Boolean(page && page.announcements.length > 0);
   const hasDoctors = Boolean(page && page.doctors.length > 0);
@@ -546,6 +553,8 @@ export function CenterPage() {
     (page.phone_uri || page.whatsapp || page.email || page.address || pick(page.directions_ar, page.directions_en)),
   );
   const hasMain = hasNotices || hasDoctors || hasDepartments;
+  // Patient sign-in switched off (ADR 0029): the page keeps its facts and drops every sign-in call.
+  const tracking = getSiteConfig().patientTracking;
 
   return (
     <div className="flex min-w-0 flex-col gap-5 lg:gap-8" data-testid="center-page">
@@ -574,7 +583,7 @@ export function CenterPage() {
               >
                 {hasHours ? <Hours page={page} /> : null}
                 {hasContact ? <Contact page={page} /> : null}
-                <HowToSignIn />
+                {tracking ? <HowToSignIn /> : null}
               </div>
             </div>
           ) : (
@@ -585,13 +594,13 @@ export function CenterPage() {
                   {hasContact ? <Contact page={page} /> : null}
                 </div>
               ) : null}
-              <HowToSignIn wide />
+              {tracking ? <HowToSignIn wide /> : null}
             </div>
           )}
-          <EndBand />
+          {tracking ? <EndBand /> : null}
         </>
       ) : null}
-      <StickyBar />
+      {tracking ? <StickyBar /> : null}
     </div>
   );
 }
