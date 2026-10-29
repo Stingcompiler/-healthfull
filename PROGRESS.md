@@ -784,3 +784,19 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   empty x 375/768/1280 x 3 themes x ar/en with axe, 65 tests). A first broader run beside `make check`
   timed out on four `@responsive` admin routes under machine load; they passed alone.
 - [x] Public site Phase 2: website content.
+- 2026-10-29: public site work order, Phase 3 (availability hardening) on `feat/public-site-phase3-availability`
+  (ADR 0029 C, E; owner decisions of 2026-10-29: no overbooking ever, WireGuard to the OVH host for LAN edges):
+  `AppointmentStatus.REQUESTED`, `source`, `expires_at`, `approved_by/at`, `btree_gist` exclusion constraint with a
+  pre-check that lists overlapping pairs, `domain.appointments` (state machine, expiry, review window),
+  `domain.availability` (free slots), lazy expiry under the doctor lock plus the hourly maintenance sweep,
+  approve/reject endpoints (`visits.manage_online_bookings`) with Approve/Decline on the doctor's day,
+  `DoctorTimeOff` (+ dialog on the doctors' schedule list), `DoctorProfile.online_bookable` (kept for current
+  portal-bookable doctors where online booking is already on), portal reschedule, patient-facing booking
+  statuses, the new rules on `/administration/public-site`. Results: `make check` green (backend 2657 passed,
+  frontend 646 passed, lint/types/lint-ui/api drift clean); `infra/tests/test_db_roles.sh` 14 checks passed
+  (owner creates `btree_gist`); `make e2e` for `@availability|@portal booking|@patients|route registry` and the
+  responsive matrix of appointments, admin departments/public-site/center-page, portal book/reschedule: 139 passed,
+  4 failed on the first run (two spec mistakes: the decline dialog needs a chosen reason, an inexact text match),
+  all 8 re-run passed after the fixes. A first `make check` run failed only because a second pytest run on the
+  same test database overlapped it, plus one real finding (DoctorTimeOff missing from the admin), fixed.
+- [x] Public site Phase 3: availability hardening.

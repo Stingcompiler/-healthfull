@@ -39,7 +39,10 @@ test.describe("@portal booking", () => {
     // Move it to another free time (ADR 0029 A7): the old booking shows as moved.
     await row.getByTestId("appointment-reschedule").click();
     await expect(page).toHaveURL(/\/portal\/appointments\/\d+\/reschedule$/);
-    await expect(page.getByTestId("book-doctor").first()).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByTestId("book-doctor").first()).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     const newDay = page.getByTestId("book-day").last();
     await expect(newDay).toBeVisible();
     await newDay.click();
@@ -49,12 +52,23 @@ test.describe("@portal booking", () => {
     await page.getByTestId("book-confirm").click();
     await expect(page).toHaveURL(/\/portal\/appointments$/);
     await expect(page.getByText(t("portal:book.moved"))).toBeVisible();
-    await expect(page.getByTestId("appointments-upcoming").getByTestId("appointment-row")).toHaveCount(1);
-    await expect(page.getByText(t("portal:appointments.display.moved"))).toBeVisible();
+    await expect(
+      page.getByTestId("appointments-upcoming").getByTestId("appointment-row"),
+    ).toHaveCount(1);
+    await expect(
+      page.getByText(t("portal:appointments.display.moved"), { exact: true }),
+    ).toBeVisible();
 
-    await page.getByTestId("appointments-upcoming").getByTestId("appointment-cancel").click();
-    await page.getByRole("button", { name: t("portal:appointments.cancelConfirm") }).click();
-    await expect(page.getByText(t("portal:appointments.cancelled"))).toBeVisible();
+    await page
+      .getByTestId("appointments-upcoming")
+      .getByTestId("appointment-cancel")
+      .click();
+    await page
+      .getByRole("button", { name: t("portal:appointments.cancelConfirm") })
+      .click();
+    await expect(
+      page.getByText(t("portal:appointments.cancelled")),
+    ).toBeVisible();
     await expect(page.getByText(t("portal:appointments.none"))).toBeVisible();
   });
 });
