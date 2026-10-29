@@ -55,7 +55,7 @@ def seed_center_page(author: User) -> None:
             },
         ]
         page.accessibility_ar = "مدخل بلا درج وكرسي متحرك عند الاستقبال."
-        page.accessibility_en = "Step-free entrance and a wheelchair at reception."
+        page.accessibility_en = "Step-free entrance and a wheelchair at the door."
         page.privacy_ar = "بياناتك محفوظة في خادم المركز ولا تُشارك إلا بإذنك أو بحكم القانون."
         page.privacy_en = (
             "Your data stays on the center's server and is shared only with your consent or by law."
@@ -75,8 +75,8 @@ def seed_center_page(author: User) -> None:
         )
     if not Testimonial.objects.exists():
         Testimonial.objects.create(
-            text_ar="استقبال لطيف ونتيجة التحليل في نفس اليوم.",
-            text_en="Friendly reception and my test result the same day.",
+            text_ar="تعامل لطيف ونتيجة التحليل في نفس اليوم.",
+            text_en="Kind staff and my test result the same day.",
             author_ar="مراجعة من الخرطوم",
             author_en="A patient from Khartoum",
             created_by=author,

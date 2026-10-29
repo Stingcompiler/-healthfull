@@ -30,6 +30,9 @@ IMAGE_KEYS = {"id", "url", "alt_ar", "alt_en", "width", "height"}
 
 @pytest.fixture
 def author(seeded: None) -> User:
+    # The seed's sample question and testimonial (apps/core/e2e/center_page.py) are left out.
+    CenterFaq.objects.all().delete()
+    core_models.Testimonial.objects.all().delete()
     return User.objects.get(username="admin")
 
 

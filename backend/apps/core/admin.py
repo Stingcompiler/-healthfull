@@ -13,6 +13,8 @@ from django.template.response import TemplateResponse
 from apps.core.models import (
     Announcement,
     AuthEvent,
+    CenterFaq,
+    CenterMedia,
     CenterPage,
     CenterProfile,
     Department,
@@ -26,6 +28,7 @@ from apps.core.models import (
     RolePermission,
     Room,
     Sequence,
+    Testimonial,
     User,
     UserRole,
 )
@@ -184,6 +187,61 @@ class AnnouncementAdmin(admin.ModelAdmin[Announcement]):
         if not change:
             obj.created_by = request.user  # type: ignore[assignment]
         super().save_model(request, obj, form, change)
+
+
+@admin.register(CenterMedia)
+class CenterMediaAdmin(admin.ModelAdmin[CenterMedia]):
+    """Images of the website; uploaded through /administration/center-page (content checked)."""
+
+    list_display = ("id", "kind", "alt_en", "width", "height", "active", "sort_order")
+    list_filter = ("kind", "active")
+    readonly_fields = (
+        "file",
+        "content_type",
+        "width",
+        "height",
+        "size_bytes",
+        "created_by",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False  # uploads go through the service, which checks the bytes
+
+
+@admin.register(CenterFaq)
+class CenterFaqAdmin(admin.ModelAdmin[CenterFaq]):
+    list_display = ("question_ar", "question_en", "active", "sort_order")
+    list_filter = ("active",)
+    readonly_fields = ("created_by", "created_at", "updated_at")
+
+    def save_model(self, request: HttpRequest, obj: CenterFaq, form: Any, change: bool) -> None:
+        if not change:
+            obj.created_by = request.user  # type: ignore[assignment]
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(Testimonial)
+class TestimonialAdmin(admin.ModelAdmin[Testimonial]):
+    """Read and hide only: approval is recorded by the service (core.approve_testimonial)."""
+
+    list_display = ("id", "author_en", "active", "approved_at")
+    list_filter = ("active",)
+    readonly_fields = (
+        "text_ar",
+        "text_en",
+        "author_ar",
+        "author_en",
+        "approved_by",
+        "approved_at",
+        "created_by",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
 
 
 @admin.register(Policy)
