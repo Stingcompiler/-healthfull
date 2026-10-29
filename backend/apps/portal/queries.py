@@ -35,6 +35,7 @@ from domain import center_page as dcenter
 from domain import portal as dportal
 from domain.money import ZERO, money
 from domain.payments import Verification
+from domain.portal import BookingRules
 
 __all__ = [
     "appointment",
@@ -115,8 +116,7 @@ def _appointment_rows(files: Iterable[int]) -> QuerySet[Appointment]:
     )
 
 
-def _appointment_json(a: Appointment, *, now: datetime) -> dict[str, Any]:
-    rules = conf.booking_rules()
+def _appointment_json(a: Appointment, *, now: datetime, rules: BookingRules) -> dict[str, Any]:
     booked = a.status == AppointmentStatus.BOOKED
     return {
         "id": a.pk,
@@ -132,7 +132,7 @@ def _appointment_json(a: Appointment, *, now: datetime) -> dict[str, Any]:
 def appointment(principal: PortalPrincipal, appointment_id: int) -> dict[str, Any]:
     """Raises: Appointment.DoesNotExist (not the person's appointment: 404)."""
     row = _appointment_rows(principal.file_ids()).get(pk=appointment_id)
-    return _appointment_json(row, now=timezone.now())
+    return _appointment_json(row, now=timezone.now(), rules=core.booking_rules())
 
 
 def appointments(principal: PortalPrincipal) -> dict[str, Any]:
@@ -143,19 +143,23 @@ def appointments(principal: PortalPrincipal) -> dict[str, Any]:
         "starts_at", "id"
     )
     past = rows.exclude(pk__in=upcoming.values("pk")).order_by("-starts_at", "-id")[:20]
+    rules = core.booking_rules()
     return {
-        "upcoming": [_appointment_json(a, now=now) for a in upcoming],
-        "past": [_appointment_json(a, now=now) for a in past],
+        "upcoming": [_appointment_json(a, now=now, rules=rules) for a in upcoming],
+        "past": [_appointment_json(a, now=now, rules=rules) for a in past],
         "rules": {
-            "max_open": conf.booking_rules().max_open,
-            "cancel_cutoff_hours": int(conf.booking_rules().cancel_cutoff.total_seconds() // 3600),
-            "horizon_days": conf.booking_rules().horizon_days,
+            "max_open": rules.max_open,
+            "cancel_cutoff_hours": int(rules.cancel_cutoff.total_seconds() // 3600),
+            "horizon_days": rules.horizon_days,
         },
     }
 
 
 def booking_doctors() -> list[dict[str, Any]]:
-    """Doctors who take portal bookings: active, with an active weekly schedule."""
+    """Doctors who take portal bookings: active, with an active weekly schedule.
+
+    Raises: DomainError ``ONLINE_BOOKING_DISABLED`` (as the days and slots reads)."""
+    core.require_online_booking()
     doctors = (
         DoctorProfile.objects.filter(active=True, user__is_active=True, schedules__active=True)
         .select_related("user", "department")
@@ -165,35 +169,40 @@ def booking_doctors() -> list[dict[str, Any]]:
     return [_doctor_json(d) for d in doctors]
 
 
-def _bookable_starts(doctor: DoctorProfile, on: date, *, now: datetime) -> list[datetime]:
+def _bookable_starts(
+    doctor: DoctorProfile, on: date, *, now: datetime, rules: BookingRules
+) -> list[datetime]:
     return dportal.bookable(
         [start for start, _ in visits.available_slots(doctor, on)],
         now=now,
         today=timezone.localdate(),
-        rules=conf.booking_rules(),
+        rules=rules,
         day_of=lambda d: timezone.localtime(d).date(),
     )
 
 
 def booking_days(doctor_id: int) -> list[date]:
     """The local days, from today to the booking horizon, with at least one bookable slot."""
+    core.require_online_booking()
     doctor = bookable_doctor(doctor_id)
     now = timezone.now()
     today = timezone.localdate()
     weekdays = set(
         DoctorSchedule.objects.filter(doctor=doctor, active=True).values_list("weekday", flat=True)
     )
+    rules = core.booking_rules()
     days = []
-    for offset in range(conf.booking_rules().horizon_days + 1):
+    for offset in range(rules.horizon_days + 1):
         on = today + timedelta(days=offset)
-        if on.weekday() in weekdays and _bookable_starts(doctor, on, now=now):
+        if on.weekday() in weekdays and _bookable_starts(doctor, on, now=now, rules=rules):
             days.append(on)
     return days
 
 
 def booking_slots(doctor_id: int, on: date) -> dict[str, Any]:
+    core.require_online_booking()
     doctor = bookable_doctor(doctor_id)
-    starts = set(_bookable_starts(doctor, on, now=timezone.now()))
+    starts = set(_bookable_starts(doctor, on, now=timezone.now(), rules=core.booking_rules()))
     slots = [
         {"starts_at": s, "ends_at": e} for s, e in visits.available_slots(doctor, on) if s in starts
     ]
@@ -539,11 +548,25 @@ def public_logo_url(profile: CenterProfile) -> str | None:
     return f"/api/portal/center-logo?v={version}"
 
 
+def center_identity() -> dict[str, Any]:
+    """The center's name and logo for the staff sign-in and the portal header. Answers while
+    the website is off (ADR 0029 H): nothing here goes beyond what a printed receipt shows."""
+    profile = core.center_profile()
+    return {
+        "name_ar": profile.name_ar,
+        "name_en": profile.name_en,
+        "logo_url": public_logo_url(profile),
+    }
+
+
 def center_page() -> dict[str, Any]:
     """The public center page (no sign-in): identity always, then only the sections the
     center shows. Departments, doctors and clinic days are read from the same rows reception
     and booking use; a hidden department hides its doctors too. Never prices or other staff.
+
+    Raises: DomainError ``SITE_DISABLED`` (404) while the center website is switched off.
     """
+    core.require_site()
     profile = core.center_profile()
     page = core.center_page()
     today = timezone.localdate()

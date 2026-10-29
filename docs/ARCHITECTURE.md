@@ -56,7 +56,7 @@ Several checkouts (git worktrees) may run at once. Never hardcode DB names or po
 
 | App | Owns |
 |---|---|
-| `core` | User (custom, AbstractUser), Role, RolePermission matrix, permission registry, CenterProfile, CenterPage and Announcement (public center page of the portal, ADR 0023), Policy (singleton settings), Sequence (document numbering), ReasonCode, Department, Room, DoctorProfile, Notification |
+| `core` | User (custom, AbstractUser), Role, RolePermission matrix, permission registry, CenterProfile, CenterPage and Announcement (public center page of the portal, ADR 0023), PublicSiteSettings (public site switches and online booking rules, ADR 0028/0029), Policy (singleton settings), Sequence (document numbering), ReasonCode, Department, Room, DoctorProfile, Notification |
 | `patients` | Patient, PatientCoverage, merge history |
 | `visits` | Visit, QueueEntry, Appointment, DoctorSchedule |
 | `catalog` | Service (kinds: consultation, lab, procedure, drug, consumable, bed), PriceList, PriceListVersion, PriceItem, Payer, CoverageRule, Exclusion |
@@ -71,7 +71,7 @@ Several checkouts (git worktrees) may run at once. Never hardcode DB names or po
 | `reports` | no models; read-only query services |
 | `portal` | PortalAccessCode, portal auth |
 | `imports` | ImportJob, ImportRow (Excel preview/confirm) |
-| `ops` | public site switches (`GET /api/ops/site`: `MARKETING_SITE`, ADR 0027), BackupRun, RestoreTest, UpdateRun (written by `infra/update.sh` through `manage.py record_update`), BackupRequest, DataExport, health checks, status page, `manage.py integrity_check` (`apps/ops/integrity.py`; daily runs recorded in IntegrityRun, ADR 0021) |
+| `ops` | public site switches (`GET /api/ops/site`: `MARKETING_SITE`, ADR 0027, and the center's `center_site`/`online_booking`/`patient_tracking`, ADR 0028), BackupRun, RestoreTest, UpdateRun (written by `infra/update.sh` through `manage.py record_update`), BackupRequest, DataExport, health checks, status page, `manage.py integrity_check` (`apps/ops/integrity.py`; daily runs recorded in IntegrityRun, ADR 0021) |
 
 ### 4.2 Layering (strict)
 

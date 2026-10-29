@@ -20,12 +20,17 @@ class HealthOut(Schema):
 
 
 class SiteOut(Schema):
-    """What the SPA needs before it picks the /login page (ADR 0027). Public; contact values
-    are only returned while the marketing page is on."""
+    """What the SPA needs before its first render (ADR 0027, 0028). Public; contact values are
+    only returned while the marketing page is on. ``center_site``, ``online_booking`` and
+    ``patient_tracking`` are the center administrator's switches: the root ``/`` shows the
+    center website while ``center_site`` is on and no staff session exists."""
 
     marketing: bool
     contact_email: str | None = None
     contact_whatsapp: str | None = None
+    center_site: bool = False
+    online_booking: bool = False
+    patient_tracking: bool = False
 
 
 class OpsDatabaseOut(Schema):

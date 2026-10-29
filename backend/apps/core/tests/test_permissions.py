@@ -22,6 +22,7 @@ CORE_CODES = {
     "core.manage_users",
     "core.manage_roles",
     "core.manage_settings",
+    "core.manage_public_site",
     "core.view_audit",
     "ops.view_status",
 }
@@ -230,7 +231,15 @@ def test_superuser_has_everything(make_user: Any) -> None:
     ("role", "expected"),
     [
         ("admin", CORE_CODES),
-        ("manager", {"core.manage_settings", "core.view_audit", "ops.view_status"}),
+        (
+            "manager",
+            {
+                "core.manage_settings",
+                "core.manage_public_site",
+                "core.view_audit",
+                "ops.view_status",
+            },
+        ),
         ("accountant", {"core.view_audit"}),
         ("cashier", set()),
         ("doctor", set()),

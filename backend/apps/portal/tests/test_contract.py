@@ -18,6 +18,8 @@ PUBLIC = {
     # The public center page and its logo (no sign-in, public fields only).
     "portal_get_center_page",
     "portal_get_center_logo",
+    # The center name and logo, answered with the website off (ADR 0029 H).
+    "portal_get_center_identity",
 }
 STAFF = {
     "portal_get_ping": None,

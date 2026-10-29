@@ -309,5 +309,9 @@
     },
     "bookHint": "after you sign in",
     "doctorsToday": "In clinic today"
+  },
+  "off": {
+    "title": "Online services are not available",
+    "body": "This center does not offer its website or patient sign-in online at the moment. Please contact the center directly."
   }
 }

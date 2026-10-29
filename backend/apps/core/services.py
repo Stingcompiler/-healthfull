@@ -44,6 +44,7 @@ from apps.core.models import (
     Policy,
     PrintDocument,
     PrintTemplate,
+    PublicSiteSettings,
     ReasonCategory,
     ReasonCode,
     Role,
@@ -62,6 +63,7 @@ from apps.core.permissions import (
     roles_holding,
 )
 from domain import center_page as center_rules
+from domain import public_site as public_rules
 from domain.errors import DomainError
 from domain.lockout import (
     LockState,
@@ -72,6 +74,7 @@ from domain.lockout import (
 )
 from domain.numbering import format_document_number
 from domain.permissions import MatrixChange, check_role_set, plan_matrix_update, role_grants
+from domain.portal import BookingRules
 from domain.throttle import hit, is_limited, retry_after_seconds
 
 logger = structlog.get_logger(__name__)
@@ -1240,6 +1243,88 @@ def update_center_page(actor: User, **fields: Any) -> CenterPage:
         page.full_clean()
         page.save()
     return page
+
+
+# --- Public site switches and online booking settings (ADR 0028, 0029) ---------------------
+
+_PUBLIC_SITE_SWITCHES = {"site_enabled", "online_booking_enabled", "patient_tracking_enabled"}
+_PUBLIC_SITE_FIELDS = (
+    _PUBLIC_SITE_SWITCHES
+    | set(public_rules.RULE_RANGES)
+    | {"reschedule_allowed", "require_approval", "guest_booking_enabled"}
+)
+
+
+def public_site_settings() -> PublicSiteSettings:
+    return PublicSiteSettings.load()
+
+
+def _switches(row: PublicSiteSettings) -> public_rules.Switches:
+    return public_rules.Switches(
+        site=row.site_enabled,
+        online_booking=row.online_booking_enabled,
+        patient_tracking=row.patient_tracking_enabled,
+    )
+
+
+def public_switches() -> public_rules.Switches:
+    """The three switches as they are now (read on every guarded call, never cached)."""
+    return _switches(public_site_settings())
+
+
+def require_site() -> None:
+    """Raises: DomainError ``SITE_DISABLED`` (404) while the center website is off."""
+    public_rules.require_site(public_switches())
+
+
+def require_online_booking() -> None:
+    """Raises: DomainError ``ONLINE_BOOKING_DISABLED`` (409) while online booking is off."""
+    public_rules.require_online_booking(public_switches())
+
+
+def require_tracking() -> None:
+    """Raises: DomainError ``PORTAL_DISABLED`` (409) while patient sign-in is off."""
+    public_rules.require_tracking(public_switches())
+
+
+def booking_rules() -> BookingRules:
+    """The portal booking rules of the settings row (environment settings before ADR 0029)."""
+    row = public_site_settings()
+    return public_rules.booking_rules(
+        lead_minutes=row.lead_minutes,
+        horizon_days=row.horizon_days,
+        max_open=row.max_open,
+        cancel_cutoff_hours=row.cancel_cutoff_hours,
+    )
+
+
+def update_public_site_settings(actor: User, *, reason: str, **fields: Any) -> PublicSiteSettings:
+    """Save the switches and the online booking rules, with the reason in the history.
+
+    Switching patient tracking off ends every live portal session in the same transaction
+    (the patient app then answers ``PORTAL_DISABLED``). Staff endpoints are not affected.
+
+    Raises:
+        DomainError: ``REASON_REQUIRED``.
+        ValidationError: a value out of its range (HTTP 422 with the field).
+    """
+    text = (reason or "").strip()
+    if not text:
+        raise DomainError("REASON_REQUIRED", "Say why the public site settings change")
+    _check_fields(fields, _PUBLIC_SITE_FIELDS, "public site")
+    with transaction.atomic(), pghistory.context(user=actor.pk, reason=f"public site: {text}"):
+        PublicSiteSettings.load()
+        row = PublicSiteSettings.objects.select_for_update().get(pk=PublicSiteSettings.SINGLETON_PK)
+        before = _switches(row)
+        for attr, value in fields.items():
+            setattr(row, attr, value)
+        row.full_clean()
+        row.save()
+        if public_rules.tracking_turned_off(before, _switches(row)):
+            from apps.portal import services as portal  # portal imports core services
+
+            portal.end_all_sessions(reason="disabled")
+    return row
 
 
 def list_announcements() -> QuerySet[Announcement]:

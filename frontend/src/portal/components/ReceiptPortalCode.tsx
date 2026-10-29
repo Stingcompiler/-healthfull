@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
+import { getSiteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 import { useIssuePortalCode } from "../api";
@@ -17,6 +18,12 @@ import { useIssuePortalCode } from "../api";
  * earlier codes of the file.
  */
 export function ReceiptPortalCode({ paymentId, compact = false }: { paymentId: number; compact?: boolean }) {
+  // Patient sign-in switched off (ADR 0029, plan D4): no code to give, and the server refuses one.
+  if (!getSiteConfig().patientTracking) return null;
+  return <ReceiptPortalCodeBody paymentId={paymentId} compact={compact} />;
+}
+
+function ReceiptPortalCodeBody({ paymentId, compact }: { paymentId: number; compact: boolean }) {
   const { t } = useTranslation(["portal", "errors"]);
   const translateError = useTranslateError();
   const language = useLanguage();

@@ -9,6 +9,7 @@ import { appRoute, type AppRoute } from "../route-kit";
 export const routes: readonly AppRoute[] = [
   appRoute("admin-policies", "/administration/policies"),
   appRoute("admin-center-page", "/administration/center-page"),
+  appRoute("admin-public-site", "/administration/public-site"),
   appRoute("admin-departments", "/administration/departments"),
   appRoute("admin-reason-codes", "/administration/reason-codes"),
   appRoute("admin-banks", "/administration/banks"),

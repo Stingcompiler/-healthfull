@@ -146,6 +146,14 @@ class PortalAnnouncementOut(Schema):
     ends_on: date | None
 
 
+class PortalCenterIdentityOut(Schema):
+    """The center's name and logo only; public even while the center website is off."""
+
+    name_ar: str
+    name_en: str
+    logo_url: str | None
+
+
 class PortalCenterPageOut(Schema):
     """The public center page: identity and the sections the center chose to show. A hidden
     or empty section comes back empty. Never prices, never staff other than the doctors."""

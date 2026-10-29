@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from apps.core.models import Announcement, CenterPage, User
+import pghistory
+
+from apps.core.models import Announcement, CenterPage, PublicSiteSettings, User
 from domain.center_page import hours_json, parse_hours
 
 #: Saturday to Thursday 08:00-20:00, Friday closed (weekday 4), as most Sudanese clinics.
@@ -14,7 +16,10 @@ HOURS = hours_json(
 
 
 def seed_center_page(author: User) -> None:
-    """Fill the center page once (an edited page is left as it is) and add one notice."""
+    """Fill the center page once (an edited page is left as it is), add one notice, and switch
+    the website, online booking and patient sign-in on (ADR 0028, 0029): the e2e and demo
+    datasets show every public page."""
+    seed_public_site(author)
     page = CenterPage.load()
     if not page.hours:
         page.about_ar = "مركز للرعاية الأولية والتخصصية، بمختبر وصيدلية داخل المركز."
@@ -32,4 +37,13 @@ def seed_center_page(author: User) -> None:
             body_ar="تُسحب عينات الصيام من 7 إلى 10 صباحًا.",
             body_en="Fasting samples are taken from 7 to 10 am.",
             created_by=author,
+        )
+
+
+def seed_public_site(author: User) -> None:
+    """Every public switch on (a new install starts with them off)."""
+    PublicSiteSettings.load()
+    with pghistory.context(user=author.pk, reason="public site: sample dataset"):
+        PublicSiteSettings.objects.filter(pk=PublicSiteSettings.SINGLETON_PK).update(
+            site_enabled=True, online_booking_enabled=True, patient_tracking_enabled=True
         )

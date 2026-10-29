@@ -753,3 +753,14 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   No application code, migration or server touched. Owner review the same day: one domain and one host
   (no public listener), `require_approval` seeded off for existing installs (any `patients.Patient` row),
   guest history retention accepted, default limits accepted; ADRs 0028 and 0029 accepted.
+- 2026-10-29: public site work order, Phase 1 (switches and enforcement) on `feat/public-site-phase1-switches`
+  (ADR 0028, 0029): `core.PublicSiteSettings` (three switches, booking rules moved from env, accepted abuse
+  defaults stored), `core.manage_public_site` with the grant-copying migration, service guards
+  (`SITE_DISABLED` 404, `ONLINE_BOOKING_DISABLED`, `PORTAL_DISABLED`), sessions ended when tracking turns off,
+  `GET /api/portal/center-identity`, `center_site`/`online_booking`/`patient_tracking` in `GET /api/ops/site`,
+  root `/` precedence, `/administration/public-site`. Results: `make check` green (backend 2478 passed,
+  frontend 646 passed, lint/types/api drift clean); `make e2e` for `@public-site|@marketing|@portal|@auth`,
+  login/sign-in/portal/dashboard/admin-public-site routes: 401 passed, 19 failed on the first run (center-page
+  spec reading the name from the page answer, two label/state bugs in the new spec), all 28 re-run passed after
+  the fixes. Not yet built (later phases): approval, guest booking, the abuse limits' enforcement.
+- [x] Public site Phase 1: switches and enforcement.

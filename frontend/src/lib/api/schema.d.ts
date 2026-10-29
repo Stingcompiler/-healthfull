@@ -2240,6 +2240,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/public-site": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The public site switches and the online booking rules */
+        get: operations["core_get_public_site_settings"];
+        /**
+         * Change the public site switches or the online booking rules (reason required)
+         * @description Omitted fields keep their value. 409 REASON_REQUIRED; 422 for a value out of range. Switching patient tracking off ends every live portal session.
+         */
+        put: operations["core_update_public_site_settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/core/reason-codes": {
         parameters: {
             query?: never;
@@ -3120,8 +3141,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Public site switches: is the marketing page on /login (no authentication)
-         * @description marketing=false on every private install (the default). When true, /login shows the product page and the staff sign-in is /sign-in (ADR 0027). The vendor contact values come back only while it is on.
+         * Public site switches: marketing page, center website, booking, patient sign-in
+         * @description No authentication. marketing=false on every private install (the default). When true, /login shows the product page and the staff sign-in is /sign-in (ADR 0027). The vendor contact values come back only while it is on. center_site, online_booking and patient_tracking are the center administrator's switches (ADR 0028, 0029); center_site puts the center website at / for a visitor without a staff session.
          */
         get: operations["ops_get_site"];
         put?: never;
@@ -4858,7 +4879,7 @@ export interface paths {
         put?: never;
         /**
          * Issue a portal access code for the patient of a receipt (shown once)
-         * @description Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.
+         * @description Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`, `PORTAL_DISABLED` (patient sign-in is switched off).
          */
         post: operations["portal_issue_access_code"];
         delete?: never;
@@ -4899,7 +4920,7 @@ export interface paths {
         put?: never;
         /**
          * Book a free slot of a doctor's schedule
-         * @description 409 `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, `APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule.
+         * @description 409 `ONLINE_BOOKING_DISABLED`, `PORTAL_SLOT_UNAVAILABLE`, `PORTAL_BOOKING_LIMIT`, `PORTAL_ALREADY_BOOKED`, `APPOINTMENT_CONFLICT`; 404 for a doctor without a schedule.
          */
         post: operations["portal_book_appointment"];
         delete?: never;
@@ -4945,6 +4966,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/center-identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The center's name and logo (staff sign-in, portal header); answers with the site off
+         * @description No sign-in. 429 after too many reads from one address (shared with the page).
+         */
+        get: operations["portal_get_center_identity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/center-logo": {
         parameters: {
             query?: never;
@@ -4971,7 +5012,7 @@ export interface paths {
         };
         /**
          * The public center page: identity, hours, departments, doctors, notices, contact
-         * @description No sign-in. Only public fields: never prices and never staff other than the doctors shown. Hidden or empty sections come back empty. 429 after too many reads from one address.
+         * @description No sign-in. Only public fields: never prices and never staff other than the doctors shown. Hidden or empty sections come back empty. 404 `SITE_DISABLED` while the center website is switched off; 429 after too many reads from one address.
          */
         get: operations["portal_get_center_page"];
         put?: never;
@@ -4989,7 +5030,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Doctors who take online bookings */
+        /**
+         * Doctors who take online bookings
+         * @description 409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.
+         */
         get: operations["portal_list_doctors"];
         put?: never;
         post?: never;
@@ -5006,7 +5050,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Days with free slots, from today to the booking horizon */
+        /**
+         * Days with free slots, from today to the booking horizon
+         * @description 409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.
+         */
         get: operations["portal_list_booking_days"];
         put?: never;
         post?: never;
@@ -5023,7 +5070,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A doctor's free slots on one day that can be booked online */
+        /**
+         * A doctor's free slots on one day that can be booked online
+         * @description 409 `ONLINE_BOOKING_DISABLED` while online booking is switched off.
+         */
         get: operations["portal_list_slots"];
         put?: never;
         post?: never;
@@ -5096,7 +5146,7 @@ export interface paths {
         put?: never;
         /**
          * Issue a portal access code from the patient's file for a printed slip (shown once)
-         * @description Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`.
+         * @description Earlier codes of the file are revoked. 409 `PORTAL_PHONE_REQUIRED`, `PORTAL_DISABLED` (patient sign-in is switched off).
          */
         post: operations["portal_issue_patient_access_code"];
         delete?: never;
@@ -5216,13 +5266,13 @@ export interface paths {
         };
         /**
          * Whether this browser holds a live portal session, and whose
-         * @description Always 200, so the sign-in page can ask without an error: `signed_in` false and `me` null without a live session (an idle or revoked one is ended here).
+         * @description Always 200, so the sign-in page can ask without an error: `signed_in` false and `me` null without a live session (an idle or revoked one is ended here) and while patient sign-in is switched off.
          */
         get: operations["portal_get_session"];
         put?: never;
         /**
          * Patient sign-in with file number, phone and the code printed on a receipt
-         * @description Sets the portal session cookie (HttpOnly, SameSite=Strict, path /api/portal). Every refusal is 401 `PORTAL_INVALID_CREDENTIALS`; 423 `PORTAL_LOCKED` after repeated failures for a file number; 429 `RATE_LIMITED` for an address. Needs X-CSRFToken.
+         * @description Sets the portal session cookie (HttpOnly, SameSite=Strict, path /api/portal). Every refusal is 401 `PORTAL_INVALID_CREDENTIALS`; 423 `PORTAL_LOCKED` after repeated failures for a file number; 429 `RATE_LIMITED` for an address; 409 `PORTAL_DISABLED` while patient sign-in is switched off. Needs X-CSRFToken.
          */
         post: operations["portal_login"];
         delete?: never;
@@ -13890,6 +13940,18 @@ export interface components {
             /** Max Open */
             max_open: number;
         };
+        /**
+         * PortalCenterIdentityOut
+         * @description The center's name and logo only; public even while the center website is off.
+         */
+        PortalCenterIdentityOut: {
+            /** Logo Url */
+            logo_url: string | null;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+        };
         /** PortalCenterOut */
         PortalCenterOut: {
             /** Address */
@@ -14969,6 +15031,104 @@ export interface components {
             name_ar: string;
             /** Name En */
             name_en: string;
+        };
+        /**
+         * PublicSiteSettingsIn
+         * @description A change of the public site settings: omitted or null fields keep their value; the
+         *     reason is required and kept in the history. Ranges: 422 with the field.
+         */
+        PublicSiteSettingsIn: {
+            /** Cancel Cutoff Hours */
+            cancel_cutoff_hours?: number | null;
+            /** Guest Booking Enabled */
+            guest_booking_enabled?: boolean | null;
+            /** Guest Retention Days */
+            guest_retention_days?: number | null;
+            /** Horizon Days */
+            horizon_days?: number | null;
+            /** Lead Minutes */
+            lead_minutes?: number | null;
+            /** Max Guest Bookings Per Phone */
+            max_guest_bookings_per_phone?: number | null;
+            /** Max Open */
+            max_open?: number | null;
+            /** Max Pending Per Doctor Day */
+            max_pending_per_doctor_day?: number | null;
+            /** Max Requests Per Address Day */
+            max_requests_per_address_day?: number | null;
+            /** Min Review Minutes */
+            min_review_minutes?: number | null;
+            /** Online Booking Enabled */
+            online_booking_enabled?: boolean | null;
+            /** Patient Tracking Enabled */
+            patient_tracking_enabled?: boolean | null;
+            /** Pow Difficulty Bits */
+            pow_difficulty_bits?: number | null;
+            /** Reason */
+            reason: string;
+            /** Request Ttl Hours */
+            request_ttl_hours?: number | null;
+            /** Require Approval */
+            require_approval?: boolean | null;
+            /** Reschedule Allowed */
+            reschedule_allowed?: boolean | null;
+            /** Reschedule Cutoff Hours */
+            reschedule_cutoff_hours?: number | null;
+            /** Site Enabled */
+            site_enabled?: boolean | null;
+        };
+        /**
+         * PublicSiteSettingsOut
+         * @description The public site switches and online booking rules (ADR 0028, 0029).
+         */
+        PublicSiteSettingsOut: {
+            /** Cancel Cutoff Hours */
+            cancel_cutoff_hours: number;
+            /** Guest Booking Enabled */
+            guest_booking_enabled: boolean;
+            /** Guest Retention Days */
+            guest_retention_days: number;
+            /** Horizon Days */
+            horizon_days: number;
+            /** Lead Minutes */
+            lead_minutes: number;
+            /** Max Guest Bookings Per Phone */
+            max_guest_bookings_per_phone: number;
+            /** Max Open */
+            max_open: number;
+            /** Max Pending Per Doctor Day */
+            max_pending_per_doctor_day: number;
+            /** Max Requests Per Address Day */
+            max_requests_per_address_day: number;
+            /** Min Review Minutes */
+            min_review_minutes: number;
+            /**
+             * Online Booking Enabled
+             * @description Doctor, day and slot reads; booking
+             */
+            online_booking_enabled: boolean;
+            /**
+             * Patient Tracking Enabled
+             * @description Patient sign-in and patient pages
+             */
+            patient_tracking_enabled: boolean;
+            /** Pow Difficulty Bits */
+            pow_difficulty_bits: number;
+            /** Request Ttl Hours */
+            request_ttl_hours: number;
+            /** Require Approval */
+            require_approval: boolean;
+            /** Reschedule Allowed */
+            reschedule_allowed: boolean;
+            /** Reschedule Cutoff Hours */
+            reschedule_cutoff_hours: number;
+            /**
+             * Site Enabled
+             * @description The center website at / and /portal
+             */
+            site_enabled: boolean;
+            /** Updated At */
+            updated_at: string | null;
         };
         /** QueueActionIn */
         QueueActionIn: {
@@ -16485,16 +16645,33 @@ export interface components {
         };
         /**
          * SiteOut
-         * @description What the SPA needs before it picks the /login page (ADR 0027). Public; contact values
-         *     are only returned while the marketing page is on.
+         * @description What the SPA needs before its first render (ADR 0027, 0028). Public; contact values are
+         *     only returned while the marketing page is on. ``center_site``, ``online_booking`` and
+         *     ``patient_tracking`` are the center administrator's switches: the root ``/`` shows the
+         *     center website while ``center_site`` is on and no staff session exists.
          */
         SiteOut: {
+            /**
+             * Center Site
+             * @default false
+             */
+            center_site: boolean;
             /** Contact Email */
             contact_email?: string | null;
             /** Contact Whatsapp */
             contact_whatsapp?: string | null;
             /** Marketing */
             marketing: boolean;
+            /**
+             * Online Booking
+             * @default false
+             */
+            online_booking: boolean;
+            /**
+             * Patient Tracking
+             * @default false
+             */
+            patient_tracking: boolean;
         };
         /** StockAdjustmentIn */
         StockAdjustmentIn: {
@@ -27071,6 +27248,131 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PrintTemplateOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_get_public_site_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicSiteSettingsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    core_update_public_site_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicSiteSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicSiteSettingsOut"];
                 };
             };
             /** @description Unauthorized */
@@ -38366,6 +38668,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
         };
     };
     portal_book_appointment: {
@@ -38531,6 +38842,44 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_center_identity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalCenterIdentityOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
         };
     };
     portal_get_center_logo: {
@@ -38589,6 +38938,15 @@ export interface operations {
                     "application/json": components["schemas"]["PortalCenterPageOut"];
                 };
             };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
             /** @description Too Many Requests */
             429: {
                 headers: {
@@ -38620,6 +38978,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38660,6 +39027,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38709,6 +39085,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
             /** @description Unprocessable Entity */
             422: {
                 headers: {
@@ -38740,6 +39125,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38787,6 +39181,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
         };
     };
     portal_get_me: {
@@ -38809,6 +39212,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39017,6 +39429,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
         };
     };
     portal_list_receipts: {
@@ -39039,6 +39460,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39086,6 +39516,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
         };
     };
     portal_list_results: {
@@ -39108,6 +39547,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39148,6 +39596,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39210,6 +39667,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39293,6 +39759,15 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

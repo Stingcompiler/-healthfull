@@ -26,7 +26,7 @@ from typing import Any
 import pghistory
 import structlog
 from django.conf import settings
-from django.db import connection, transaction
+from django.db import DatabaseError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -101,18 +101,39 @@ _EMAIL_RE = re.compile(r"^[^@\s<>\"']+@[^@\s<>\"']+\.[^@\s<>\"']+$")
 _DIGITS_RE = re.compile(r"^[1-9][0-9]{7,14}$")
 
 
+def _public_switches() -> dict[str, bool]:
+    """The center's administrator switches (ADR 0028, 0029). An unreadable database leaves
+    them off, the same safe state as an unreachable server (ADR 0027)."""
+    from apps.core.services import public_switches
+
+    try:
+        switches = public_switches()
+    except DatabaseError:
+        logger.warning("site_switches_unreadable")
+        return {"center_site": False, "online_booking": False, "patient_tracking": False}
+    return {
+        "center_site": switches.site,
+        "online_booking": switches.online_booking,
+        "patient_tracking": switches.patient_tracking,
+    }
+
+
 def site_config() -> dict[str, Any]:
-    """The deployment's public site switches (ADR 0027): the marketing page flag and, when it
-    is on, the vendor contact values. A value that is not a plain address or international
+    """The deployment's public site switches, read by the SPA before its first render: the
+    vendor marketing page flag with its contact values while it is on (ADR 0027, from the
+    environment), and the center's own switches (ADR 0028 decision 4: ``center_site`` puts the
+    center website at ``/``). A contact value that is not a plain address or international
     digits is dropped, so a typo in .env never becomes a broken or unsafe link."""
+    switches = _public_switches()
     if not settings.MARKETING_SITE:
-        return {"marketing": False, "contact_email": None, "contact_whatsapp": None}
+        return {"marketing": False, "contact_email": None, "contact_whatsapp": None, **switches}
     email = str(settings.MARKETING_CONTACT_EMAIL or "").strip()
     whatsapp = re.sub(r"[\s+()-]", "", str(settings.MARKETING_CONTACT_WHATSAPP or ""))
     return {
         "marketing": True,
         "contact_email": email if _EMAIL_RE.match(email) else None,
         "contact_whatsapp": whatsapp if _DIGITS_RE.match(whatsapp) else None,
+        **switches,
     }
 
 

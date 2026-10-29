@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
+import { getSiteConfig } from "@/lib/site";
 
 import { useAppointments, useCancelAppointment } from "../api";
 import { PortalPage, PortalSection, Pill } from "../components/PortalPage";
@@ -86,14 +87,15 @@ export function AppointmentsPage() {
   const { t } = useTranslation(["portal", "errors"]);
   const translateError = useTranslateError();
   const appointments = useAppointments();
-  const book = (
+  // Online booking switched off (ADR 0029): the list and cancellation stay, booking goes.
+  const book = getSiteConfig().onlineBooking ? (
     <Button asChild>
       <Link to="/portal/appointments/new" data-testid="appointments-book">
         <CalendarPlus aria-hidden="true" />
         {t("appointments.book")}
       </Link>
     </Button>
-  );
+  ) : undefined;
 
   return (
     <PortalPage title={t("appointments.title")} description={t("appointments.description")} actions={book}>

@@ -1,5 +1,6 @@
 """``/api/core/center-page`` and ``/api/core/announcements``: the fixed sections of the public
-center page, kept by holders of ``core.manage_settings``, validated and audited."""
+center page, kept by holders of ``core.manage_public_site`` (``core.manage_settings`` until ADR
+0029 B), validated and audited."""
 
 from __future__ import annotations
 
@@ -184,7 +185,7 @@ def test_announcement_rules(client: ApiClient) -> None:
     )
 
 
-def test_needs_manage_settings(cashier_client: ApiClient) -> None:
+def test_needs_manage_public_site(cashier_client: ApiClient) -> None:
     _error(cashier_client.get("/api/core/center-page"), 403, "PERMISSION_DENIED")
     _error(
         cashier_client.request("PUT", "/api/core/center-page", _body()), 403, "PERMISSION_DENIED"
@@ -198,3 +199,18 @@ def test_needs_manage_settings(cashier_client: ApiClient) -> None:
         403,
         "PERMISSION_DENIED",
     )
+
+
+def test_manage_settings_alone_no_longer_opens_the_center_page(make_user: Any) -> None:
+    """A role granted only ``core.manage_settings`` (and denied the new code) is refused."""
+    from apps.core.models import Role, RolePermission
+
+    role = Role.objects.get(code="receptionist")
+    RolePermission.objects.create(role=role, code="core.manage_settings", allowed=True)
+    make_user("desk-settings", roles=["receptionist"])
+    api = ApiClient()
+    assert api.login("desk-settings").status_code == 200
+    assert api.get("/api/core/policy").status_code == 200
+    _error(api.get("/api/core/center-page"), 403, "PERMISSION_DENIED")
+    RolePermission.objects.create(role=role, code="core.manage_public_site", allowed=True)
+    assert api.get("/api/core/center-page").status_code == 200

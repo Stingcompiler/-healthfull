@@ -39,7 +39,11 @@ const SCREENSHOT_COMBOS: ReadonlySet<string> = new Set([
   "warm/ar",
 ]);
 
-/** Turns the page on for this browser page only, the way a deployment with MARKETING_SITE=1 answers. */
+/**
+ * Turns the page on for this browser page only, the way a deployment with MARKETING_SITE=1
+ * answers, for a center whose own website is off (it would win at `/`, ADR 0028 decision 4);
+ * patient sign-in and booking stay on as the seed has them.
+ */
 async function marketingOn(
   page: Page,
   contact: { email?: string; whatsapp?: string } = {},
@@ -50,6 +54,9 @@ async function marketingOn(
         marketing: true,
         contact_email: contact.email ?? null,
         contact_whatsapp: contact.whatsapp ?? null,
+        center_site: false,
+        online_booking: true,
+        patient_tracking: true,
       },
     }),
   );
@@ -359,10 +366,11 @@ test.describe("@marketing site root", () => {
       await expect(page).toHaveURL(/\/sign-in\?redirect=%2Fqueue/);
     });
 
-    test("/portal stays the center page", async ({ page }) => {
+    test("/portal stays the portal (its sign-in while the center website is off)", async ({ page }) => {
       await marketingOn(page);
       await page.goto("/portal");
       await expect(page.getByTestId("marketing-page")).toHaveCount(0);
+      await expect(page).toHaveURL(/\/portal\/sign-in$/);
       await expect(page.locator("#main h1").first()).toBeVisible();
     });
   });

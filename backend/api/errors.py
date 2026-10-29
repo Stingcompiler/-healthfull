@@ -49,6 +49,8 @@ DOMAIN_ERROR_STATUS: dict[str, int] = {
     # Patient portal sign-in (ADR 0016).
     "PORTAL_INVALID_CREDENTIALS": 401,
     "PORTAL_LOCKED": 423,
+    # The center website switched off answers as if there were no page (ADR 0028, 0029).
+    "SITE_DISABLED": 404,
 }
 
 #: Database guard code (the text before ``:`` in a trigger's RAISE EXCEPTION) -> API code, all

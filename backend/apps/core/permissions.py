@@ -169,6 +169,12 @@ register_permission(
     default_roles={roles.ADMIN, roles.MANAGER},
 )
 register_permission(
+    "core.manage_public_site",
+    label_ar="إدارة موقع المركز والحجز عبر الإنترنت",
+    label_en="Manage the center website and online booking",
+    default_roles={roles.ADMIN, roles.MANAGER},
+)
+register_permission(
     "core.view_audit",
     label_ar="عرض سجل التدقيق",
     label_en="View audit trail",

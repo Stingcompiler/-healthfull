@@ -53,6 +53,7 @@ PUBLIC = {
     "portal_verify_receipt",
     "portal_get_center_page",
     "portal_get_center_logo",
+    "portal_get_center_identity",
 }
 
 STAFF_ANY = {
@@ -87,6 +88,17 @@ OWNED_PARAMS = {
 NOT_OWNED_PARAMS = {"doctor_id"}
 
 ALL_ROLES = sorted(ROLE_CODES)
+
+
+@pytest.fixture(autouse=True)
+def _patient_sign_in_on(db: None) -> None:
+    """Patient sign-in on (a new install has it off, and patient operations would answer 409
+    ``PORTAL_DISABLED`` before authentication): this sweep proves the session isolation. The
+    switches are proved in ``apps/portal/tests/test_switches.py``."""
+    from apps.core.models import PublicSiteSettings
+
+    PublicSiteSettings.load()
+    PublicSiteSettings.objects.filter(pk=1).update(patient_tracking_enabled=True)
 
 
 def _operations(schema: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:

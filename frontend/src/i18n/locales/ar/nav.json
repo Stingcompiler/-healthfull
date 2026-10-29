@@ -40,7 +40,8 @@
     "adminReasonCodes": "قوائم الأسباب",
     "adminExport": "تصدير البيانات",
     "adminAudit": "سجل التدقيق",
-    "adminCenterPage": "صفحة المركز"
+    "adminCenterPage": "صفحة المركز",
+    "adminPublicSite": "موقع المركز والحجز"
   },
   "short": {
     "dashboard": "الرئيسية",
@@ -74,7 +75,8 @@
     "adminReasonCodes": "الأسباب",
     "adminExport": "تصدير",
     "adminAudit": "التدقيق",
-    "adminCenterPage": "الصفحة"
+    "adminCenterPage": "الصفحة",
+    "adminPublicSite": "الموقع"
   },
   "shell": {
     "menu": "القائمة",

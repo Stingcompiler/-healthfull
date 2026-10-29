@@ -62,11 +62,13 @@ def health(request: HttpRequest) -> Status[dict[str, Any]]:
     auth=None,
     response={200: SiteOut},
     operation_id="ops_get_site",
-    summary="Public site switches: is the marketing page on /login (no authentication)",
+    summary="Public site switches: marketing page, center website, booking, patient sign-in",
     description=(
-        "marketing=false on every private install (the default). When true, /login shows the "
-        "product page and the staff sign-in is /sign-in (ADR 0027). The vendor contact values "
-        "come back only while it is on."
+        "No authentication. marketing=false on every private install (the default). When true, "
+        "/login shows the product page and the staff sign-in is /sign-in (ADR 0027). The vendor "
+        "contact values come back only while it is on. center_site, online_booking and "
+        "patient_tracking are the center administrator's switches (ADR 0028, 0029); "
+        "center_site puts the center website at / for a visitor without a staff session."
     ),
 )
 def get_site(request: HttpRequest) -> dict[str, Any]:

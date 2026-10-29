@@ -1,6 +1,6 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { LogOut } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { BrandMark } from "@/components/BrandMark";
@@ -8,7 +8,7 @@ import { CenterIdentity } from "@/components/CenterIdentity";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
-import { signInPath } from "@/lib/site";
+import { getSiteConfig, signInPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 import { usePortalMe } from "./api";
@@ -32,9 +32,10 @@ function usePortalManifest() {
 
 /**
  * Patient portal shell: mobile-first, single column, no staff navigation.
- * Same SPA and server as the staff app (ARCHITECTURE 1, src/portal).
+ * Same SPA and server as the staff app (ARCHITECTURE 1, src/portal). The center website at `/`
+ * (ADR 0028 decision 4) renders it with the center page as `children` instead of the outlet.
  */
-export function PortalLayout() {
+export function PortalLayout({ children }: { children?: ReactNode } = {}) {
   const { t } = useTranslation("portal");
   const me = usePortalMe();
   const signOut = useSignOut();
@@ -44,11 +45,14 @@ export function PortalLayout() {
   const path = useRouterState({ select: (st) => st.location.pathname });
   // Signed out, the one action (sign in) stays reachable in the sticky header while the
   // visitor scrolls the center page (LANDING section 2); the sign-in page needs no copy.
-  const showSignIn = !signedIn && !path.startsWith("/portal/sign-in");
+  // Patient sign-in switched off (ADR 0029): no sign-in action anywhere on the public pages.
+  const tracking = getSiteConfig().patientTracking;
+  const showSignIn = tracking && !signedIn && !path.startsWith("/portal/sign-in");
   // The center page is the one wide screen (two columns from lg); every other portal screen
   // stays a phone-width column. Its hero carries the center's name, so the header keeps only the
   // compact portal brand there, and on phones its sticky bottom bar replaces the header button.
-  const isCenter = path.replace(/\/+$/u, "") === "/portal";
+  const trimmed = path.replace(/\/+$/u, "");
+  const isCenter = trimmed === "/portal" || trimmed === "";
   const width = isCenter ? "max-w-[75rem] md:px-6 lg:px-8" : "max-w-md md:max-w-2xl";
 
   return (
@@ -108,7 +112,7 @@ export function PortalLayout() {
         id="main"
         className={cn("mx-auto w-full flex-1 px-4 py-6 print:max-w-none print:p-0", width, isCenter && "lg:py-8")}
       >
-        <Outlet />
+        {children ?? <Outlet />}
       </main>
       <footer
         // The fixed phone tab bar (signed in) sits over the page's end: leave its height plus the
@@ -118,7 +122,7 @@ export function PortalLayout() {
           "mx-auto w-full px-4 text-center text-xs text-muted print:hidden",
           width,
           // The center page's sticky action bar is fixed over the end of the page on phones too.
-          signedIn || isCenter
+          signedIn || (isCenter && tracking)
             ? "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6"
             : "pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
         )}

@@ -40,7 +40,8 @@
     "adminReasonCodes": "Reason lists",
     "adminExport": "Data export",
     "adminAudit": "Audit trail",
-    "adminCenterPage": "Center page"
+    "adminCenterPage": "Center page",
+    "adminPublicSite": "Public site & booking"
   },
   "short": {
     "dashboard": "Home",
@@ -74,7 +75,8 @@
     "adminReasonCodes": "Reasons",
     "adminExport": "Export",
     "adminAudit": "Audit",
-    "adminCenterPage": "Page"
+    "adminCenterPage": "Page",
+    "adminPublicSite": "Website"
   },
   "shell": {
     "menu": "Menu",
