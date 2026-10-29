@@ -253,7 +253,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 - [x] Lab results reach the patient (FEATURES 9.4 "visible to the patient"): approved versions
   only, on `/portal/results` (lab follow-up above).
 - No self-service code request: a lost receipt means asking the cashier for a new code (which
-  ends the old code's sessions). SMS delivery is FEATURES 15.3 (Later).
+  ends the old code's sessions). SMS delivery is FEATURES 15.5 (Later; renumbered from 15.3 on 2026-10-29).
 - [x] Codes are issued from the cashier's receipt screen only; reception (which also holds
   `portal.issue_access_code`) has no screen for it, and `portal.revoke_access_code` has no
   endpoint yet (a new code revokes the old ones). Done on `feat/8-followups`: the portal card
@@ -747,3 +747,9 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   the allowlists), frontend 625 passed (lint, types, lint-ui, tokens, API contract clean);
   `make e2e E2E_GREP="@marketing|@auth|route registry|..."` 28 `@marketing` tests (matrix 3x3x2,
   CTA count, real sign-in, weight, contact) and `@auth`, sign-in/login responsive all passed.
+- 2026-10-29: public site work order, Phase 0 (docs only) on `docs/public-site-phase0`: ADRs 0028 and 0029
+  (proposed), `docs/inspection/public-site-impact.md`, FEATURES 15.3-15.5 (SMS renumbered to 15.5), FLOW
+  step 1 subsection. Release trains A: phases 1-3, B: phase 4, C: phase 5, phase 6 for LAN installs only.
+  No application code, migration or server touched. Owner review the same day: one domain and one host
+  (no public listener), `require_approval` seeded off for existing installs (any `patients.Patient` row),
+  guest history retention accepted, default limits accepted; ADRs 0028 and 0029 accepted.
