@@ -201,5 +201,5 @@ Route names (from `e2e/routes.ts` and `e2e/module-routes/*.ts`):
 
 ## License
 
-To be decided by the owner before distribution. Until a license file is added, all rights are
-reserved.
+Proprietary. Copyright (c) 2026 Sting Systems ([stingdev.pro](https://stingdev.pro)), all rights
+reserved; see [LICENSE](LICENSE). Use only under a written agreement with Sting Systems.

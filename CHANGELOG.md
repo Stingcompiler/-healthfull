@@ -6,6 +6,8 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [0.9.0-rc.1] - 2026-10-30
 First release candidate for the pilot center: phases 0-8 of FEATURES, the pre-trial inspection fixes and the public site work order (phases 0-6). Deployed on the vendor's OVH host as image tag `v29-041e5a5`.
+### Added
+- `LICENSE`: proprietary, copyright Sting Systems (stingdev.pro), all rights reserved; use only under a written agreement.
 ### Fixed
 - `infra/update.sh` now stops the `maintenance` container with `app` before migrating and recreates it on the new tag with `app` and `web` (also on rollback). Before, it kept running the old image's jobs against the new schema until someone recreated it by hand; found on the vendor host still running v26 maintenance under v29.
 
