@@ -28,7 +28,7 @@ setup() {
   echo "v1.0.0" >"$FAKE_STATE/running"
   unset FAKE_PENDING FAKE_HEALTH_v2_0_0 FAKE_HEALTH_v1_0_0 FAKE_BACKUP_EXIT FAKE_MIGRATE_EXIT \
     FAKE_PULL_EXIT FAKE_MISSING_IMAGE FAKE_RESTORE_EXIT FAKE_UP_EXIT FAKE_ROLES_EXIT \
-    FAKE_VERIFY_OUTPUT FAKE_RECORD_EXIT || true
+    FAKE_VERIFY_OUTPUT FAKE_RECORD_EXIT FAKE_PULL_FIXES || true
 }
 OWNER_PW="owner-test-value-0123456789"
 APP_PW="app-test-value-0123456789"
@@ -233,6 +233,70 @@ assert_eq "$CODE" "1" "missing image"
 called "backup-nightly.sh" && show_and_fail "must stop before backup when an image is missing"
 grep -q "nothing was changed" "$WORK/case/out.log" || show_and_fail "nothing-changed message"
 pass "missing image: stops before touching anything"
+
+# ---------------------------------------------------------------- registry images (ADR 0030)
+registry_env() {
+  # A server switched to the CI registry; the db image keeps its old name unless $1 is "same".
+  sed -i.bak 's|^IMAGE_REGISTRY=.*|IMAGE_REGISTRY=ghcr.io/owner/healthfull|' "$ENV_FILE"
+  [[ "${1:-}" == "same" ]] || echo "DB_IMAGE_REGISTRY=hospital-sys" >>"$ENV_FILE"
+}
+
+setup
+registry_env
+run_update
+assert_eq "$CODE" "0" "registry update"
+called "compose pull app web" || show_and_fail "app and web not pulled"
+called "image inspect ghcr.io/owner/healthfull/app:v2.0.0" || show_and_fail "registry app image not checked"
+called "image inspect hospital-sys/db:16" || show_and_fail "db image not checked under DB_IMAGE_REGISTRY"
+called "compose pull db" && show_and_fail "a db image already on the host must not be pulled"
+called "compose up -d --no-deps db" && show_and_fail "the db container must never be recreated"
+pass "registry: app and web pulled from IMAGE_REGISTRY, db/backup image kept under DB_IMAGE_REGISTRY"
+
+setup
+registry_env same
+export FAKE_MISSING_IMAGE="ghcr.io/owner/healthfull/db:16" FAKE_PULL_FIXES=1
+run_update
+assert_eq "$CODE" "0" "db image pulled when missing"
+d=$(line_of "compose pull db")
+b=$(line_of "backup-nightly.sh")
+[[ -n "$d" && -n "$b" && $d -lt $b ]] || show_and_fail "missing db/backup image must be pulled before the backup"
+pass "registry without DB_IMAGE_REGISTRY: a missing db/backup image is pulled before the backup"
+
+setup
+registry_env same
+export FAKE_MISSING_IMAGE="ghcr.io/owner/healthfull/db:16"
+run_update
+assert_eq "$CODE" "1" "db image unavailable"
+called "backup-nightly.sh" && show_and_fail "must stop before backup without a db/backup image"
+grep -q "DB_IMAGE_REGISTRY" "$WORK/case/out.log" || show_and_fail "hint to set DB_IMAGE_REGISTRY missing"
+grep -q "nothing was changed" "$WORK/case/out.log" || show_and_fail "nothing-changed message"
+pass "db/backup image neither on the host nor pullable: stops before touching anything"
+
+setup
+export FAKE_MISSING_IMAGE="hospital-sys/db:16"
+run_update --local-images
+assert_eq "$CODE" "1" "local images without a db image"
+called "compose pull" && show_and_fail "--local-images never pulls, not even the db image"
+pass "--local-images with no db/backup image: refused without pulling"
+
+setup
+registry_env
+export FAKE_PULL_EXIT=1
+run_update
+assert_eq "$CODE" "1" "pull refused"
+grep -q "docker login ghcr.io" "$WORK/case/out.log" || show_and_fail "login hint missing on a failed pull"
+pass "failed registry pull: says to log in, nothing changed"
+
+for moving in main latest; do
+  setup
+  set +e
+  "$UPDATE" --tag "$moving" --yes >"$WORK/case/out.log" 2>&1
+  code=$?
+  set -e
+  assert_eq "$code" "2" "moving tag $moving is a usage error"
+  [[ -s "$FAKE_STATE/calls.log" ]] && show_and_fail "no docker call for a moving tag"
+done
+pass "moving tags (main, latest) are refused: a rollback must return to the same image"
 
 setup
 set +e

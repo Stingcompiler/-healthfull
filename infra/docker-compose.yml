@@ -38,7 +38,10 @@ x-logging: &logging
     max-size: "10m"
     max-file: "5"
 
-x-db-image: &db-image ${IMAGE_REGISTRY:-hospital-sys}/db:${DB_IMAGE_TAG:-16}
+# The db/backup image has its own registry setting, defaulting to IMAGE_REGISTRY: a server that
+# moves app and web to a registry keeps the db image it runs (DB_IMAGE_REGISTRY=hospital-sys) and
+# its db container is not recreated (docs/runbooks/registry.md, ADR 0030).
+x-db-image: &db-image ${DB_IMAGE_REGISTRY:-${IMAGE_REGISTRY:-hospital-sys}}/db:${DB_IMAGE_TAG:-16}
 
 x-db-build: &db-build
   context: ..

@@ -15,7 +15,11 @@ record() { echo "TAG=${APP_IMAGE_TAG:-} $*" >>"$FAKE_STATE/calls.log"; }
 if [[ "${1:-}" != "compose" ]]; then record "$@"; fi
 if [[ "${1:-}" == "load" ]]; then echo "Loaded image"; exit 0; fi
 if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
-  [[ -n "${FAKE_MISSING_IMAGE:-}" && "$3" == *"$FAKE_MISSING_IMAGE"* ]] && exit 1
+  # FAKE_PULL_FIXES=1: a missing db image is present once `compose pull db` has run.
+  if [[ -n "${FAKE_MISSING_IMAGE:-}" && "$3" == *"$FAKE_MISSING_IMAGE"* ]]; then
+    [[ "${FAKE_PULL_FIXES:-0}" == "1" && -f "$FAKE_STATE/pulled-db" ]] && exit 0
+    exit 1
+  fi
   exit 0
 fi
 [[ "${1:-}" == "compose" ]] || { echo "fake docker: unsupported: $*" >&2; exit 99; }
@@ -28,7 +32,10 @@ sub="${1:-}"
 shift || true
 args="$*"
 case "$sub" in
-  pull) exit "${FAKE_PULL_EXIT:-0}" ;;
+  pull)
+    [[ "${FAKE_PULL_EXIT:-0}" == "0" && "$args" == "db" ]] && touch "$FAKE_STATE/pulled-db"
+    exit "${FAKE_PULL_EXIT:-0}"
+    ;;
   stop) echo "stopped" >"$FAKE_STATE/running"; exit 0 ;;
   up) echo "${APP_IMAGE_TAG:-}" >"$FAKE_STATE/running"; exit "${FAKE_UP_EXIT:-0}" ;;
   exec)

@@ -868,3 +868,9 @@ cut on 2026-10-30 (CHANGELOG, git tag `v0.9.0-rc.1`); the demo deployment was re
   frontend 691 passed, lint/types/lint-ui/tokens/api drift clean); e2e `@portal center page`, `@public-site
   switches`, `@guest-booking` 86 tests, all passing after one test expectation fix.
 - [x] Center website redesign (task-first, soft UI, footer).
+- 2026-10-30: release images built in CI and published to ghcr.io (ADR 0030, `feat/ghcr-images`): CI `publish`
+  job (after all jobs, push to main or `v*` tag) pushes `ghcr.io/stingcompiler/healthfull/{app,web,db}` tagged
+  `sha-<7>`, `main`, the release tag (db also `16`); `DB_IMAGE_REGISTRY` keeps a running server's db image;
+  `update.sh` checks/pulls the db/backup image in step 1 and refuses `main`/`latest`; runbook
+  `docs/runbooks/registry.md` (token, login, one-time switch, routine deploy).
+- [x] CI-built images in ghcr.io; deploy = `git pull` + `update.sh --tag sha-<7>`.
