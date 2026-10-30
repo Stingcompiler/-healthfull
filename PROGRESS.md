@@ -406,7 +406,8 @@ sequential PRs, each merged before the next:
   print template, a new `referral` template document; no prices).
 
 Not code (field work in the report, sections 7 and 8): installation on the center's machine,
-printers, power-cut and disaster drills, role acceptance, licence and release decision.
+printers, power-cut and disaster drills, role acceptance, licence decision. Release: `0.9.0-rc.1`
+cut on 2026-10-30 (CHANGELOG, git tag `v0.9.0-rc.1`); the demo deployment was removed the same day.
 
 ## Log
 - 2026-10-06: repo initialized; docs moved to docs/; ARCHITECTURE.md, CLAUDE.md, ship-feature skill, ADR 0001 written.

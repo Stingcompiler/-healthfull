@@ -59,10 +59,10 @@ run_update
 assert_eq "$(env_tag)" "v2.0.0" "env file committed to the new tag"
 assert_eq "$(last_status)" "ok" "update recorded"
 b=$(line_of "backup-nightly.sh --label pre-update-v2.0.0")
-s=$(line_of "compose stop app")
+s=$(line_of "compose stop app maintenance")
 r=$(line_of "compose exec -T db sh -c")
 m=$(line_of "TAG=v2.0.0 compose run --rm --no-deps -T migrate migrate$")
-u=$(line_of "TAG=v2.0.0 compose up -d --no-deps app web")
+u=$(line_of "TAG=v2.0.0 compose up -d --no-deps app web maintenance")
 p=$(line_of "TAG=v2.0.0 compose run --rm --no-deps -T migrate manage migrate --plan")
 c=$(line_of "TAG=v2.0.0 compose run --rm --no-deps -T app manage check")
 [[ -n "$c" && -n "$p" && -n "$s" && -n "$b" && -n "$r" && -n "$m" && -n "$u" ]] || show_and_fail "missing a step"
@@ -110,7 +110,7 @@ export FAKE_PENDING=1 FAKE_HEALTH_v2_0_0=degraded
 run_update --restore-db-on-failure
 assert_eq "$CODE" "1" "exit code after rollback with restore"
 r=$(line_of "restore-dump.sh --dump /backups/dumps/hospital-20261006T000000Z-pre-update.dump --yes")
-u=$(line_of "TAG=v1.0.0 compose up -d --no-deps app web")
+u=$(line_of "TAG=v1.0.0 compose up -d --no-deps app web maintenance")
 [[ -n "$r" && -n "$u" && $r -lt $u ]] || show_and_fail "restore must happen before restarting the old tag"
 assert_eq "$(_json_get "$WORK/case/backups/status/update-runs.jsonl" -1 db_restored)" "True" "restore recorded"
 pass "unhealthy new version with --restore-db-on-failure: restores the pre-update dump, then old tag"
@@ -292,7 +292,7 @@ rec_in 1 | grep -qx '@@plan' || show_and_fail "plan section"
 rec_in 1 | grep -qx 'core.0002_example' || show_and_fail "the migrate --plan output is recorded"
 rec_in 1 | grep -qx -- '- lab work list is faster' || show_and_fail "release notes recorded"
 rec_in 1 | grep -q '\[update\] ==> 7/7 commit' || show_and_fail "log tail recorded"
-u=$(line_of "TAG=v2.0.0 compose up -d --no-deps app web")
+u=$(line_of "TAG=v2.0.0 compose up -d --no-deps app web maintenance")
 r=$(line_of "app manage record_update")
 [[ -n "$r" && $u -lt $r ]] || show_and_fail "recorded after the swap"
 grep -qs -e "$APP_PW" -e "$OWNER_PW" "$FAKE_STATE"/record-1.* && show_and_fail "a role password reached the record"
