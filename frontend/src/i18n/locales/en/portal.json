@@ -107,7 +107,9 @@
     "moved": "Your appointment was moved.",
     "rescheduleTitle": "Change the time",
     "rescheduleDescription": "Your current appointment: {{date}} at {{time}}. Choose a new free time; the old one is released.",
-    "confirmMove": "Move to this time"
+    "confirmMove": "Move to this time",
+    "earlierDays": "Earlier days",
+    "laterDays": "Later days"
   },
   "results": {
     "title": "Lab results",
@@ -385,7 +387,8 @@
     "steps": {
       "slot": "Doctor and time",
       "contact": "Your name and phone",
-      "review": "Check and send"
+      "review": "Check and send",
+      "done": "Confirmation"
     },
     "patientHint": "Already a patient with a file?",
     "patientSignIn": "Sign in to book from your file",
@@ -424,7 +427,9 @@
       "share": "Send the reference on WhatsApp",
       "print": "Print or save",
       "shareHint": "The WhatsApp message carries the reference only, never the PIN.",
-      "details": "Your booking"
+      "details": "Your booking",
+      "next": "What next",
+      "nextText": "Come a little before your time and give your name at reception. Fees are paid there."
     },
     "reference": "Booking reference",
     "pin": "PIN",
@@ -438,16 +443,38 @@
       "referenceHint": "10 letters and digits, for example ABCDE-FGH23",
       "pinHint": "The 6 digits shown when you booked",
       "submit": "Open booking",
-      "help": "Lost your PIN? Reception can give you a new one after checking who you are.",
+      "forgotText": "Reception can give you a new PIN after checking who you are.",
       "bookNew": "Book a new appointment",
       "referenceInvalid": "Enter the 10-character reference, for example ABCDE-FGH23",
-      "pinInvalid": "Enter the 6-digit PIN"
+      "pinInvalid": "Enter the 6-digit PIN",
+      "helpTitle": "Need help?",
+      "whereTitle": "Where are my reference and PIN?",
+      "whereText": "Both were shown on the screen right after you booked. The reference is also in the WhatsApp message if you sent it to yourself; the PIN never is.",
+      "forgotTitle": "Forgot your PIN?",
+      "call": "Call reception",
+      "newTitle": "Want another appointment?"
     },
     "view": {
       "title": "Your booking",
       "unavailable": "Your booking cannot be shown now. Try again later or call the center.",
       "actions": "Change or cancel",
-      "noActions": "This booking can no longer be changed online. Please call the center."
+      "noActions": "This booking can no longer be changed online. Please call the center.",
+      "when": "Appointment",
+      "details": "Booking details",
+      "rescheduleText": "Choose another free time with the same or another doctor.",
+      "cancelText": "Free the time for another patient if you cannot come."
+    },
+    "stepper": {
+      "label": "Booking steps",
+      "done": "done",
+      "current": "current step"
+    },
+    "entry": {
+      "label": "Other ways in"
+    },
+    "summary": {
+      "title": "Your choice",
+      "empty": "Choose a doctor, then a day and a time. Your choice shows here."
     }
   },
   "notices": {

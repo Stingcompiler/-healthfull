@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bookTarget, centerTasks, stickyBar, summarizeHours, type CenterTaskInput } from "./center-tasks";
+import { bookTarget, centerTasks, sitePage, stickyBar, summarizeHours, type CenterTaskInput } from "./center-tasks";
 
 const base: CenterTaskInput = {
   onlineBooking: false,
@@ -88,5 +88,21 @@ describe("summarizeHours", () => {
   it("is empty without hours", () => {
     expect(summarizeHours([])).toEqual([]);
     expect(summarizeHours([day(5, "08:00", null)])).toEqual([]);
+  });
+});
+
+describe("sitePage", () => {
+  it("knows the center page and the two guest booking pages", () => {
+    expect(sitePage("/portal")).toBe("center");
+    expect(sitePage("/portal/")).toBe("center");
+    expect(sitePage("/")).toBe("center");
+    expect(sitePage("/portal/book")).toBe("guest");
+    expect(sitePage("/portal/booking/")).toBe("guest");
+  });
+
+  it("leaves every other portal screen alone", () => {
+    expect(sitePage("/portal/sign-in")).toBeNull();
+    expect(sitePage("/portal/appointments/new")).toBeNull();
+    expect(sitePage("/portal/bookings")).toBeNull();
   });
 });

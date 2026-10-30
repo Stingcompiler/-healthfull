@@ -1,23 +1,23 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "@tanstack/react-router";
-import { CalendarCheck, ChevronsRight, KeyRound, MessageCircle, Printer, ShieldCheck } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { CalendarCheck, KeyRound, MessageCircle, Printer, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
 import { Form, TextField } from "@/components/form";
+import { ArrowBack, ChevronsNext } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { toApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
-import { useCenterPage } from "@/lib/center/api";
 import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
-import { getSiteConfig } from "@/lib/site";
 
 import { useDoctors } from "../api";
-import { Pill, PortalPage, PortalSection, Row } from "../components/PortalPage";
-import { SlotChooser, type SlotChoice } from "../components/SlotChooser";
+import { ActionBar, FeesAndPolicy, GuestEntryLinks, GuestStepper, SiteCard } from "../components/GuestParts";
+import { Pill, PortalPage, Row } from "../components/PortalPage";
+import { SiteSlotChooser, type SlotChoice } from "../components/SlotChooser";
 import { createGuestBooking, fetchChallenge, type GuestBookingCreated } from "../guest/api";
 import {
   attemptFor,
@@ -31,51 +31,31 @@ import {
 import { guestContactSchema, type GuestContactValues } from "../guest/form";
 import { expectedTries } from "../guest/pow";
 import { solveChallenge } from "../guest/solver";
+import { slotComplete } from "../guest/steps";
 import { BOOKING_TONE } from "../lib/tones";
-import { usePick } from "../lib/ui";
+import { formatDay, useDoctorDetail, usePick } from "../lib/ui";
 
 type Step = "slot" | "contact" | "review";
 
-/** The cancellation policy and "fees are paid at reception" (ADR 0029 A5: no fees online). */
-export function FeesAndPolicy() {
-  const { t } = useTranslation("portal");
-  const pick = usePick();
-  const center = useCenterPage();
-  const policy = center.data ? pick(center.data.cancellation_policy_ar, center.data.cancellation_policy_en) : "";
+/** The step's main column and, from lg, a sticky side column beside it (D-0023). */
+function StepLayout({ main, side, testId }: { main: ReactNode; side: ReactNode; testId?: string }) {
   return (
     <div
-      className="flex flex-col gap-2 rounded-card border border-info-border bg-info-bg p-4 text-info-fg"
-      data-testid="guest-fees"
+      className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]"
+      data-testid={testId}
     >
-      <p className="text-sm font-semibold">{t("center.fees.text")}</p>
-      {policy ? (
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold">{t("center.fees.cancellation")}</p>
-          <p className="text-sm text-pretty whitespace-pre-line">{policy}</p>
-        </div>
-      ) : (
-        <p className="text-sm text-pretty">{t("guest.policyDefault")}</p>
-      )}
+      <div className="flex min-w-0 flex-col gap-4">{main}</div>
+      <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20">{side}</div>
     </div>
   );
 }
 
-function StepHeader({ step }: { step: Step }) {
-  const { t } = useTranslation("portal");
-  const index = step === "slot" ? 1 : step === "contact" ? 2 : 3;
-  return (
-    <p className="text-sm font-medium text-muted" data-testid="guest-step">
-      {t("guest.step", { step: String(index), total: "3" })}
-      {" · "}
-      <span className="text-fg">{t(`guest.steps.${step}`)}</span>
-    </p>
-  );
-}
-
 /**
- * `/portal/book`: booking without a patient file (ADR 0029 D, plan Phase 4). Doctor, day and
- * time, then name and phone, then a review with the cancellation policy and "fees are paid at
- * reception", then the confirmation with the reference and the PIN shown once.
+ * `/portal/book`: booking without a patient file (ADR 0029 D, plan Phase 4; layout D-0023).
+ * A stepper (doctor and time, your details, review, confirmation) over the step; from lg the
+ * step sits beside a sticky summary with "fees are paid at reception" and the cancellation
+ * policy, and on phones the step's actions float in a glass bar. The confirmation shows the
+ * reference and the PIN once.
  *
  * The request carries an `Idempotency-Key` made once per attempt and kept in sessionStorage
  * (`guest/attempt.ts`), so a retry after a lost answer gets the same booking back. Before
@@ -96,7 +76,7 @@ export function GuestBookPage() {
       description={t("guest.description")}
       back={{ to: "/portal", label: t("login.centerLink") }}
     >
-      <EntryLinks />
+      <GuestEntryLinks />
       {pending ? (
         <ResumeAttempt
           attempt={pending}
@@ -110,35 +90,6 @@ export function GuestBookPage() {
         <GuestBookingFlow onDone={setCreated} />
       )}
     </PortalPage>
-  );
-}
-
-/** "Already a patient? Sign in" and "Already booked? Open your booking". */
-function EntryLinks() {
-  const { t } = useTranslation("portal");
-  const tracking = getSiteConfig().patientTracking;
-  return (
-    <div className="grid gap-2 sm:grid-cols-2" data-testid="guest-entry-links">
-      {tracking ? (
-        <div className="card-surface flex flex-col gap-2 p-4">
-          <p className="text-sm text-pretty text-fg">{t("guest.patientHint")}</p>
-          <Button asChild variant="outline" size="sm" className="w-fit">
-            <Link to="/portal/sign-in" data-testid="guest-patient-sign-in">
-              {t("guest.patientSignIn")}
-            </Link>
-          </Button>
-        </div>
-      ) : null}
-      <div className="card-surface flex flex-col gap-2 p-4">
-        <p className="text-sm text-pretty text-fg">{t("guest.bookedHint")}</p>
-        <Button asChild variant="outline" size="sm" className="w-fit">
-          <Link to="/portal/booking" data-testid="guest-open-booking">
-            <KeyRound aria-hidden="true" />
-            {t("guest.openBooking")}
-          </Link>
-        </Button>
-      </div>
-    </div>
   );
 }
 
@@ -243,28 +194,34 @@ function ResumeAttempt({
   const { state, error, retryable, send } = useSendAttempt(onDone);
   const busy = state.phase !== "idle";
   return (
-    <PortalSection title={t("guest.resume.title")} testId="guest-resume">
-      <p className="text-sm text-pretty text-fg">{t("guest.resume.text")}</p>
-      <ReviewRows details={attempt.details} />
-      <SendProgress state={state} />
-      {error ? <AlertCard variant="danger" title={translateError(error)} live /> : null}
-      <div className="flex flex-wrap gap-2">
-        {error && !retryable ? null : (
-          <Button
-            loading={busy}
-            data-testid="guest-resume-send"
-            onClick={() => {
-              void send(attempt);
-            }}
-          >
-            {t("guest.resume.send")}
-          </Button>
-        )}
-        <Button variant="outline" disabled={busy} onClick={onDiscard} data-testid="guest-resume-discard">
-          {t("guest.resume.discard")}
-        </Button>
-      </div>
-    </PortalSection>
+    <StepLayout
+      main={
+        <SiteCard title={t("guest.resume.title")} titleId="guest-resume-title" testId="guest-resume">
+          <p className="text-sm text-pretty text-fg">{t("guest.resume.text")}</p>
+          <ReviewRows details={attempt.details} />
+          <SendProgress state={state} />
+          {error ? <AlertCard variant="danger" title={translateError(error)} live /> : null}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button variant="outline" disabled={busy} onClick={onDiscard} data-testid="guest-resume-discard">
+              {t("guest.resume.discard")}
+            </Button>
+            {error && !retryable ? null : (
+              <Button
+                size="lg"
+                loading={busy}
+                data-testid="guest-resume-send"
+                onClick={() => {
+                  void send(attempt);
+                }}
+              >
+                {t("guest.resume.send")}
+              </Button>
+            )}
+          </div>
+        </SiteCard>
+      }
+      side={<FeesAndPolicy />}
+    />
   );
 }
 
@@ -289,6 +246,54 @@ function ReviewRows({ details }: { details: AttemptDetails }) {
   );
 }
 
+/** The side summary of step 1 and 2: what is chosen so far, then fees and the policy. */
+function ChoiceSummary({ choice }: { choice: SlotChoice }) {
+  const { t } = useTranslation("portal");
+  const pick = usePick();
+  const detail = useDoctorDetail();
+  const language = useLanguage();
+  const doctors = useDoctors();
+  const doctor = doctors.data?.find((d) => d.id === choice.doctorId) ?? null;
+  const sub = doctor ? detail(doctor) : "";
+  return (
+    <SiteCard title={t("guest.summary.title")} titleId="book-summary-title" as="aside" testId="book-summary">
+      {doctor ? (
+        <dl className="divide-y divide-border">
+          <Row label={t("book.doctor")}>
+            <span className="flex flex-col">
+              <span className="font-semibold">{pick(doctor.name_ar, doctor.name_en)}</span>
+              {sub ? <span className="text-xs text-muted">{sub}</span> : null}
+            </span>
+          </Row>
+          {choice.day ? (
+            <Row label={t("book.day")}>
+              <bdi>{formatDay(choice.day, language)}</bdi>
+            </Row>
+          ) : null}
+          {choice.start ? (
+            <Row label={t("book.time")}>
+              <bdi className="tabular">{formatDate(choice.start, language, "time")}</bdi>
+            </Row>
+          ) : null}
+        </dl>
+      ) : (
+        <p className="text-sm text-pretty text-muted">{t("guest.summary.empty")}</p>
+      )}
+      <FeesAndPolicy />
+    </SiteCard>
+  );
+}
+
+function BackButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+  const { t } = useTranslation("portal");
+  return (
+    <Button type="button" variant="outline" size="lg" className="flex-none px-4" disabled={disabled} onClick={onClick}>
+      <ArrowBack className="size-4" />
+      {t("guest.back")}
+    </Button>
+  );
+}
+
 function GuestBookingFlow({ onDone }: { onDone: (booking: GuestBookingCreated) => void }) {
   const { t } = useTranslation(["portal", "errors", "common"]);
   const translateError = useTranslateError();
@@ -302,12 +307,17 @@ function GuestBookingFlow({ onDone }: { onDone: (booking: GuestBookingCreated) =
   const { state, error, retryable, send } = useSendAttempt(onDone);
   const busy = state.phase !== "idle";
   const form = useForm<GuestContactValues>({ resolver: zodResolver(guestContactSchema), defaultValues: contact });
-  const heading = useRef<HTMLDivElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const top = useRef<HTMLDivElement>(null);
 
   const go = (next: Step) => {
     setStep(next);
-    // Move focus to the new step for screen readers and keyboard users.
-    requestAnimationFrame(() => heading.current?.focus());
+    // Move focus to the new step's heading for screen readers and keyboard users, and bring the
+    // stepper back into view (the previous step may have been scrolled far down on a phone).
+    requestAnimationFrame(() => {
+      top.current?.scrollIntoView({ block: "start" });
+      heading.current?.focus({ preventScroll: true });
+    });
   };
 
   const details: AttemptDetails | null =
@@ -330,124 +340,141 @@ function GuestBookingFlow({ onDone }: { onDone: (booking: GuestBookingCreated) =
       : null;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div ref={heading} tabIndex={-1} className="rounded-control focus-ring">
-        <StepHeader step={step} />
+    <div className="flex min-w-0 flex-col gap-5">
+      <div ref={top} className="scroll-mt-20">
+        <GuestStepper current={step} />
       </div>
 
       {step === "slot" ? (
-        <>
-          <SlotChooser value={choice} onChange={setChoice} />
-          <div className="card-surface flex flex-col gap-3 p-4" data-testid="book-summary">
-            {slotSummary ? <p className="text-sm font-medium text-fg">{slotSummary}</p> : null}
-            <Button
-              size="lg"
-              className="w-full"
-              disabled={!slotSummary}
-              data-testid="guest-next-contact"
-              onClick={() => {
-                go("contact");
-              }}
-            >
-              {t("guest.next")}
-              <ChevronsRight aria-hidden="true" className="rtl:-scale-x-100" />
-            </Button>
-          </div>
-        </>
+        <StepLayout
+          main={
+            <>
+              <SiteCard title={t("guest.steps.slot")} titleId="guest-step-title" titleRef={heading}>
+                <SiteSlotChooser value={choice} onChange={setChoice} />
+              </SiteCard>
+              <ActionBar note={slotSummary ? <p className="truncate">{slotSummary}</p> : null}>
+                <Button
+                  size="lg"
+                  className="w-full lg:ms-auto lg:w-auto"
+                  disabled={!slotComplete(choice)}
+                  data-testid="guest-next-contact"
+                  onClick={() => {
+                    go("contact");
+                  }}
+                >
+                  {t("guest.next")}
+                  <ChevronsNext />
+                </Button>
+              </ActionBar>
+            </>
+          }
+          side={<ChoiceSummary choice={choice} />}
+        />
       ) : null}
 
       {step === "contact" ? (
-        <PortalSection title={t("guest.steps.contact")}>
-          {slotSummary ? <p className="text-sm font-medium text-fg">{slotSummary}</p> : null}
-          <Form {...form}>
-            <form
-              noValidate
-              className="grid gap-4"
-              data-testid="guest-contact"
-              onSubmit={(e) =>
-                void form.handleSubmit((values) => {
-                  setContact(values);
-                  go("review");
-                })(e)
-              }
-            >
-              <TextField
-                control={form.control}
-                name="contact_name"
-                label={t("guest.form.name")}
-                description={t("guest.form.nameHint")}
-                autoComplete="name"
-                maxLength={200}
-                required
-              />
-              <TextField
-                control={form.control}
-                name="contact_phone"
-                label={t("guest.form.phone")}
-                description={t("guest.form.phoneHint")}
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                maxLength={30}
-                dir="ltr"
-                required
-              />
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setContact(form.getValues());
-                    go("slot");
-                  }}
-                >
-                  {t("guest.back")}
-                </Button>
-                <Button type="submit" data-testid="guest-next-review">
-                  {t("guest.next")}
-                  <ChevronsRight aria-hidden="true" className="rtl:-scale-x-100" />
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </PortalSection>
+        <StepLayout
+          main={
+            <Form {...form}>
+              <form
+                noValidate
+                className="flex flex-col gap-4"
+                data-testid="guest-contact"
+                onSubmit={(e) =>
+                  void form.handleSubmit((values) => {
+                    setContact(values);
+                    go("review");
+                  })(e)
+                }
+              >
+                <SiteCard title={t("guest.steps.contact")} titleId="guest-step-title" titleRef={heading}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TextField
+                      control={form.control}
+                      name="contact_name"
+                      label={t("guest.form.name")}
+                      description={t("guest.form.nameHint")}
+                      autoComplete="name"
+                      maxLength={200}
+                      required
+                    />
+                    <TextField
+                      control={form.control}
+                      name="contact_phone"
+                      label={t("guest.form.phone")}
+                      description={t("guest.form.phoneHint")}
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      maxLength={30}
+                      dir="ltr"
+                      required
+                    />
+                  </div>
+                </SiteCard>
+                <ActionBar>
+                  <BackButton
+                    onClick={() => {
+                      setContact(form.getValues());
+                      go("slot");
+                    }}
+                  />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="min-w-0 flex-1 lg:flex-none"
+                    data-testid="guest-next-review"
+                  >
+                    {t("guest.next")}
+                    <ChevronsNext />
+                  </Button>
+                </ActionBar>
+              </form>
+            </Form>
+          }
+          side={<ChoiceSummary choice={choice} />}
+        />
       ) : null}
 
       {step === "review" && details ? (
-        <PortalSection title={t("guest.steps.review")} testId="guest-review-step">
-          <ReviewRows details={details} />
-          <FeesAndPolicy />
-          <p className="text-sm text-pretty text-muted">{t("guest.reviewHint")}</p>
-          <SendProgress state={state} />
-          {error ? (
-            <AlertCard variant="danger" title={translateError(error)} live>
-              {retryable ? t("guest.retryHint") : null}
-            </AlertCard>
-          ) : null}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={() => {
-                go("contact");
-              }}
-            >
-              {t("guest.back")}
-            </Button>
-            <Button
-              size="lg"
-              loading={busy}
-              data-testid="guest-submit"
-              onClick={() => {
-                void send(attemptFor(details));
-              }}
-            >
-              <CalendarCheck aria-hidden="true" />
-              {retryable ? t("guest.retry") : t("guest.submit")}
-            </Button>
-          </div>
-        </PortalSection>
+        <StepLayout
+          testId="guest-review-step"
+          main={
+            <>
+              <SiteCard title={t("guest.steps.review")} titleId="guest-step-title" titleRef={heading}>
+                <ReviewRows details={details} />
+                <p className="text-sm text-pretty text-muted">{t("guest.reviewHint")}</p>
+                <SendProgress state={state} />
+                {error ? (
+                  <AlertCard variant="danger" title={translateError(error)} live>
+                    {retryable ? t("guest.retryHint") : null}
+                  </AlertCard>
+                ) : null}
+              </SiteCard>
+              <ActionBar>
+                <BackButton
+                  disabled={busy}
+                  onClick={() => {
+                    go("contact");
+                  }}
+                />
+                <Button
+                  size="lg"
+                  className="min-w-0 flex-1 lg:flex-none"
+                  loading={busy}
+                  data-testid="guest-submit"
+                  onClick={() => {
+                    void send(attemptFor(details));
+                  }}
+                >
+                  <CalendarCheck aria-hidden="true" />
+                  {retryable ? t("guest.retry") : t("guest.submit")}
+                </Button>
+              </ActionBar>
+            </>
+          }
+          side={<FeesAndPolicy />}
+        />
       ) : null}
     </div>
   );
@@ -457,101 +484,125 @@ function GuestBookingFlow({ onDone }: { onDone: (booking: GuestBookingCreated) =
 export function GuestConfirmation({ booking }: { booking: GuestBookingCreated }) {
   const { t } = useTranslation("portal");
   const pick = usePick();
+  const detail = useDoctorDetail();
   const language = useLanguage();
   const requested = booking.status === "requested";
+  const sub = detail(booking.doctor);
+  // The reference and the PIN open at the top, whatever the review step's scroll was.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
   return (
     <PortalPage
       title={requested ? t("guest.done.requestedTitle") : t("guest.done.bookedTitle")}
       description={requested ? t("guest.done.requestedText") : t("guest.done.bookedText")}
     >
-      <section
-        className="flex flex-col gap-4 rounded-card border-2 border-warning-border bg-warning-bg p-4 text-warning-fg sm:p-5"
-        aria-labelledby="guest-save-title"
-        data-testid="guest-confirmation"
-      >
-        <div className="flex items-start gap-2">
-          <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
-          <div className="min-w-0">
-            <h2 id="guest-save-title" className="text-base font-bold">
-              {t("guest.done.saveTitle")}
-            </h2>
-            <p className="text-sm text-pretty">{t("guest.done.saveText")}</p>
-          </div>
-        </div>
-        <dl className="grid gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1 rounded-control border border-border bg-surface p-3 text-fg">
-            <dt className="text-sm text-muted">{t("guest.reference")}</dt>
-            <dd className="num text-2xl font-bold tracking-wider" data-testid="guest-reference">
-              {booking.reference}
-            </dd>
-          </div>
-          <div className="flex flex-col gap-1 rounded-control border border-border bg-surface p-3 text-fg">
-            <dt className="text-sm text-muted">{t("guest.pin")}</dt>
-            {booking.pin ? (
-              <dd className="num text-2xl font-bold tracking-[0.3em]" data-testid="guest-pin">
-                {booking.pin}
-              </dd>
-            ) : (
-              <dd className="text-sm text-pretty" data-testid="guest-pin-missing">
-                {t("guest.done.pinMissing")}
-              </dd>
-            )}
-          </div>
-        </dl>
-        <div className="flex flex-wrap gap-2 print:hidden">
-          <Button asChild variant="outline" className="bg-surface">
-            <a href={booking.share_url} target="_blank" rel="noopener noreferrer" data-testid="guest-share">
-              <MessageCircle aria-hidden="true" />
-              {t("guest.done.share")}
-            </a>
-          </Button>
-          <Button
-            variant="outline"
-            className="bg-surface"
-            data-testid="guest-print"
-            onClick={() => {
-              window.print();
-            }}
-          >
-            <Printer aria-hidden="true" />
-            {t("guest.done.print")}
-          </Button>
-        </div>
-        <p className="text-xs text-pretty">{t("guest.done.shareHint")}</p>
-      </section>
+      <GuestStepper current="done" />
+      <StepLayout
+        main={
+          <>
+            <section
+              className="site-card flex flex-col gap-4 border-2 border-warning-border bg-warning-bg p-5 text-warning-fg lg:p-6"
+              aria-labelledby="guest-save-title"
+              data-testid="guest-confirmation"
+            >
+              <div className="flex items-start gap-3">
+                <ShieldCheck aria-hidden="true" className="mt-0.5 size-6 shrink-0" />
+                <div className="min-w-0">
+                  <h2 id="guest-save-title" className="text-lg font-bold">
+                    {t("guest.done.saveTitle")}
+                  </h2>
+                  <p className="text-sm text-pretty">{t("guest.done.saveText")}</p>
+                </div>
+              </div>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1 rounded-card border border-border bg-surface p-4 text-fg">
+                  <dt className="text-sm text-muted">{t("guest.reference")}</dt>
+                  <dd className="num text-2xl font-bold tracking-wider lg:text-3xl" data-testid="guest-reference">
+                    {booking.reference}
+                  </dd>
+                </div>
+                <div className="flex flex-col gap-1 rounded-card border border-border bg-surface p-4 text-fg">
+                  <dt className="text-sm text-muted">{t("guest.pin")}</dt>
+                  {booking.pin ? (
+                    <dd className="num text-2xl font-bold tracking-[0.3em] lg:text-3xl" data-testid="guest-pin">
+                      {booking.pin}
+                    </dd>
+                  ) : (
+                    <dd className="text-sm text-pretty" data-testid="guest-pin-missing">
+                      {t("guest.done.pinMissing")}
+                    </dd>
+                  )}
+                </div>
+              </dl>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap print:hidden">
+                <Button asChild variant="outline" className="bg-surface">
+                  <a href={booking.share_url} target="_blank" rel="noopener noreferrer" data-testid="guest-share">
+                    <MessageCircle aria-hidden="true" />
+                    {t("guest.done.share")}
+                  </a>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="bg-surface"
+                  data-testid="guest-print"
+                  onClick={() => {
+                    window.print();
+                  }}
+                >
+                  <Printer aria-hidden="true" />
+                  {t("guest.done.print")}
+                </Button>
+              </div>
+              <p className="text-xs text-pretty">{t("guest.done.shareHint")}</p>
+            </section>
 
-      <PortalSection title={t("guest.done.details")}>
-        <dl className="divide-y divide-border">
-          <Row label={t("guest.status")}>
-            <Pill tone={BOOKING_TONE[booking.display_status]} testId="guest-status">
-              {t(`appointments.display.${booking.display_status}`)}
-            </Pill>
-          </Row>
-          <Row label={t("book.doctor")}>{pick(booking.doctor.name_ar, booking.doctor.name_en)}</Row>
-          <Row label={t("book.day")}>{formatDate(booking.starts_at, language, "long")}</Row>
-          <Row label={t("book.time")}>
-            <bdi className="tabular">{formatDate(booking.starts_at, language, "time")}</bdi>
-          </Row>
-        </dl>
-        {requested && booking.expires_at ? (
-          <p className="text-sm text-pretty text-muted">
-            {t("appointments.awaitingHint", { time: formatDate(booking.expires_at, language, "datetime") })}
-          </p>
-        ) : null}
-        <FeesAndPolicy />
-      </PortalSection>
-
-      <div className="flex flex-col gap-2 sm:flex-row print:hidden">
-        <Button asChild size="lg">
-          <Link to="/portal/booking" data-testid="guest-done-open">
-            <KeyRound aria-hidden="true" />
-            {t("guest.openBooking")}
-          </Link>
-        </Button>
-        <Button asChild size="lg" variant="outline">
-          <Link to="/portal">{t("login.centerLink")}</Link>
-        </Button>
-      </div>
+            <SiteCard title={t("guest.done.details")} titleId="guest-done-details">
+              <dl className="divide-y divide-border">
+                <Row label={t("guest.status")}>
+                  <Pill tone={BOOKING_TONE[booking.display_status]} testId="guest-status">
+                    {t(`appointments.display.${booking.display_status}`)}
+                  </Pill>
+                </Row>
+                <Row label={t("book.doctor")}>
+                  <span className="flex flex-col">
+                    <span>{pick(booking.doctor.name_ar, booking.doctor.name_en)}</span>
+                    {sub ? <span className="text-xs text-muted">{sub}</span> : null}
+                  </span>
+                </Row>
+                <Row label={t("book.day")}>{formatDate(booking.starts_at, language, "long")}</Row>
+                <Row label={t("book.time")}>
+                  <bdi className="tabular">{formatDate(booking.starts_at, language, "time")}</bdi>
+                </Row>
+              </dl>
+              {requested && booking.expires_at ? (
+                <p className="text-sm text-pretty text-muted">
+                  {t("appointments.awaitingHint", { time: formatDate(booking.expires_at, language, "datetime") })}
+                </p>
+              ) : null}
+            </SiteCard>
+          </>
+        }
+        side={
+          <>
+            <SiteCard title={t("guest.done.next")} titleId="guest-done-next" as="aside" className="print:hidden">
+              <p className="text-sm text-pretty text-muted">{t("guest.done.nextText")}</p>
+              <div className="flex flex-col gap-2">
+                <Button asChild size="lg">
+                  <Link to="/portal/booking" data-testid="guest-done-open">
+                    <KeyRound aria-hidden="true" />
+                    {t("guest.openBooking")}
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <Link to="/portal">{t("login.centerLink")}</Link>
+                </Button>
+              </div>
+            </SiteCard>
+            <FeesAndPolicy />
+          </>
+        }
+      />
     </PortalPage>
   );
 }

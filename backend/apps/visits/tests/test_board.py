@@ -247,10 +247,13 @@ def test_appointment_day_hides_past_free_slots(clerk, doctor) -> None:
     DoctorSchedule.objects.create(
         doctor=doctor, weekday=today.weekday(), start_time=time(0), end_time=time(23, 59)
     )
-    agenda = vs.appointment_day(doctor, today)
-    now = timezone.now()
-    assert agenda.items
-    assert all(i.ends_at > now for i in agenda.items if i.appointment is None)
+    # A fixed "now" at local noon: the real clock left no free slot in the day's last minutes,
+    # which failed this test late in the evening (CI at 23:57 local).
+    now = timezone.make_aware(datetime.combine(today, time(12)))
+    agenda = vs.appointment_day(doctor, today, now=now)
+    free = [i for i in agenda.items if i.appointment is None]
+    assert free
+    assert all(i.ends_at > now for i in free)
 
 
 def test_cancel_appointment_needs_a_reason(clerk, doctor) -> None:
