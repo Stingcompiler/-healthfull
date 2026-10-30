@@ -24,6 +24,7 @@ from api.ping import add_ping
 from api.schemas import ERROR_RESPONSES, ErrorOut, Page
 from apps.core.models import Department, DoctorProfile, User
 from apps.patients.models import Patient, PatientCoverage
+from apps.portal import inbox
 from apps.visits import services
 from apps.visits.inpatient_api import inpatient_router
 from apps.visits.models import Appointment, DoctorTimeOff, QueueEntry, Visit
@@ -38,6 +39,14 @@ from apps.visits.schemas import (
     CheckInIn,
     DayAgendaOut,
     DisplayParams,
+    GuestPinReissuedOut,
+    GuestPinReissueIn,
+    OnlineBookingBulkRejectIn,
+    OnlineBookingBulkRejectOut,
+    OnlineBookingCancelIn,
+    OnlineBookingLinkIn,
+    OnlineBookingOut,
+    OnlineBookingParams,
     OnlineBookingRejectIn,
     QueueMoveIn,
     QueueRowOut,
@@ -427,26 +436,43 @@ def check_in(request: HttpRequest, appointment_id: int, payload: CheckInIn) -> S
     return Status(201, view)
 
 
-# --- online requests (ADR 0029 E; the reception inbox screen is Phase 4) ---------------------
+# --- the online booking inbox (ADR 0029 A9, D, E, F, G) -------------------------------------
+# Each answer carries the booker's wa.me link with a prefilled status message (never a PIN).
+
+
+@visits_router.get(
+    "/online-bookings",
+    response={200: list[OnlineBookingOut], **_READ},
+    operation_id="visits_list_online_bookings",
+    summary="The reception inbox: bookings made online by patients and guests",
+    description=(
+        "status `requested` (default) lists the requests still waiting, oldest expiry first; "
+        "other statuses by time. Without `day`, requested and booked list from now on. At "
+        "most 200 rows."
+    ),
+)
+@require_perm("visits.manage_online_bookings")
+def list_online_bookings(request: HttpRequest, params: Query[OnlineBookingParams]) -> list[Any]:
+    return inbox.list_online_bookings(
+        status=params.status, day=params.day, doctor_id=params.doctor_id
+    )
 
 
 @visits_router.post(
     "/online-bookings/{int:appointment_id}/approve",
-    response={200: AppointmentOut, **_WRITE},
+    response={200: OnlineBookingOut, **_WRITE},
     operation_id="visits_approve_online_booking",
     summary="Confirm an online request (requested -> booked, who and when recorded)",
     description="409 APPOINTMENT_NOT_REQUESTED, ONLINE_REQUEST_EXPIRED.",
 )
 @require_perm("visits.manage_online_bookings")
 def approve_online_booking(request: HttpRequest, appointment_id: int) -> Any:
-    return services.approve_online_booking(
-        get_object_or_404(Appointment, pk=appointment_id), actor=_actor(request)
-    )
+    return inbox.approve(appointment_id, actor=_actor(request))
 
 
 @visits_router.post(
     "/online-bookings/{int:appointment_id}/reject",
-    response={200: AppointmentOut, **_WRITE},
+    response={200: OnlineBookingOut, **_WRITE},
     operation_id="visits_reject_online_booking",
     summary="Decline an online request with a reason code and a note",
     description=(
@@ -457,12 +483,82 @@ def approve_online_booking(request: HttpRequest, appointment_id: int) -> Any:
 def reject_online_booking(
     request: HttpRequest, appointment_id: int, payload: OnlineBookingRejectIn
 ) -> Any:
-    return services.reject_online_booking(
-        get_object_or_404(Appointment, pk=appointment_id),
-        actor=_actor(request),
-        reason_code=payload.reason_code,
-        note=payload.note,
+    return inbox.reject(
+        appointment_id, actor=_actor(request), reason_code=payload.reason_code, note=payload.note
     )
+
+
+@visits_router.post(
+    "/online-bookings/{int:appointment_id}/cancel",
+    response={200: OnlineBookingOut, **_WRITE},
+    operation_id="visits_cancel_online_booking",
+    summary="Cancel an online booking or request on the booker's behalf (reason and note)",
+    description=(
+        "409 APPOINTMENT_NOT_BOOKED, REASON_REQUIRED, REASON_UNKNOWN, REASON_NOTE_REQUIRED."
+    ),
+)
+@require_perm("visits.manage_online_bookings")
+def cancel_online_booking(
+    request: HttpRequest, appointment_id: int, payload: OnlineBookingCancelIn
+) -> Any:
+    return inbox.cancel_on_behalf(
+        appointment_id, actor=_actor(request), reason_code=payload.reason_code, note=payload.note
+    )
+
+
+@visits_router.post(
+    "/online-bookings/{int:appointment_id}/reject-phone",
+    response={200: OnlineBookingBulkRejectOut, **_WRITE},
+    operation_id="visits_reject_online_bookings_from_phone",
+    summary="Decline every open guest request with this booking's phone (one reason, one note)",
+    description=(
+        "Does not block the phone. 409 GUEST_PHONE_INVALID, REASON_REQUIRED, REASON_UNKNOWN, "
+        "REASON_NOTE_REQUIRED."
+    ),
+)
+@require_perm("visits.manage_online_bookings")
+def reject_online_bookings_from_phone(
+    request: HttpRequest, appointment_id: int, payload: OnlineBookingBulkRejectIn
+) -> Any:
+    rows = inbox.reject_all_from_phone(
+        appointment_id, actor=_actor(request), reason_code=payload.reason_code, note=payload.note
+    )
+    return {"rejected": len(rows), "bookings": rows}
+
+
+@visits_router.post(
+    "/online-bookings/{int:appointment_id}/link-patient",
+    response={200: OnlineBookingOut, **_WRITE},
+    operation_id="visits_link_online_booking_patient",
+    summary="Link a booking made without a file to the patient's file (reception checked them)",
+    description=(
+        "Explicit and audited; never automatic by name or phone. 409 "
+        "APPOINTMENT_PATIENT_MISMATCH (another file is linked), APPOINTMENT_NOT_BOOKED."
+    ),
+)
+@require_perm("visits.manage_online_bookings")
+def link_online_booking_patient(
+    request: HttpRequest, appointment_id: int, payload: OnlineBookingLinkIn
+) -> Any:
+    return inbox.link_patient(appointment_id, payload.patient_id, actor=_actor(request))
+
+
+@visits_router.post(
+    "/online-bookings/{int:appointment_id}/reissue-pin",
+    response={200: GuestPinReissuedOut, **_WRITE},
+    operation_id="visits_reissue_guest_pin",
+    summary="Issue a new PIN for a guest booking (shown once; the old PIN stops working)",
+    description=(
+        "Unlocks a booking locked after wrong PINs and ends the guest's open sessions. 409 "
+        "REASON_REQUIRED, NOT_A_GUEST_BOOKING."
+    ),
+)
+@require_perm("visits.manage_online_bookings")
+def reissue_guest_pin(request: HttpRequest, appointment_id: int, payload: GuestPinReissueIn) -> Any:
+    issued = inbox.reissue_pin(
+        appointment_id, actor=_actor(request), reason=payload.reason, request=request
+    )
+    return {"pin": issued.pin, "booking": issued.booking}
 
 
 # --- doctor time off (ADR 0029 C) -----------------------------------------------------------

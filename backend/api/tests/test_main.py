@@ -209,6 +209,14 @@ OPEN_OPERATIONS = frozenset(
         "portal_get_center_identity",
         # The website's images (ADR 0029 H, Phase 2).
         "portal_get_center_media",
+        # Online booking reads (free times only) and guest booking (ADR 0029 D, F, Phase 4).
+        "portal_list_doctors",
+        "portal_list_booking_days",
+        "portal_list_slots",
+        "portal_get_booking_challenge",
+        "portal_create_guest_booking",
+        "portal_guest_sign_in",
+        "portal_guest_sign_out",
     }
 )
 
@@ -225,15 +233,16 @@ def _ninja_operations() -> list[tuple[str, Any]]:
 
 
 def test_every_operation_requires_a_permission_unless_allowlisted() -> None:
-    from apps.portal.api import PATIENT_OPERATIONS
+    from apps.portal.api import GUEST_OPERATIONS, PATIENT_OPERATIONS
 
     ops = _ninja_operations()
     open_ops = {
         op_id for op_id, op in ops if not getattr(op.view_func, "required_permission", None)
     }
     # Patient portal operations carry no staff permission: they authenticate a patient with
-    # the portal cookie and read only that patient's rows (ADR 0016, apps/portal/tests).
-    assert open_ops - PATIENT_OPERATIONS == OPEN_OPERATIONS
+    # the portal cookie and read only that patient's rows (ADR 0016, apps/portal/tests). Guest
+    # operations authenticate a guest with the guest cookie and reach one booking (ADR 0029 D).
+    assert open_ops - PATIENT_OPERATIONS - GUEST_OPERATIONS == OPEN_OPERATIONS
     # The allowlist names only operations that exist (a renamed one is not silently kept).
     assert {op_id for op_id, _ in ops} >= OPEN_OPERATIONS
 
@@ -265,6 +274,14 @@ def test_only_whitelisted_operations_are_public(schema: dict[str, Any]) -> None:
         "portal_get_center_identity",
         # The website's images (ADR 0029 H, Phase 2).
         "portal_get_center_media",
+        # Online booking reads and guest booking (ADR 0029 D, F, Phase 4).
+        "portal_list_doctors",
+        "portal_list_booking_days",
+        "portal_list_slots",
+        "portal_get_booking_challenge",
+        "portal_create_guest_booking",
+        "portal_guest_sign_in",
+        "portal_guest_sign_out",
     }
 
 

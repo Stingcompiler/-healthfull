@@ -132,6 +132,9 @@ class PortalThrottleScope(models.TextChoices):
     FILE = "file", "Failed portal sign-ins per file number (known or not)"
     VERIFY_IP = "verify_ip", "Public receipt checks per client address"
     PAGE_IP = "page_ip", "Public center page reads per client address"
+    GUEST_IP = "guest_ip", "Failed guest booking sign-ins per client address"
+    BOOK_IP = "book_ip", "Guest booking requests per client address per day"
+    GUEST_PHONE = "guest_phone", "Guest bookings of one phone number (the booking lock)"
 
 
 class PortalThrottle(models.Model):
@@ -142,11 +145,15 @@ class PortalThrottle(models.Model):
       has it or not, so a locked answer never tells which file numbers exist.
     * ``verify_ip``: public receipt checks per address in a fixed window: 429.
     * ``page_ip``: public center page and logo reads per address in a fixed window: 429.
+    * ``guest_ip``: failed guest sign-ins per address in a fixed window: 429 (ADR 0029 D).
+    * ``book_ip``: guest booking requests per address per day: 429 (ADR 0029 F).
+    * ``guest_phone``: one row per phone number, row-locked while a guest books, so two
+      requests cannot race past the per-phone cap (no count is kept in it).
 
     Bookkeeping, not audit (that is ``PortalEvent``).
     """
 
-    scope = models.CharField(max_length=10, choices=PortalThrottleScope.choices)
+    scope = models.CharField(max_length=30, choices=PortalThrottleScope.choices)
     key = models.CharField(max_length=64)
     count = models.PositiveIntegerField(default=0)
     window_started_at = models.DateTimeField(null=True, blank=True)
@@ -178,13 +185,25 @@ class PortalEventKind(models.TextChoices):
     LOGOUT = "logout", "Signed out"
     VERIFY_THROTTLED = "verify_throttled", "Receipt check refused: too many from this address"
     PAGE_THROTTLED = "page_throttled", "Center page refused: too many reads from this address"
+    # Guest booking (ADR 0029 D, F, G).
+    GUEST_BOOKING_CREATED = "guest_booking_created", "Guest booking made on the website"
+    GUEST_VIEW = "guest_view", "Guest signed in to their booking"
+    GUEST_VIEW_REFUSED = "guest_view_refused", "Guest sign-in refused: wrong reference or PIN"
+    GUEST_LOCKED = "guest_locked", "Guest booking locked after repeated wrong PINs"
+    GUEST_THROTTLED = "guest_throttled", "Guest sign-in refused: too many from this address"
+    GUEST_LOGOUT = "guest_logout", "Guest signed out"
+    GUEST_CANCELLED = "guest_cancelled", "Guest cancelled their booking"
+    GUEST_PIN_REISSUED = "guest_pin_reissued", "Staff issued a new guest PIN"
+    GUEST_PURGED = "guest_purged", "Old guest bookings anonymized (counts only)"
+    BOOKING_RESCHEDULED = "booking_rescheduled", "Booking moved online by its booker"
+    BOOKING_THROTTLED = "booking_throttled", "Guest booking refused: too many from this address"
 
 
 class PortalEvent(models.Model):
     """Append-only audit of portal access (FEATURES 14.4 for patients). Protected by a DB
     trigger. ``file_no`` is what was typed (normalized), kept even when no file has it."""
 
-    kind = models.CharField(max_length=20, choices=PortalEventKind.choices)
+    kind = models.CharField(max_length=30, choices=PortalEventKind.choices)
     patient = models.ForeignKey(
         "patients.Patient", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
@@ -210,3 +229,141 @@ class PortalEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} {self.file_no} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+# --- guest booking (ADR 0029 D, F) ------------------------------------------------------
+
+
+@track_history(exclude=["pin_hash"])
+class GuestBookingAccess(models.Model):
+    """How a guest without a file reaches their booking: a reference (10 base32 characters)
+    and a PIN shown once, stored only as a password hash (ADR 0029 D).
+
+    The access belongs to the booking **chain**, not to one appointment row: a reschedule
+    creates a new appointment and the service moves ``appointment`` to it in the same
+    transaction. ``failed_attempts`` wrong PINs lock it for good (``locked_at``) until staff
+    issue a new PIN. The retention sweep deletes it with the guest's name and phone.
+    """
+
+    appointment = models.OneToOneField(
+        "visits.Appointment", on_delete=models.PROTECT, related_name="guest_access"
+    )
+    reference = models.CharField(max_length=10, unique=True)
+    pin_hash = models.CharField(max_length=256)
+    failed_attempts = models.PositiveSmallIntegerField(default=0)
+    max_attempts = models.PositiveSmallIntegerField(default=5)
+    locked_at = models.DateTimeField(null=True, blank=True)
+    pin_issued_at = models.DateTimeField()
+    pin_issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Staff who issued the current PIN; empty for the one shown at booking.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "guest booking access"
+        verbose_name_plural = "guest booking access"
+        ordering: ClassVar[list[str]] = ["-created_at", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(reference__regex=r"^[A-Z2-7]{10}$"), name="portal_guest_reference_shape"
+            ),
+            models.CheckConstraint(condition=~Q(pin_hash=""), name="portal_guest_pin_required"),
+            models.CheckConstraint(
+                condition=Q(max_attempts__gte=1), name="portal_guest_attempts_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(failed_attempts__lte=F("max_attempts")),
+                name="portal_guest_attempts_within_max",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"guest access {self.reference}"
+
+
+class GuestSession(models.Model):
+    """A guest signed in to one booking (cookie ``hospital_guest``, path ``/api/portal/guest``).
+
+    Like ``PortalSession``: only the SHA-256 of the token is stored; it ends at sign-out, when
+    idle or too old, when staff issue a new PIN, or when the access is deleted. Never a
+    patient or staff session.
+    """
+
+    token_hash = models.CharField(max_length=64, unique=True)
+    access = models.ForeignKey(
+        GuestBookingAccess, on_delete=models.CASCADE, related_name="sessions"
+    )
+    created_at = models.DateTimeField()
+    last_seen_at = models.DateTimeField()
+    ended_at = models.DateTimeField(null=True, blank=True)
+    end_reason = models.CharField(max_length=20, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "guest session"
+        ordering: ClassVar[list[str]] = ["-created_at", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=Q(last_seen_at__gte=F("created_at")), name="portal_guest_session_seen"
+            ),
+            models.CheckConstraint(
+                condition=Q(ended_at__isnull=True) | ~Q(end_reason=""),
+                name="portal_guest_session_end_documented",
+            ),
+        ]
+        indexes: ClassVar[list[models.Index]] = [
+            models.Index(fields=["last_seen_at"], name="portal_guest_session_seen_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"guest session {self.pk}"
+
+
+class IdempotentRequest(models.Model):
+    """The stored answer of a public booking POST (ADR 0029 C): the same ``Idempotency-Key``
+    with the same body gets this answer again; with another body, 409
+    ``IDEMPOTENCY_MISMATCH``. Rows are deleted 24 hours after creation (``maintenance``).
+
+    ``key_hash`` is the SHA-256 of the client's key, so a database copy cannot replay it. The
+    PIN of a guest booking is not in ``body``: ``sealed`` holds it encrypted with a key derived
+    from the server secret and the client's key (``apps.portal.guest``), so only the client
+    that sent the request can get it back, and only for 24 hours.
+    """
+
+    scope = models.CharField(max_length=30)
+    key_hash = models.CharField(max_length=64)
+    request_hash = models.CharField(max_length=64)
+    status = models.PositiveSmallIntegerField()
+    body = models.JSONField(default=dict)
+    sealed = models.CharField(max_length=128, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "idempotent request"
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(fields=["scope", "key_hash"], name="portal_idempotent_unique"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.scope}:{self.key_hash[:8]}"
+
+
+class UsedChallenge(models.Model):
+    """A proof-of-work challenge already spent (ADR 0029 F: single use). Kept until it would
+    have expired anyway, then deleted by ``maintenance``."""
+
+    challenge_id = models.CharField(max_length=16, unique=True)
+    expires_at = models.DateTimeField(db_index=True)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "used challenge"
+
+    def __str__(self) -> str:
+        return self.challenge_id

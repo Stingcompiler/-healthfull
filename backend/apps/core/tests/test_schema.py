@@ -60,6 +60,13 @@ UNTRACKED = {
     # record themselves (touched on use), with sign-in and sign-out in append-only PortalEvent.
     ("portal", "PortalThrottle"),
     ("portal", "PortalSession"),
+    # Guest booking (ADR 0029 D, F): guest sessions like PortalSession (sign-in and sign-out
+    # are PortalEvent rows); the stored answers of idempotent POSTs and spent proof-of-work
+    # challenges are short-lived bookkeeping deleted by maintenance. GuestBookingAccess is
+    # tracked (without its PIN hash).
+    ("portal", "GuestSession"),
+    ("portal", "IdempotentRequest"),
+    ("portal", "UsedChallenge"),
 }
 
 #: (table, trigger name) that ARCHITECTURE 4.9 and invariants 1, 3, 5 rely on.

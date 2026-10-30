@@ -18,6 +18,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.models import LoginThrottle
+from apps.portal import guest as guest_services
 from apps.portal import services as portal_services
 from apps.visits import services as visit_services
 
@@ -47,3 +48,12 @@ class Command(BaseCommand):
         # expires a doctor's due requests under the doctor lock; this tidies the rest.
         expired = visit_services.expire_requests(now)
         self.stdout.write(f"maintenance: expired {expired} unanswered online request(s).")
+        # Guest booking (ADR 0029 C, F, G): idle guest sessions, idempotent answers past 24 hours,
+        # spent challenges, then the retention sweep of old guest names and phones.
+        guest_ended, answers, challenges = guest_services.purge_stale(now)
+        self.stdout.write(
+            f"maintenance: ended {guest_ended} idle guest session(s), removed {answers} stored "
+            f"booking answer(s) and {challenges} spent challenge(s)."
+        )
+        anonymized = guest_services.anonymize_old_guest_bookings(now)
+        self.stdout.write(f"maintenance: anonymized {anonymized} old guest booking(s).")

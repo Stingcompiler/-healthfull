@@ -800,3 +800,18 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   all 8 re-run passed after the fixes. A first `make check` run failed only because a second pytest run on the
   same test database overlapped it, plus one real finding (DoctorTimeOff missing from the admin), fixed.
 - [x] Public site Phase 3: availability hardening.
+- 2026-10-30: public site work order, Phase 4a (guest booking and reception inbox, backend only) on
+  `feat/public-site-phase4a-guest-backend` (ADR 0029 A9, C, D, F, G; "Phase 4a as built" in the ADR):
+  public doctor/day/slot reads, `GET /api/portal/challenge` (offline proof-of-work, `domain.proof_of_work`),
+  `POST /api/portal/guest-bookings` (Idempotency-Key, `portal.IdempotentRequest`, reference + PIN once,
+  per-phone / per-doctor-day / per-address caps, no patient, visit, line, invoice or payment), guest sign-in and
+  cookie session (`portal.GuestBookingAccess` follows the reschedule chain, `GuestSession`, uniform 401, lock
+  after 5, 429), guest view/cancel/reschedule/sign-out, staff inbox API under `/api/visits/online-bookings*`
+  (list, approve, reject, cancel on behalf, reject-phone, link-patient, reissue-pin; wa.me links,
+  `domain.guest_booking`), notification kinds `online_booking_requested` / `online_booking_cancelled_by_patient`,
+  `PortalEvent.kind` / `PortalThrottle.scope` widened (`portal/0006`), maintenance purge and 90-day retention.
+  Results: `make check` green (backend 2709 passed, frontend 646 passed, lint/types/lint-ui/tokens/api drift
+  clean); e2e not run locally (no screens in 4a), CI runs the suite. A first `make check` failed on one sweep
+  (`test_display_role`) that needed the new public operations listed; fixed.
+- [x] Public site Phase 4a: guest booking and reception inbox backend.
+- [ ] Public site Phase 4b: guest booking screens (`/portal/book`, `/portal/booking`) and the reception inbox screen.

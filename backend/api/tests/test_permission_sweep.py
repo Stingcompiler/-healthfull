@@ -35,7 +35,7 @@ from apps.core.permissions import effective_permissions
 from apps.core.roles import ROLE_CODES
 from apps.payments.tests import api_kit as kit
 from apps.payments.tests.test_permission_matrix import _request, _required_permissions, _schema
-from apps.portal.api import PATIENT_OPERATIONS
+from apps.portal.api import GUEST_OPERATIONS, PATIENT_OPERATIONS
 from apps.portal.tests.conftest import PortalClient, seeded, signed_in, world  # noqa: F401
 from conftest import ApiClient
 
@@ -55,6 +55,14 @@ PUBLIC = {
     "portal_get_center_logo",
     "portal_get_center_identity",
     "portal_get_center_media",
+    # Online booking reads and guest booking (ADR 0029 D, F).
+    "portal_list_doctors",
+    "portal_list_booking_days",
+    "portal_list_slots",
+    "portal_get_booking_challenge",
+    "portal_create_guest_booking",
+    "portal_guest_sign_in",
+    "portal_guest_sign_out",
 }
 
 STAFF_ANY = {
@@ -93,13 +101,16 @@ ALL_ROLES = sorted(ROLE_CODES)
 
 @pytest.fixture(autouse=True)
 def _patient_sign_in_on(db: None) -> None:
-    """Patient sign-in on (a new install has it off, and patient operations would answer 409
-    ``PORTAL_DISABLED`` before authentication): this sweep proves the session isolation. The
-    switches are proved in ``apps/portal/tests/test_switches.py``."""
+    """Patient sign-in and online booking on (a new install has them off, and patient and
+    guest operations would answer 409 ``PORTAL_DISABLED`` / ``ONLINE_BOOKING_DISABLED`` before
+    authentication): this sweep proves the session isolation. The switches are proved in
+    ``apps/portal/tests/test_switches.py``."""
     from apps.core.models import PublicSiteSettings
 
     PublicSiteSettings.load()
-    PublicSiteSettings.objects.filter(pk=1).update(patient_tracking_enabled=True)
+    PublicSiteSettings.objects.filter(pk=1).update(
+        patient_tracking_enabled=True, online_booking_enabled=True
+    )
 
 
 def _operations(schema: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
@@ -117,6 +128,8 @@ def _classify(op_id: str, required: dict[str, str]) -> str:
         return "ping"
     if op_id in PATIENT_OPERATIONS:
         return "portal_patient"
+    if op_id in GUEST_OPERATIONS:
+        return "portal_guest"
     if op_id in required:
         return "staff_perm"
     return "unclassified"
@@ -142,18 +155,19 @@ def test_every_operation_is_classified_and_the_tables_are_current(
         "classify these in api/tests/test_permission_sweep.py (or give them a @require_perm)"
     )
     # No operation is in two classes, and no table names an operation that no longer exists.
-    explicit = [PUBLIC, STAFF_ANY, PATIENT_OPERATIONS]
+    explicit = [PUBLIC, STAFF_ANY, PATIENT_OPERATIONS, GUEST_OPERATIONS]
     for a in range(len(explicit)):
         for b_ in range(a + 1, len(explicit)):
             assert explicit[a] & explicit[b_] == set()
     for table in (*explicit, set(PORTAL_STAFF)):
         assert table - set(ops) == set(), table - set(ops)
     # Unguarded classes really are unguarded, guarded ones carry a permission.
-    for op_id in PUBLIC | STAFF_ANY | PATIENT_OPERATIONS:
+    for op_id in PUBLIC | STAFF_ANY | PATIENT_OPERATIONS | GUEST_OPERATIONS:
         assert op_id not in required, f"{op_id} has a @require_perm: drop it from the table"
     # Every staff operation under /api/portal is a known one with its own permission.
     portal_staff = {o for o, path in ops.items() if path.startswith("/api/portal/")}
-    portal_staff -= PUBLIC | PATIENT_OPERATIONS | {o for o in ops if o.endswith("_get_ping")}
+    portal_staff -= PUBLIC | PATIENT_OPERATIONS | GUEST_OPERATIONS
+    portal_staff -= {o for o in ops if o.endswith("_get_ping")}
     assert portal_staff == set(PORTAL_STAFF)
     for op_id, code in PORTAL_STAFF.items():
         assert required[op_id] == code, op_id
@@ -188,7 +202,7 @@ def test_every_role_is_refused_every_permission_it_lacks(
             op_id = op["operationId"]
             kind = _classify(op_id, required)
             url, body = _request(schema, path, op)
-            if kind == "portal_patient":
+            if kind in {"portal_patient", "portal_guest"}:
                 response = probe.api.request(method.upper(), url, body)
                 assert response.status_code == 401, (role, op_id, response.status_code)
                 continue

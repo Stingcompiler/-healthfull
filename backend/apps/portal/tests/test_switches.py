@@ -17,7 +17,7 @@ from django.utils import timezone
 from apps.core import services as core
 from apps.core.models import PublicSiteSettings, User
 from apps.patients.tests.test_contract import module_operations
-from apps.portal.api import PATIENT_OPERATIONS
+from apps.portal.api import GUEST_OPERATIONS, PATIENT_OPERATIONS
 from apps.portal.models import PortalAccessCode, PortalSession
 from apps.portal.tests.conftest import PortalClient
 from conftest import ApiClient
@@ -31,6 +31,11 @@ BOOKING_OPERATIONS = {
     "portal_list_doctors",
     "portal_list_booking_days",
     "portal_list_slots",
+    # Guest booking (ADR 0029 D): the form, the booking, the guest's sign-in and booking.
+    "portal_get_booking_challenge",
+    "portal_create_guest_booking",
+    "portal_guest_sign_in",
+    *GUEST_OPERATIONS,
 }
 ISSUE_OPERATIONS = {"portal_issue_access_code", "portal_issue_patient_access_code"}
 
@@ -57,6 +62,7 @@ UNAFFECTED = {
     "portal_get_center_identity",
     "portal_list_patient_access_codes",
     "portal_revoke_access_code",
+    "portal_guest_sign_out",
 }
 
 STAFF_OPERATIONS = {
@@ -122,6 +128,18 @@ def _call(
         },
         "portal_issue_access_code": {"payment_id": w["payment"]["id"]},
         "portal_revoke_access_code": {"note": "lost slip"},
+        "portal_guest_sign_in": {"reference": "ABCDEFGHIJ", "pin": "123456"},
+        "portal_create_guest_booking": {
+            "doctor_id": 1,
+            "starts_at": (timezone.now() + timedelta(days=2)).isoformat(),
+            "contact_name": "Guest",
+            "contact_phone": "0912345678",
+            "challenge": "x",
+            "nonce": "1",
+        },
+        "portal_reschedule_guest_booking": {
+            "starts_at": (timezone.now() + timedelta(days=2)).isoformat()
+        },
     }
     if op_id == "portal_list_slots":
         url += f"?on={tomorrow}"

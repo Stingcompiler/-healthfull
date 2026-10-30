@@ -22,6 +22,8 @@ export const KNOWN_KINDS = [
   "shift_review_pending",
   "backup_stale",
   "integrity_failed",
+  "online_booking_requested",
+  "online_booking_cancelled_by_patient",
 ] as const;
 
 export type KnownKind = (typeof KNOWN_KINDS)[number];
@@ -32,7 +34,8 @@ export type NotificationTarget =
   | { to: "/pharmacy/low-stock" }
   | { to: "/cashier/transfers" }
   | { to: "/cashier/review" }
-  | { to: "/administration/system" };
+  | { to: "/administration/system" }
+  | { to: "/appointments" };
 
 export function isKnownKind(kind: string): kind is KnownKind {
   return (KNOWN_KINDS as readonly string[]).includes(kind);
@@ -90,6 +93,8 @@ export const NOTIFICATION_LINKS: Readonly<Record<KnownKind, readonly Notificatio
   shift_review_pending: [{ route: "/cashier/review", permission: "payments.review_shift" }],
   backup_stale: [{ route: "/administration/system", permission: "ops.view_status" }],
   integrity_failed: [{ route: "/administration/system", permission: "ops.view_status" }],
+  online_booking_requested: [{ route: "/appointments", permission: "visits.manage_online_bookings" }],
+  online_booking_cancelled_by_patient: [{ route: "/appointments", permission: "visits.manage_online_bookings" }],
 };
 
 function targetOf(route: NotificationRoute, p: AppNotification["payload"]): NotificationTarget | null {

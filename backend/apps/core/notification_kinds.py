@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from apps.core.roles import ACCOUNTANT, CASHIER_SUPERVISOR, MANAGER, PHARMACIST
+from apps.core.roles import ACCOUNTANT, CASHIER_SUPERVISOR, MANAGER, PHARMACIST, RECEPTIONIST
 
 __all__ = ["KINDS", "Link", "NotificationKind", "kind"]
 
@@ -105,6 +105,18 @@ _ENTRIES: tuple[NotificationKind, ...] = (
         "integrity_failed",
         holders_of="ops.view_status",
         links=(Link("/administration/system", "ops.view_status"),),
+    ),
+    # Online booking (ADR 0029 I): receptionists answer requests. The appointments day view
+    # approves and declines them until the inbox screen exists (Phase 4b).
+    NotificationKind(
+        "online_booking_requested",
+        roles=frozenset({RECEPTIONIST}),
+        links=(Link("/appointments", "visits.manage_online_bookings"),),
+    ),
+    NotificationKind(
+        "online_booking_cancelled_by_patient",
+        roles=frozenset({RECEPTIONIST}),
+        links=(Link("/appointments", "visits.manage_online_bookings"),),
     ),
 )
 

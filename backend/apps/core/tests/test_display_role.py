@@ -48,6 +48,14 @@ UNGUARDED_STAFF = {
     "portal_get_center_page",
     "portal_get_center_logo",
     "portal_get_center_identity",
+    # Online booking reads and guest booking (ADR 0029 D, F): no session of any kind.
+    "portal_list_doctors",
+    "portal_list_booking_days",
+    "portal_list_slots",
+    "portal_get_booking_challenge",
+    "portal_create_guest_booking",
+    "portal_guest_sign_in",
+    "portal_guest_sign_out",
     "portal_get_center_media",
 }
 
@@ -56,13 +64,15 @@ PORTAL_PATIENT_PREFIX = "/api/portal/"
 
 @pytest.fixture(autouse=True)
 def _patient_sign_in_on(db: None) -> None:
-    """Patient sign-in on (a new install has it off, and patient operations would answer 409
-    ``PORTAL_DISABLED`` before authentication): this sweep proves the session isolation. The
-    switches are proved in ``apps/portal/tests/test_switches.py``."""
+    """Patient sign-in and online booking on (a new install has them off, and patient and
+    guest operations would answer 409 before authentication): this sweep proves the session
+    isolation. The switches are proved in ``apps/portal/tests/test_switches.py``."""
     from apps.core.models import PublicSiteSettings
 
     PublicSiteSettings.load()
-    PublicSiteSettings.objects.filter(pk=1).update(patient_tracking_enabled=True)
+    PublicSiteSettings.objects.filter(pk=1).update(
+        patient_tracking_enabled=True, online_booking_enabled=True
+    )
 
 
 def test_the_role_is_seeded_with_labels_and_holds_only_the_feed(make_user: Any) -> None:

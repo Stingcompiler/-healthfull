@@ -385,6 +385,8 @@
       "shift_review_pending_other": "{{count}} closed shifts wait for review",
       "backup_stale": "No successful backup in the last {{hours}} hours",
       "integrity_failed": "The daily integrity check found problems in the books or the stock",
+      "online_booking_requested": "A new online booking request waits for approval",
+      "online_booking_cancelled_by_patient": "A booker cancelled an online booking",
       "other": "New notification"
     }
   }

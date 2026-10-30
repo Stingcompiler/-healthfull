@@ -177,6 +177,66 @@ The reschedule of a guest booking creates a new appointment (the old becomes `re
 linked); the guest access therefore belongs to the booking **chain**, not to one appointment row:
 `GuestBookingAccess` points to the current appointment and is moved in the same transaction.
 
+**Phase 4a as built (2026-10-30, backend only; the screens are Phase 4b).**
+- **Public reads.** `GET /api/portal/doctors`, `/doctors/{id}/days`, `/doctors/{id}/slots` keep
+  their paths but need no session (patients and guests read the same answers: free times only,
+  never who holds the others), answer `ONLINE_BOOKING_DISABLED` while booking is off, and count
+  against the per-address public page limit. They no longer answer `PORTAL_DISABLED`.
+- **Guest booking.** `GET /api/portal/challenge`, then `POST /api/portal/guest-bookings` with
+  the `Idempotency-Key` header (`apps/portal/guest.py`). Order of checks: switches
+  (`online_booking_enabled`, then `guest_booking_enabled`, `GUEST_BOOKING_DISABLED`), the key
+  (`400 IDEMPOTENCY_KEY_REQUIRED` without a UUID), the stored answer (`replayed`), the address's
+  daily limit (429), name and phone, the proof-of-work (spent in its own committed step, so a
+  refused booking still uses it: `POW_INVALID`, `POW_EXPIRED`, `POW_ALREADY_USED`), then under
+  the phone's lock (a `PortalThrottle` row of scope `guest_phone`) and the doctor's lock the
+  slot rules of a portal booking, one booking per phone per doctor per day
+  (`PORTAL_ALREADY_BOOKED`), `GUEST_PHONE_LIMIT` and `ONLINE_DOCTOR_DAY_FULL`. Only a created
+  booking is stored for replay; a refusal is evaluated again on retry.
+- **Deviation: the replayed PIN.** Section D stores the PIN only as a password hash. A retry
+  after a lost answer must show the PIN again or the guest loses the booking, so the stored
+  answer (`portal.IdempotentRequest`, at most 24 hours) keeps the PIN **sealed**: XOR with an
+  HMAC of the server secret and the client's key, and only the SHA-256 of the key is stored, so
+  neither a database copy nor the secret alone opens it. Once staff issue a new PIN, or the
+  booking is purged, the replay answers `pin: null`.
+- **Caps apply to guests.** The per-doctor-day request cap and the per-address daily cap count
+  guest bookings only; a signed-in patient is already limited by `max_open` and is known.
+  The proof-of-work gets two more bits once an address is one request short of its daily limit.
+- **Guest sign-in and session.** `POST /api/portal/guest-bookings/sign-in` sets
+  `hospital_guest` (path `/api/portal/guest`, HttpOnly, SameSite=Strict; idle 15 minutes, at
+  most 2 hours, `GUEST_SESSION_*` settings). Every refusal is `401 GUEST_INVALID_CREDENTIALS`
+  after one hash; the fifth wrong PIN locks the booking **until staff issue a new PIN** (not a
+  timed lock: the reference is 50 random bits, so the only target is a known reference); 20
+  failures per address in 15 minutes answer 429. A new PIN ends the guest's open sessions.
+  Guest view, cancel and sign-in need online booking on; reschedule also needs guest booking.
+  `POST /api/portal/guest/sign-out` is idempotent. CSRF: the existing `GET /api/auth/csrf`
+  (no new endpoint was needed, ADR 0028 decision 3).
+- **Chain.** `portal.GuestBookingAccess.appointment` (one to one) is moved to the new row in the
+  reschedule transaction; reissuing a PIN on an earlier row answers `NOT_A_GUEST_BOOKING`.
+- **Inbox** (`apps/portal/inbox.py`, router `/api/visits/online-bookings*`,
+  `visits.manage_online_bookings`): list (`status`, `day`, `doctor_id`), approve and reject
+  (now answering the inbox row and refusing a staff booking with 404), cancel on behalf,
+  `reject-phone` (every open guest request of the phone key, one reason and note, the phone
+  not blocked), `link-patient` (explicit; a merged file links to its survivor; another file
+  already linked is `APPOINTMENT_PATIENT_MISMATCH`; only an open booking), `reissue-pin`
+  (reason required, PIN shown once, audited in history and `PortalEvent`). Each row carries
+  `reference`, `guest_locked`, `display_status`, `phone_open_requests` and `whatsapp_url`
+  (`domain.guest_booking.status_message`: center, doctor, local date and time, status,
+  reference; never a PIN). A patient's booking uses the phone on their file.
+- **Notifications.** `online_booking_requested` (a request by a guest or a patient) and
+  `online_booking_cancelled_by_patient` (a guest or patient cancels online) go to
+  receptionists and link to `/appointments` (the day view approves and declines) until Phase 4b
+  adds the inbox screen.
+- **Audit and retention.** `PortalEvent.kind` and `PortalThrottle.scope` widened to 30
+  characters (`portal/0006`; ALTER was not blocked by the append-only trigger). New kinds:
+  `guest_booking_created`, `guest_view`, `guest_view_refused`, `guest_locked`,
+  `guest_throttled`, `guest_logout`, `guest_cancelled`, `guest_pin_reissued`, `guest_purged`,
+  `booking_rescheduled` (guests and patients), `booking_throttled`. The hourly maintenance ends
+  idle guest sessions, deletes stored answers after 24 hours and spent challenges after their
+  expiry, and anonymizes unlinked guest bookings cancelled (or expired) more than
+  `guest_retention_days` ago **with the earlier rows of their reschedule chain** (they carry
+  the same name and phone), deleting their guest access; `no_show` rows are not purged (the
+  ADR names cancelled and expired only).
+
 ### E. State machine
 `requested -> booked | cancelled(rejected, expired, cancelled by the booker, cancelled on behalf)`;
 `booked -> arrived | rescheduled | cancelled | no_show`; every other edge is refused (tested edge

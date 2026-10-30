@@ -70,3 +70,39 @@ def page_rule() -> tuple[int, timedelta]:
 
 def cookie_secure() -> bool:
     return bool(getattr(settings, "SESSION_COOKIE_SECURE", False))
+
+
+GUEST_COOKIE_NAME = "hospital_guest"
+#: The guest cookie reaches only the guest operations (ADR 0029 D).
+GUEST_COOKIE_PATH = "/api/portal/guest"
+
+
+def guest_session_idle() -> timedelta:
+    return timedelta(seconds=_int("GUEST_SESSION_IDLE_SECONDS", 15 * 60))
+
+
+def guest_session_absolute() -> timedelta:
+    return timedelta(seconds=_int("GUEST_SESSION_MAX_SECONDS", 2 * 60 * 60))
+
+
+def guest_max_attempts() -> int:
+    """Wrong PINs before a guest booking locks until staff issue a new PIN (ADR 0029 D)."""
+    return _int("GUEST_PIN_MAX_ATTEMPTS", 5)
+
+
+def guest_ip_rule() -> tuple[int, timedelta]:
+    """Failed guest sign-ins per client address in a window before 429."""
+    return (
+        _int("GUEST_LOGIN_IP_MAX_FAILURES", 20),
+        timedelta(seconds=_int("GUEST_LOGIN_IP_WINDOW_SECONDS", 15 * 60)),
+    )
+
+
+def challenge_ttl() -> timedelta:
+    """How long a proof-of-work challenge may be solved and sent (ADR 0029 F)."""
+    return timedelta(seconds=_int("BOOKING_CHALLENGE_TTL_SECONDS", 10 * 60))
+
+
+def idempotency_ttl() -> timedelta:
+    """How long the answer of a public booking POST is kept for a retry (ADR 0029 C)."""
+    return timedelta(hours=_int("IDEMPOTENCY_TTL_HOURS", 24))
