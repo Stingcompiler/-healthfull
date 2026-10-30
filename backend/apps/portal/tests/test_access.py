@@ -158,6 +158,11 @@ def _patient_paths(world: dict[str, Any]) -> dict[str, tuple[str, str]]:
         "portal_list_receipts": ("get", "/api/portal/receipts"),
         "portal_get_receipt": ("get", f"/api/portal/receipts/{a['payment']['id']}"),
         "portal_get_balance": ("get", "/api/portal/balance"),
+        "portal_list_visits": ("get", "/api/portal/visits"),
+        "portal_get_visit_timeline": ("get", f"/api/portal/visits/{a['visit']['id']}/timeline"),
+        "portal_list_notices": ("get", "/api/portal/notices"),
+        "portal_mark_all_notices_read": ("post", "/api/portal/notices/read-all"),
+        "portal_mark_notice_read": ("post", f"/api/portal/notices/{a['notice_id']}/read"),
     }
 
 

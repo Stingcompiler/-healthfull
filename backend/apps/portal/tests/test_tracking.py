@@ -340,11 +340,18 @@ def test_rolled_back_approval_leaves_no_notice(
     booked = _book(signed_in["a"], skip_days=3)
     appointment = Appointment.objects.get(pk=booked["id"])
     count = PatientNotice.objects.count()
-    with pytest.raises(_Rollback), transaction.atomic():
-        vs.approve_online_booking(appointment, actor=_clerk())
-        # Written in the event's transaction, not after commit.
-        assert PatientNotice.objects.count() == count + 1
-        raise _Rollback
+    seen: list[int] = []
+
+    def approve_then_fail() -> None:
+        with transaction.atomic():
+            vs.approve_online_booking(appointment, actor=_clerk())
+            # Written in the event's transaction, not after commit.
+            seen.append(PatientNotice.objects.count())
+            raise _Rollback
+
+    with pytest.raises(_Rollback):
+        approve_then_fail()
+    assert seen == [count + 1]
     assert PatientNotice.objects.count() == count
     appointment.refresh_from_db()
     assert appointment.status == AppointmentStatus.REQUESTED

@@ -7,6 +7,7 @@ from apps.portal.models import (
     GuestBookingAccess,
     GuestSession,
     IdempotentRequest,
+    PatientNotice,
     PortalAccessCode,
     PortalEvent,
     PortalSession,
@@ -72,3 +73,11 @@ class IdempotentRequestAdmin(ReadOnlyAdmin[IdempotentRequest]):
 @admin.register(UsedChallenge)
 class UsedChallengeAdmin(ReadOnlyAdmin[UsedChallenge]):
     list_display = ("challenge_id", "expires_at", "used_at")
+
+
+@admin.register(PatientNotice)
+class PatientNoticeAdmin(ReadOnlyAdmin[PatientNotice]):
+    """Read-only: a notice never changes but its read time (ADR 0029 I)."""
+
+    list_display = ("patient", "kind", "created_at", "read_at")
+    list_filter = ("kind",)
