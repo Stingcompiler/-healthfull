@@ -65,6 +65,7 @@
 - `InvoiceLines` (`features/cashier/components`): جدول واحد في DOM واحد؛ يتحول بـCSS إلى صفوف مكدّسة على الهاتف. أعمدة الخصم والمتبقي تظهر عند الحاجة فقط. `data-slot="invoice-line"` و`data-testid` ثابتة (`invoice-line`, `payer-share`, `patient-share`).
 - `ServiceLineCard`: بلا شريط حالة جانبي (الحالة بشارة واحدة)، يبقى في الطلبات السريرية.
 - `EmptyState` و`PageHeader`: بلا بلاطة أيقونة.
+- **الموقع العام وحده** (`/` و`/portal`، D-0022): `site-card` (سطح ناعم بنصف قطر 20px وظل `--elevation-card`، بلا ظل في الداكن)، `site-glass` (زجاج خفيف للرأس الثابت والشريط العائم وشارة الحالة فوق الصورة، مصمت مع `prefers-reduced-transparency`)، `site-lift` (رفع 2px عند المرور على كروت المهام)، `site-reveal` و`site-accordion`. شاشات الموظفين والبوابة الداخلية تبقى على `card-surface`.
 - مرجع حي: صفحة `/design` (قسم Cards) (مسار الاستكشاف المؤقت `/design/directions` أُزيل بعد حسم القرار؛ لقطات المراجعة محفوظة في `docs/ui-review/`).
 
 ## الكثافة وشاشات نقطة الخدمة والاتصال (تبنّي المرجع v2.2، دفعة 3)

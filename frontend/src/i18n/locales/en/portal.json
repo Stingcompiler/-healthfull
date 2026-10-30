@@ -345,7 +345,33 @@
       "cancellation": "Cancellation policy"
     },
     "photoOf": "Photo of {{name}}",
-    "bookOnline": "Book online"
+    "bookOnline": "Book online",
+    "tasks": {
+      "title": "What would you like to do?",
+      "bookHint": "Choose a doctor and a free time.",
+      "bookViaSignInHint": "Sign in first, then choose a time.",
+      "myBooking": "Open my booking",
+      "myBookingHint": "With your booking reference and PIN.",
+      "signInHint": "Your file number, phone and the code on your receipt.",
+      "openFileHint": "Your results, appointments and bills.",
+      "hours": "Today's hours",
+      "hoursClosed": "Closed today",
+      "directionsHint": "Address and directions"
+    },
+    "footer": {
+      "label": "About this site",
+      "contact": "Contact",
+      "hours": "Opening hours",
+      "links": "Quick links",
+      "settings": "Language and theme",
+      "range": "{{from}} – {{to}}",
+      "copyright": "© {{year}} {{name}}. All rights reserved.",
+      "poweredBy": "Powered by Sting Systems",
+      "newTab": "(opens in a new tab)"
+    },
+    "sticky": {
+      "call": "Call the center"
+    }
   },
   "off": {
     "title": "Online services are not available",
