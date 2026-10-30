@@ -196,8 +196,60 @@ reached Django as one address. Fixed in two places:
   leftmost is used, which the compose Caddy wrote itself. A malformed entry ends the walk.
 Runbook: `docs/runbooks/install.md` "Behind a host reverse proxy".
 
+## Phase 6 as built (2026-10-30): the LAN edge
+- **Shape.** `infra/edge/edge.caddy` is a directive file the vendor host's existing Caddy imports
+  inside one site block per center (`import .../edge.caddy <tunnel addr:port> <fallback dir>
+  "<name>" "<phone>"`, Caddy 2.7 or later; example `infra/edge/Caddyfile.example`). One host,
+  one Caddy, the host's other sites untouched (decision 3 applies to the app; the edge is the
+  per-center public name of decision 5).
+- **Allowlist, exact paths and methods (decision 3).** One CEL expression: GET
+  `/api/auth/csrf`, `/api/ops/site`, the public center-site, booking-read, challenge, session,
+  verify and patient reads, `/api/portal/guest/booking`; POST session, logout, appointments,
+  notices, guest booking, guest sign-in, sign-out, cancel and reschedule; parameterized paths as
+  anchored regexes with digit ids. 39 API operations: every `/api/portal` operation whose security
+  is none, `PortalAuth` or `GuestAuth`, plus the two plumbing reads. Pages: GET/HEAD `/`,
+  `/portal`, `/portal/*`, `/verify/*`, `/assets/*` and the named root files of the build. The
+  decision text's `POST /api/portal/login` does not exist; patient sign-in is `POST
+  /api/portal/session`.
+- **Refusals.** Other API paths: `404 {"code": "NOT_FOUND"}` from the edge; other pages: the
+  fallback page with 404; raw paths with `%`, a dot segment, `//` or `\` refused before routing;
+  bodies over 256 KB 413. **`GET /api/auth/me` answers `401 NOT_AUTHENTICATED` at the edge**
+  without reaching the center: the SPA asks it at `/` to tell a visitor from staff
+  (`frontend/src/app/routes.tsx`), and a 404 there would break the center website at `/`.
+- **Fallback (decision 5), deviation.** A static self-contained page (`infra/edge/fallback/`,
+  Caddy `templates`) with the name and phone given in the import line, Arabic first, under a
+  `default-src 'none'` CSP; not a cached copy of the center page (no sync job, nothing to go
+  stale). Shown with 503 when the tunnel or the center is down (dial failure, or the center's
+  502/503/504 on a page); API calls then answer `503 {"code": "SERVICE_UNAVAILABLE"}`.
+- **No rate limit at the edge, deviation.** Stock Caddy has no rate-limit module and the vendor
+  host runs the stock build. The application's per-address limits (0005, 0016, 0023, 0029 F)
+  apply and see the real address through the chain below.
+- **X-Forwarded-For (decision 6).** The host Caddy trusts no proxy, so `reverse_proxy` overwrites
+  the header (and `X-Forwarded-Proto`) with what it saw; the center's compose Caddy trusts only the
+  edge's tunnel address (`CADDY_TRUSTED_PROXIES=10.213.0.1/32`) and appends it; Django skips it
+  as a private hop. The tunnel network is `10.213.0.0/24` so that hop is in `private_ranges`.
+  HSTS on the edge keeps browsers from sending the center's (non-Secure, plain-HTTP LAN) cookies
+  over plain HTTP to the public name.
+- **Tunnel (decision 5).** WireGuard interface `hs-edge`, `wg-quick@hs-edge`. Templates with
+  placeholders only: `infra/edge/wireguard/edge-host.conf.template` (drops anything a center sends
+  to the host or another center) and `center-server.conf.template` (the center dials out with
+  `PersistentKeepalive`; through the tunnel only the web port is open, via `INPUT` and
+  `DOCKER-USER` rules), plus the systemd drop-in `wg-quick-after-docker.conf`. The center must
+  publish `web` on `BIND_IP=0.0.0.0` (a LAN-address bind never answers the tunnel; Docker's DNAT
+  keeps the edge's source address, the userland proxy would not).
+- **Proof.** `infra/tests/test_edge_allowlist.sh` (in `infra/tests/run.sh`; the CI docker job
+  runs it with the web image's Caddy): every operation of `frontend/openapi.json` sent through
+  the edge is forwarded if and only if it is in the derived set; the staff surface by name
+  (`/api/auth/*`, `/api/visits/*`, `/administration*`, `/sign-in`, `/login`, `/admin`, `/static`,
+  staff screens, the staff-session portal operations); wrong methods; encoded and dot-segment
+  paths; forwarded pages and files; Host, path and query kept; forged `X-Forwarded-For` and
+  `X-Forwarded-Proto` overwritten; the body limit; the fallback page; tunnel down and center down;
+  the example host Caddyfile and the center-side settings validate; no real-looking key in the
+  templates. Runbook: `docs/runbooks/public-edge.md`.
+
 ## Code
 Phase 1: `backend/apps/core/{models,services,api,schemas}.py` (`PublicSiteSettings`),
 `backend/apps/ops/{api,schemas}.py`, `backend/apps/portal/{api,services,conf}.py`,
-`frontend/src/lib/site.ts`, `frontend/src/app/routes.tsx`. Phase 6: `infra/edge/`,
-`docs/runbooks/public-edge.md`, `infra/tests`.
+`frontend/src/lib/site.ts`, `frontend/src/app/routes.tsx`. Phase 6: `infra/edge/`
+(`edge.caddy`, `Caddyfile.example`, `fallback/index.html`, `wireguard/`),
+`docs/runbooks/public-edge.md`, `infra/tests/test_edge_allowlist.sh`.

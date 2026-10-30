@@ -434,6 +434,18 @@ consultation slots only); SMS and e-mail; map embeds; automatic blocking by no-s
    `max_pending_per_doctor_day` 10, `max_requests_per_address_day` 5, `pow_difficulty_bits` 18,
    `guest_retention_days` 90, `min_review_minutes` 30.
 
+**Phase 6 as built (2026-10-30, edge and handover).** No application code changed. The LAN edge
+of ADR 0028 decision 5 (`infra/edge/`, "Phase 6 as built" there) forwards every public, patient
+and guest operation of this ADR and nothing else, so a LAN install can put the website, guest
+booking and patient tracking on the internet with the same switches. Handover documents:
+`docs/runbooks/public-edge.md` (enable, disable, rotate, what is exposed, verify; also the
+internet-facing case without an edge), `docs/guides/online-bookings.md` (reception inbox:
+approve, decline, check-in, WhatsApp, link to a file, new PIN, cancel on behalf, decline a phone)
+and `docs/guides/public-site.md` (administrator: switches, approval, guest limits, retention and
+its accepted limit, content, testimonials); `system-admin.md` and `reception.md` point to them.
+The section 8 limitations of the plan are stated in the runbook and the guides. The public site
+work order is complete.
+
 ## Consequences
 - Existing portal booking keeps its behavior on upgrade: an existing install is seeded with
   `require_approval = false` (K1), so signed-in patients still book instantly until the

@@ -345,14 +345,16 @@ jobs:
           cache-from: type=gha,scope=db
           cache-to: type=gha,mode=max,scope=db
       # ADR 0028 decision 6: the shipped Caddyfile with the image's own Caddy keeps a trusted
-      # proxy's X-Forwarded-For and overwrites everyone else's.
-      - name: Caddy X-Forwarded-For trust (the web image's caddy binary)
+      # proxy's X-Forwarded-For and overwrites everyone else's. ADR 0028 decisions 3 and 5: the
+      # LAN edge (infra/edge) forwards exactly the public operations of the contract.
+      - name: Caddy X-Forwarded-For trust and the public edge allowlist (the web image's caddy binary)
         run: |
           set -euo pipefail
           id="$(docker create hospital-sys/web:ci)"
           docker cp "$id:/usr/bin/caddy" "$RUNNER_TEMP/caddy"
           docker rm "$id"
           CADDY_BIN="$RUNNER_TEMP/caddy" REQUIRE_CADDY=1 bash infra/tests/test_caddy_trusted_proxies.sh
+          CADDY_BIN="$RUNNER_TEMP/caddy" REQUIRE_CADDY=1 bash infra/tests/test_edge_allowlist.sh
       - name: Prepare .env (CI-only values)
         run: |
           cp .env.example .env

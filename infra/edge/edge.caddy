@@ -1,0 +1,171 @@
+# hospital-sys public edge for a LAN-only center (ADR 0028 decisions 3, 5 and 6; runbook
+# docs/runbooks/public-edge.md). Runs on the vendor's internet-facing host (OVH), inside that
+# host's Caddy, and forwards the center's public pages over a WireGuard tunnel to the center's
+# own server. It is NOT used on an internet-facing deployment of the app itself (decision 2).
+#
+# Import it inside one site block per center (example: infra/edge/Caddyfile.example):
+#
+#   center.example.sd {
+#   	import /etc/caddy/hospital-edge/edge.caddy 10.213.0.2:80 /etc/caddy/hospital-edge/fallback "اسم المركز" "+249 9xx xxx xxx"
+#   }
+#
+#   args[0]  the center server's tunnel address and HTTP port (its compose `web`, HTTP_PORT)
+#   args[1]  absolute path of the directory holding the fallback page (infra/edge/fallback)
+#   args[2]  center name shown on the fallback page
+#   args[3]  center phone shown on the fallback page
+#
+# What it forwards: exact paths and methods only, never a prefix of the API (decision 3). The
+# list is derived from the API contract (frontend/openapi.json): every /api/portal operation that
+# is public or authenticates a patient (PortalAuth) or a guest (GuestAuth), plus GET
+# /api/auth/csrf and GET /api/ops/site; the SPA bundle files and the public client routes.
+# infra/tests/test_edge_allowlist.sh sends every operation of the contract through this file and
+# fails if a staff operation is forwarded or a public one is not.
+#
+# Everything else never reaches the center:
+#   - any other /api path answers 404 {"code": "NOT_FOUND"} from here;
+#   - GET /api/auth/me answers 401 {"code": "NOT_AUTHENTICATED"} from here, because the SPA asks
+#     it at "/" to tell a visitor from signed-in staff (frontend/src/app/routes.tsx), and there is
+#     no staff session through the edge;
+#   - any other page (staff screens, /sign-in, /login, /administration, /admin, /static) answers
+#     the fallback page with 404;
+#   - with the tunnel or the center down, pages answer the fallback page with 503 and API calls
+#     503 {"code": "SERVICE_UNAVAILABLE"} (fails closed, decision 5).
+#
+# X-Forwarded-For (decision 6): the host Caddy running this file must trust NO proxy (no global
+# `trusted_proxies`), so reverse_proxy overwrites the header with the visitor's connection
+# address. The center's compose Caddy then trusts only this host's tunnel address
+# (CADDY_TRUSTED_PROXIES=10.213.0.1/32) and Django reads the header from the right.
+#
+# Needs Caddy 2.7 or later (import arguments as {args[N]}). No module beyond the standard build.
+
+vars {
+	edge_center_name "{args[2]}"
+	edge_center_phone "{args[3]}"
+}
+
+encode zstd gzip
+
+# The public pages send small JSON bodies only (no upload goes through the edge).
+request_body {
+	max_size 256KB
+}
+
+header {
+	# The edge always serves its public name over TLS: browsers then never send the center's
+	# cookies (not marked Secure on a plain-HTTP LAN install) over plain HTTP to this name.
+	Strict-Transport-Security "max-age=31536000"
+	X-Content-Type-Options "nosniff"
+	Referrer-Policy "same-origin"
+	-Server
+}
+
+# Raw paths (as sent, before any decoding) with an escape, a dot segment, a doubled or a back
+# slash are never forwarded: no allowed path contains one, and refusing them up front keeps the
+# exact-path rules exact whatever the upstream does with such a path. The path matchers below
+# ignore case; a differently cased path reaches the center only to be answered 404 by Django.
+@edge_unsafe_path expression `{http.request.orig_uri}.matches("^[^?]*(%|/\\.|//|\\\\)")`
+
+# --- the allowlist ------------------------------------------------------------------------
+
+# Center site, booking reads, patient sign-in, the patient's own reads, a guest's booking.
+# One expression because a handle takes one matcher; each line is one method and its paths.
+@edge_api expression `
+	(method('GET') && path(
+		'/api/auth/csrf', '/api/ops/site',
+		'/api/portal/center-page', '/api/portal/center-identity', '/api/portal/center-logo',
+		'/api/portal/challenge', '/api/portal/doctors',
+		'/api/portal/session', '/api/portal/verify',
+		'/api/portal/me', '/api/portal/summary', '/api/portal/appointments', '/api/portal/balance',
+		'/api/portal/invoices', '/api/portal/receipts', '/api/portal/results',
+		'/api/portal/prescriptions', '/api/portal/visits', '/api/portal/notices',
+		'/api/portal/guest/booking'))
+	|| (method('GET') && path_regexp('^/api/portal/(center-media/[0-9]+|doctors/[0-9]+/(days|slots)|invoices/[0-9]+|receipts/[0-9]+|results/[0-9]+|visits/[0-9]+/timeline)$'))
+	|| (method('POST') && path(
+		'/api/portal/session', '/api/portal/session/logout',
+		'/api/portal/appointments', '/api/portal/notices/read-all',
+		'/api/portal/guest-bookings', '/api/portal/guest-bookings/sign-in',
+		'/api/portal/guest/sign-out', '/api/portal/guest/booking/cancel',
+		'/api/portal/guest/booking/reschedule'))
+	|| (method('POST') && path_regexp('^/api/portal/(appointments/[0-9]+/(cancel|reschedule)|notices/[0-9]+/read)$'))
+	`
+
+# The SPA (served by the center's compose Caddy from its build) and its public client routes:
+# the center website at "/", the portal and the receipt check.
+@edge_spa {
+	method GET HEAD
+	path / /index.html /boot.js /favicon.svg /robots.txt /portal.webmanifest
+	path /portal-icon-192.png /portal-icon-512.png /portal-icon-maskable-512.png
+	path /assets/*
+	path /portal /portal/* /verify/*
+}
+
+@edge_api_me {
+	method GET
+	path /api/auth/me
+}
+
+route {
+	handle @edge_unsafe_path {
+		error 404
+	}
+
+	handle @edge_api_me {
+		header Content-Type "application/json"
+		header Cache-Control "no-store"
+		respond `{"code":"NOT_AUTHENTICATED","message":"Authentication required","details":{}}` 401
+	}
+
+	handle @edge_api {
+		reverse_proxy {args[0]} {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+		}
+	}
+
+	handle @edge_spa {
+		reverse_proxy {args[0]} {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+			# The center's Caddy answers 502 when its app is down: show the fallback instead.
+			@edge_center_down status 502 503 504
+			handle_response @edge_center_down {
+				error 503
+			}
+		}
+	}
+
+	handle {
+		error 404
+	}
+}
+
+handle_errors {
+	@edge_api_error path /api /api/*
+	handle @edge_api_error {
+		header Content-Type "application/json"
+		header Cache-Control "no-store"
+		@edge_unavailable expression {err.status_code} >= 500
+		respond @edge_unavailable `{"code":"SERVICE_UNAVAILABLE","message":"Service unavailable","details":{}}` 503
+		@edge_too_large expression {err.status_code} == 413
+		respond @edge_too_large `{"code":"PAYLOAD_TOO_LARGE","message":"Request body too large","details":{}}` 413
+		respond `{"code":"NOT_FOUND","message":"Not found","details":{}}` 404
+	}
+	handle {
+		root * {args[1]}
+		header Cache-Control "no-store"
+		header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+		rewrite * /index.html
+		templates
+		@edge_unavailable expression {err.status_code} >= 500
+		file_server @edge_unavailable {
+			status 503
+		}
+		file_server {
+			status 404
+		}
+	}
+}

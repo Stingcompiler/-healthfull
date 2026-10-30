@@ -1,0 +1,35 @@
+# WireGuard on the center's own server (the LAN install): /etc/wireguard/hs-edge.conf, mode 0600.
+# Runbook: docs/runbooks/public-edge.md. ADR 0028 decision 5.
+#
+# The center's server dials out to the vendor's host: no inbound port, no public address and
+# no router change at the center. Every <...> is a placeholder; generate the keys on this server
+# (`umask 077; wg genkey | tee private.key | wg pubkey > public.key`) and send only the public
+# key to the vendor. The preshared key comes from the vendor (`wg genpsk`), by hand, once.
+#
+# Start after Docker (the rules below use Docker's DOCKER-USER chain):
+#   sudo install -D -m 0644 infra/edge/wireguard/wg-quick-after-docker.conf \
+#     /etc/systemd/system/wg-quick@hs-edge.service.d/10-after-docker.conf
+#   sudo systemctl daemon-reload && sudo systemctl enable --now wg-quick@hs-edge
+
+[Interface]
+# This center's tunnel address, given by the vendor (.2, .3, ...).
+Address = 10.213.0.2/32
+PrivateKey = <CENTER_PRIVATE_KEY>
+# Through the tunnel the edge may open the center's web port (HTTP_PORT in .env, 80 here) and
+# nothing else: not SSH, not the database, not the HTTPS port.
+PostUp = iptables -I INPUT -i %i -j DROP
+PostUp = iptables -I DOCKER-USER -i %i -j DROP
+PostUp = iptables -I DOCKER-USER -i %i -p tcp -m conntrack --ctorigdstport 80 --ctdir ORIGINAL -j RETURN
+PostDown = iptables -D DOCKER-USER -i %i -p tcp -m conntrack --ctorigdstport 80 --ctdir ORIGINAL -j RETURN
+PostDown = iptables -D DOCKER-USER -i %i -j DROP
+PostDown = iptables -D INPUT -i %i -j DROP
+
+[Peer]
+# The vendor's edge host.
+PublicKey = <EDGE_HOST_PUBLIC_KEY>
+PresharedKey = <CENTER_PRESHARED_KEY>
+Endpoint = <EDGE_HOST_PUBLIC_ADDRESS>:51820
+# Only the edge's own tunnel address: the center routes nothing else into the tunnel.
+AllowedIPs = 10.213.0.1/32
+# Keeps the center's NAT mapping open so the edge can reach it at any time.
+PersistentKeepalive = 25
