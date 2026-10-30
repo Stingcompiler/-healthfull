@@ -105,6 +105,11 @@ __all__ = [
 POSITIVE, NEGATIVE = "positive", "negative"
 
 
+def _patient_notices() -> ModuleType:
+    """The patient's portal inbox (ADR 0029 I); imported late (the portal reads lab rows)."""
+    return importlib.import_module("apps.portal.notices")
+
+
 def _orders() -> ModuleType:
     return importlib.import_module("apps.orders.services")
 
@@ -793,6 +798,9 @@ def approve_results(
             rs.first_approved_at = now
             rs.save(update_fields=["first_approved_at"])
             _orders().perform_line(locked_line, actor)
+        # The patient's inbox (ADR 0029 I): only now that the version is approved, and in
+        # this transaction, so a failed approval leaves no notice.
+        _patient_notices().result_published(locked_line, draft)
         _notify_result(locked_line, draft, amended=draft.amends_id is not None)
     return draft
 

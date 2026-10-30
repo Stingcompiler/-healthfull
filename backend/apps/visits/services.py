@@ -736,6 +736,11 @@ def lock_doctors(*doctor_ids: int) -> None:
         DoctorProfile.objects.select_for_update().get(pk=pk)
 
 
+def _notices() -> ModuleType:
+    """The patient's portal inbox (ADR 0029 I). Imported late: the portal imports this module."""
+    return importlib.import_module("apps.portal.notices")
+
+
 def _system_actor() -> User:
     """The system user named on what nobody did by hand (a request that expired)."""
     from apps.portal.services import portal_actor  # the portal imports this module
@@ -757,7 +762,7 @@ def _expire_due(now: datetime, *, doctor: DoctorProfile | None = None) -> int:
     )
     actor = _system_actor()
     with pghistory.context(user=actor.pk, reason="online request expired"):
-        return Appointment.objects.filter(pk__in=ids).update(
+        count = Appointment.objects.filter(pk__in=ids).update(
             status=AppointmentStatus.CANCELLED,
             cancelled_at=now,
             cancelled_by=actor,
@@ -765,6 +770,9 @@ def _expire_due(now: datetime, *, doctor: DoctorProfile | None = None) -> int:
             cancel_note="Expired before reception answered",
             updated_at=now,
         )
+        for expired in Appointment.objects.filter(pk__in=ids, patient__isnull=False):
+            _notices().booking_changed(expired)
+    return count
 
 
 def expire_requests(now: datetime | None = None) -> int:
@@ -815,7 +823,7 @@ def book_appointment(
         _check_slot(doctor, starts_at, end)
         try:
             with transaction.atomic():
-                return Appointment.objects.create(
+                created = Appointment.objects.create(
                     patient=patient,
                     contact_name=contact_name.strip(),
                     contact_phone=contact_phone.strip(),
@@ -837,6 +845,10 @@ def book_appointment(
                     "APPOINTMENT_CONFLICT", "The doctor already has an appointment in that slot"
                 ) from exc
             raise
+        if rescheduled_from is None:
+            # A moved booking is told once, by move_appointment.
+            _notices().booking_changed(created)
+        return created
 
 
 def _locked(appointment: Appointment, target: str) -> Appointment:
@@ -883,7 +895,7 @@ def move_appointment(
         duration = old.ends_at - old.starts_at
         old.status = AppointmentStatus.RESCHEDULED
         old.save(update_fields=["status", "updated_at"])
-        return book_appointment(
+        new = book_appointment(
             doctor=target,
             starts_at=starts_at,
             ends_at=ends_at or (starts_at + duration if same_doctor else None),
@@ -897,6 +909,8 @@ def move_appointment(
             source=old.source,
             expires_at=expires_at,
         )
+        _notices().booking_moved(old, new)
+        return new
 
 
 def reschedule_appointment(
@@ -946,6 +960,7 @@ def cancel_appointment(
         locked = _locked(appointment, AppointmentStatus.CANCELLED)
         reason = resolve_reason(reason_code, ReasonCategory.APPOINTMENT_CANCEL, note)
         _cancel_locked(locked, actor, reason, note)
+        _notices().booking_changed(locked)
     return locked
 
 
@@ -964,6 +979,7 @@ def approve_online_booking(appointment: Appointment, *, actor: User) -> Appointm
         locked.approved_by = actor
         locked.approved_at = now
         locked.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
+        _notices().booking_changed(locked)
     return locked
 
 
@@ -989,6 +1005,7 @@ def reject_online_booking(
             )
         reason = resolve_reason(reason_code, ReasonCategory.APPOINTMENT_CANCEL, note)
         _cancel_locked(locked, actor, reason, note)
+        _notices().booking_changed(locked)
     return locked
 
 

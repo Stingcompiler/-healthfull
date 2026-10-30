@@ -866,3 +866,44 @@ def merges(patient: Patient) -> list[PatientMerge]:
 def balance(patient: Patient) -> Any:
     """The person's credit, pending transfer money and open invoices (FEATURES 1.5)."""
     return importlib.import_module("apps.payments.services").patient_balance(patient)
+
+
+# --- telling the patient (ADR 0029 I) ------------------------------------------------------
+
+#: Channels a patient notice can go out on. V1 has the portal inbox only; SMS would be added
+#: here behind the same call (FEATURES 15.5).
+NOTICE_CHANNELS = ("portal",)
+
+
+def notify(
+    patient: Patient,
+    kind: str,
+    *,
+    channels: Sequence[str] = NOTICE_CHANNELS,
+    appointment: Any = None,
+    service_line: Any = None,
+    **payload: Any,
+) -> Any:
+    """Tell a patient something (the one door, ADR 0029 I): a portal inbox notice written in
+    the caller's transaction, so it exists exactly when the event committed. ``payload`` is
+    what the inbox shows (no prices, no staff notes). Returns the portal notice.
+
+    Raises:
+        ValueError: an unknown channel.
+        RuntimeError: called outside a transaction.
+    """
+    unknown = set(channels) - set(NOTICE_CHANNELS)
+    if unknown:
+        raise ValueError(f"unknown notice channel(s): {sorted(unknown)}")
+    if "portal" not in channels:
+        return None
+    from apps.portal import notices  # the portal sits above this module
+
+    return notices.record(
+        patient,
+        kind,
+        payload,
+        channels=list(channels),
+        appointment=appointment,
+        service_line=service_line,
+    )

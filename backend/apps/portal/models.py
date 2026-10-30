@@ -367,3 +367,84 @@ class UsedChallenge(models.Model):
 
     def __str__(self) -> str:
         return self.challenge_id
+
+
+# --- patient notices (ADR 0029 I; Phase 5) ------------------------------------------------
+
+
+class PatientNoticeKind(models.TextChoices):
+    """``domain.portal_status.NoticeKind`` (the values are the domain's)."""
+
+    BOOKING_REQUESTED = "booking_requested", "Online booking waiting for reception"
+    BOOKING_CONFIRMED = "booking_confirmed", "Booking confirmed"
+    BOOKING_DECLINED = "booking_declined", "Online request declined"
+    BOOKING_CANCELLED = "booking_cancelled", "Booking cancelled"
+    BOOKING_RESCHEDULED = "booking_rescheduled", "Booking moved to another time"
+    BOOKING_EXPIRED = "booking_expired", "Online request expired unanswered"
+    RESULT_PUBLISHED = "result_published", "A lab result is approved and visible"
+
+
+@track_history()
+class PatientNotice(models.Model):
+    """One line of a patient's portal inbox (ADR 0029 I): written by ``patients.notify`` in
+    the same transaction as its event (a booking change, a result approval), so a rolled-back
+    event leaves no notice. Only for a patient file: a guest has no inbox.
+
+    ``payload`` holds what the inbox needs to say it in either language (doctor names, the
+    slot, a test name, the reason label staff chose); never a price, a staff note or a value
+    the portal does not already show. ``appointment`` / ``service_line`` link the notice to
+    the row it is about; the portal still checks the row is the patient's before showing it.
+    A notice never changes except ``read_at`` (once) and is never deleted (triggers).
+    """
+
+    patient = models.ForeignKey(
+        "patients.Patient", on_delete=models.PROTECT, related_name="portal_notices"
+    )
+    kind = models.CharField(max_length=30, choices=PatientNoticeKind.choices)
+    payload = models.JSONField(default=dict, blank=True)
+    channels = models.JSONField(
+        default=list, blank=True, help_text='Channels it went out on; V1 is ["portal"] only.'
+    )
+    appointment = models.ForeignKey(
+        "visits.Appointment", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    service_line = models.ForeignKey(
+        "orders.ServiceLine", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "patient notice"
+        ordering: ClassVar[list[str]] = ["-created_at", "-id"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            choice_check("kind", PatientNoticeKind, "portal_notice_kind_valid"),
+            models.CheckConstraint(
+                condition=Q(read_at__isnull=True) | Q(read_at__gte=F("created_at")),
+                name="portal_notice_read_after_created",
+            ),
+        ]
+        indexes: ClassVar[list[models.Index]] = [
+            models.Index(fields=["patient", "created_at"], name="portal_notice_patient_idx"),
+            models.Index(
+                fields=["patient"],
+                condition=Q(read_at__isnull=True),
+                name="portal_notice_unread_idx",
+            ),
+        ]
+        triggers: ClassVar[list[pgtrigger.Trigger]] = [
+            pgtrigger.Protect(name="notice_permanent", operation=pgtrigger.Delete),
+            pgtrigger.Protect(
+                name="notice_fixed",
+                operation=pgtrigger.Update,
+                condition=pgtrigger.AnyChange(exclude=["read_at"]),
+            ),
+            pgtrigger.Protect(
+                name="notice_read_once",
+                operation=pgtrigger.Update,
+                condition=pgtrigger.Q(old__read_at__isnull=False),
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.kind} for {self.patient_id}"
