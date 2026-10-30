@@ -105,9 +105,14 @@ test.describe("@public-site switches", () => {
       await page.goto("/portal");
       await expect(page.getByTestId("center-page")).toBeVisible();
       await expect(page.getByTestId("center-sign-in")).toHaveCount(0);
-      await expect(page.getByTestId("center-sticky-bar")).toHaveCount(0);
+      // The phone bar may still offer a call; never sign-in or booking.
+      await expect(page.getByTestId("center-sticky-cta")).toHaveCount(0);
+      await expect(page.getByTestId("center-sticky-book")).toHaveCount(0);
       await expect(page.getByTestId("portal-header-sign-in")).toHaveCount(0);
       await expect(page.getByTestId("quick-book")).toHaveCount(0);
+      await expect(page.getByTestId("quick-my-booking")).toHaveCount(0);
+      await expect(page.getByTestId("footer-sign-in")).toHaveCount(0);
+      await expect(page.getByTestId("footer-book")).toHaveCount(0);
       await page.context().close();
     });
   });
@@ -120,7 +125,9 @@ test.describe("@public-site switches", () => {
       const page = await visitor(browser);
       await page.goto("/portal");
       await expect(page.getByTestId("center-book")).toHaveAttribute("href", "/portal/book");
-      await expect(page.getByTestId("quick-book")).toHaveAttribute("href", "/portal/book");
+      await expect(page.getByTestId("quick-book")).toHaveCount(0);
+      await expect(page.getByTestId("quick-my-booking")).toHaveAttribute("href", "/portal/booking");
+      await expect(page.getByTestId("footer-book")).toHaveAttribute("href", "/portal/book");
       await expect(page.getByTestId("center-sticky-book")).toBeVisible();
       await expect(page.getByTestId("center-sign-in")).toHaveCount(0);
       await expect(page.getByTestId("guest-patient-sign-in")).toHaveCount(0);
@@ -141,6 +148,8 @@ test.describe("@public-site switches", () => {
       await expect(page.getByTestId("center-sticky-book")).toHaveCount(0);
       // Booking still exists for patients: the quick action leads to sign-in first.
       await expect(page.getByTestId("quick-book")).toHaveAttribute("href", "/portal/sign-in");
+      await expect(page.getByTestId("quick-my-booking")).toHaveCount(0);
+      await expect(page.getByTestId("footer-book")).toHaveCount(0);
       await page.goto("/portal/book");
       await expect(page).toHaveURL(/\/portal$/);
       const challenge = await page.context().request.get("/api/portal/challenge");
@@ -155,6 +164,8 @@ test.describe("@public-site switches", () => {
       await expect(page.getByTestId("center-page")).toBeVisible();
       await expect(page.getByTestId("center-book")).toHaveCount(0);
       await expect(page.getByTestId("quick-book")).toHaveCount(0);
+      await expect(page.getByTestId("quick-my-booking")).toHaveCount(0);
+      await expect(page.getByTestId("footer-book")).toHaveCount(0);
       await page.goto("/portal/book");
       await expect(page).toHaveURL(/\/portal$/);
       await page.goto("/portal/booking");

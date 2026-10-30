@@ -858,3 +858,13 @@ cut on 2026-10-30 (CHANGELOG, git tag `v0.9.0-rc.1`); the demo deployment was re
   green (backend 2761 passed, frontend 683 passed, lint/types/lint-ui/tokens/api drift clean); `infra/tests/run.sh`
   all 8 scripts passed locally (edge 17 checks; mutations adding a staff path or dropping a public one fail it).
 - [x] Public site Phase 6: edge deployment and handover. The public site work order is complete.
+- 2026-10-30: center website redesign on `feat/center-site-redesign` (owner request; D-0022): task-first first
+  screen (book online, open my booking, sign in; call, WhatsApp, directions, today's hours, each only with its
+  switch or data, `portal/lib/center-tasks.ts`), identity-only hero with a short photo banner on phones, soft
+  `site-card` surfaces, subtle glass (header, floating phone bar with book/sign-in/call, hero status chip) with
+  solid fallbacks, hover/press lift, one-time section rise and smooth accordions (all off under reduced motion),
+  and a site footer (`CenterFooter`: contact, hours summary, quick links, language/theme, copyright, "Powered by
+  Sting Systems" → stingdev.pro). No API change. Results: `make check` steps green (backend 2761 passed,
+  frontend 691 passed, lint/types/lint-ui/tokens/api drift clean); e2e `@portal center page`, `@public-site
+  switches`, `@guest-booking` 86 tests, all passing after one test expectation fix.
+- [x] Center website redesign (task-first, soft UI, footer).

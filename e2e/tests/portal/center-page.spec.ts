@@ -7,9 +7,12 @@
  * three themes and two languages with no horizontal scroll and no axe violation. The
  * administrator edits the page from /administration/center-page and the public page follows.
  */
+import path from "node:path";
+
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
+import { SCREENS_DIR } from "../../env";
 import { ADMIN_STATE } from "../../fixtures/state";
 import {
   apiAs,
@@ -423,11 +426,11 @@ test.describe("@portal center page", () => {
       "href",
       /^https:\/\/wa\.me\/\d{8,15}$/,
     );
-    // The one action, in the hero and at the end, plus the phone's sticky bottom bar. The header
+    // The sign-in task card and the closing band, plus the phone's floating bar. The header
     // copy is for tablets and up: a phone has the bar instead.
     const actions = page.getByTestId("center-sign-in");
     await expect(actions).toHaveCount(2);
-    await expect(actions.first()).toHaveText(t("portal:center.signIn"));
+    await expect(actions.first()).toContainText(t("portal:center.signIn"));
     await expect(page.getByTestId("center-sticky-cta")).toBeVisible();
     await expect(page.getByTestId("portal-header-sign-in")).toBeHidden();
     await expectNoHorizontalScroll(page);
@@ -457,7 +460,9 @@ test.describe("@portal center page", () => {
     await expect(page.getByTestId("portal-brand")).toContainText(
       t("portal:brand"),
     );
-    await expect(page.getByText(FULL.name_en)).toHaveCount(1);
+    // Once in the page (the footer repeats it with the copyright, as footers do).
+    await expect(page.locator("#main").getByText(FULL.name_en)).toHaveCount(1);
+    await expect(page.locator("header").getByText(FULL.name_en)).toHaveCount(0);
     // Header controls say what they do (visible text on desktop, name and tooltip everywhere).
     const header = page.locator("header");
     await expect(
@@ -507,8 +512,9 @@ test.describe("@portal center page", () => {
       // Contact comes after the content in the page's order, at full width (D-0021).
       await expect(page.getByTestId("center-contact")).toBeVisible();
       await expect(side.getByTestId("center-contact")).toHaveCount(0);
-      // Phone-only blocks are gone; the page is wider than a phone column but centered at max width.
-      await expect(page.getByTestId("center-quick-actions")).toBeHidden();
+      // The task cards lead the page at every width; the floating bar is for phones only. The
+      // page is wider than a phone column but centered at max width.
+      await expect(page.getByTestId("center-quick-actions")).toBeVisible();
       await expect(page.getByTestId("center-sticky-bar")).toBeHidden();
       const hero = await page.getByTestId("center-hero").boundingBox();
       expect(hero?.width ?? 0).toBeGreaterThan(900);
@@ -518,7 +524,7 @@ test.describe("@portal center page", () => {
     }
   });
 
-  test("a phone gets quick actions and a sticky bar that never covers the page end", async ({
+  test("a phone gets task cards and a floating bar that never covers the page end", async ({
     browser,
   }) => {
     const page = await openCenter(
@@ -530,14 +536,40 @@ test.describe("@portal center page", () => {
     );
     const quick = page.getByTestId("center-quick-actions");
     await expect(quick).toBeVisible();
+    // The seed has every switch on: book as a guest, open a booking, sign in, then the contact
+    // tasks the page has data for.
     for (const id of [
+      "center-book",
+      "quick-my-booking",
+      "center-sign-in",
       "quick-call",
       "quick-whatsapp",
       "quick-directions",
-      "quick-book",
+      "quick-hours",
     ]) {
       await expect(quick.getByTestId(id)).toBeVisible();
     }
+    await expect(quick.getByTestId("center-book")).toHaveAttribute(
+      "href",
+      "/portal/book",
+    );
+    await expect(quick.getByTestId("quick-my-booking")).toHaveAttribute(
+      "href",
+      "/portal/booking",
+    );
+    // Today (Wednesday) is open 08:00-20:00: the hours card says so and leads to the table.
+    await expect(quick.getByTestId("quick-hours")).toContainText("8:00");
+    // The book card and the first task sit within the first screen.
+    const book = await quick.getByTestId("center-book").boundingBox();
+    expect((book?.y ?? 9999) + (book?.height ?? 0)).toBeLessThan(812);
+    // The bar keeps booking, sign-in and a call in reach.
+    const sticky = page.getByTestId("center-sticky-bar");
+    await expect(sticky.getByTestId("center-sticky-book")).toBeVisible();
+    await expect(sticky.getByTestId("center-sticky-cta")).toBeVisible();
+    await expect(sticky.getByTestId("center-sticky-call")).toHaveAttribute(
+      "href",
+      FULL.phone_uri,
+    );
     // Primary content is not a horizontal scroller.
     await expect(page.getByTestId("center-doctor").first()).toBeVisible();
     await expectNoHorizontalScroll(page);
@@ -716,6 +748,130 @@ test.describe("@portal center page", () => {
     await page.context().close();
   });
 
+  test("the footer carries contact, hours, links and the vendor line in both languages", async ({
+    browser,
+  }) => {
+    for (const lang of ["ar", "en"] as const) {
+      const page = await openCenter(
+        browser,
+        { width: 375, height: 812 },
+        "light",
+        lang,
+        FULL,
+      );
+      const footer = page.getByTestId("center-footer");
+      await footer.scrollIntoViewIfNeeded();
+      await expect(footer).toContainText(
+        lang === "ar" ? FULL.name_ar : FULL.name_en,
+      );
+      await expect(footer.getByTestId("footer-contact")).toContainText(
+        FULL.address,
+      );
+      // Saturday has short hours, Sunday to Thursday share theirs (one line, not five) and
+      // Friday is off: two lines.
+      await expect(
+        footer.getByTestId("footer-hours").locator("dt"),
+      ).toHaveCount(2);
+      await expect(footer.getByTestId("footer-book")).toHaveAttribute(
+        "href",
+        "/portal/book",
+      );
+      await expect(footer.getByTestId("footer-my-booking")).toHaveAttribute(
+        "href",
+        "/portal/booking",
+      );
+      await expect(footer.getByTestId("footer-sign-in")).toBeVisible();
+      await expect(footer.getByTestId("footer-policies")).toHaveAttribute(
+        "href",
+        "#center-policies",
+      );
+      await expect(footer).toContainText(String(new Date().getFullYear()));
+      // A plain link to the vendor, in a new tab; nothing is fetched from it.
+      const vendor = footer.getByTestId("footer-powered-by");
+      await expect(vendor).toHaveAttribute("href", "https://stingdev.pro");
+      await expect(vendor).toHaveAttribute("target", "_blank");
+      await expect(vendor).toHaveAttribute("rel", /\bnoopener\b/);
+      await expect(vendor).toContainText(
+        tr(lang, "portal:center.footer.poweredBy"),
+      );
+      await expect(vendor).toContainText("stingdev.pro");
+      // Language and theme are reachable at the end of the page too.
+      await expect(
+        footer.getByRole("button", { name: tr(lang, "common:theme.change") }),
+      ).toBeVisible();
+      if (lang === "ar") {
+        await page.evaluate(() => document.fonts.ready.then(() => undefined));
+        await footer.screenshot({
+          path: path.join(
+            SCREENS_DIR,
+            "center-redesign-footer-375x812-light-ar.png",
+          ),
+          animations: "disabled",
+          // The sticky header and the floating bar would sit over the picture of the footer.
+          style:
+            "header, [data-testid=center-sticky-bar] { visibility: hidden !important; }",
+        });
+      }
+      await page.context().close();
+    }
+  });
+
+  test("a sparse page keeps a short footer and the vendor line", async ({
+    browser,
+  }) => {
+    const page = await openCenter(
+      browser,
+      { width: 375, height: 812 },
+      "light",
+      "en",
+      EMPTY,
+    );
+    const footer = page.getByTestId("center-footer");
+    await expect(footer.getByTestId("footer-contact")).toHaveCount(0);
+    await expect(footer.getByTestId("footer-hours")).toHaveCount(0);
+    await expect(footer.getByTestId("footer-policies")).toHaveCount(0);
+    await expect(footer.getByTestId("footer-powered-by")).toBeVisible();
+    await expectNoHorizontalScroll(page);
+    await page.context().close();
+  });
+
+  test("the FAQ opens like an accordion, and reduced motion keeps everything still", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+      reducedMotion: "reduce",
+    });
+    const page = await context.newPage();
+    await setPrefs(page, { theme: "light", lang: "en" });
+    await page.route("**/api/portal/center-page", (route) =>
+      route.fulfill({ json: FULL }),
+    );
+    await page.route("**/api/portal/center-media/**", (route) =>
+      route.fulfill({ body: PNG, contentType: "image/png" }),
+    );
+    await page.goto("/portal");
+    await expect(page.getByTestId("center-hero")).toBeVisible();
+    const item = page.getByTestId("center-faq-item").first();
+    await item.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(item).toHaveAttribute("open", "");
+    await expect(item).toContainText(FULL.faq[0]?.answer_en ?? "");
+    // Nothing animates or lifts under reduced motion.
+    const animated = await page.evaluate(
+      () =>
+        document.getAnimations().filter((a) => a.playState === "running")
+          .length,
+    );
+    expect(animated).toBe(0);
+    const card = page.getByTestId("center-book");
+    await card.hover();
+    expect(await card.evaluate((el) => getComputedStyle(el).transform)).toBe(
+      "none",
+    );
+    await context.close();
+  });
+
   test.describe("screens", () => {
     // Every shape x 3 viewports x 3 themes x 2 languages: no horizontal scroll and no axe
     // violation; pictures for (ar, light), (en, dark) and (ar, warm) (ARCHITECTURE 6).
@@ -753,7 +909,12 @@ test.describe("@portal center page", () => {
                     `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`,
                 ),
               ).toEqual([]);
-              if (SNAPPED.has(`${theme}-${lang}`)) await snap(page, name);
+              // The full page is the redesign's reference picture (D-0022).
+              if (SNAPPED.has(`${theme}-${lang}`))
+                await snap(
+                  page,
+                  name === "center-full" ? "center-redesign" : name,
+                );
               await page.context().close();
             });
           }
@@ -770,7 +931,7 @@ test.describe("@portal center page", () => {
     await signInPortal(page, who);
     await page.goto("/portal");
     const action = page.getByTestId("center-sign-in").first();
-    await expect(action).toHaveText(t("portal:center.openFile"));
+    await expect(action).toContainText(t("portal:center.openFile"));
     await action.click();
     await expect(page).toHaveURL(/\/portal\/home$/);
   });

@@ -12,6 +12,7 @@ import { getSiteConfig, signInPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 import { usePortalMe } from "./api";
+import { CenterFooter } from "./components/CenterFooter";
 import { NoticesBell } from "./components/NoticesBell";
 import { useSignOut } from "./lib/session";
 
@@ -59,7 +60,7 @@ export function PortalLayout({ children }: { children?: ReactNode } = {}) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg" data-density="comfortable">
-      <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur print:hidden">
+      <header className="site-glass sticky top-0 z-20 border-b border-border print:hidden">
         <div className={cn("mx-auto flex h-14 w-full items-center justify-between gap-2 px-4", width)}>
           <Link
             to={signedIn ? "/portal/home" : "/portal"}
@@ -117,29 +118,33 @@ export function PortalLayout({ children }: { children?: ReactNode } = {}) {
       >
         {children ?? <Outlet />}
       </main>
-      <footer
-        // The fixed phone tab bar (signed in) sits over the page's end: leave its height plus the
-        // device's safe area free, so the last card is never under it. (`safe-bottom` alone set
-        // padding-bottom to the inset and cancelled the tab-bar room.)
-        className={cn(
-          "mx-auto w-full px-4 text-center text-xs text-muted print:hidden",
-          width,
-          // The center page's sticky action bar is fixed over the end of the page on phones too.
-          signedIn || (isCenter && (tracking || site.guestBooking))
-            ? "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6"
-            : "pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
-        )}
-      >
-        <p>{t("privacy")}</p>
-        {signedIn ? null : (
-          <Link
-            to={signInPath()}
-            className="mt-1 inline-flex min-h-11 items-center px-2 font-medium text-primary-strong underline-offset-4 hover:underline"
-          >
-            {t("staffLink")}
-          </Link>
-        )}
-      </footer>
+      {isCenter && site.centerSite ? (
+        // The center website's own footer (D-0022): contact, hours, links and the vendor line.
+        <CenterFooter />
+      ) : (
+        <footer
+          // The fixed phone tab bar (signed in) sits over the page's end: leave its height plus the
+          // device's safe area free, so the last card is never under it. (`safe-bottom` alone set
+          // padding-bottom to the inset and cancelled the tab-bar room.)
+          className={cn(
+            "mx-auto w-full px-4 text-center text-xs text-muted print:hidden",
+            width,
+            signedIn
+              ? "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6"
+              : "pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
+          )}
+        >
+          <p>{t("privacy")}</p>
+          {signedIn ? null : (
+            <Link
+              to={signInPath()}
+              className="mt-1 inline-flex min-h-11 items-center px-2 font-medium text-primary-strong underline-offset-4 hover:underline"
+            >
+              {t("staffLink")}
+            </Link>
+          )}
+        </footer>
+      )}
     </div>
   );
 }
