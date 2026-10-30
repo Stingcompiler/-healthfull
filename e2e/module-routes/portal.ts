@@ -59,6 +59,16 @@ export const routes: readonly AppRoute[] = [
     (who) =>
       `/portal/appointments/${String(who.appointment?.id ?? 0)}/reschedule`,
   ),
+  // Patient tracking (public site Phase 5): a visit's timeline and the inbox with its badge.
+  portalRoute(
+    "portal-visit",
+    "/portal/visits/$visitId",
+    (page) => page.getByTestId("visit-timeline"),
+    (who) => `/portal/visits/${String(who.visit.id)}`,
+  ),
+  portalRoute("portal-notices", "/portal/notices", (page) =>
+    page.getByTestId("notice-row").first(),
+  ),
   portalRoute("portal-results", "/portal/results", (page) =>
     page.getByTestId("result-row").first(),
   ),

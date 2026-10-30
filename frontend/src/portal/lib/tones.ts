@@ -44,3 +44,34 @@ export const BOOKING_TONE: Record<
   expired: "neutral",
   missed: "warning",
 };
+
+/** A visit (plan section 5): at the center is happening now, completed is calm. */
+export const VISIT_TONE: Record<"at_center" | "completed" | "cancelled", PillTone> = {
+  at_center: "info",
+  completed: "success",
+  cancelled: "neutral",
+};
+
+/**
+ * An order on the visit timeline. Amber only where the patient acts (pay at reception);
+ * waiting for the department is neutral pending, never amber (D-0009).
+ */
+export const ORDER_TONE: Record<
+  "pay_at_reception" | "waiting" | "in_progress" | "done" | "result_published" | "cancelled",
+  PillTone
+> = {
+  pay_at_reception: "warning",
+  waiting: "pending",
+  in_progress: "info",
+  done: "success",
+  result_published: "success",
+  cancelled: "neutral",
+};
+
+/** An approved invoice from the patient's side. */
+export const PAYMENT_TONE: Record<"nothing_due" | "outstanding" | "under_verification" | "paid", PillTone> = {
+  nothing_due: "neutral",
+  outstanding: "warning",
+  under_verification: "pending",
+  paid: "success",
+};

@@ -26,6 +26,9 @@ export const portalKeys = {
   receipts: ["portal", "receipts"] as const,
   receipt: (id: number) => ["portal", "receipt", id] as const,
   balance: ["portal", "balance"] as const,
+  visits: ["portal", "visits"] as const,
+  timeline: (visitId: number) => ["portal", "timeline", visitId] as const,
+  notices: ["portal", "notices"] as const,
   verify: (receipt: string, token: string) => ["portal-verify", receipt, token] as const,
 };
 
@@ -209,6 +212,58 @@ export function useBalance() {
     queryKey: portalKeys.balance,
     queryFn: () => unwrap(api.GET("/api/portal/balance")),
     meta: PORTAL_META,
+  });
+}
+
+/** The patient's visits, newest first (each opens its timeline). */
+export function useVisits() {
+  return useQuery({
+    queryKey: portalKeys.visits,
+    queryFn: () => unwrap(api.GET("/api/portal/visits")),
+    meta: PORTAL_META,
+  });
+}
+
+/** One visit as the patient lives it (patient-facing states only, `domain.portal_status`). */
+export function useVisitTimeline(visitId: number) {
+  return useQuery({
+    queryKey: portalKeys.timeline(visitId),
+    queryFn: () =>
+      unwrap(api.GET("/api/portal/visits/{visit_id}/timeline", { params: { path: { visit_id: visitId } } })),
+    meta: PORTAL_META,
+  });
+}
+
+/**
+ * The inbox and its unread count. Polled every minute while a signed-in screen is open (the
+ * header badge), never while signed out.
+ */
+export function useNotices(enabled = true) {
+  return useQuery({
+    queryKey: portalKeys.notices,
+    queryFn: () => unwrap(api.GET("/api/portal/notices")),
+    enabled,
+    refetchInterval: enabled ? 60_000 : false,
+    meta: PORTAL_META,
+  });
+}
+
+export function useMarkNoticeRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (noticeId: number) =>
+      unwrap(api.POST("/api/portal/notices/{notice_id}/read", { params: { path: { notice_id: noticeId } } })),
+    meta: PORTAL_META,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: portalKeys.notices }),
+  });
+}
+
+export function useMarkAllNoticesRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(api.POST("/api/portal/notices/read-all")),
+    meta: PORTAL_META,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: portalKeys.notices }),
   });
 }
 
