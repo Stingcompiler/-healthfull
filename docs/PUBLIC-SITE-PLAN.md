@@ -1,6 +1,8 @@
 # Work order: public center website, online booking and patient tracking
 
-Status: PLAN ONLY. Nothing in this document has been executed. It is an enhanced, evidence-based
+Status: **COMPLETE (2026-10-30).** Phases 0 to 6 shipped; what was built, and every deviation, is
+in the "as built" sections of ADRs 0028 and 0029. The text below is the plan as written, kept for
+the record. Original status line: PLAN ONLY. Nothing in this document has been executed. It is an enhanced, evidence-based
 rewrite of the original request, grounded in the code on `main` as of 2026-10-29. Claude Code
 executes it phase by phase with the `ship-feature` skill; Musab reviews Phase 0 before any code.
 

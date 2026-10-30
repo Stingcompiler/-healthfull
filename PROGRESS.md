@@ -13,6 +13,7 @@ Source of truth for build status. Update at the end of every task. Phases from `
 | 6. Claims, reports, admin, ops | done: admin on `wave/a` (from `feat/a-admin`) and claims on `wave/b` (from `feat/b-claims`), both on main; reports and ops on `wave/c` (from `feat/c-reports`, `feat/c-ops`), merged to main (PR #7) | FEATURES 0.1-0.3, 5.2, 5.5, 11.1, 13.1-13.3 (admin); 11.2-11.7 (claims, ADR 0012); 4.5, 12.1-12.11 (reports and dashboard, ADR 0013); 1.8 wizard, 8.13, 0.13, 13.8-13.10, audit viewer (ops, ADR 0014); follow-ups below |
 | 7. Patient portal | done on `wave/c` (merged from `feat/c-portal`); merged to main (PR #7) | FEATURES 15.1, 15.2, 9.4 visible to the patient (ADR 0016); follow-ups below |
 | 8. Hardening and handover | done; merged to main (PR #8, `9cc3e6d`), then UI and portal PRs #9-#15 | follow-ups (ADRs 0018, 0019), docs and operations (ADR 0020), cycle (ADR 0017: demo dataset, full-cycle and restart e2e, e2e fixture server) and polish (ADRs 0021, 0022) all on main; pre-trial fixes from the October 2026 inspection in progress (below) |
+| Public site work order (`docs/PUBLIC-SITE-PLAN.md`) | **complete**: Phases 0-6 merged (PRs #24-#31 and the Phase 6 PR) | center website, online and guest booking with reception approval, patient tracking, LAN edge and handover docs; as built in ADRs 0028 and 0029 |
 
 ## Phase 0 checklist
 
@@ -841,3 +842,18 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   77 passed. A first `make check` failed on two classification tables that must name every new model / patient
   operation (admin registration, patient-session table); fixed.
 - [x] Public site Phase 5: patient tracking.
+- 2026-10-30: public site work order, Phase 6 (edge deployment and handover) on `feat/public-site-phase6-edge`
+  (ADR 0028 and 0029 "Phase 6 as built"): `infra/edge/edge.caddy` (imported per center by the vendor host's
+  Caddy; exact path and method allowlist derived from the contract: 39 API operations, the SPA files and `/`,
+  `/portal*`, `/verify/*`; everything else refused, `GET /api/auth/me` answered 401 at the edge, raw `%`, dot
+  segments, `//` and `\` refused, 256 KB body limit, HSTS, `X-Forwarded-For` overwritten), fallback page (503
+  with the tunnel or center down, 404 for refused pages), WireGuard templates for the host and the center
+  (placeholders only, firewall rules: only the web port through the tunnel, no center-to-center) and a systemd
+  drop-in; `infra/tests/test_edge_allowlist.sh` (every operation of `frontend/openapi.json` through the edge,
+  the staff surface by name, traversal, XFF, fallback, tunnel down, example configs) in `infra/tests/run.sh` and
+  the CI docker step with the web image's Caddy; runbook `docs/runbooks/public-edge.md`; guides
+  `online-bookings.md` (reception) and `public-site.md` (administrator). Deviations: static fallback (not a
+  cached center page), no edge rate limit (stock Caddy), `/api/auth/me` synthesized. Results: `make check`
+  green (backend 2761 passed, frontend 683 passed, lint/types/lint-ui/tokens/api drift clean); `infra/tests/run.sh`
+  all 8 scripts passed locally (edge 17 checks; mutations adding a staff path or dropping a public one fail it).
+- [x] Public site Phase 6: edge deployment and handover. The public site work order is complete.

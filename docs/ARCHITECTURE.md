@@ -21,7 +21,7 @@ frontend/                React 19 + Vite + TypeScript 5.9 strict + Tailwind v4 +
   src/portal/            patient portal (mobile-first), same SPA, /portal/*
 e2e/                     Playwright tests, fixtures, responsive helpers
 agent/                   local device agent (Python, PyInstaller)
-infra/                   Dockerfiles, compose, Caddyfile, pgbackrest, update.sh, backup scripts
+infra/                   Dockerfiles, compose, Caddyfile, pgbackrest, update.sh, backup scripts; edge/ = optional public edge for a LAN install (ADR 0028)
 docs/                    decisions, ADRs (docs/adr/NNNN-title.md), runbooks/, guides/ (user guides per role)
 scripts/                 dev helper scripts
 Makefile                 the only entry point for common commands
@@ -40,7 +40,7 @@ Makefile                 the only entry point for common commands
 | `make e2e` | reset e2e DB, seed, start servers on free ports, run Playwright |
 | `make seed` | load demo dataset into dev DB |
 | `make check` | lint + typecheck + test + api drift check. Must be green before any commit to main |
-| `make infra-test` | shell lint + `infra/tests/run.sh`: update.sh (fake docker), roles, backup/restore and the restore-from-scratch drill (local Postgres 16; the drill also needs `backend/.venv`) |
+| `make infra-test` | shell lint + `infra/tests/run.sh`: update.sh (fake docker), roles, the Caddy X-Forwarded-For trust and the public edge allowlist (need `caddy`), backup/restore and the restore-from-scratch drill (local Postgres 16; the drill also needs `backend/.venv`) |
 
 ## 3. Parallel-safe local environment
 
