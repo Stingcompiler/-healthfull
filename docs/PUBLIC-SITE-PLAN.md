@@ -319,8 +319,9 @@ cross-references in code docstrings, PR squash-merged to `main`.
    never submitted from the public.
 7. **Reschedule by the patient: allowed**, same cut-off as cancellation, for signed-in patients
    and guests alike.
-8. **Request expiry: 24 hours** before the slot by default (`request_ttl_hours`, editable, never
-   later than the booking lead time).
+8. **Request expiry: 24 hours** after the request is made by default (`request_ttl_hours`,
+   editable), or at the booking lead time before the slot if that comes first. (Wording corrected
+   2026-10-30 to match the code and the guides; the original said "before the slot".)
 
 ## 8. Limitations to state in the handover
 

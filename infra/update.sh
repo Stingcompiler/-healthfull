@@ -10,7 +10,8 @@
 #   4. migrate         database roles checked and repaired (infra/db-roles.sh), then `migrate`
 #                      in a one-off `migrate` container of the NEW image, which connects as the
 #                      owner role (only when migrations are pending). The app role never can.
-#   5. swap            recreate app and web on the new tag
+#   5. swap            recreate app, web and maintenance on the new tag (maintenance runs
+#                      the app image: left on the old tag it would run old jobs on the new schema)
 #   6. health          GET /api/ops/health inside the app until status=ok and version=TAG
 #   7. commit          write APP_IMAGE_TAG=TAG to .env, record the run
 # On failure after step 3: restart the PREVIOUS tag. The database is restored from the step-3 dump
@@ -334,7 +335,7 @@ rollback() {
   if [[ $MIGRATED -eq 1 ]]; then
     if [[ $RESTORE_DB -eq 1 && -n "$DUMP" ]]; then
       step "rollback: restore database from $DUMP"
-      compose stop app || true
+      compose stop app maintenance || true
       if compose run --rm --no-deps -T backup /opt/backup/restore-dump.sh --dump "$DUMP" --yes; then
         DB_RESTORED=1
       else
@@ -344,14 +345,14 @@ rollback() {
     else
       warn "migrations of $NEW_TAG were applied; $PREV_TAG may not work with the new schema."
       warn "To also restore the pre-update database run:"
-      warn "  infra/compose.sh stop app"
+      warn "  infra/compose.sh stop app maintenance"
       warn "  infra/compose.sh run --rm --no-deps -T backup /opt/backup/restore-dump.sh --dump $DUMP --yes"
-      warn "  infra/compose.sh up -d app web"
+      warn "  infra/compose.sh up -d app web maintenance"
       warn "or re-run this update with --restore-db-on-failure."
     fi
   fi
   step "rollback: start $PREV_TAG"
-  if compose_tag "$PREV_TAG" up -d --no-deps app web && check_health "$PREV_TAG"; then
+  if compose_tag "$PREV_TAG" up -d --no-deps app web maintenance && check_health "$PREV_TAG"; then
     log "rolled back: $PREV_TAG is serving again"
   else
     log "!!! rollback to $PREV_TAG is NOT healthy: follow docs/runbooks/update-rollback.md now"
@@ -422,9 +423,9 @@ fi
 
 # ------------------------------------------------------------------------------------ 3. backup
 if [[ $PENDING -eq 1 ]]; then
-  step "3/7 maintenance: stop app so the backup is the last write before migrating"
+  step "3/7 maintenance: stop app and maintenance so the backup is the last write before migrating"
   STOPPED=1
-  compose stop app || fail "could not stop app"
+  compose stop app maintenance || fail "could not stop app"
 fi
 step "3/7 pre-update backup"
 set +e
@@ -457,10 +458,10 @@ else
 fi
 
 # ------------------------------------------------------------------------------------ 5. swap
-step "5/7 swap app and web to $NEW_TAG"
+step "5/7 swap app, web and maintenance to $NEW_TAG"
 SWAPPED=1
 save_state
-compose_tag "$NEW_TAG" up -d --no-deps app web || fail "could not start $NEW_TAG"
+compose_tag "$NEW_TAG" up -d --no-deps app web maintenance || fail "could not start $NEW_TAG"
 
 # ------------------------------------------------------------------------------------ 6. health
 step "6/7 health check"
