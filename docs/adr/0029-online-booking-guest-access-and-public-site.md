@@ -365,6 +365,44 @@ Staff get in-app notifications `online_booking_requested` and
 `online_booking_cancelled_by_patient` (kinds table, `core/notification_kinds.py`). Guests have no
 inbox: they have the reference and the WhatsApp message reception may send.
 
+**Phase 5 as built (2026-10-30, patient tracking).**
+- **Mapping.** `domain.portal_status` gained the visit (`at_center`, `completed`, `cancelled`),
+  order (`pay_at_reception`, `waiting`, `in_progress`, `done`, `result_published`, `cancelled`)
+  and payment (`nothing_due`, `outstanding`, `under_verification`, `paid`) families and
+  `booking_notice` (which booking display writes which notice). Each is Hypothesis-tested for
+  totality over the whole product of the internal enums. An order reads "paid, waiting" only for
+  a settled line or an unrevoked perform-first authorization (invariant 1); a lab line reads
+  "result published" only with an approved version; a credited line never given reads cancelled.
+- **Timeline.** `GET /api/portal/visits` and `GET /api/portal/visits/{id}/timeline` (patient
+  session; another file's visit is 404): the booking the visit came from, the arrival, each
+  order in the patient's words (name, kind, quantity; no price), the visit's approved invoices
+  (the patient's share, paid, outstanding, money still waiting for the bank) and the end. No
+  staff notes, no chief complaint, no payer share. Screens: `/portal/visits/$visitId`, opened
+  from a "Your visits" list on the appointments page (the "Visits" tab).
+- **Inbox.** `portal.PatientNotice` (patient file, kind, payload, `channels`, optional
+  appointment and service line, `read_at`; tracked by history). Triggers keep a notice fixed:
+  never deleted, nothing but `read_at` changes, and `read_at` only once. Written only through
+  `patients.notify(patient, kind, channels=("portal",), ...)`, which refuses an unknown channel
+  and (in `portal.notices.record`) a call outside a transaction. `GET /api/portal/notices`
+  (latest 50 and the unread count), `POST /api/portal/notices/{id}/read` (idempotent, 404 for
+  another file), `POST /api/portal/notices/read-all`. Screens: a bell with the unread badge in
+  the portal header (polled every minute while signed in) and `/portal/notices`.
+- **Where notices are written.** In `apps.visits.services`, inside each transition's
+  transaction, for an appointment with a patient file: create (requested or confirmed; staff
+  bookings for a file too), approve, decline, cancel (by the patient or the center), the expiry
+  sweep and lazy expiry, and a move (one `booking_rescheduled` notice for the new time, saying
+  whether it waits for reception). Arrival and no-show write none (the patient is at the desk or
+  the time passed). In `apps.lab.services.approve_results`, after the version is approved and
+  before the staff notification: `result_published` naming the test (and "corrected" for an
+  amendment), linking to the result page that already shows approved versions only.
+- **Deviations.** (1) The plan's "rejected with reason text chosen by staff" shows the reason
+  code's label, never the free note (the note is staff-internal). (2) A booking made by staff
+  for a patient file also writes "confirmed": the patient sees every booking of their file in the
+  same inbox. (3) A guest booking linked to a file later gets notices from then on (it is then
+  the file's booking); before the link, none. (4) Notices are written whatever the switches say;
+  only reading them needs patient sign-in on. (5) The visit list lives on the appointments page
+  instead of a sixth phone tab (the tab bar keeps five cells); no new nav entry.
+
 ### J. Out of scope for V1
 Branches; online payment and fee display; service-level booking (lab, procedures: V1 books doctor
 consultation slots only); SMS and e-mail; map embeds; automatic blocking by no-show.
