@@ -113,6 +113,8 @@ def _call(
         "patient_id": w["patient"]["id"],
         "code_id": code.pk if code else 1,
         "media_id": 1,
+        "visit_id": w["visit"]["id"],
+        "notice_id": w["notice_id"],
     }
     url = _url(path, ids)
     client: ApiClient = staff if op_id in STAFF_OPERATIONS else patient

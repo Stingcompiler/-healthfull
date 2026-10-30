@@ -35,10 +35,11 @@ from apps.orders.models import FulfilmentStatus, ServiceLine
 from apps.patients.models import Patient
 from apps.payments import services as payments
 from apps.payments.models import Allocation, Payment
+from apps.payments.models import Verification as PaymentVerification
 from apps.portal import conf
 from apps.portal.services import PortalPrincipal, bookable_doctor
 from apps.visits import services as visits
-from apps.visits.models import Appointment, AppointmentStatus, DoctorSchedule
+from apps.visits.models import Appointment, AppointmentStatus, DoctorSchedule, Visit
 from domain import appointments as dappt
 from domain import center_page as dcenter
 from domain import portal as dportal
@@ -46,7 +47,12 @@ from domain import public_site as public_rules
 from domain.money import ZERO, money
 from domain.payments import Verification
 from domain.portal import BookingRules
-from domain.portal_status import booking_display
+from domain.portal_status import (
+    booking_display,
+    invoice_display,
+    order_display,
+    visit_display,
+)
 
 __all__ = [
     "appointment",
@@ -64,6 +70,8 @@ __all__ = [
     "result_detail",
     "results",
     "summary",
+    "visit_list",
+    "visit_timeline",
 ]
 
 _ABNORMAL = frozenset({"low", "high", "critical_low", "critical_high", "abnormal"})
@@ -571,6 +579,133 @@ def balance(principal: PortalPrincipal) -> dict[str, Any]:
         "credit": _m(b.spendable),
         "pending": _m(b.pending),
         "open_invoices": len(b.invoices),
+    }
+
+
+# --- visits: the patient's timeline (plan section 5, public site Phase 5) -------------------
+
+
+def _visit_rows(files: Iterable[int]) -> QuerySet[Visit]:
+    return Visit.objects.filter(patient_id__in=list(files)).select_related(
+        "department", "doctor__user"
+    )
+
+
+def _visit_head(v: Visit) -> dict[str, Any]:
+    doctor = v.doctor
+    return {
+        "id": v.pk,
+        "number": v.number,
+        "opened_at": v.created_at,
+        "closed_at": v.closed_at if v.status != "open" else None,
+        "status": v.status,
+        "display_status": visit_display(v.status),
+        "department_ar": v.department.name_ar if v.department else "",
+        "department_en": v.department.name_en if v.department else "",
+        "doctor": _names(doctor.user) if doctor is not None else None,
+    }
+
+
+def visit_list(principal: PortalPrincipal) -> list[dict[str, Any]]:
+    """The person's visits, newest first (the way into each timeline)."""
+    rows = _visit_rows(principal.file_ids()).order_by("-created_at", "-id")[:_RECENT_LIMIT]
+    return [_visit_head(v) for v in rows]
+
+
+def _line_json(line: ServiceLine, *, published: set[int]) -> dict[str, Any]:
+    authorization = line.authorization
+    shown = order_display(
+        billing=line.billing_status,
+        fulfilment=line.fulfilment_status,
+        authorized=authorization is not None and authorization.revoked_at is None,
+        is_lab=line.kind == "lab",
+        result_published=line.pk in published,
+    )
+    return {
+        "line_id": line.pk,
+        "kind": line.kind,
+        "name_ar": line.service.name_ar,
+        "name_en": line.service.name_en,
+        "quantity": int(line.quantity),
+        "ordered_at": line.ordered_at,
+        "performed_at": line.performed_at,
+        "display_status": shown,
+        # The result page answers only for an approved version (the same set).
+        "result_line_id": line.pk if shown == "result_published" else None,
+    }
+
+
+def _pending_applied(invoice_ids: list[int]) -> dict[int, Decimal]:
+    """Money still waiting for the bank's confirmation applied to each invoice."""
+    totals: dict[int, Decimal] = {}
+    for inv_id, amount in Allocation.objects.filter(
+        invoice_id__in=invoice_ids,
+        payment__verification=PaymentVerification.PENDING,
+        payment__reversal_of__isnull=True,
+    ).values_list("invoice_id", "amount"):
+        totals[inv_id] = totals.get(inv_id, ZERO) + amount
+    return totals
+
+
+def visit_timeline(principal: PortalPrincipal, visit_id: int) -> dict[str, Any]:
+    """One visit as the patient lives it: the booking it came from, the arrival, each order
+    in the patient's words (no prices; a lab line reads "result published" only once an
+    approved version exists), the invoices of the visit (the patient's share, paid,
+    outstanding, waiting for the bank) and the end of the visit.
+
+    Raises: Visit.DoesNotExist (not the person's visit: 404).
+    """
+    files = principal.file_ids()
+    v = _visit_rows(files).get(pk=visit_id)
+    now = timezone.now()
+    booking = None
+    appointment = (
+        Appointment.objects.filter(pk=v.appointment_id, patient_id__in=files)
+        .select_related("doctor__user", "doctor__department", "cancel_reason")
+        .first()
+        if v.appointment_id is not None
+        else None
+    )
+    if appointment is not None:
+        rules = core.booking_rules()
+        row = _appointment_json(appointment, now=now, rules=rules)
+        booking = {
+            "id": row["id"],
+            "starts_at": row["starts_at"],
+            "display_status": row["display_status"],
+            "doctor": row["doctor"],
+        }
+    lines = list(
+        ServiceLine.objects.filter(visit=v)
+        .select_related("service", "authorization")
+        .order_by("ordered_at", "id")
+    )
+    published = set(
+        _approved_versions(files)
+        .filter(result_set__service_line__visit=v)
+        .values_list("result_set__service_line_id", flat=True)
+    )
+    invoices_rows = list(_approved_invoices(files).filter(visit=v).order_by("approved_at", "id"))
+    positions = billing.invoice_positions(invoices_rows)
+    pending = _pending_applied([inv.pk for inv in invoices_rows])
+    invoices_out = []
+    for inv in invoices_rows:
+        pos = positions[inv.pk]
+        invoices_out.append(
+            {
+                **_invoice_json(inv, pos),
+                "display_status": invoice_display(
+                    patient_due=pos.patient_due,
+                    outstanding=pos.outstanding,
+                    pending_applied=pending.get(inv.pk, ZERO),
+                ),
+            }
+        )
+    return {
+        **_visit_head(v),
+        "booking": booking,
+        "orders": [_line_json(line, published=published) for line in lines],
+        "invoices": invoices_out,
     }
 
 

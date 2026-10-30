@@ -23,6 +23,7 @@ from apps.core.services import require_permission
 from apps.patients.models import Patient
 from apps.payments.models import Payment
 from apps.portal import queries, services
+from apps.portal.models import PatientNotice
 from apps.visits import services as visits
 from apps.visits.models import Appointment
 from domain.errors import DomainError
@@ -51,7 +52,8 @@ def _book_upcoming(patient_id: int, doctor_username: str, actor: User) -> Appoin
         "A new patient (`patient_fields` override) with a paid visit: CBC approved, malaria "
         "entered but not approved, a prescription, and a portal access code for the receipt "
         "(`code` false to skip). `appointment` true books the next free slot of `doctor` "
-        "from tomorrow on. Returns file_no, phone, code, line ids, invoice, payment, token."
+        "from tomorrow on. Returns file_no, phone, code, line ids, invoice, payment, token "
+        "and `notice_id` (the newest portal notice)."
     ),
     params=("patient_fields", "appointment", "doctor", "code"),
 )
@@ -106,6 +108,7 @@ def portal_patient(p: Params) -> Json:
         "verify_token": services.receipt_verify_token(payment.number),
         "code": None,
         "appointment": None,
+        "notice_id": None,
     }
     if p.flag("code", True):
         cashier = p.actor("cashier")
@@ -117,6 +120,13 @@ def portal_patient(p: Params) -> Json:
         require_permission(reception, "visits.manage_appointments")
         booked = _book_upcoming(patient["id"], p.text("doctor", "doctor"), reception)
         result["appointment"] = {"id": booked.pk, "starts_at": booked.starts_at.isoformat()}
+    # The CBC approval (and the booking) wrote portal notices (ADR 0029 I): the newest one.
+    result["notice_id"] = (
+        PatientNotice.objects.filter(patient_id=patient["id"])
+        .order_by("-created_at", "-id")
+        .values_list("pk", flat=True)
+        .first()
+    )
     return result
 
 

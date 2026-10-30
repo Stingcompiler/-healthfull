@@ -555,3 +555,96 @@ class GuestBookingOut(Schema):
 class GuestRescheduleIn(Schema):
     starts_at: datetime
     doctor_id: int | None = Field(None, description="Default: the same doctor")
+
+
+# --- visit timeline and notices (public site Phase 5; domain.portal_status) ---------------
+
+VisitDisplayCode = Literal["at_center", "completed", "cancelled"]
+OrderDisplayCode = Literal[
+    "pay_at_reception", "waiting", "in_progress", "done", "result_published", "cancelled"
+]
+PaymentDisplayCode = Literal["nothing_due", "outstanding", "under_verification", "paid"]
+NoticeKindCode = Literal[
+    "booking_requested",
+    "booking_confirmed",
+    "booking_declined",
+    "booking_cancelled",
+    "booking_rescheduled",
+    "booking_expired",
+    "result_published",
+]
+
+
+class PortalVisitOut(Schema):
+    id: int
+    number: str
+    opened_at: datetime
+    closed_at: datetime | None
+    status: Literal["open", "closed", "cancelled"]
+    display_status: VisitDisplayCode = Field(
+        ..., description="What the patient is told (domain.portal_status)"
+    )
+    department_ar: str
+    department_en: str
+    doctor: PortalPersonNameOut | None
+
+
+class PortalVisitBookingOut(Schema):
+    id: int
+    starts_at: datetime
+    display_status: BookingDisplayCode
+    doctor: PortalDoctorOut
+
+
+class PortalVisitOrderOut(Schema):
+    line_id: int
+    kind: Literal["consultation", "lab", "procedure", "drug", "consumable", "bed"]
+    name_ar: str
+    name_en: str
+    quantity: int
+    ordered_at: datetime
+    performed_at: datetime | None
+    display_status: OrderDisplayCode
+    result_line_id: int | None = Field(
+        ..., description="Set only when an approved result can be opened"
+    )
+
+
+class PortalVisitInvoiceOut(PortalInvoiceOut):
+    display_status: PaymentDisplayCode
+
+
+class PortalVisitTimelineOut(PortalVisitOut):
+    booking: PortalVisitBookingOut | None = Field(
+        ..., description="The booking the visit came from, if any"
+    )
+    orders: list[PortalVisitOrderOut] = Field(..., description="No prices (plan section 5)")
+    invoices: list[PortalVisitInvoiceOut] = Field(
+        ..., description="Approved invoices of the visit: the patient's share only"
+    )
+
+
+class PortalNoticeOut(Schema):
+    id: int
+    kind: NoticeKindCode
+    created_at: datetime
+    read_at: datetime | None
+    payload: dict[str, str | bool] = Field(
+        ...,
+        description=(
+            "What the notice says: doctor_ar/en, starts_at, from_starts_at, display_status, "
+            "reason_ar/en, by_you, awaiting_approval, test_ar/en, amended"
+        ),
+    )
+    appointment_id: int | None
+    result_line_id: int | None = Field(..., description="Opens the approved result")
+
+
+class PortalNoticesOut(Schema):
+    items: list[PortalNoticeOut]
+    unread: int
+
+
+class PortalNoticesReadOut(Schema):
+    marked: int
+    unread: int

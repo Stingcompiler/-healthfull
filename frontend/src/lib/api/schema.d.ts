@@ -5576,6 +5576,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/notices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's inbox: booking changes and published results, and the unread count */
+        get: operations["portal_list_notices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/notices/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark every unread notice read */
+        post: operations["portal_mark_all_notices_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/notices/{notice_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one notice read (idempotent); 404 if not one's own */
+        post: operations["portal_mark_notice_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/patients/{patient_id}/access-codes": {
         parameters: {
             query?: never;
@@ -5769,6 +5820,43 @@ export interface paths {
          * @description Center, number, day, amount, status (valid, pending, void) and the payer's initials. 404 when the number is unknown or the token is not its own (not told apart); 429 after too many checks from one address.
          */
         get: operations["portal_verify_receipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The patient's visits, newest first, with what each means for them */
+        get: operations["portal_list_visits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/visits/{visit_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One visit as a timeline: booking, arrival, orders, payments, end
+         * @description Patient-facing states only (domain.portal_status): no prices beyond the patient's share of approved invoices, no staff notes, a lab result only once approved. 404 if not one's own.
+         */
+        get: operations["portal_get_visit_timeline"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15635,6 +15723,51 @@ export interface components {
             /** Sex */
             sex: string;
         };
+        /** PortalNoticeOut */
+        PortalNoticeOut: {
+            /** Appointment Id */
+            appointment_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "booking_requested" | "booking_confirmed" | "booking_declined" | "booking_cancelled" | "booking_rescheduled" | "booking_expired" | "result_published";
+            /**
+             * Payload
+             * @description What the notice says: doctor_ar/en, starts_at, from_starts_at, display_status, reason_ar/en, by_you, awaiting_approval, test_ar/en, amended
+             */
+            payload: {
+                [key: string]: string | boolean;
+            };
+            /** Read At */
+            read_at: string | null;
+            /**
+             * Result Line Id
+             * @description Opens the approved result
+             */
+            result_line_id: number | null;
+        };
+        /** PortalNoticesOut */
+        PortalNoticesOut: {
+            /** Items */
+            items: components["schemas"]["PortalNoticeOut"][];
+            /** Unread */
+            unread: number;
+        };
+        /** PortalNoticesReadOut */
+        PortalNoticesReadOut: {
+            /** Marked */
+            marked: number;
+            /** Unread */
+            unread: number;
+        };
         /** PortalPatientHeadOut */
         PortalPatientHeadOut: {
             /** Date Of Birth */
@@ -16069,6 +16202,159 @@ export interface components {
              * @enum {string}
              */
             status: "valid" | "pending" | "void";
+        };
+        /** PortalVisitBookingOut */
+        PortalVisitBookingOut: {
+            /**
+             * Display Status
+             * @enum {string}
+             */
+            display_status: "awaiting_approval" | "confirmed" | "received" | "moved" | "cancelled_by_you" | "cancelled_by_center" | "declined" | "expired" | "missed";
+            doctor: components["schemas"]["PortalDoctorOut"];
+            /** Id */
+            id: number;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /** PortalVisitInvoiceOut */
+        PortalVisitInvoiceOut: {
+            /** Date */
+            date: string | null;
+            /**
+             * Display Status
+             * @enum {string}
+             */
+            display_status: "nothing_due" | "outstanding" | "under_verification" | "paid";
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Outstanding
+             * @example 15000.00
+             */
+            outstanding: string;
+            /**
+             * Paid
+             * @example 15000.00
+             */
+            paid: string;
+            /**
+             * Patient Due
+             * @description The patient's share after credits
+             * @example 15000.00
+             */
+            patient_due: string;
+            /** Visit Number */
+            visit_number: string;
+        };
+        /** PortalVisitOrderOut */
+        PortalVisitOrderOut: {
+            /**
+             * Display Status
+             * @enum {string}
+             */
+            display_status: "pay_at_reception" | "waiting" | "in_progress" | "done" | "result_published" | "cancelled";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "consultation" | "lab" | "procedure" | "drug" | "consumable" | "bed";
+            /** Line Id */
+            line_id: number;
+            /** Name Ar */
+            name_ar: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Ordered At
+             * Format: date-time
+             */
+            ordered_at: string;
+            /** Performed At */
+            performed_at: string | null;
+            /** Quantity */
+            quantity: number;
+            /**
+             * Result Line Id
+             * @description Set only when an approved result can be opened
+             */
+            result_line_id: number | null;
+        };
+        /** PortalVisitOut */
+        PortalVisitOut: {
+            /** Closed At */
+            closed_at: string | null;
+            /** Department Ar */
+            department_ar: string;
+            /** Department En */
+            department_en: string;
+            /**
+             * Display Status
+             * @description What the patient is told (domain.portal_status)
+             * @enum {string}
+             */
+            display_status: "at_center" | "completed" | "cancelled";
+            doctor: components["schemas"]["PortalPersonNameOut"] | null;
+            /** Id */
+            id: number;
+            /** Number */
+            number: string;
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed" | "cancelled";
+        };
+        /** PortalVisitTimelineOut */
+        PortalVisitTimelineOut: {
+            /** @description The booking the visit came from, if any */
+            booking: components["schemas"]["PortalVisitBookingOut"] | null;
+            /** Closed At */
+            closed_at: string | null;
+            /** Department Ar */
+            department_ar: string;
+            /** Department En */
+            department_en: string;
+            /**
+             * Display Status
+             * @description What the patient is told (domain.portal_status)
+             * @enum {string}
+             */
+            display_status: "at_center" | "completed" | "cancelled";
+            doctor: components["schemas"]["PortalPersonNameOut"] | null;
+            /** Id */
+            id: number;
+            /**
+             * Invoices
+             * @description Approved invoices of the visit: the patient's share only
+             */
+            invoices: components["schemas"]["PortalVisitInvoiceOut"][];
+            /** Number */
+            number: string;
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            /**
+             * Orders
+             * @description No prices (plan section 5)
+             */
+            orders: components["schemas"]["PortalVisitOrderOut"][];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed" | "cancelled";
         };
         /** PreApprovalIn */
         PreApprovalIn: {
@@ -42728,6 +43014,176 @@ export interface operations {
             };
         };
     };
+    portal_list_notices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalNoticesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_mark_all_notices_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalNoticesReadOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_mark_notice_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalNoticeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     portal_list_patient_access_codes: {
         parameters: {
             query?: never;
@@ -43316,6 +43772,93 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_list_visits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalVisitOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    portal_get_visit_timeline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalVisitTimelineOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
