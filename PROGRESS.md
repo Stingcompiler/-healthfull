@@ -828,3 +828,16 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   switches`, `@portal center page|booking|sign-in`, new routes x 3 widths x 3 themes x 2 languages): 147 + 5
   passed after fixing three spec mistakes (console 401 before login, picker selector, plural key).
 - [x] Public site Phase 4b: guest booking screens and the reception inbox screen.
+- 2026-10-30: public site work order, Phase 5 (patient tracking) on `feat/public-site-phase5-tracking` (ADR 0029 I,
+  "Phase 5 as built"): `domain.portal_status` visit / order / payment families and `booking_notice` (Hypothesis
+  totality over every enum product), `GET /api/portal/visits`, `GET /api/portal/visits/{id}/timeline` (no prices
+  beyond the patient's share, no staff notes, results only once approved), `portal.PatientNotice` (fixed by
+  triggers except one `read_at`) written through `patients.notify` inside the event's transaction from the visits
+  booking transitions (create, approve, decline, cancel, expire, move) and `lab.approve_results`; inbox
+  `GET /api/portal/notices`, `POST .../{id}/read`, `POST .../read-all`; screens `/portal/visits/$visitId` (from
+  "Your visits" on the appointments page), `/portal/notices` and the header bell with the unread badge. Results:
+  `make check` green (backend 2761 passed, frontend 683 passed, lint/types/lint-ui/tokens/api drift clean); e2e
+  locally `@tracking` and the responsive rows of portal-visit / portal-notices / portal-appointments / portal-home:
+  77 passed. A first `make check` failed on two classification tables that must name every new model / patient
+  operation (admin registration, patient-session table); fixed.
+- [x] Public site Phase 5: patient tracking.
