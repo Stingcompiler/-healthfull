@@ -30,5 +30,8 @@ export const nav: NavItem[] = [
     group: "frontDesk",
     order: 32,
     permission: "visits.manage_online_bookings",
+    // Administrators and managers (who run the website) open it from Appointments and from
+    // the public site settings, so the full sidebar still fits a 1366x768 screen.
+    unless: "core.manage_public_site",
   },
 ];

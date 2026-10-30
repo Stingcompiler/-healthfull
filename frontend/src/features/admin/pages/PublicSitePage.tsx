@@ -243,6 +243,11 @@ function PublicSiteForm({ row }: { row: PublicSiteSettingsOut }) {
               {t("admin:publicSite.editContent")}
             </Link>
           </Button>
+          <Button asChild variant="link" className="justify-self-start px-0">
+            <Link to="/visits/online-bookings" data-testid="public-site-inbox">
+              {t("admin:publicSite.openInbox")}
+            </Link>
+          </Button>
         </section>
 
         <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="ps-rules">

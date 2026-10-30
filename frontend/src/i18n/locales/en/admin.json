@@ -841,7 +841,8 @@
     "powBits": "Form check strength (bits)",
     "powBitsHint": "Each extra bit doubles the work a phone does before sending (18 is about a second).",
     "retentionDays": "Keep unlinked guest details (days)",
-    "retentionDaysHint": "After this, names and phones of cancelled or expired guest bookings are erased (the audit history keeps its copy)."
+    "retentionDaysHint": "After this, names and phones of cancelled or expired guest bookings are erased (the audit history keeps its copy).",
+    "openInbox": "Open the reception inbox of online bookings"
   },
   "timeOff": {
     "action": "Time off",

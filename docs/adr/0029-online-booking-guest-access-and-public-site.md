@@ -267,7 +267,9 @@ linked); the guest access therefore belongs to the booking **chain**, not to one
   "online services are off" page and the patient sign-in link to `/portal/book` while guest
   booking is on.
 - **Reception inbox** `/visits/online-bookings` (nav entry under the front desk,
-  `visits.manage_online_bookings`): filters status, day, doctor; cards with the staff status,
+  `visits.manage_online_bookings`, hidden for holders of `core.manage_public_site` so the full
+  administrator sidebar still fits 1366x768; they open it from Appointments and from
+  `/administration/public-site`): filters status, day, doctor; cards with the staff status,
   what the booker sees, source, phone, reference, the locked badge and the phone's open requests;
   approve, decline (reason code and note), cancel on behalf, decline every request of the phone
   (confirmed, one reason), link to a file (patient search; the server's refusal shown), issue a

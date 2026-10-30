@@ -7,6 +7,7 @@ import {
   Check,
   CheckCircle2,
   DoorOpen,
+  Inbox,
   MoreHorizontal,
   Phone,
   UserX,
@@ -115,7 +116,20 @@ export function AppointmentsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t("appointments.title")} description={t("appointments.description")} />
+      <PageHeader
+        title={t("appointments.title")}
+        description={t("appointments.description")}
+        actions={
+          canReview ? (
+            <Button asChild variant="outline">
+              <Link to="/visits/online-bookings" data-testid="appointments-online-inbox">
+                <Inbox aria-hidden="true" />
+                {t("inbox.title")}
+              </Link>
+            </Button>
+          ) : null
+        }
+      />
 
       <div className="flex flex-col gap-3 md:flex-row md:items-end">
         <div className="grid gap-1.5 md:w-72">
