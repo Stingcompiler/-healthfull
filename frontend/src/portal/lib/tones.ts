@@ -20,3 +20,27 @@ export const RECEIPT_TONE: Record<"valid" | "pending" | "void", PillTone> = {
   pending: "pending",
   void: "danger",
 };
+
+/** A booking's patient-facing status (server `display_status`, plan section 5) and its tone. */
+export const BOOKING_TONE: Record<
+  | "awaiting_approval"
+  | "confirmed"
+  | "received"
+  | "moved"
+  | "cancelled_by_you"
+  | "cancelled_by_center"
+  | "declined"
+  | "expired"
+  | "missed",
+  PillTone
+> = {
+  awaiting_approval: "warning",
+  confirmed: "info",
+  received: "success",
+  moved: "neutral",
+  cancelled_by_you: "neutral",
+  cancelled_by_center: "neutral",
+  declined: "danger",
+  expired: "neutral",
+  missed: "warning",
+};

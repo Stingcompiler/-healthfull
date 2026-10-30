@@ -827,7 +827,22 @@
     "minReviewHint": "Times closer than this are not offered while approval is on.",
     "rescheduleAllowed": "Patients may change the time online",
     "rescheduleAllowedHint": "A signed-in patient moves a confirmed booking to another free time.",
-    "rescheduleCutoff": "Change the time online until (hours before)"
+    "rescheduleCutoff": "Change the time online until (hours before)",
+    "guestTitle": "Booking without a file and abuse limits",
+    "guestHint": "Guests book with a name and an unverified phone. These limits slow floods; reception review and expiry are the real defense.",
+    "guestBooking": "Guests may book without a patient file",
+    "guestBookingHint": "Shows “Book online” to visitors; they get a booking reference and a PIN.",
+    "guestPerPhone": "Open guest bookings per phone",
+    "guestPerPhoneHint": "Phones are not checked, so this is a soft cap.",
+    "pendingPerDoctorDay": "Waiting requests per doctor per day",
+    "pendingPerDoctorDayHint": "Further requests for that doctor and day are refused.",
+    "perAddressDay": "Guest requests per network address per day",
+    "perAddressDayHint": "Counted per client address; a shared clinic Wi-Fi counts as one.",
+    "powBits": "Form check strength (bits)",
+    "powBitsHint": "Each extra bit doubles the work a phone does before sending (18 is about a second).",
+    "retentionDays": "Keep unlinked guest details (days)",
+    "retentionDaysHint": "After this, names and phones of cancelled or expired guest bookings are erased (the audit history keeps its copy).",
+    "openInbox": "Open the reception inbox of online bookings"
   },
   "timeOff": {
     "action": "Time off",

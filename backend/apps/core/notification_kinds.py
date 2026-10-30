@@ -106,17 +106,17 @@ _ENTRIES: tuple[NotificationKind, ...] = (
         holders_of="ops.view_status",
         links=(Link("/administration/system", "ops.view_status"),),
     ),
-    # Online booking (ADR 0029 I): receptionists answer requests. The appointments day view
-    # approves and declines them until the inbox screen exists (Phase 4b).
+    # Online booking (ADR 0029 I): receptionists answer requests in the reception inbox
+    # (Phase 4b, /visits/online-bookings).
     NotificationKind(
         "online_booking_requested",
         roles=frozenset({RECEPTIONIST}),
-        links=(Link("/appointments", "visits.manage_online_bookings"),),
+        links=(Link("/visits/online-bookings", "visits.manage_online_bookings"),),
     ),
     NotificationKind(
         "online_booking_cancelled_by_patient",
         roles=frozenset({RECEPTIONIST}),
-        links=(Link("/appointments", "visits.manage_online_bookings"),),
+        links=(Link("/visits/online-bookings", "visits.manage_online_bookings"),),
     ),
 )
 

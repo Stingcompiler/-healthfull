@@ -41,7 +41,8 @@
     "adminExport": "تصدير البيانات",
     "adminAudit": "سجل التدقيق",
     "adminCenterPage": "صفحة المركز",
-    "adminPublicSite": "موقع المركز والحجز"
+    "adminPublicSite": "موقع المركز والحجز",
+    "onlineBookings": "الحجوزات عبر الإنترنت"
   },
   "short": {
     "dashboard": "الرئيسية",
@@ -76,7 +77,8 @@
     "adminExport": "تصدير",
     "adminAudit": "التدقيق",
     "adminCenterPage": "الصفحة",
-    "adminPublicSite": "الموقع"
+    "adminPublicSite": "الموقع",
+    "onlineBookings": "الحجز الإلكتروني"
   },
   "shell": {
     "menu": "القائمة",

@@ -401,6 +401,7 @@ export function useUpdatePublicSiteSettings() {
         centerSite: saved.site_enabled,
         onlineBooking: saved.online_booking_enabled,
         patientTracking: saved.patient_tracking_enabled,
+        guestBooking: saved.online_booking_enabled && saved.guest_booking_enabled,
       });
       return saved;
     },

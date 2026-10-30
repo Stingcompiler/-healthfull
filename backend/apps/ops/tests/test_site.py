@@ -13,7 +13,12 @@ from config.env import env_bool
 
 pytestmark = pytest.mark.django_db
 
-OFF = {"center_site": False, "online_booking": False, "patient_tracking": False}
+OFF = {
+    "center_site": False,
+    "online_booking": False,
+    "patient_tracking": False,
+    "guest_booking": False,
+}
 
 
 def test_marketing_is_off_by_default() -> None:
@@ -90,3 +95,16 @@ def test_the_center_switches_follow_the_settings_row(settings: Any, marketing: b
         False,
         True,
     )
+
+
+@pytest.mark.parametrize(
+    ("booking", "guest", "expected"),
+    [(True, True, True), (True, False, False), (False, True, False), (False, False, False)],
+)
+def test_guest_booking_needs_online_booking(booking: bool, guest: bool, expected: bool) -> None:
+    """The public "Book online" entry shows only while both are on (ADR 0029 D, Phase 4b)."""
+    PublicSiteSettings.load()
+    PublicSiteSettings.objects.filter(pk=1).update(
+        online_booking_enabled=booking, guest_booking_enabled=guest
+    )
+    assert Client().get("/api/ops/site").json()["guest_booking"] is expected

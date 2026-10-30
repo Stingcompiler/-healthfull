@@ -5,6 +5,8 @@
 import { appRoute, type AppRoute } from "../route-kit";
 
 export const routes: readonly AppRoute[] = [
+  // The reception inbox of online bookings (ADR 0029, Phase 4b).
+  appRoute("online-bookings", "/visits/online-bookings"),
   // The waiting-room kiosk lives outside the app shell (no #main): ready once the feed loaded.
   appRoute("queue-display", "/display/queue", {
     ready: (page) => page.locator('[data-testid="queue-display"] #display-now'),

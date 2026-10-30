@@ -237,6 +237,52 @@ linked); the guest access therefore belongs to the booking **chain**, not to one
   the same name and phone), deleting their guest access; `no_show` rows are not purged (the
   ADR names cancelled and expired only).
 
+**Phase 4b as built (2026-10-30, the screens).**
+- **`/portal/book`** (public; open while `online_booking_enabled` and `guest_booking_enabled` are
+  on, a signed-in patient is sent to the booking of their file): doctor, day and time (the same
+  `SlotChooser` as the patient booking), name and phone, then a review with "fees are paid at
+  reception" and the center's cancellation policy, then the confirmation: reference and PIN shown
+  once under a "save these now" card, a `wa.me` share of `share_url` (reference only) and print.
+  The page links "already a patient? sign in" (while patient sign-in is on) and "open my booking".
+- **Idempotency in the browser.** One attempt = one `Idempotency-Key` (UUID from
+  `crypto.randomUUID`, or `getRandomValues` on plain HTTP) kept in `sessionStorage` with the
+  details **and the solved challenge and nonce**, because the server's request hash covers them:
+  a retry after a lost answer (timeout, dropped connection, reload: the page offers "send it
+  again") resends the identical body and gets the stored booking. Any 4xx answer ends the attempt
+  (its challenge is spent); changed details start a new one (`src/portal/guest/attempt.ts`).
+- **Proof-of-work in the browser.** `GET /api/portal/challenge`, then a Web Worker searches the
+  nonce with a bundled pure-JS SHA-256 (`src/portal/guest/{sha256,pow,solver}.ts`; no
+  `crypto.subtle`, no CDN), counting up from 0 like `domain.proof_of_work.solve` (vitest checks
+  the same nonces on fixed vectors); progress shows as text and a bar, the page stays usable; a
+  browser without workers searches in yielding slices on the main thread.
+- **`/portal/booking`**: reference and PIN sign-in (one message for every refusal, with the hint
+  that a locked booking needs a new PIN from reception), then the booking: patient-facing status,
+  time, doctor, name, masked phone, cancel and change of time within `can_cancel` /
+  `can_reschedule`, sign-out. The page asks for the booking only after a sign-in from this tab
+  (no 401 probe for a stranger).
+- **Calls to book.** `GET /api/ops/site` gains `guest_booking` (true only while online booking
+  is on too). The center page's hero leads with "Book online" when booking is open to the visitor
+  (guest) or the patient (signed in), with sign-in beside it; the quick action and the phone's
+  sticky bar follow; with guest booking off a visitor's quick action still leads to sign-in. The
+  "online services are off" page and the patient sign-in link to `/portal/book` while guest
+  booking is on.
+- **Reception inbox** `/visits/online-bookings` (nav entry under the front desk,
+  `visits.manage_online_bookings`, hidden for holders of `core.manage_public_site` so the full
+  administrator sidebar still fits 1366x768; they open it from Appointments and from
+  `/administration/public-site`): filters status, day, doctor; cards with the staff status,
+  what the booker sees, source, phone, reference, the locked badge and the phone's open requests;
+  approve, decline (reason code and note), cancel on behalf, decline every request of the phone
+  (confirmed, one reason), link to a file (patient search; the server's refusal shown), issue a
+  new PIN (reason; the PIN shown once in its own dialog), WhatsApp (`whatsapp_url`) and check-in
+  (the existing dialog, `visits.create`). Refreshes every 30 seconds. The two staff notification
+  kinds now open the inbox.
+- **`/administration/public-site`** gains the guest switch and the limits per phone, per doctor
+  and day, per address and day, the form-check bits and the retention days.
+- **Deviations.** The PIN field is a plain numeric text input (the form kit has no password
+  field; the PIN is a one-time code read from the confirmation). The e2e seed lowers the form
+  check to 14 bits and raises the per-address daily cap (every spec books from 127.0.0.1); the
+  product defaults are unchanged.
+
 ### E. State machine
 `requested -> booked | cancelled(rejected, expired, cancelled by the booker, cancelled on behalf)`;
 `booked -> arrived | rescheduled | cancelled | no_show`; every other edge is refused (tested edge

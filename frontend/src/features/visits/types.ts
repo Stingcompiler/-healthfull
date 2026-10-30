@@ -25,3 +25,5 @@ export type AgendaItem = S["AgendaItemOut"];
 export type DayAgenda = S["DayAgendaOut"];
 export type CheckInInput = S["CheckInIn"];
 export type VisitPage = S["Page_VisitOut_"];
+export type OnlineBooking = S["OnlineBookingOut"];
+export type OnlineBookingStatus = NonNullable<S["OnlineBookingParams"]["status"]>;

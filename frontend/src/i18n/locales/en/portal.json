@@ -344,10 +344,84 @@
       "privacy": "Privacy",
       "cancellation": "Cancellation policy"
     },
-    "photoOf": "Photo of {{name}}"
+    "photoOf": "Photo of {{name}}",
+    "bookOnline": "Book online"
   },
   "off": {
     "title": "Online services are not available",
     "body": "This center does not offer its website or patient sign-in online at the moment. Please contact the center directly."
+  },
+  "guest": {
+    "title": "Book online",
+    "description": "Choose a doctor, a day and a free time. You do not need a patient file.",
+    "policyDefault": "If you cannot come, cancel online before the time so another patient can have it.",
+    "step": "Step {{step, bidi}} of {{total, bidi}}",
+    "steps": {
+      "slot": "Doctor and time",
+      "contact": "Your name and phone",
+      "review": "Check and send"
+    },
+    "patientHint": "Already a patient with a file?",
+    "patientSignIn": "Sign in to book from your file",
+    "bookedHint": "Already booked online?",
+    "openBooking": "Open my booking",
+    "checking": "Preparing a secure request… {{percent, bidi}}%",
+    "sending": "Sending your booking…",
+    "resume": {
+      "title": "Your last request",
+      "text": "We did not get an answer for the booking you sent. Send it again to see what happened: it will never be booked twice.",
+      "send": "Send it again",
+      "discard": "Start a new booking"
+    },
+    "form": {
+      "name": "Name",
+      "nameHint": "The name of the person who will come.",
+      "phone": "Phone number",
+      "phoneHint": "Reception may call or message this number, for example 0912 345 678.",
+      "nameRequired": "Enter the name of the person who will come.",
+      "phoneInvalid": "Enter a phone number like 0912 345 678."
+    },
+    "next": "Next",
+    "back": "Back",
+    "reviewHint": "Your phone number is not checked online; reception confirms who you are when you arrive.",
+    "retryHint": "The connection was interrupted. Try again: the same request is sent and you will not be booked twice.",
+    "retry": "Try again",
+    "submit": "Send booking",
+    "done": {
+      "requestedTitle": "Request sent",
+      "requestedText": "Reception will confirm your request. Keep your reference and PIN to follow it.",
+      "bookedTitle": "Appointment booked",
+      "bookedText": "Your appointment is confirmed. Keep your reference and PIN to view, change or cancel it.",
+      "saveTitle": "Save these now",
+      "saveText": "The PIN is shown only this once. You need the reference and the PIN to open, change or cancel your booking. Write them down, take a screenshot or print this page.",
+      "pinMissing": "The PIN was replaced by reception. Ask reception for it.",
+      "share": "Send the reference on WhatsApp",
+      "print": "Print or save",
+      "shareHint": "The WhatsApp message carries the reference only, never the PIN.",
+      "details": "Your booking"
+    },
+    "reference": "Booking reference",
+    "pin": "PIN",
+    "status": "Status",
+    "noFile": "No patient file yet?",
+    "signIn": {
+      "title": "Open your booking",
+      "subtitle": "Use the booking reference and the 6-digit PIN you got when you booked.",
+      "ended": "Your session ended. Enter your reference and PIN again.",
+      "lockedHint": "Check both and try again. After several wrong PINs the booking is locked: call or visit reception for a new PIN.",
+      "referenceHint": "10 letters and digits, for example ABCDE-FGH23",
+      "pinHint": "The 6 digits shown when you booked",
+      "submit": "Open booking",
+      "help": "Lost your PIN? Reception can give you a new one after checking who you are.",
+      "bookNew": "Book a new appointment",
+      "referenceInvalid": "Enter the 10-character reference, for example ABCDE-FGH23",
+      "pinInvalid": "Enter the 6-digit PIN"
+    },
+    "view": {
+      "title": "Your booking",
+      "unavailable": "Your booking cannot be shown now. Try again later or call the center.",
+      "actions": "Change or cancel",
+      "noActions": "This booking can no longer be changed online. Please call the center."
+    }
   }
 }

@@ -21,9 +21,10 @@ class HealthOut(Schema):
 
 class SiteOut(Schema):
     """What the SPA needs before its first render (ADR 0027, 0028). Public; contact values are
-    only returned while the marketing page is on. ``center_site``, ``online_booking`` and
-    ``patient_tracking`` are the center administrator's switches: the root ``/`` shows the
-    center website while ``center_site`` is on and no staff session exists."""
+    only returned while the marketing page is on. ``center_site``, ``online_booking``,
+    ``patient_tracking`` and ``guest_booking`` are the center administrator's switches: the
+    root ``/`` shows the center website while ``center_site`` is on and no staff session
+    exists."""
 
     marketing: bool
     contact_email: str | None = None
@@ -31,6 +32,9 @@ class SiteOut(Schema):
     center_site: bool = False
     online_booking: bool = False
     patient_tracking: bool = False
+    guest_booking: bool = Field(
+        False, description="Booking without a patient file (on only while online_booking is on)"
+    )
 
 
 class OpsDatabaseOut(Schema):

@@ -7,6 +7,8 @@ import { portalMeQuery } from "./api";
 import { AppointmentsPage } from "./pages/AppointmentsPage";
 import { BookAppointmentPage, RescheduleAppointmentPage } from "./pages/BookAppointmentPage";
 import { CenterPage } from "./pages/CenterPage";
+import { GuestBookingPage } from "./pages/GuestBookingPage";
+import { GuestBookPage } from "./pages/GuestBookPage";
 import { HomePage } from "./pages/HomePage";
 import { InvoicePage } from "./pages/InvoicePage";
 import { InvoicesPage } from "./pages/InvoicesPage";
@@ -83,6 +85,35 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     component: PortalLoginPage,
   });
 
+  // Booking without a file (ADR 0029 D, Phase 4b): open while online and guest booking are on.
+  // A signed-in patient keeps the booking of their file instead.
+  const guestBook = createRoute({
+    getParentRoute: () => portal,
+    path: "/book",
+    beforeLoad: async ({ context }) => {
+      const site = getSiteConfig();
+      if (site.onlineBooking && site.patientTracking) {
+        const me = await (context as RouterContext).queryClient.query({ ...portalMeQuery, staleTime: 30_000 });
+        // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
+        if (me) throw redirect({ to: "/portal/appointments/new" });
+      }
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
+      if (!site.guestBooking) throw redirect({ to: "/portal" });
+    },
+    component: GuestBookPage,
+  });
+
+  // A guest's one booking, opened with its reference and PIN (needs online booking on).
+  const guestBooking = createRoute({
+    getParentRoute: () => portal,
+    path: "/booking",
+    beforeLoad: () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router control flow
+      if (!getSiteConfig().onlineBooking) throw redirect({ to: "/portal" });
+    },
+    component: GuestBookingPage,
+  });
+
   const authed = createRoute({
     getParentRoute: () => portal,
     id: "portal-signed-in",
@@ -151,6 +182,8 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     portal.addChildren([
       center,
       login,
+      guestBook,
+      guestBooking,
       authed.addChildren([
         home,
         appointments,

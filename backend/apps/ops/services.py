@@ -102,19 +102,27 @@ _DIGITS_RE = re.compile(r"^[1-9][0-9]{7,14}$")
 
 
 def _public_switches() -> dict[str, bool]:
-    """The center's administrator switches (ADR 0028, 0029). An unreadable database leaves
+    """The center's administrator switches (ADR 0028, 0029). ``guest_booking`` is on only
+    while online booking is on too (a guest books through it). An unreadable database leaves
     them off, the same safe state as an unreachable server (ADR 0027)."""
-    from apps.core.services import public_switches
+    from apps.core.services import public_site_settings, public_switches
 
     try:
         switches = public_switches()
+        guest = public_site_settings().guest_booking_enabled
     except DatabaseError:
         logger.warning("site_switches_unreadable")
-        return {"center_site": False, "online_booking": False, "patient_tracking": False}
+        return {
+            "center_site": False,
+            "online_booking": False,
+            "patient_tracking": False,
+            "guest_booking": False,
+        }
     return {
         "center_site": switches.site,
         "online_booking": switches.online_booking,
         "patient_tracking": switches.patient_tracking,
+        "guest_booking": switches.online_booking and guest,
     }
 
 

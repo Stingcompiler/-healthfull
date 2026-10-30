@@ -46,7 +46,8 @@ export function PortalLayout({ children }: { children?: ReactNode } = {}) {
   // Signed out, the one action (sign in) stays reachable in the sticky header while the
   // visitor scrolls the center page (LANDING section 2); the sign-in page needs no copy.
   // Patient sign-in switched off (ADR 0029): no sign-in action anywhere on the public pages.
-  const tracking = getSiteConfig().patientTracking;
+  const site = getSiteConfig();
+  const tracking = site.patientTracking;
   const showSignIn = tracking && !signedIn && !path.startsWith("/portal/sign-in");
   // The center page is the one wide screen (two columns from lg); every other portal screen
   // stays a phone-width column. Its hero carries the center's name, so the header keeps only the
@@ -122,7 +123,7 @@ export function PortalLayout({ children }: { children?: ReactNode } = {}) {
           "mx-auto w-full px-4 text-center text-xs text-muted print:hidden",
           width,
           // The center page's sticky action bar is fixed over the end of the page on phones too.
-          signedIn || (isCenter && tracking)
+          signedIn || (isCenter && (tracking || site.guestBooking))
             ? "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6"
             : "pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
         )}

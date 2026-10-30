@@ -37,13 +37,56 @@ function goToAddress() {
   target.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "center" });
 }
 
-/** The one action of the page, repeated in the hero, after the content and in the phone bar. */
-function SignInAction({ className, testId = "center-sign-in" }: { className?: string; testId?: string }) {
+/**
+ * Where "Book online" leads (ADR 0029 D, Phase 4b): a signed-in patient books from their file,
+ * a visitor without one books as a guest; null while online booking (or guest booking, for a
+ * visitor) is off, so no booking call shows.
+ */
+function useBookTarget(): "/portal/appointments/new" | "/portal/book" | null {
+  const me = usePortalMe();
+  const { onlineBooking, patientTracking, guestBooking } = getSiteConfig();
+  if (!onlineBooking) return null;
+  if (me.data && patientTracking) return "/portal/appointments/new";
+  if (guestBooking) return "/portal/book";
+  return null;
+}
+
+/** "Book online": the page's first action while booking is open to the visitor. */
+function BookAction({
+  to,
+  className,
+  testId = "center-book",
+}: {
+  to: "/portal/appointments/new" | "/portal/book";
+  className?: string;
+  testId?: string;
+}) {
+  const { t } = useTranslation("portal");
+  return (
+    <Button asChild size="lg" className={cn("w-full sm:w-auto", className)}>
+      <Link to={to} data-testid={testId}>
+        <CalendarPlus aria-hidden="true" />
+        {t("center.bookOnline")}
+      </Link>
+    </Button>
+  );
+}
+
+/** The sign-in action, repeated in the hero, after the content and in the phone bar. */
+function SignInAction({
+  className,
+  testId = "center-sign-in",
+  secondary = false,
+}: {
+  className?: string;
+  testId?: string;
+  secondary?: boolean;
+}) {
   const { t } = useTranslation("portal");
   const me = usePortalMe();
   const signedIn = Boolean(me.data);
   return (
-    <Button asChild size="lg" className={cn("w-full sm:w-auto", className)}>
+    <Button asChild size="lg" variant={secondary ? "outline" : "default"} className={cn("w-full sm:w-auto", className)}>
       <Link to={signedIn ? "/portal/home" : "/portal/sign-in"} data-testid={testId}>
         {signedIn ? t("center.openFile") : t("center.signIn")}
         <ChevronNext className="size-4" aria-hidden="true" />
@@ -143,6 +186,8 @@ function Hero({ page, name }: { page: CenterPageData | undefined; name: string }
   const title = page ? pick(page.hero_title_ar, page.hero_title_en) : "";
   const text = page ? pick(page.hero_text_ar, page.hero_text_en) : "";
   const image = page?.hero_image ?? null;
+  const tracking = getSiteConfig().patientTracking;
+  const bookTarget = useBookTarget();
   return (
     <section
       className="overflow-hidden rounded-card border border-border bg-primary-soft"
@@ -174,10 +219,13 @@ function Hero({ page, name }: { page: CenterPageData | undefined; name: string }
             ) : null}
             {text ? <p className="text-base text-pretty text-fg lg:text-lg">{text}</p> : null}
           </div>
-          {getSiteConfig().patientTracking ? (
-            <div className="flex flex-col gap-2 sm:max-w-sm">
-              <SignInAction />
-              <p className="text-sm text-pretty text-muted">{t("center.signInHint")}</p>
+          {tracking || bookTarget ? (
+            <div className="flex flex-col gap-2 sm:max-w-xl">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                {bookTarget ? <BookAction to={bookTarget} /> : null}
+                {tracking ? <SignInAction secondary={bookTarget !== null} /> : null}
+              </div>
+              {tracking ? <p className="text-sm text-pretty text-muted">{t("center.signInHint")}</p> : null}
             </div>
           ) : null}
         </div>
@@ -195,6 +243,7 @@ function QuickActions({ page }: { page: CenterPageData }) {
   const pick = usePick();
   const me = usePortalMe();
   const signedIn = Boolean(me.data);
+  const bookTarget = useBookTarget();
   const hasAddress = Boolean(page.address || pick(page.directions_ar, page.directions_en) || page.maps_url);
   const items: ReactNode[] = [];
   if (page.phone_uri) {
@@ -225,17 +274,21 @@ function QuickActions({ page }: { page: CenterPageData }) {
       </Button>,
     );
   }
-  // Booking needs a patient session today, so both switches must be on (ADR 0029).
+  // A patient books from their file, a visitor as a guest (ADR 0029 D); with guest booking off
+  // a visitor is sent to sign in first.
   const { onlineBooking, patientTracking } = getSiteConfig();
-  if (page.doctors.length > 0 && onlineBooking && patientTracking) {
+  const viaSignIn = bookTarget === null && page.doctors.length > 0 && onlineBooking && patientTracking;
+  if (bookTarget || viaSignIn) {
     items.push(
       <Button key="book" asChild variant="outline" className={actionClass}>
-        <Link to={signedIn ? "/portal/appointments/new" : "/portal/sign-in"} data-testid="quick-book">
+        <Link to={bookTarget ?? "/portal/sign-in"} data-testid="quick-book">
           <span className="flex items-center gap-2">
             <CalendarPlus aria-hidden="true" />
             {t("center.quick.book")}
           </span>
-          {signedIn ? null : <span className="text-xs font-normal text-muted">{t("center.bookHint")}</span>}
+          {viaSignIn && !signedIn ? (
+            <span className="text-xs font-normal text-muted">{t("center.bookHint")}</span>
+          ) : null}
         </Link>
       </Button>,
     );
@@ -813,14 +866,27 @@ function EndBand() {
   );
 }
 
-/** Phones only: the action stays in reach; the layout footer reserves its height. */
-function StickyBar() {
+/** Phones only: the actions stay in reach; the layout footer reserves its height. */
+function StickyBar({ tracking }: { tracking: boolean }) {
+  const bookTarget = useBookTarget();
+  if (!tracking && !bookTarget) return null;
   return (
     <div
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:hidden print:hidden"
       data-testid="center-sticky-bar"
     >
-      <SignInAction testId="center-sticky-cta" />
+      <div className={cn("grid gap-2", bookTarget && tracking && "grid-cols-2")}>
+        {bookTarget ? (
+          <BookAction to={bookTarget} testId="center-sticky-book" className="h-auto min-h-11 px-3 whitespace-normal" />
+        ) : null}
+        {tracking ? (
+          <SignInAction
+            testId="center-sticky-cta"
+            secondary={bookTarget !== null}
+            className="h-auto min-h-11 px-3 whitespace-normal"
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -940,7 +1006,7 @@ export function CenterPage() {
           <Policies page={page} />
         </>
       ) : null}
-      {tracking ? <StickyBar /> : null}
+      <StickyBar tracking={tracking} />
     </div>
   );
 }

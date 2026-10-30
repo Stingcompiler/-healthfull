@@ -18,9 +18,15 @@ interface Switches {
   site_enabled: boolean;
   online_booking_enabled: boolean;
   patient_tracking_enabled: boolean;
+  guest_booking_enabled: boolean;
 }
 
-const ALL_ON: Switches = { site_enabled: true, online_booking_enabled: true, patient_tracking_enabled: true };
+const ALL_ON: Switches = {
+  site_enabled: true,
+  online_booking_enabled: true,
+  patient_tracking_enabled: true,
+  guest_booking_enabled: true,
+};
 
 async function setSwitches(changes: Partial<Switches>): Promise<void> {
   const admin = await apiAs("admin");
@@ -94,7 +100,7 @@ test.describe("@public-site switches", () => {
     test("patient sign-in off: the center page keeps its facts and drops every sign-in action", async ({
       browser,
     }) => {
-      await setSwitches({ patient_tracking_enabled: false });
+      await setSwitches({ patient_tracking_enabled: false, guest_booking_enabled: false });
       const page = await visitor(browser);
       await page.goto("/portal");
       await expect(page.getByTestId("center-page")).toBeVisible();
@@ -104,6 +110,68 @@ test.describe("@public-site switches", () => {
       await expect(page.getByTestId("quick-book")).toHaveCount(0);
       await page.context().close();
     });
+  });
+
+  test.describe("guest booking (ADR 0029 D)", () => {
+    test.use({ storageState: ANONYMOUS_STATE });
+
+    test("on: the center page offers Book online to a visitor, also with patient sign-in off", async ({ browser }) => {
+      await setSwitches({ patient_tracking_enabled: false });
+      const page = await visitor(browser);
+      await page.goto("/portal");
+      await expect(page.getByTestId("center-book")).toHaveAttribute("href", "/portal/book");
+      await expect(page.getByTestId("quick-book")).toHaveAttribute("href", "/portal/book");
+      await expect(page.getByTestId("center-sticky-book")).toBeVisible();
+      await expect(page.getByTestId("center-sign-in")).toHaveCount(0);
+      await expect(page.getByTestId("guest-patient-sign-in")).toHaveCount(0);
+      await page.getByTestId("center-book").click();
+      await expect(page.getByTestId("book-doctor").first()).toBeVisible();
+      // No patient sign-in to offer here either.
+      await expect(page.getByTestId("guest-patient-sign-in")).toHaveCount(0);
+      await expectNoHorizontalScroll(page);
+      await page.context().close();
+    });
+
+    test("off: no Book online for a visitor, /portal/book goes back to the center page", async ({ browser }) => {
+      await setSwitches({ guest_booking_enabled: false });
+      const page = await visitor(browser);
+      await page.goto("/portal");
+      await expect(page.getByTestId("center-page")).toBeVisible();
+      await expect(page.getByTestId("center-book")).toHaveCount(0);
+      await expect(page.getByTestId("center-sticky-book")).toHaveCount(0);
+      // Booking still exists for patients: the quick action leads to sign-in first.
+      await expect(page.getByTestId("quick-book")).toHaveAttribute("href", "/portal/sign-in");
+      await page.goto("/portal/book");
+      await expect(page).toHaveURL(/\/portal$/);
+      const challenge = await page.context().request.get("/api/portal/challenge");
+      expect(((await challenge.json()) as { code: string }).code).toBe("GUEST_BOOKING_DISABLED");
+      await page.context().close();
+    });
+
+    test("online booking off hides every booking call, guest booking included", async ({ browser }) => {
+      await setSwitches({ online_booking_enabled: false });
+      const page = await visitor(browser);
+      await page.goto("/portal");
+      await expect(page.getByTestId("center-page")).toBeVisible();
+      await expect(page.getByTestId("center-book")).toHaveCount(0);
+      await expect(page.getByTestId("quick-book")).toHaveCount(0);
+      await page.goto("/portal/book");
+      await expect(page).toHaveURL(/\/portal$/);
+      await page.goto("/portal/booking");
+      await expect(page).toHaveURL(/\/portal$/);
+      await page.context().close();
+    });
+  });
+
+  test("a signed-in patient asking for /portal/book books from the file", async ({ browser }) => {
+    const patient = await portalPatient({});
+    const page = await phonePage(browser);
+    await signInPortal(page, patient);
+    await page.goto("/portal");
+    await expect(page.getByTestId("center-book")).toHaveAttribute("href", "/portal/appointments/new");
+    await page.goto("/portal/book");
+    await expect(page).toHaveURL(/\/portal\/appointments\/new$/);
+    await page.context().close();
   });
 
   test("online booking off: a signed-in patient keeps the list and loses booking", async ({ browser }) => {
