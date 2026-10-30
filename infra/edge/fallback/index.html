@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{{placeholder "http.vars.edge_center_name" | html}}</title>
+<style>
+  /* Self-contained: no font, script or image from anywhere (infra/edge/edge.caddy). */
+  :root { --bg: #f7f7f5; --fg: #1f2421; --muted: #5b625e; --card: #ffffff; --line: #dfe3e0; --accent: #1d6b57; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151917; --fg: #eef1ef; --muted: #a7b0ab; --card: #1d2320; --line: #2f3833; --accent: #7cc7b0; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 16px; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif; line-height: 1.6; }
+  main { width: 100%; max-width: 32rem; background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 24px; }
+  h1 { margin: 0 0 8px; font-size: 1.5rem; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  .phone { display: inline-block; margin-block: 4px 16px; font-size: 1.25rem; font-weight: 600;
+    color: var(--accent); direction: ltr; unicode-bidi: isolate; text-decoration: none; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+  [lang="en"] { direction: ltr; text-align: start; }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{placeholder "http.vars.edge_center_name" | html}}</h1>
+  <p>موقع المركز والحجز عبر الإنترنت غير متاحين الآن. حاول مرة أخرى لاحقاً، أو اتصل بالمركز.</p>
+  <a class="phone" href="tel:{{placeholder "http.vars.edge_center_phone" | html}}">{{placeholder "http.vars.edge_center_phone" | html}}</a>
+  <hr>
+  <div lang="en">
+    <p>The center's website and online booking are not available right now. Please try again later, or call the center.</p>
+  </div>
+  <p class="muted">رمز / Code: {{placeholder "http.error.status_code"}}</p>
+</main>
+</body>
+</html>

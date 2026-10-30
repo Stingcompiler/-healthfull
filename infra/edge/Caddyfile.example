@@ -1,0 +1,23 @@
+# Example: the sites to ADD to the vendor host's Caddyfile (OVH, /etc/caddy/Caddyfile) for each
+# LAN-only center that wants its website, online booking and patient portal on the internet.
+# Runbook: docs/runbooks/public-edge.md. Rules: ADR 0028 decisions 3, 5 and 6.
+#
+# Install once on the host:
+#   sudo install -d /etc/caddy/hospital-edge/fallback
+#   sudo install -m 0644 infra/edge/edge.caddy /etc/caddy/hospital-edge/edge.caddy
+#   sudo install -m 0644 infra/edge/fallback/index.html /etc/caddy/hospital-edge/fallback/index.html
+#
+# Keep the existing sites of the host as they are. Do NOT add a global
+# `servers { trusted_proxies ... }` to this host: the edge is the outermost proxy and must
+# overwrite X-Forwarded-For with the visitor's address (decision 6).
+
+# One block per center: its public name, its tunnel address and the HTTP port its compose `web`
+# publishes, then the name and phone shown when the center cannot be reached.
+center-one.example.sd {
+	import /etc/caddy/hospital-edge/edge.caddy 10.213.0.2:80 /etc/caddy/hospital-edge/fallback "مركز المثال الطبي" "+249 900 000 000"
+}
+
+# A second center on its own tunnel address.
+# center-two.example.sd {
+# 	import /etc/caddy/hospital-edge/edge.caddy 10.213.0.3:80 /etc/caddy/hospital-edge/fallback "مركز آخر" "+249 900 000 001"
+# }
