@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+    # Release tags run the full CI too; `publish` then pushes the images under the tag (ADR 0030).
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -19,6 +21,8 @@ env:
   NODE_VERSION: "24"
   UV_VERSION: "0.12.15"
   FORCE_COLOR: "1"
+  # Where `publish` pushes the release images (ADR 0030). Lower case: registry paths must be.
+  IMAGE_NAMESPACE: ghcr.io/stingcompiler/healthfull
 
 jobs:
   backend:
@@ -370,6 +374,20 @@ jobs:
             -e "s|^PGBACKREST_REPO_HOST_DIR=.*|PGBACKREST_REPO_HOST_DIR=${RUNNER_TEMP}/pgbackrest|" \
             .env
           infra/compose.sh config --quiet
+      # ADR 0030: moving app and web to a registry must not rename the running db image unless
+      # DB_IMAGE_REGISTRY says so (it defaults to IMAGE_REGISTRY).
+      - name: Image names with a registry and a separate db registry
+        run: |
+          set -euo pipefail
+          images="$(IMAGE_REGISTRY=ghcr.io/x/y infra/compose.sh config --images | sort -u)"
+          echo "$images"
+          grep -qx 'ghcr.io/x/y/app:ci' <<<"$images"
+          grep -qx 'ghcr.io/x/y/web:ci' <<<"$images"
+          grep -qx 'ghcr.io/x/y/db:16' <<<"$images"
+          images="$(IMAGE_REGISTRY=ghcr.io/x/y DB_IMAGE_REGISTRY=hospital-sys infra/compose.sh config --images | sort -u)"
+          echo "$images"
+          grep -qx 'ghcr.io/x/y/app:ci' <<<"$images"
+          grep -qx 'hospital-sys/db:16' <<<"$images"
       - name: Start the stack
         run: infra/compose.sh up -d --no-build --pull never
       - name: Smoke test through Caddy
@@ -459,3 +477,89 @@ jobs:
       - name: Tear down
         if: always()
         run: infra/compose.sh down -v --remove-orphans
+
+  publish:
+    # ADR 0030: the images the servers run are built here, never on a server. Only after every
+    # other job passed, only for a push to main or a v* tag (never for a pull request).
+    name: publish (${{ matrix.image }} image to ghcr.io)
+    needs: [backend, frontend, api-drift, e2e, agent, infra, docker]
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: app
+            file: infra/docker/app.Dockerfile
+            title: hospital-sys app
+          - image: web
+            file: infra/docker/web.Dockerfile
+            title: hospital-sys web
+          # The db/backup image is published as `16` (DB_IMAGE_TAG) for new installs and offline
+          # archives; a running server keeps its own until the owner switches (ADR 0030).
+          - image: db
+            file: infra/docker/db.Dockerfile
+            title: hospital-sys db
+    steps:
+      - uses: actions/checkout@v5
+      # The version baked into the image (labels, and APP_VERSION when run without compose).
+      # Under compose the app reports APP_IMAGE_TAG, which update.sh sets to the tag it deploys,
+      # so `sha-<7>`, `main` or the git tag all pass its health check (version == tag).
+      - name: Version
+        id: version
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}
+          flavor: latest=false
+          tags: |
+            # sha-<7> from main only: a tag run must not overwrite it with a differently labelled build.
+            type=sha,prefix=sha-,format=short,enable=${{ github.ref_type == 'branch' }}
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=tag
+            type=raw,value=16,enable=${{ matrix.image == 'db' }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.title }}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.licenses=LicenseRef-proprietary
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Same cache scopes the `docker` job writes on this run: only the layers after the
+      # APP_VERSION argument (declared last in each Dockerfile) are rebuilt.
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          platforms: linux/amd64
+          build-args: APP_VERSION=${{ steps.version.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          provenance: false
+          cache-from: type=gha,scope=${{ matrix.image }}
+      - name: Summary
+        run: |
+          {
+            echo "### ${{ matrix.image }}"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

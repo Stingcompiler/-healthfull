@@ -184,6 +184,7 @@ Pick one source of images:
 infra/compose.sh build                                   # build on this machine (needs internet once)
 docker load -i hospital-sys-v0.1.0.tar.gz                # offline: release archive from USB
 infra/compose.sh pull                                    # from the registry in IMAGE_REGISTRY
+                                                         # (ghcr.io: login first, registry.md)
 ```
 
 Start and check:

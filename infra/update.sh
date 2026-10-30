@@ -2,7 +2,9 @@
 # Update hospital-sys to a new image tag with a safety net (FEATURES 13.10, STACK.md).
 #
 #   1. get images      pull <registry>/app:TAG and web:TAG (or `docker load` an offline archive,
-#                      or --local-images: use images already built on this host)
+#                      or --local-images: use images already built on this host); the db/backup
+#                      image (<DB_IMAGE_REGISTRY or registry>/db:DB_IMAGE_TAG) must be on the host
+#                      too, pulled here only when missing (step 3 runs the backup in it)
 #   2. preflight       Django system checks and `migrate --plan` (dry run, as the owner role)
 #                      in one-off containers of the NEW image
 #   3. backup          verified pg_dump labelled pre-update-TAG (infra/backup/backup-nightly.sh);
@@ -28,6 +30,7 @@
 # Usage: infra/update.sh --tag TAG [--image-archive FILE | --local-images] [--restore-db-on-failure] [--yes]
 #                        [--dry-run] [--health-retries N] [--health-interval SECONDS]
 #                        [--release-notes FILE]
+#   TAG is immutable: sha-<7 hex> or a release tag from CI (ADR 0030); `main`/`latest` are refused.
 #
 # Settings (shell environment first, then the env file): ENV_FILE [<repo>/.env],
 #   UPDATE_LOG_DIR [<repo>/infra/logs], UPDATE_STATE_DIR [<repo>/infra] (lock and state file),
@@ -59,7 +62,7 @@ HEALTH_INTERVAL=5
 NOTES_FILE=""
 
 usage() {
-  sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,45p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
@@ -80,6 +83,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ "$NEW_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]] || { echo "update: --tag is required (letters, digits, . _ -)" >&2; exit 2; }
+# A moving tag names a different image tomorrow: a rollback to it would not return to what ran
+# before. Deploy the immutable tag of the same build (sha-<7 hex>, or the release tag).
+case "$NEW_TAG" in
+  main | latest) echo "update: '$NEW_TAG' is a moving tag; deploy sha-<commit> or a release tag (docs/runbooks/registry.md)" >&2; exit 2 ;;
+esac
 [[ "$HEALTH_RETRIES" =~ ^[1-9][0-9]*$ && "$HEALTH_INTERVAL" =~ ^[0-9]+$ ]] || { echo "update: bad health retry settings" >&2; exit 2; }
 [[ -z "$ARCHIVE" || -f "$ARCHIVE" ]] || { echo "update: image archive not found: $ARCHIVE" >&2; exit 2; }
 [[ -z "$ARCHIVE" || $LOCAL_IMAGES -eq 0 ]] || { echo "update: --image-archive and --local-images exclude each other" >&2; exit 2; }
@@ -249,6 +257,10 @@ STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 PREV_TAG="$(env_get APP_IMAGE_TAG)"
 REGISTRY="$(env_get IMAGE_REGISTRY)"
 REGISTRY="${REGISTRY:-hospital-sys}"
+# The db/backup image, as docker-compose.yml names it (DB_IMAGE_REGISTRY defaults to the registry).
+DB_REGISTRY="$(env_get DB_IMAGE_REGISTRY)"
+DB_TAG="$(env_get DB_IMAGE_TAG)"
+DB_IMAGE="${DB_REGISTRY:-$REGISTRY}/db:${DB_TAG:-16}"
 PENDING=0
 STOPPED=0
 MIGRATED=0
@@ -381,7 +393,7 @@ fail() {
 trap finish EXIT
 trap 'fail "interrupted by signal"' INT TERM
 
-log "update ${PREV_TAG:-<none>} -> $NEW_TAG (registry $REGISTRY)"
+log "update ${PREV_TAG:-<none>} -> $NEW_TAG (registry $REGISTRY, db/backup image $DB_IMAGE)"
 [[ "$PREV_TAG" == "$NEW_TAG" ]] && warn "$NEW_TAG is already the configured tag; redeploying it"
 
 # ------------------------------------------------------------------------------------ 1. images
@@ -391,11 +403,22 @@ if [[ -n "$ARCHIVE" ]]; then
 elif [[ $LOCAL_IMAGES -eq 1 ]]; then
   log "using images already on this host (built here with infra/compose.sh build)"
 else
-  compose_tag "$NEW_TAG" pull app web || fail "pull failed (no internet? use --image-archive, or --local-images for images built here)"
+  compose_tag "$NEW_TAG" pull app web ||
+    fail "pull of $REGISTRY/{app,web}:$NEW_TAG failed (tag not published? not logged in: sudo docker login ghcr.io? no internet: use --image-archive, or --local-images for images built here)"
 fi
 for img in "$REGISTRY/app:$NEW_TAG" "$REGISTRY/web:$NEW_TAG"; do
   docker image inspect "$img" >/dev/null 2>&1 || fail "image $img is not available locally"
 done
+# The backup (step 3) and a restore run in the db/backup image. Missing (a server just switched
+# to a registry without DB_IMAGE_REGISTRY): pull it now, never build it in the middle of an update.
+if ! docker image inspect "$DB_IMAGE" >/dev/null 2>&1; then
+  if [[ -z "$ARCHIVE" && $LOCAL_IMAGES -eq 0 ]]; then
+    log "db/backup image $DB_IMAGE is not on this host: pulling it (the running db container is not touched)"
+    compose pull db || true
+  fi
+  docker image inspect "$DB_IMAGE" >/dev/null 2>&1 ||
+    fail "db/backup image $DB_IMAGE is not available locally (set DB_IMAGE_REGISTRY to the registry of the image the db container runs; docs/runbooks/registry.md)"
+fi
 
 # ------------------------------------------------------------------------------------ 2. preflight
 step "2/7 preflight: system checks and migration plan (dry run)"

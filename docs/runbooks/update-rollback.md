@@ -10,7 +10,9 @@ Installed before the separate database roles existed (no `DB_OWNER_PASSWORD` in 
 ## What update.sh does — ماذا يفعل سكربت التحديث
 
 1. Gets `app:<tag>` and `web:<tag>` (registry pull, `--image-archive` from USB, or
-   `--local-images` when they were built on this host with `infra/compose.sh build`).
+   `--local-images` when they were built on this host with `infra/compose.sh build`), and makes
+   sure the db/backup image is on the host (pulled only when missing; never built here).
+   Tags must not move: `main` and `latest` are refused.
 2. Runs Django system checks and `migrate --plan` (dry run, as the owner role, which proves its
    login) in throwaway containers of the new image.
 3. If migrations are pending, stops the app (maintenance), then takes a verified dump labelled
@@ -57,7 +59,13 @@ cut is recorded as `failed` ("interrupted during ...") by the next run.
 
 ## Get the images — الحصول على الصور
 
-Online: nothing to do, `update.sh` pulls. Offline (USB), prepared on a connected machine:
+Online: nothing to do, `update.sh` pulls from `IMAGE_REGISTRY`. The vendor's images are built by
+CI and published to `ghcr.io/stingcompiler/healthfull` (tag `sha-<7 hex>` per commit, or the
+release tag): token, login, the one-time switch of a server that built its own images, and the
+routine deploy are in [registry.md](registry.md). Without a registry, `--local-images` (built on
+the host) and `--image-archive` (USB) below remain.
+
+Offline (USB), prepared on a connected machine (from ghcr: [registry.md](registry.md#offline-archive-for-a-lan-install--أرشيف-دون-إنترنت)):
 
 ```bash
 docker pull <registry>/app:v1.4.0 && docker pull <registry>/web:v1.4.0 && docker pull <registry>/db:16
