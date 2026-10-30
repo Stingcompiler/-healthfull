@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, CalendarDays, CalendarPlus } from "lucide-react";
+import { CalendarClock, CalendarDays, CalendarPlus, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -7,6 +7,7 @@ import { AlertCard } from "@/components/AlertCard";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
+import { ChevronNext } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslateError } from "@/lib/api/translate-error";
@@ -14,9 +15,9 @@ import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
 import { getSiteConfig } from "@/lib/site";
 
-import { useAppointments, useCancelAppointment } from "../api";
+import { useAppointments, useCancelAppointment, useVisits } from "../api";
 import { PortalPage, PortalSection, Pill } from "../components/PortalPage";
-import { BOOKING_TONE } from "../lib/tones";
+import { BOOKING_TONE, VISIT_TONE } from "../lib/tones";
 import { usePick } from "../lib/ui";
 import type { PortalAppointment } from "../types";
 
@@ -102,7 +103,55 @@ function AppointmentCard({ appointment, upcoming }: { appointment: PortalAppoint
   );
 }
 
-/** The patient's appointments: upcoming (with online cancellation) and past. */
+/** The patient's visits at the center, newest first; each opens its timeline (Phase 5). */
+function VisitsSection() {
+  const { t } = useTranslation(["portal", "errors"]);
+  const translateError = useTranslateError();
+  const pick = usePick();
+  const visits = useVisits();
+  return (
+    <PortalSection title={t("timeline.visits")} testId="visits-list">
+      {visits.isPending ? (
+        <Skeleton className="h-16" />
+      ) : visits.isError ? (
+        <p className="text-sm text-danger">{translateError(visits.error)}</p>
+      ) : visits.data.length === 0 ? (
+        <EmptyState bare size="compact" icon={<Stethoscope />} title={t("timeline.noVisits")} />
+      ) : (
+        <ul className="divide-y divide-border">
+          {visits.data.map((v) => (
+            <li key={v.id}>
+              <Link
+                to="/portal/visits/$visitId"
+                params={{ visitId: String(v.id) }}
+                className="flex min-h-14 items-center justify-between gap-3 py-2 focus-ring-inset"
+                data-testid="visit-row"
+                data-visit={v.id}
+              >
+                <span className="min-w-0">
+                  <span className="block font-medium text-fg">
+                    <DateText value={v.opened_at} format="long" />
+                  </span>
+                  <span className="block truncate text-xs text-muted">
+                    {[pick(v.department_ar, v.department_en), v.doctor ? pick(v.doctor.name_ar, v.doctor.name_en) : ""]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1">
+                  <Pill tone={VISIT_TONE[v.display_status]}>{t(`timeline.visit.${v.display_status}`)}</Pill>
+                  <ChevronNext className="size-4 text-muted" aria-hidden="true" />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </PortalSection>
+  );
+}
+
+/** The patient's appointments: upcoming (with online cancellation) and past, then the visits. */
 export function AppointmentsPage() {
   const { t } = useTranslation(["portal", "errors"]);
   const translateError = useTranslateError();
@@ -155,6 +204,7 @@ export function AppointmentsPage() {
               </ul>
             )}
           </PortalSection>
+          <VisitsSection />
         </>
       )}
     </PortalPage>

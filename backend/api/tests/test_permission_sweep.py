@@ -93,6 +93,8 @@ OWNED_PARAMS = {
     "payment_id": lambda w: w["payment"]["id"],
     "line_id": lambda w: w["approved_line"],
     "appointment_id": lambda w: w["appointment"]["id"],
+    "visit_id": lambda w: w["visit"]["id"],
+    "notice_id": lambda w: w["notice_id"],
 }
 NOT_OWNED_PARAMS = {"doctor_id"}
 
@@ -274,4 +276,6 @@ def test_a_patient_gets_404_for_another_patients_rows(
         "portal_get_result",
         "portal_cancel_appointment",
         "portal_reschedule_appointment",
+        "portal_get_visit_timeline",
+        "portal_mark_notice_read",
     }

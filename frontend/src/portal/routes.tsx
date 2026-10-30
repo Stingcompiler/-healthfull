@@ -12,6 +12,7 @@ import { GuestBookPage } from "./pages/GuestBookPage";
 import { HomePage } from "./pages/HomePage";
 import { InvoicePage } from "./pages/InvoicePage";
 import { InvoicesPage } from "./pages/InvoicesPage";
+import { NoticesPage } from "./pages/NoticesPage";
 import { PortalLoginPage } from "./pages/PortalLoginPage";
 import { PrescriptionsPage } from "./pages/PrescriptionsPage";
 import { ReceiptPage } from "./pages/ReceiptPage";
@@ -19,6 +20,7 @@ import { ResultPage } from "./pages/ResultPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { ServicesOffPage } from "./pages/ServicesOffPage";
 import { VerifyPage } from "./pages/VerifyPage";
+import { VisitTimelinePage } from "./pages/VisitTimelinePage";
 import { PortalAuthedLayout } from "./PortalAuthedLayout";
 import { PortalLayout } from "./PortalLayout";
 
@@ -151,6 +153,13 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     },
     component: RescheduleAppointmentPage,
   });
+  // Patient tracking (public site Phase 5): a visit's timeline and the inbox.
+  const visit = createRoute({
+    getParentRoute: () => authed,
+    path: "/visits/$visitId",
+    component: VisitTimelinePage,
+  });
+  const notices = createRoute({ getParentRoute: () => authed, path: "/notices", component: NoticesPage });
   const results = createRoute({ getParentRoute: () => authed, path: "/results", component: ResultsPage });
   const result = createRoute({ getParentRoute: () => authed, path: "/results/$lineId", component: ResultPage });
   const prescriptions = createRoute({
@@ -189,6 +198,8 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
         appointments,
         book,
         reschedule,
+        visit,
+        notices,
         results,
         result,
         prescriptions,

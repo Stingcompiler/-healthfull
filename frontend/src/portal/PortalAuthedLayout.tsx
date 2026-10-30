@@ -21,7 +21,7 @@ interface PortalNavItem {
 
 const NAV: readonly PortalNavItem[] = [
   { id: "home", to: "/portal/home", icon: House },
-  { id: "appointments", to: "/portal/appointments", icon: CalendarDays },
+  { id: "appointments", to: "/portal/appointments", icon: CalendarDays, also: ["/portal/visits"] },
   { id: "results", to: "/portal/results", icon: FlaskConical },
   { id: "prescriptions", to: "/portal/prescriptions", icon: Pill },
   { id: "bills", to: "/portal/invoices", icon: ReceiptText, also: ["/portal/receipts"] },

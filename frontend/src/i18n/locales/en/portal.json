@@ -423,5 +423,93 @@
       "actions": "Change or cancel",
       "noActions": "This booking can no longer be changed online. Please call the center."
     }
+  },
+  "notices": {
+    "title": "Notices",
+    "description": "What changed in your bookings and results, newest first.",
+    "bell": "Notices",
+    "bellUnread_one": "Notices, {{count}} unread",
+    "bellUnread_other": "Notices, {{count}} unread",
+    "many": "99+",
+    "new": "New",
+    "none": "No notices yet.",
+    "noneHint": "When the center answers a booking or a result is ready, you will see it here.",
+    "markRead": "Mark as read",
+    "markAll": "Mark all as read",
+    "openResult": "Open the result",
+    "openAppointments": "See your appointments",
+    "reason": "Reason: {{reason}}",
+    "awaitingHint": "The new time waits for reception to confirm it.",
+    "kind": {
+      "booking_requested": "Booking request sent",
+      "booking_confirmed": "Appointment confirmed",
+      "booking_declined": "Request declined",
+      "booking_cancelled": "Appointment cancelled",
+      "booking_rescheduled": "Appointment moved",
+      "booking_expired": "Request expired",
+      "result_published": "Result ready"
+    },
+    "body": {
+      "booking_requested": "Your request for {{time}} with {{doctor}} is waiting for reception to confirm it.",
+      "booking_confirmed": "Your appointment on {{time}} with {{doctor}} is confirmed.",
+      "booking_declined": "The center declined your request for {{time}} with {{doctor}}.",
+      "booking_cancelled": "The center cancelled your appointment on {{time}} with {{doctor}}.",
+      "booking_cancelled_by_you": "You cancelled your appointment on {{time}} with {{doctor}}.",
+      "booking_rescheduled": "Your appointment with {{doctor}} moved to {{time}}.",
+      "booking_expired": "Your request for {{time}} with {{doctor}} expired before the center answered. You can book again.",
+      "result_published": "Your {{test}} result is ready.",
+      "result_amended": "A corrected {{test}} result is ready."
+    }
+  },
+  "timeline": {
+    "title": "Visit {{number, bidi}}",
+    "titleShort": "Visit",
+    "back": "Appointments",
+    "visits": "Your visits",
+    "noVisits": "No visits yet.",
+    "steps": {
+      "booking": "Booked",
+      "arrived": "Arrived at the center",
+      "orders": "Services ordered",
+      "payments": "Payment",
+      "end": "End of the visit"
+    },
+    "visit": {
+      "at_center": "At the center today",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "order": {
+      "pay_at_reception": "Ordered, pay at reception",
+      "waiting": "Paid, waiting",
+      "in_progress": "In progress",
+      "done": "Done",
+      "result_published": "Result published",
+      "cancelled": "Cancelled"
+    },
+    "payment": {
+      "nothing_due": "Nothing to pay",
+      "outstanding": "Outstanding",
+      "under_verification": "Payment under verification",
+      "paid": "Paid"
+    },
+    "kind": {
+      "consultation": "Consultation",
+      "lab": "Lab test",
+      "procedure": "Procedure",
+      "drug": "Medicine",
+      "consumable": "Supplies",
+      "bed": "Bed day"
+    },
+    "quantity": "Quantity {{count, bidi}}",
+    "noOrders": "Nothing ordered yet.",
+    "noInvoices": "No invoice yet. Fees are paid at reception.",
+    "yourShare": "Your share:",
+    "outstanding": "Still to pay:",
+    "openResult": "Open the result",
+    "openInvoice": "Open the invoice",
+    "endOpen": "The visit is still open.",
+    "endClosed": "The visit is completed.",
+    "endCancelled": "The visit was cancelled."
   }
 }

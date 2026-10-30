@@ -12,6 +12,7 @@ import { getSiteConfig, signInPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 import { usePortalMe } from "./api";
+import { NoticesBell } from "./components/NoticesBell";
 import { useSignOut } from "./lib/session";
 
 /**
@@ -86,6 +87,7 @@ export function PortalLayout({ children }: { children?: ReactNode } = {}) {
                 </Link>
               </Button>
             ) : null}
+            {signedIn ? <NoticesBell /> : null}
             <LanguageSwitcher />
             <ThemeSwitcher labelled />
             {signedIn ? (

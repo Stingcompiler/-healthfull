@@ -38,7 +38,7 @@ from api.ping import add_ping
 from api.schemas import ErrorOut
 from api.security import session_auth
 from apps.core import services as core
-from apps.portal import conf, guest, queries, services
+from apps.portal import conf, guest, notices, queries, services
 from apps.portal.schemas import (
     GuestBookingCreatedOut,
     GuestBookingIn,
@@ -61,6 +61,9 @@ from apps.portal.schemas import (
     PortalIssuedCodeOut,
     PortalLoginIn,
     PortalMeOut,
+    PortalNoticeOut,
+    PortalNoticesOut,
+    PortalNoticesReadOut,
     PortalPrescriptionsOut,
     PortalReceiptDetailOut,
     PortalReceiptOut,
@@ -72,6 +75,8 @@ from apps.portal.schemas import (
     PortalSlotsOut,
     PortalSummaryOut,
     PortalVerifyOut,
+    PortalVisitOut,
+    PortalVisitTimelineOut,
 )
 from apps.portal.security import guest_auth, guest_principal, portal_auth, principal
 
@@ -794,3 +799,68 @@ def get_receipt(request: HttpRequest, payment_id: int) -> Any:
 )
 def get_balance(request: HttpRequest) -> Any:
     return queries.balance(principal(request))
+
+
+# --- patient: visits and notices (public site Phase 5) -------------------------------------
+
+
+@portal_router.get(
+    "/visits",
+    auth=portal_auth,
+    response={200: list[PortalVisitOut], 401: ErrorOut, 409: ErrorOut},
+    operation_id=_patient_op("portal_list_visits"),
+    summary="The patient's visits, newest first, with what each means for them",
+)
+def list_visits(request: HttpRequest) -> Any:
+    return queries.visit_list(principal(request))
+
+
+@portal_router.get(
+    "/visits/{visit_id}/timeline",
+    auth=portal_auth,
+    response={200: PortalVisitTimelineOut, **_READ},
+    operation_id=_patient_op("portal_get_visit_timeline"),
+    summary="One visit as a timeline: booking, arrival, orders, payments, end",
+    description=(
+        "Patient-facing states only (domain.portal_status): no prices beyond the patient's "
+        "share of approved invoices, no staff notes, a lab result only once approved. 404 "
+        "if not one's own."
+    ),
+)
+def get_visit_timeline(request: HttpRequest, visit_id: int) -> Any:
+    return queries.visit_timeline(principal(request), visit_id)
+
+
+@portal_router.get(
+    "/notices",
+    auth=portal_auth,
+    response={200: PortalNoticesOut, 401: ErrorOut, 409: ErrorOut},
+    operation_id=_patient_op("portal_list_notices"),
+    summary="The patient's inbox: booking changes and published results, and the unread count",
+)
+def list_notices(request: HttpRequest) -> Any:
+    return notices.list_notices(principal(request))
+
+
+@portal_router.post(
+    "/notices/read-all",
+    auth=portal_auth,
+    response={200: PortalNoticesReadOut, **_WRITE},
+    operation_id=_patient_op("portal_mark_all_notices_read"),
+    summary="Mark every unread notice read",
+)
+def mark_all_notices_read(request: HttpRequest) -> Any:
+    who = principal(request)
+    marked = notices.mark_all_read(who)
+    return {"marked": marked, "unread": notices.unread_count(who)}
+
+
+@portal_router.post(
+    "/notices/{notice_id}/read",
+    auth=portal_auth,
+    response={200: PortalNoticeOut, **_WRITE},
+    operation_id=_patient_op("portal_mark_notice_read"),
+    summary="Mark one notice read (idempotent); 404 if not one's own",
+)
+def mark_notice_read(request: HttpRequest, notice_id: int) -> Any:
+    return notices.mark_read(principal(request), notice_id)

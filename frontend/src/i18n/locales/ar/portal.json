@@ -423,5 +423,97 @@
       "actions": "تغيير أو إلغاء",
       "noActions": "لم يعد ممكنًا تغيير هذا الحجز عبر الإنترنت. اتصل بالمركز من فضلك."
     }
+  },
+  "notices": {
+    "title": "الإشعارات",
+    "description": "ما تغيّر في حجوزاتك ونتائجك، الأحدث أولاً.",
+    "bell": "الإشعارات",
+    "bellUnread_zero": "الإشعارات، لا جديد",
+    "bellUnread_one": "الإشعارات، إشعار واحد جديد",
+    "bellUnread_two": "الإشعارات، إشعاران جديدان",
+    "bellUnread_few": "الإشعارات، {{count}} إشعارات جديدة",
+    "bellUnread_many": "الإشعارات، {{count}} إشعاراً جديداً",
+    "bellUnread_other": "الإشعارات، {{count}} إشعار جديد",
+    "many": "+99",
+    "new": "جديد",
+    "none": "لا توجد إشعارات بعد.",
+    "noneHint": "عندما يرد المركز على حجزك أو تصدر نتيجة، ستجدها هنا.",
+    "markRead": "تعليم كمقروء",
+    "markAll": "تعليم الكل كمقروء",
+    "openResult": "فتح النتيجة",
+    "openAppointments": "عرض مواعيدك",
+    "reason": "السبب: {{reason}}",
+    "awaitingHint": "الموعد الجديد بانتظار تأكيد الاستقبال.",
+    "kind": {
+      "booking_requested": "تم إرسال طلب الحجز",
+      "booking_confirmed": "تم تأكيد الموعد",
+      "booking_declined": "تم رفض الطلب",
+      "booking_cancelled": "تم إلغاء الموعد",
+      "booking_rescheduled": "تم تغيير الموعد",
+      "booking_expired": "انتهت مهلة الطلب",
+      "result_published": "النتيجة جاهزة"
+    },
+    "body": {
+      "booking_requested": "طلبك لموعد {{time}} مع {{doctor}} بانتظار تأكيد الاستقبال.",
+      "booking_confirmed": "تم تأكيد موعدك {{time}} مع {{doctor}}.",
+      "booking_declined": "رفض المركز طلبك لموعد {{time}} مع {{doctor}}.",
+      "booking_cancelled": "ألغى المركز موعدك {{time}} مع {{doctor}}.",
+      "booking_cancelled_by_you": "ألغيت موعدك {{time}} مع {{doctor}}.",
+      "booking_rescheduled": "تم نقل موعدك مع {{doctor}} إلى {{time}}.",
+      "booking_expired": "انتهت مهلة طلبك لموعد {{time}} مع {{doctor}} قبل أن يرد المركز. يمكنك الحجز من جديد.",
+      "result_published": "نتيجة {{test}} جاهزة.",
+      "result_amended": "صدرت نتيجة مصحّحة لـ {{test}}."
+    }
+  },
+  "timeline": {
+    "title": "الزيارة {{number, bidi}}",
+    "titleShort": "الزيارة",
+    "back": "المواعيد",
+    "visits": "زياراتك",
+    "noVisits": "لا توجد زيارات بعد.",
+    "steps": {
+      "booking": "الحجز",
+      "arrived": "الوصول إلى المركز",
+      "orders": "الخدمات المطلوبة",
+      "payments": "الدفع",
+      "end": "نهاية الزيارة"
+    },
+    "visit": {
+      "at_center": "في المركز اليوم",
+      "completed": "اكتملت",
+      "cancelled": "أُلغيت"
+    },
+    "order": {
+      "pay_at_reception": "مطلوب، الدفع في الاستقبال",
+      "waiting": "مدفوع، بالانتظار",
+      "in_progress": "قيد التنفيذ",
+      "done": "تم",
+      "result_published": "صدرت النتيجة",
+      "cancelled": "ملغى"
+    },
+    "payment": {
+      "nothing_due": "لا شيء للدفع",
+      "outstanding": "متبقٍ للدفع",
+      "under_verification": "الدفع قيد التحقق",
+      "paid": "مدفوع"
+    },
+    "kind": {
+      "consultation": "كشف",
+      "lab": "فحص معمل",
+      "procedure": "إجراء",
+      "drug": "دواء",
+      "consumable": "مستلزمات",
+      "bed": "يوم تنويم"
+    },
+    "quantity": "الكمية {{count, bidi}}",
+    "noOrders": "لم يُطلب شيء بعد.",
+    "noInvoices": "لا توجد فاتورة بعد. الرسوم تُدفع في الاستقبال.",
+    "yourShare": "حصتك:",
+    "outstanding": "المتبقي للدفع:",
+    "openResult": "فتح النتيجة",
+    "openInvoice": "فتح الفاتورة",
+    "endOpen": "الزيارة ما زالت مفتوحة.",
+    "endClosed": "اكتملت الزيارة.",
+    "endCancelled": "أُلغيت الزيارة."
   }
 }
