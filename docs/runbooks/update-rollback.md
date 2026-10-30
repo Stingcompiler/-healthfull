@@ -9,7 +9,8 @@ Installed before the separate database roles existed (no `DB_OWNER_PASSWORD` in 
 
 ## What update.sh does — ماذا يفعل سكربت التحديث
 
-1. Gets `app:<tag>` and `web:<tag>` (registry pull, or `--image-archive` from USB).
+1. Gets `app:<tag>` and `web:<tag>` (registry pull, `--image-archive` from USB, or
+   `--local-images` when they were built on this host with `infra/compose.sh build`).
 2. Runs Django system checks and `migrate --plan` (dry run, as the owner role, which proves its
    login) in throwaway containers of the new image.
 3. If migrations are pending, stops the app (maintenance), then takes a verified dump labelled

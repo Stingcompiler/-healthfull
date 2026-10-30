@@ -3,6 +3,8 @@
 All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
+### Added
+- `infra/update.sh --local-images`: update to images built on the same host with `infra/compose.sh build`, without a registry pull or an image archive (refused together with `--image-archive`; a missing image still stops the update before anything changes).
 ### Changed
 - Center website (`/` and `/portal`) redesigned task-first for phones and large screens (D-0022): the first screen answers "what can I do here" with large cards (book online, open my booking, sign in to your file) and compact ones (call, WhatsApp, directions, today's hours), each shown only with its switch or data; the hero is the identity only, with the photo as a short banner on phones and an inset panel with a glass status chip from lg. Soft cards with the theme's elevation (none in dark), subtle glass on the sticky header and a floating phone action bar (book, sign in, call) with a solid fallback for `prefers-reduced-transparency` or no `backdrop-filter`, hover/press lift on action cards, a one-time section rise on scroll and smooth FAQ/policy accordions, all still under `prefers-reduced-motion`. New site footer: name and logo, contact, an hours summary, quick links (book, my booking, sign in, policies, staff sign-in), language and theme, copyright with the current year and "Powered by Sting Systems" linking to stingdev.pro (a plain link, new tab). No API or backend change; no prices on the page.
 

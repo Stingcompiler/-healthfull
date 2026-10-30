@@ -131,7 +131,8 @@ these wait for the connection and catch up by themselves:
 
 - the optional cloud copy (pgBackRest repo2): WAL queues up to `PGBACKREST_ARCHIVE_QUEUE_MAX`; the
   local backups and repo1 are not affected (a backup may be `partial` for that reason only);
-- `infra/update.sh` without `--image-archive` cannot pull images: use the USB release archive;
+- `infra/update.sh` without `--image-archive` cannot pull images: use the USB release archive (or
+  `--local-images` if the images were built on this server);
 - the server clock cannot sync. Check `timedatectl` once a week while offline: prices take effect
   by date and shifts and reports use the clock. Correct it with
   `sudo timedatectl set-time "2026-10-10 08:00:00"` if it drifted, and never move it backwards
