@@ -11,6 +11,23 @@ export function usePick(): (ar: string | null | undefined, en: string | null | u
   return useCallback((ar, en) => pickName({ ar, en }, language), [language]);
 }
 
+/** The doctor's specialty and department on one line ("Cardiology · Internal medicine"). */
+export function useDoctorDetail(): (d: {
+  specialty_ar: string;
+  specialty_en: string;
+  department_ar: string;
+  department_en: string;
+}) => string {
+  const pick = usePick();
+  return useCallback(
+    (d) =>
+      [...new Set([pick(d.specialty_ar, d.specialty_en), pick(d.department_ar, d.department_en)].filter(Boolean))].join(
+        " · ",
+      ),
+    [pick],
+  );
+}
+
 /** A calendar day from the API ("2026-10-12"), shown as e.g. "Mon, 12 Oct" in the UI language. */
 export function formatDay(day: string, language: Language): string {
   return new Intl.DateTimeFormat(localeFor(language), {
@@ -19,6 +36,16 @@ export function formatDay(day: string, language: Language): string {
     month: "short",
     timeZone: "UTC",
   }).format(new Date(`${day}T00:00:00Z`));
+}
+
+/** A calendar day split for a two-line day chip: "Mon" over "12 Oct", in the UI language. */
+export function dayParts(day: string, language: Language): { weekday: string; date: string } {
+  const at = new Date(`${day}T00:00:00Z`);
+  const locale = localeFor(language);
+  return {
+    weekday: new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(at),
+    date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", timeZone: "UTC" }).format(at),
+  };
 }
 
 /** The public URL a receipt's QR opens to check it (FEATURES 15.1, ADR 0016). */

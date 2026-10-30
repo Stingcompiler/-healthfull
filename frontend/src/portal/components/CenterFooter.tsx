@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,7 +12,7 @@ import { signInPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { formatClock, weekdayName } from "@/lib/weekdays";
 
-import { centerTasks, POLICIES_ID, stickyBar, summarizeHours } from "../lib/center-tasks";
+import { centerTasks, POLICIES_ID, sitePage, stickyBar, summarizeHours } from "../lib/center-tasks";
 import { usePick } from "../lib/ui";
 import { useCenterTaskInput } from "../lib/use-center-tasks";
 import { CenterMark } from "./CenterMark";
@@ -38,15 +38,18 @@ function Column({ title, children, testId }: { title: string; children: ReactNod
  * language and theme, the copyright and the vendor line. Every block appears only with its data;
  * on phones the footer leaves room for the floating action bar.
  */
-export function CenterFooter() {
+export function CenterFooter({ reserveBar: reserve }: { reserveBar?: boolean } = {}) {
   const { t } = useTranslation("portal");
   const language = useLanguage();
   const pick = usePick();
   const identityName = useCenterName();
+  const path = useRouterState({ select: (st) => st.location.pathname });
   const page = useCenterPage().data;
   const input = useCenterTaskInput(page);
   const tasks = centerTasks(input);
-  const reserveBar = input.signedIn || stickyBar(input) !== null;
+  // Room for the center page's floating phone bar; a page with its own bar in the flow passes false.
+  const reserveBar = reserve ?? (input.signedIn || stickyBar(input) !== null);
+  const onCenter = sitePage(path) === "center";
   const status = useOpenStatusText(page?.today, page?.hours ?? []);
   const name = (page ? pick(page.name_ar, page.name_en) : "") || identityName;
   const runs = page ? summarizeHours(page.hours) : [];
@@ -158,9 +161,16 @@ export function CenterFooter() {
             ) : null}
             {hasPolicies ? (
               <li>
-                <a href={`#${POLICIES_ID}`} className={linkClass} data-testid="footer-policies">
-                  {t("center.policies.label")}
-                </a>
+                {onCenter ? (
+                  <a href={`#${POLICIES_ID}`} className={linkClass} data-testid="footer-policies">
+                    {t("center.policies.label")}
+                  </a>
+                ) : (
+                  // From a guest booking page: the policies live on the center page.
+                  <Link to="/portal" hash={POLICIES_ID} className={linkClass} data-testid="footer-policies">
+                    {t("center.policies.label")}
+                  </Link>
+                )}
               </li>
             ) : null}
             {input.signedIn ? null : (

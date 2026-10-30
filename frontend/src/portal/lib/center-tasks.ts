@@ -103,3 +103,14 @@ export function summarizeHours(hours: readonly HoursDay[]): HoursRun[] {
   }
   return runs;
 }
+
+/**
+ * Which public website page a portal path is (D-0022, D-0023): the center page itself, one of
+ * the two guest booking pages (same header, width and footer), or a plain portal screen (null).
+ */
+export function sitePage(pathname: string): "center" | "guest" | null {
+  const trimmed = pathname.replace(/\/+$/u, "");
+  if (trimmed === "/portal" || trimmed === "") return "center";
+  if (trimmed === "/portal/book" || trimmed === "/portal/booking") return "guest";
+  return null;
+}
