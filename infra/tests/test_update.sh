@@ -204,6 +204,29 @@ called "compose pull" && show_and_fail "must not pull when loading an archive"
 pass "offline update from an image archive"
 
 setup
+run_update --local-images
+assert_eq "$CODE" "0" "local images update"
+called "compose pull" && show_and_fail "must not pull with --local-images"
+called "load -i" && show_and_fail "must not load an archive with --local-images"
+called "TAG=v2.0.0 compose up -d --no-deps app web maintenance" || show_and_fail "no swap with local images"
+pass "update from images built on this host (--local-images)"
+
+setup
+export FAKE_MISSING_IMAGE="app:v2.0.0"
+run_update --local-images
+assert_eq "$CODE" "1" "local image missing"
+called "backup-nightly.sh" && show_and_fail "must stop before backup when a local image is missing"
+grep -q "nothing was changed" "$WORK/case/out.log" || show_and_fail "nothing-changed message"
+pass "--local-images with an image not built here: stops before touching anything"
+
+setup
+printf 'fake' >"$WORK/case/images.tar"
+run_update --local-images --image-archive "$WORK/case/images.tar"
+assert_eq "$CODE" "2" "both image sources is a usage error"
+[[ -s "$FAKE_STATE/calls.log" ]] && show_and_fail "no docker call on a usage error"
+pass "--local-images and --image-archive together are refused up front"
+
+setup
 export FAKE_MISSING_IMAGE="web:v2.0.0"
 run_update
 assert_eq "$CODE" "1" "missing image"

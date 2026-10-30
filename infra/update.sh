@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Update hospital-sys to a new image tag with a safety net (FEATURES 13.10, STACK.md).
 #
-#   1. get images      pull <registry>/app:TAG and web:TAG (or `docker load` an offline archive)
+#   1. get images      pull <registry>/app:TAG and web:TAG (or `docker load` an offline archive,
+#                      or --local-images: use images already built on this host)
 #   2. preflight       Django system checks and `migrate --plan` (dry run, as the owner role)
 #                      in one-off containers of the NEW image
 #   3. backup          verified pg_dump labelled pre-update-TAG (infra/backup/backup-nightly.sh);
@@ -24,7 +25,7 @@
 # the version serving at the end (never raw SQL). A run cut short by a power cut is recorded as
 # failed by the next run. Recording never changes the outcome of an update.
 #
-# Usage: infra/update.sh --tag TAG [--image-archive FILE] [--restore-db-on-failure] [--yes]
+# Usage: infra/update.sh --tag TAG [--image-archive FILE | --local-images] [--restore-db-on-failure] [--yes]
 #                        [--dry-run] [--health-retries N] [--health-interval SECONDS]
 #                        [--release-notes FILE]
 #
@@ -49,6 +50,7 @@ STATE_DIR="${UPDATE_STATE_DIR:-$ROOT/infra}"
 
 NEW_TAG=""
 ARCHIVE=""
+LOCAL_IMAGES=0
 RESTORE_DB=0
 ASSUME_YES=0
 DRY_RUN=0
@@ -65,6 +67,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --tag) NEW_TAG="${2:-}"; shift 2 ;;
     --image-archive) ARCHIVE="${2:-}"; shift 2 ;;
+    --local-images) LOCAL_IMAGES=1; shift ;;
     --restore-db-on-failure) RESTORE_DB=1; shift ;;
     --yes | -y) ASSUME_YES=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
@@ -79,6 +82,7 @@ done
 [[ "$NEW_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]] || { echo "update: --tag is required (letters, digits, . _ -)" >&2; exit 2; }
 [[ "$HEALTH_RETRIES" =~ ^[1-9][0-9]*$ && "$HEALTH_INTERVAL" =~ ^[0-9]+$ ]] || { echo "update: bad health retry settings" >&2; exit 2; }
 [[ -z "$ARCHIVE" || -f "$ARCHIVE" ]] || { echo "update: image archive not found: $ARCHIVE" >&2; exit 2; }
+[[ -z "$ARCHIVE" || $LOCAL_IMAGES -eq 0 ]] || { echo "update: --image-archive and --local-images exclude each other" >&2; exit 2; }
 [[ -z "$NOTES_FILE" || -f "$NOTES_FILE" ]] || { echo "update: release notes not found: $NOTES_FILE" >&2; exit 2; }
 [[ -f "$ENV_FILE" ]] || { echo "update: $ENV_FILE not found" >&2; exit 2; }
 # Absolute and exported: docker-compose.yml passes the same file to every container.
@@ -384,8 +388,10 @@ log "update ${PREV_TAG:-<none>} -> $NEW_TAG (registry $REGISTRY)"
 step "1/7 get images"
 if [[ -n "$ARCHIVE" ]]; then
   docker load -i "$ARCHIVE" || fail "docker load failed"
+elif [[ $LOCAL_IMAGES -eq 1 ]]; then
+  log "using images already on this host (built here with infra/compose.sh build)"
 else
-  compose_tag "$NEW_TAG" pull app web || fail "pull failed (no internet? use --image-archive)"
+  compose_tag "$NEW_TAG" pull app web || fail "pull failed (no internet? use --image-archive, or --local-images for images built here)"
 fi
 for img in "$REGISTRY/app:$NEW_TAG" "$REGISTRY/web:$NEW_TAG"; do
   docker image inspect "$img" >/dev/null 2>&1 || fail "image $img is not available locally"
