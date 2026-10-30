@@ -20,6 +20,8 @@ export interface SiteConfig {
   centerSite: boolean;
   onlineBooking: boolean;
   patientTracking: boolean;
+  /** Booking without a patient file (ADR 0029 D); the server sends it on only with onlineBooking. */
+  guestBooking: boolean;
 }
 
 const OFF: SiteConfig = {
@@ -29,6 +31,7 @@ const OFF: SiteConfig = {
   centerSite: false,
   onlineBooking: false,
   patientTracking: false,
+  guestBooking: false,
 };
 
 let current: SiteConfig = OFF;
@@ -91,6 +94,7 @@ export async function loadSiteConfig(fetcher: typeof fetch = fetch): Promise<Sit
       centerSite: body.center_site === true,
       onlineBooking: body.online_booking === true,
       patientTracking: body.patient_tracking === true,
+      guestBooking: body.online_booking === true && body.guest_booking === true,
     });
   } catch {
     setSiteConfig(null);

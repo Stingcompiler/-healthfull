@@ -44,6 +44,7 @@ describe("site switches (ADR 0027)", () => {
       centerSite: false,
       onlineBooking: false,
       patientTracking: false,
+      guestBooking: false,
     });
   });
 
@@ -68,6 +69,15 @@ describe("center switches (ADR 0028, 0029)", () => {
       answer({ marketing: false, center_site: true, online_booking: "yes", patient_tracking: true }),
     );
     expect(getSiteConfig()).toMatchObject({ centerSite: true, onlineBooking: false, patientTracking: true });
+  });
+
+  it("guest booking is on only with online booking (ADR 0029 D)", async () => {
+    await loadSiteConfig(answer({ online_booking: true, guest_booking: true }));
+    expect(getSiteConfig().guestBooking).toBe(true);
+    await loadSiteConfig(answer({ online_booking: false, guest_booking: true }));
+    expect(getSiteConfig().guestBooking).toBe(false);
+    await loadSiteConfig(answer({ online_booking: true, guest_booking: false }));
+    expect(getSiteConfig().guestBooking).toBe(false);
   });
 
   it("are off when the server does not answer", async () => {

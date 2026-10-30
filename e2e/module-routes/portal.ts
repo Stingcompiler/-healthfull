@@ -34,6 +34,15 @@ function portalRoute(
 export const routes: readonly AppRoute[] = [
   // Public: the patient sign-in (the center page at /portal is in e2e/routes.ts).
   appRoute("portal-sign-in", "/portal/sign-in", { auth: false }),
+  // Public: booking without a file and the guest's booking (ADR 0029 D, Phase 4b).
+  appRoute("portal-guest-book", "/portal/book", {
+    auth: false,
+    ready: (page) => page.getByTestId("book-doctor").first(),
+  }),
+  appRoute("portal-guest-booking", "/portal/booking", {
+    auth: false,
+    ready: (page) => page.getByTestId("guest-sign-in"),
+  }),
   portalRoute("portal-home", "/portal/home", (page) =>
     page.getByTestId("home-balance"),
   ),

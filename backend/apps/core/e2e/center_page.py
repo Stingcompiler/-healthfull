@@ -95,7 +95,9 @@ def seed_center_page(author: User) -> None:
 
 def seed_public_site(author: User) -> None:
     """Every public switch on (a new install starts with them off), and booking instant like
-    an existing install (approval off, ADR 0029 K1); specs that need approval switch it on."""
+    an existing install (approval off, ADR 0029 K1); specs that need approval switch it on.
+    Guest booking on, with the per-address daily cap raised (every spec books from 127.0.0.1)
+    and a lighter form check (14 bits instead of 18) so a slow CI browser solves it quickly."""
     PublicSiteSettings.load()
     with pghistory.context(user=author.pk, reason="public site: sample dataset"):
         PublicSiteSettings.objects.filter(pk=PublicSiteSettings.SINGLETON_PK).update(
@@ -103,4 +105,7 @@ def seed_public_site(author: User) -> None:
             online_booking_enabled=True,
             patient_tracking_enabled=True,
             require_approval=False,
+            guest_booking_enabled=True,
+            max_requests_per_address_day=1000,
+            pow_difficulty_bits=14,
         )

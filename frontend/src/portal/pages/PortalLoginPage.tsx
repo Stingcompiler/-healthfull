@@ -12,6 +12,7 @@ import { ArrowBack } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useTranslateError } from "@/lib/api/translate-error";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
+import { getSiteConfig } from "@/lib/site";
 import { vmsg } from "@/lib/validation";
 
 import { portalKeys, portalLogin } from "../api";
@@ -129,6 +130,14 @@ export function PortalLoginPage() {
 
         <ReceiptGuide />
       </div>
+      {getSiteConfig().guestBooking ? (
+        <p className="text-sm text-pretty text-muted" data-testid="login-guest-book">
+          {t("guest.noFile")}{" "}
+          <Link to="/portal/book" className="font-medium text-primary-strong underline-offset-4 hover:underline">
+            {t("center.bookOnline")}
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

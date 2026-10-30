@@ -41,7 +41,8 @@
     "adminExport": "Data export",
     "adminAudit": "Audit trail",
     "adminCenterPage": "Center page",
-    "adminPublicSite": "Public site & booking"
+    "adminPublicSite": "Public site & booking",
+    "onlineBookings": "Online bookings"
   },
   "short": {
     "dashboard": "Home",
@@ -76,7 +77,8 @@
     "adminExport": "Export",
     "adminAudit": "Audit",
     "adminCenterPage": "Page",
-    "adminPublicSite": "Website"
+    "adminPublicSite": "Website",
+    "onlineBookings": "Online"
   },
   "shell": {
     "menu": "Menu",

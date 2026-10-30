@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api/client";
 
 import type {
+  OnlineBookingStatus,
   AppointmentInput,
   AppointmentPatch,
   CheckInInput,
@@ -24,7 +25,18 @@ export const visitKeys = {
   token: (entryId: number) => ["visits", "token", entryId] as const,
   agenda: (doctorId: number, day: string) => ["visits", "agenda", doctorId, day] as const,
   upcoming: (patientId: number) => ["visits", "upcoming", patientId] as const,
+  online: (query: OnlineBookingQuery) => ["visits", "online", query] as const,
 };
+
+/** Filters of the reception inbox (ADR 0029 Phase 4); the server defaults to requests from today. */
+export interface OnlineBookingQuery {
+  status: OnlineBookingStatus;
+  day: string | null;
+  doctorId: number | null;
+}
+
+/** The inbox refreshes while reception keeps it open: requests arrive from the website. */
+export const INBOX_REFRESH_MS = 30_000;
 
 /** Board and display refresh: the queue changes as the cashier and doctors work. */
 export const QUEUE_REFRESH_MS = 10_000;
@@ -264,6 +276,87 @@ export function useCheckIn() {
         api.POST("/api/visits/appointments/{appointment_id}/check-in", {
           params: { path: { appointment_id: id } },
           body,
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+// --- Reception inbox of online bookings (ADR 0029 D, F, G; apps/portal/inbox.py) ----------
+
+export function useOnlineBookings(query: OnlineBookingQuery) {
+  return useQuery({
+    queryKey: visitKeys.online(query),
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/visits/online-bookings", {
+          params: {
+            query: {
+              status: query.status,
+              day: query.day ?? undefined,
+              doctor_id: query.doctorId ?? undefined,
+            },
+          },
+        }),
+      ),
+    refetchInterval: INBOX_REFRESH_MS,
+  });
+}
+
+/** Cancel an online booking on the booker's behalf (reason code and note, invariant 4). */
+export function useCancelOnlineBooking() {
+  const invalidate = useInvalidateVisits();
+  return useMutation({
+    mutationFn: ({ id, reasonCode, note }: { id: number; reasonCode: string; note: string }) =>
+      unwrap(
+        api.POST("/api/visits/online-bookings/{appointment_id}/cancel", {
+          params: { path: { appointment_id: id } },
+          body: { reason_code: reasonCode, note },
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+/** Decline every open guest request of this booking's phone (one reason, one note). */
+export function useRejectOnlineBookingsFromPhone() {
+  const invalidate = useInvalidateVisits();
+  return useMutation({
+    mutationFn: ({ id, reasonCode, note }: { id: number; reasonCode: string; note: string }) =>
+      unwrap(
+        api.POST("/api/visits/online-bookings/{appointment_id}/reject-phone", {
+          params: { path: { appointment_id: id } },
+          body: { reason_code: reasonCode, note },
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+/** Link a booking made without a file to the patient's file (explicit; never automatic). */
+export function useLinkOnlineBookingPatient() {
+  const invalidate = useInvalidateVisits();
+  return useMutation({
+    mutationFn: ({ id, patientId }: { id: number; patientId: number }) =>
+      unwrap(
+        api.POST("/api/visits/online-bookings/{appointment_id}/link-patient", {
+          params: { path: { appointment_id: id } },
+          body: { patient_id: patientId },
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+/** A new PIN for a guest booking, shown once to the staff member (the old PIN stops working). */
+export function useReissueGuestPin() {
+  const invalidate = useInvalidateVisits();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      unwrap(
+        api.POST("/api/visits/online-bookings/{appointment_id}/reissue-pin", {
+          params: { path: { appointment_id: id } },
+          body: { reason },
         }),
       ),
     onSuccess: invalidate,

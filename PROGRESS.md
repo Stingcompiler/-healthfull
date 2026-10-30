@@ -814,4 +814,17 @@ printers, power-cut and disaster drills, role acceptance, licence and release de
   clean); e2e not run locally (no screens in 4a), CI runs the suite. A first `make check` failed on one sweep
   (`test_display_role`) that needed the new public operations listed; fixed.
 - [x] Public site Phase 4a: guest booking and reception inbox backend.
-- [ ] Public site Phase 4b: guest booking screens (`/portal/book`, `/portal/booking`) and the reception inbox screen.
+- 2026-10-30: public site work order, Phase 4b (guest booking and reception inbox screens) on
+  `feat/public-site-phase4b-guest-ui` (ADR 0029 "Phase 4b as built"): `/portal/book` (doctor/day/slot, name +
+  phone, review with fees at reception and the cancellation policy, confirmation with reference + PIN once,
+  wa.me share, print), Idempotency-Key per attempt in sessionStorage with its solved challenge, proof-of-work in
+  a Web Worker with a bundled SHA-256 (`src/portal/guest/`), `/portal/booking` (guest sign-in, view, cancel,
+  reschedule, sign-out), "Book online" calls on the center page / off page / patient sign-in gated by the new
+  `guest_booking` of `GET /api/ops/site`, reception inbox `/visits/online-bookings` (nav, filters, approve,
+  decline, cancel on behalf, decline-all-from-phone, link to file, reissue PIN shown once, WhatsApp, check-in),
+  notifications now open the inbox, guest and abuse limits on `/administration/public-site`. Results: vitest
+  guest suite 36 (SHA-256 and PoW vectors from `domain.proof_of_work`, attempt/key reuse, form validation);
+  e2e locally for the touched specs and responsive rows (`@guest-booking`, `@online-inbox`, `@public-site
+  switches`, `@portal center page|booking|sign-in`, new routes x 3 widths x 3 themes x 2 languages): 147 + 5
+  passed after fixing three spec mistakes (console 401 before login, picker selector, plural key).
+- [x] Public site Phase 4b: guest booking screens and the reception inbox screen.

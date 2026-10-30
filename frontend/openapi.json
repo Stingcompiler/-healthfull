@@ -29244,7 +29244,7 @@
         "type": "object"
       },
       "SiteOut": {
-        "description": "What the SPA needs before its first render (ADR 0027, 0028). Public; contact values are\nonly returned while the marketing page is on. ``center_site``, ``online_booking`` and\n``patient_tracking`` are the center administrator's switches: the root ``/`` shows the\ncenter website while ``center_site`` is on and no staff session exists.",
+        "description": "What the SPA needs before its first render (ADR 0027, 0028). Public; contact values are\nonly returned while the marketing page is on. ``center_site``, ``online_booking``,\n``patient_tracking`` and ``guest_booking`` are the center administrator's switches: the\nroot ``/`` shows the center website while ``center_site`` is on and no staff session\nexists.",
         "properties": {
           "center_site": {
             "default": false,
@@ -29272,6 +29272,12 @@
               }
             ],
             "title": "Contact Whatsapp"
+          },
+          "guest_booking": {
+            "default": false,
+            "description": "Booking without a patient file (on only while online_booking is on)",
+            "title": "Guest Booking",
+            "type": "boolean"
           },
           "marketing": {
             "title": "Marketing",

@@ -3,7 +3,9 @@
  * `portal_patient` (apps/portal/e2e_fixtures.py, one call each), signing in to the portal
  * through its API (the portal cookie is not the staff session), and a phone-sized page.
  */
-import { expect, type Browser, type Page } from "@playwright/test";
+import { createHash, randomUUID } from "node:crypto";
+
+import { expect, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 
 import { csrfHeaders, fixture, setPrefs, tr } from "../../helpers";
 
@@ -69,4 +71,85 @@ export async function fillSignIn(page: Page, fileNo: string, phone: string, code
   await form.getByLabel(t("portal:login.phone")).fill(phone);
   await form.getByLabel(t("portal:login.code")).fill(code);
   await form.getByRole("button", { name: t("portal:login.submit") }).click();
+}
+
+// --- Guest booking (ADR 0029 D, F; Phase 4) -------------------------------------------------
+
+export interface GuestCreated {
+  reference: string;
+  pin: string | null;
+  status: string;
+  display_status: string;
+  starts_at: string;
+  share_url: string;
+  replayed: boolean;
+  doctor: { id: number; name_en: string };
+}
+
+/** A phone number no other spec uses (the per-phone cap counts open guest bookings). */
+export function uniquePhone(): string {
+  return `09${String(Math.floor(Math.random() * 1e8)).padStart(8, "0")}`;
+}
+
+/** The first nonce from 0 whose SHA-256(challenge + nonce) has `bits` leading zero bits. */
+export function solvePow(challenge: string, bits: number): string {
+  for (let n = 0; ; n++) {
+    const digest = createHash("sha256").update(challenge + String(n)).digest();
+    let zero = 0;
+    for (const byte of digest) {
+      if (byte === 0) {
+        zero += 8;
+        continue;
+      }
+      zero += Math.clz32(byte) - 24;
+      break;
+    }
+    if (zero >= bits) return String(n);
+  }
+}
+
+/**
+ * Books a guest slot through the public API (as the booking page does: challenge, proof,
+ * Idempotency-Key), on the doctor's furthest bookable day. Returns the answer and the key.
+ */
+export async function bookAsGuest(
+  request: APIRequestContext,
+  options: { name?: string; phone?: string; slot?: "first" | "last"; dayFromEnd?: number } = {},
+): Promise<{ created: GuestCreated; key: string; body: Record<string, unknown> }> {
+  const doctors = (await (await request.get("/api/portal/doctors")).json()) as { id: number }[];
+  const doctor = doctors[0];
+  if (!doctor) throw new Error("no doctor takes online bookings");
+  const days = (await (await request.get(`/api/portal/doctors/${String(doctor.id)}/days`)).json()) as string[];
+  const day = days.at(-(options.dayFromEnd ?? 1));
+  if (!day) throw new Error("the doctor has no bookable day");
+  const slots = (await (
+    await request.get(`/api/portal/doctors/${String(doctor.id)}/slots?on=${day}`)
+  ).json()) as { slots: { starts_at: string }[] };
+  const slot = options.slot === "last" ? slots.slots.at(-1) : slots.slots[0];
+  if (!slot) throw new Error("no free slot");
+  const challenge = (await (await request.get("/api/portal/challenge")).json()) as { challenge: string; bits: number };
+  const body = {
+    doctor_id: doctor.id,
+    starts_at: slot.starts_at,
+    contact_name: options.name ?? "Guest Visitor",
+    contact_phone: options.phone ?? uniquePhone(),
+    challenge: challenge.challenge,
+    nonce: solvePow(challenge.challenge, challenge.bits),
+  };
+  const key = randomUUID();
+  const response = await request.post("/api/portal/guest-bookings", {
+    headers: { ...(await csrfHeadersOf(request)), "Idempotency-Key": key },
+    data: body,
+  });
+  expect(response.status(), `guest booking: ${await response.text()}`).toBe(201);
+  return { created: (await response.json()) as GuestCreated, key, body };
+}
+
+async function csrfHeadersOf(request: APIRequestContext): Promise<Record<string, string>> {
+  let token = (await request.storageState()).cookies.find((c) => c.name === "csrftoken")?.value;
+  if (!token) {
+    await request.get("/api/auth/csrf");
+    token = (await request.storageState()).cookies.find((c) => c.name === "csrftoken")?.value;
+  }
+  return token ? { "X-CSRFToken": token } : {};
 }

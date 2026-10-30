@@ -18137,9 +18137,10 @@ export interface components {
         /**
          * SiteOut
          * @description What the SPA needs before its first render (ADR 0027, 0028). Public; contact values are
-         *     only returned while the marketing page is on. ``center_site``, ``online_booking`` and
-         *     ``patient_tracking`` are the center administrator's switches: the root ``/`` shows the
-         *     center website while ``center_site`` is on and no staff session exists.
+         *     only returned while the marketing page is on. ``center_site``, ``online_booking``,
+         *     ``patient_tracking`` and ``guest_booking`` are the center administrator's switches: the
+         *     root ``/`` shows the center website while ``center_site`` is on and no staff session
+         *     exists.
          */
         SiteOut: {
             /**
@@ -18151,6 +18152,12 @@ export interface components {
             contact_email?: string | null;
             /** Contact Whatsapp */
             contact_whatsapp?: string | null;
+            /**
+             * Guest Booking
+             * @description Booking without a patient file (on only while online_booking is on)
+             * @default false
+             */
+            guest_booking: boolean;
             /** Marketing */
             marketing: boolean;
             /**

@@ -16,22 +16,9 @@ import { getSiteConfig } from "@/lib/site";
 
 import { useAppointments, useCancelAppointment } from "../api";
 import { PortalPage, PortalSection, Pill } from "../components/PortalPage";
-import type { PillTone } from "../lib/tones";
+import { BOOKING_TONE } from "../lib/tones";
 import { usePick } from "../lib/ui";
 import type { PortalAppointment } from "../types";
-
-/** Patient-facing status (server `display_status`, plan section 5) and its tone. */
-const DISPLAY_TONE: Record<PortalAppointment["display_status"], PillTone> = {
-  awaiting_approval: "warning",
-  confirmed: "info",
-  received: "success",
-  moved: "neutral",
-  cancelled_by_you: "neutral",
-  cancelled_by_center: "neutral",
-  declined: "danger",
-  expired: "neutral",
-  missed: "warning",
-};
 
 function AppointmentCard({ appointment, upcoming }: { appointment: PortalAppointment; upcoming: boolean }) {
   const { t } = useTranslation("portal");
@@ -54,7 +41,7 @@ function AppointmentCard({ appointment, upcoming }: { appointment: PortalAppoint
             {pick(appointment.doctor.department_ar, appointment.doctor.department_en)}
           </p>
         </div>
-        <Pill tone={DISPLAY_TONE[appointment.display_status]}>
+        <Pill tone={BOOKING_TONE[appointment.display_status]}>
           {t(`appointments.display.${appointment.display_status}`)}
         </Pill>
       </div>

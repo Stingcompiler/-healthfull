@@ -5,6 +5,7 @@ import { AuthGuard } from "@/app/layouts/AppLayout";
 import type { RouterContext } from "@/app/router-context";
 
 import { AppointmentsPage } from "./pages/AppointmentsPage";
+import { OnlineBookingsPage } from "./pages/OnlineBookingsPage";
 import { QueueDisplayPage } from "./pages/QueueDisplayPage";
 import { QueuePage } from "./pages/QueuePage";
 
@@ -24,7 +25,14 @@ export function routes<TParent extends AnyRoute>(parent: TParent) {
     path: "/appointments",
     component: AppointmentsPage,
   });
-  return [queue, appointments] as const;
+  // The reception inbox of online bookings (ADR 0029, Phase 4b); the server checks
+  // visits.manage_online_bookings on every call, the nav entry hides it from others.
+  const onlineBookings = createRoute({
+    getParentRoute: () => parent,
+    path: "/visits/online-bookings",
+    component: OnlineBookingsPage,
+  });
+  return [queue, appointments, onlineBookings] as const;
 }
 
 function KioskDisplay() {

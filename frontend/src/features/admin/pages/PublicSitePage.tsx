@@ -26,6 +26,11 @@ const RANGES = {
   reschedule_cutoff_hours: [0, 168],
   request_ttl_hours: [1, 168],
   min_review_minutes: [0, 1440],
+  max_guest_bookings_per_phone: [1, 10],
+  max_pending_per_doctor_day: [1, 200],
+  max_requests_per_address_day: [1, 1000],
+  pow_difficulty_bits: [0, 26],
+  guest_retention_days: [1, 3650],
 } as const;
 
 type RuleName = keyof typeof RANGES;
@@ -50,6 +55,12 @@ const schema = z.object({
   require_approval: z.boolean(),
   request_ttl_hours: wholeIn(RANGES.request_ttl_hours),
   min_review_minutes: wholeIn(RANGES.min_review_minutes),
+  guest_booking_enabled: z.boolean(),
+  max_guest_bookings_per_phone: wholeIn(RANGES.max_guest_bookings_per_phone),
+  max_pending_per_doctor_day: wholeIn(RANGES.max_pending_per_doctor_day),
+  max_requests_per_address_day: wholeIn(RANGES.max_requests_per_address_day),
+  pow_difficulty_bits: wholeIn(RANGES.pow_difficulty_bits),
+  guest_retention_days: wholeIn(RANGES.guest_retention_days),
   reason: z.string().trim().min(1, vmsg("validation.required")).max(300),
 });
 type Values = z.infer<typeof schema>;
@@ -68,6 +79,12 @@ function toValues(row: PublicSiteSettingsOut): Values {
     require_approval: row.require_approval,
     request_ttl_hours: String(row.request_ttl_hours),
     min_review_minutes: String(row.min_review_minutes),
+    guest_booking_enabled: row.guest_booking_enabled,
+    max_guest_bookings_per_phone: String(row.max_guest_bookings_per_phone),
+    max_pending_per_doctor_day: String(row.max_pending_per_doctor_day),
+    max_requests_per_address_day: String(row.max_requests_per_address_day),
+    pow_difficulty_bits: String(row.pow_difficulty_bits),
+    guest_retention_days: String(row.guest_retention_days),
     reason: "",
   };
 }
@@ -87,6 +104,12 @@ function toBody(values: Values): PublicSiteSettingsIn {
     require_approval: values.require_approval,
     request_ttl_hours: Number(values.request_ttl_hours),
     min_review_minutes: Number(values.min_review_minutes),
+    guest_booking_enabled: values.guest_booking_enabled,
+    max_guest_bookings_per_phone: Number(values.max_guest_bookings_per_phone),
+    max_pending_per_doctor_day: Number(values.max_pending_per_doctor_day),
+    max_requests_per_address_day: Number(values.max_requests_per_address_day),
+    pow_difficulty_bits: Number(values.pow_difficulty_bits),
+    guest_retention_days: Number(values.guest_retention_days),
   };
 }
 
@@ -150,6 +173,30 @@ function PublicSiteForm({ row }: { row: PublicSiteSettingsOut }) {
     { name: "max_open", label: t("admin:publicSite.maxOpen") },
     { name: "cancel_cutoff_hours", label: t("admin:publicSite.cutoff") },
   ];
+  const guestRules: { name: RuleName; label: string; hint: string }[] = [
+    {
+      name: "max_guest_bookings_per_phone",
+      label: t("admin:publicSite.guestPerPhone"),
+      hint: t("admin:publicSite.guestPerPhoneHint"),
+    },
+    {
+      name: "max_pending_per_doctor_day",
+      label: t("admin:publicSite.pendingPerDoctorDay"),
+      hint: t("admin:publicSite.pendingPerDoctorDayHint"),
+    },
+    {
+      name: "max_requests_per_address_day",
+      label: t("admin:publicSite.perAddressDay"),
+      hint: t("admin:publicSite.perAddressDayHint"),
+    },
+    { name: "pow_difficulty_bits", label: t("admin:publicSite.powBits"), hint: t("admin:publicSite.powBitsHint") },
+    {
+      name: "guest_retention_days",
+      label: t("admin:publicSite.retentionDays"),
+      hint: t("admin:publicSite.retentionDaysHint"),
+    },
+  ];
+  const guestOn = useWatch({ control: form.control, name: "guest_booking_enabled" });
   const rescheduleOn = useWatch({ control: form.control, name: "reschedule_allowed" });
   const approvalOn = useWatch({ control: form.control, name: "require_approval" });
 
@@ -267,6 +314,36 @@ function PublicSiteForm({ row }: { row: PublicSiteSettingsOut }) {
                 inputMode="numeric"
                 dir="ltr"
               />
+            </div>
+          ) : null}
+        </section>
+
+        <section className="card-surface grid gap-4 p-4 md:p-(--d-card-pad)" aria-labelledby="ps-guest">
+          <div>
+            <h2 id="ps-guest" className="font-semibold text-fg">
+              {t("admin:publicSite.guestTitle")}
+            </h2>
+            <p className="text-sm text-pretty text-muted">{t("admin:publicSite.guestHint")}</p>
+          </div>
+          <SwitchField
+            control={form.control}
+            name="guest_booking_enabled"
+            label={t("admin:publicSite.guestBooking")}
+            description={t("admin:publicSite.guestBookingHint")}
+          />
+          {guestOn ? (
+            <div className="grid gap-4 sm:grid-cols-2" data-testid="public-site-guest-limits">
+              {guestRules.map((rule) => (
+                <TextField
+                  key={rule.name}
+                  control={form.control}
+                  name={rule.name}
+                  label={rule.label}
+                  description={rule.hint}
+                  inputMode="numeric"
+                  dir="ltr"
+                />
+              ))}
             </div>
           ) : null}
         </section>
