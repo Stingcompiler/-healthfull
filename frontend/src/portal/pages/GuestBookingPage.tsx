@@ -19,7 +19,7 @@ import { getSiteConfig } from "@/lib/site";
 
 import { useCenterPage } from "@/lib/center/api";
 
-import { FeesAndPolicy, SiteCard } from "../components/GuestParts";
+import { FeesAndPolicy, SiteCard } from "../components/BookingParts";
 import { Pill, PortalPage, Row } from "../components/PortalPage";
 import { SiteSlotChooser, type SlotChoice } from "../components/SlotChooser";
 import {

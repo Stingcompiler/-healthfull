@@ -1,13 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "@tanstack/react-router";
 import { CalendarCheck, KeyRound, MessageCircle, Printer, ShieldCheck } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 import { AlertCard } from "@/components/AlertCard";
 import { Form, TextField } from "@/components/form";
-import { ArrowBack, ChevronsNext } from "@/components/icons";
+import { ChevronsNext } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { toApiError } from "@/lib/api/errors";
 import { useTranslateError } from "@/lib/api/translate-error";
@@ -15,7 +15,16 @@ import { formatDate } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n-hooks";
 
 import { useDoctors } from "../api";
-import { ActionBar, FeesAndPolicy, GuestEntryLinks, GuestStepper, SiteCard } from "../components/GuestParts";
+import {
+  ActionBar,
+  BackButton,
+  ChoiceSummary,
+  FeesAndPolicy,
+  GuestEntryLinks,
+  GuestStepper,
+  SiteCard,
+  StepLayout,
+} from "../components/BookingParts";
 import { Pill, PortalPage, Row } from "../components/PortalPage";
 import { SiteSlotChooser, type SlotChoice } from "../components/SlotChooser";
 import { createGuestBooking, fetchChallenge, type GuestBookingCreated } from "../guest/api";
@@ -33,22 +42,9 @@ import { expectedTries } from "../guest/pow";
 import { solveChallenge } from "../guest/solver";
 import { slotComplete } from "../guest/steps";
 import { BOOKING_TONE } from "../lib/tones";
-import { formatDay, useDoctorDetail, usePick } from "../lib/ui";
+import { useDoctorDetail, usePick } from "../lib/ui";
 
 type Step = "slot" | "contact" | "review";
-
-/** The step's main column and, from lg, a sticky side column beside it (D-0023). */
-function StepLayout({ main, side, testId }: { main: ReactNode; side: ReactNode; testId?: string }) {
-  return (
-    <div
-      className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]"
-      data-testid={testId}
-    >
-      <div className="flex min-w-0 flex-col gap-4">{main}</div>
-      <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20">{side}</div>
-    </div>
-  );
-}
 
 /**
  * `/portal/book`: booking without a patient file (ADR 0029 D, plan Phase 4; layout D-0023).
@@ -243,54 +239,6 @@ function ReviewRows({ details }: { details: AttemptDetails }) {
         <bdi className="num">{details.contact_phone}</bdi>
       </Row>
     </dl>
-  );
-}
-
-/** The side summary of step 1 and 2: what is chosen so far, then fees and the policy. */
-function ChoiceSummary({ choice }: { choice: SlotChoice }) {
-  const { t } = useTranslation("portal");
-  const pick = usePick();
-  const detail = useDoctorDetail();
-  const language = useLanguage();
-  const doctors = useDoctors();
-  const doctor = doctors.data?.find((d) => d.id === choice.doctorId) ?? null;
-  const sub = doctor ? detail(doctor) : "";
-  return (
-    <SiteCard title={t("guest.summary.title")} titleId="book-summary-title" as="aside" testId="book-summary">
-      {doctor ? (
-        <dl className="divide-y divide-border">
-          <Row label={t("book.doctor")}>
-            <span className="flex flex-col">
-              <span className="font-semibold">{pick(doctor.name_ar, doctor.name_en)}</span>
-              {sub ? <span className="text-xs text-muted">{sub}</span> : null}
-            </span>
-          </Row>
-          {choice.day ? (
-            <Row label={t("book.day")}>
-              <bdi>{formatDay(choice.day, language)}</bdi>
-            </Row>
-          ) : null}
-          {choice.start ? (
-            <Row label={t("book.time")}>
-              <bdi className="tabular">{formatDate(choice.start, language, "time")}</bdi>
-            </Row>
-          ) : null}
-        </dl>
-      ) : (
-        <p className="text-sm text-pretty text-muted">{t("guest.summary.empty")}</p>
-      )}
-      <FeesAndPolicy />
-    </SiteCard>
-  );
-}
-
-function BackButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
-  const { t } = useTranslation("portal");
-  return (
-    <Button type="button" variant="outline" size="lg" className="flex-none px-4" disabled={disabled} onClick={onClick}>
-      <ArrowBack className="size-4" />
-      {t("guest.back")}
-    </Button>
   );
 }
 

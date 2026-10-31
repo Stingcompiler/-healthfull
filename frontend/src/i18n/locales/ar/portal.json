@@ -109,7 +109,13 @@
     "rescheduleDescription": "موعدك الحالي: {{date}} الساعة {{time}}. اختر وقتاً متاحاً جديداً، ويُتاح الوقت القديم لغيرك.",
     "confirmMove": "انقل إلى هذا الوقت",
     "earlierDays": "أيام سابقة",
-    "laterDays": "أيام لاحقة"
+    "laterDays": "أيام لاحقة",
+    "steps": {
+      "slot": "الطبيب والوقت",
+      "review": "راجع وأكّد"
+    },
+    "reviewHint": "تأكد من الطبيب واليوم والوقت قبل التأكيد.",
+    "currentAppointment": "موعدك الحالي"
   },
   "results": {
     "title": "نتائج المختبر",

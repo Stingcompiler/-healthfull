@@ -114,3 +114,13 @@ export function sitePage(pathname: string): "center" | "guest" | null {
   if (trimmed === "/portal/book" || trimmed === "/portal/booking") return "guest";
   return null;
 }
+
+/**
+ * The signed-in patient's booking screens (book, move a booking; D-0024): they keep the portal's
+ * own header, tab bar and footer, but are as wide as the website from lg so the step can sit
+ * beside its summary like the guest booking.
+ */
+export function patientBookingPage(pathname: string): boolean {
+  const trimmed = pathname.replace(/\/+$/u, "");
+  return trimmed === "/portal/appointments/new" || /^\/portal\/appointments\/\d+\/reschedule$/u.test(trimmed);
+}

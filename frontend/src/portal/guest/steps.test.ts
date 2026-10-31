@@ -1,20 +1,47 @@
 import { describe, expect, it } from "vitest";
 
-import { GUEST_STEPS, revealed, slotComplete, stepNumber, stepState } from "./steps";
+import { GUEST_STEPS, PATIENT_STEPS, revealed, slotComplete, stepNumber, stepState } from "./steps";
 
 describe("guest stepper", () => {
   it("numbers the four steps in order", () => {
-    expect(GUEST_STEPS.map(stepNumber)).toEqual([1, 2, 3, 4]);
+    expect(GUEST_STEPS.map((s) => stepNumber(GUEST_STEPS, s))).toEqual([1, 2, 3, 4]);
   });
 
   it("marks earlier steps done, the open one current and later ones upcoming", () => {
-    expect(GUEST_STEPS.map((s) => stepState(s, "slot"))).toEqual(["current", "upcoming", "upcoming", "upcoming"]);
-    expect(GUEST_STEPS.map((s) => stepState(s, "contact"))).toEqual(["done", "current", "upcoming", "upcoming"]);
-    expect(GUEST_STEPS.map((s) => stepState(s, "review"))).toEqual(["done", "done", "current", "upcoming"]);
+    expect(GUEST_STEPS.map((s) => stepState(GUEST_STEPS, s, "slot"))).toEqual([
+      "current",
+      "upcoming",
+      "upcoming",
+      "upcoming",
+    ]);
+    expect(GUEST_STEPS.map((s) => stepState(GUEST_STEPS, s, "contact"))).toEqual([
+      "done",
+      "current",
+      "upcoming",
+      "upcoming",
+    ]);
+    expect(GUEST_STEPS.map((s) => stepState(GUEST_STEPS, s, "review"))).toEqual([
+      "done",
+      "done",
+      "current",
+      "upcoming",
+    ]);
   });
 
   it("reads every step done on the confirmation", () => {
-    expect(GUEST_STEPS.map((s) => stepState(s, "done"))).toEqual(["done", "done", "done", "done"]);
+    expect(GUEST_STEPS.map((s) => stepState(GUEST_STEPS, s, "done"))).toEqual(["done", "done", "done", "done"]);
+  });
+});
+
+describe("patient stepper", () => {
+  it("has two steps, no contact step and no confirmation step", () => {
+    expect(PATIENT_STEPS.map((s) => stepNumber(PATIENT_STEPS, s))).toEqual([1, 2]);
+    expect<readonly string[]>(PATIENT_STEPS).not.toContain("contact");
+  });
+
+  it("marks the slot step done on the review", () => {
+    expect(PATIENT_STEPS.map((s) => stepState(PATIENT_STEPS, s, "slot"))).toEqual(["current", "upcoming"]);
+    expect(PATIENT_STEPS.map((s) => stepState(PATIENT_STEPS, s, "review"))).toEqual(["done", "current"]);
   });
 });
 

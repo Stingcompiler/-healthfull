@@ -2,7 +2,8 @@
  * Responsive matrix (ARCHITECTURE 5.3 and 6): every route x 3 viewports x
  * 3 themes x 2 languages. Each case loads the page fresh and checks that it
  * renders, <html> carries the right theme/lang/dir, there is no horizontal
- * page scroll, and nothing was logged at error level.
+ * page scroll, a booking stepper's words do not collide, and nothing was
+ * logged at error level.
  *
  * Screenshots (artifacts/screens/<route>-<viewport>-<theme>-<lang>.png) only
  * for (ar, light), (en, dark) and (ar, warm).
@@ -19,6 +20,7 @@ import { ADMIN_STATE, ANONYMOUS_STATE, PHARMACIST_STATE } from "../fixtures/stat
 import {
   expectNoHorizontalScroll,
   expectPrefsApplied,
+  expectStepLabelsApart,
   LANGS,
   setPrefs,
   snap,
@@ -64,6 +66,10 @@ for (const viewport of VIEWPORTS) {
               // Data requests settle before measuring and capturing: no skeletons in the pictures.
               await page.waitForLoadState("networkidle");
               await expectNoHorizontalScroll(page);
+              // A booking stepper's words never collide (D-0024).
+              if ((await page.locator("[data-step-mark]").count()) > 0) {
+                await expectStepLabelsApart(page, "nav:has([data-step-mark])");
+              }
               if (wantsScreenshot(theme, lang)) await snap(page, route.name);
 
               expect(logged.errors(), "console errors / page errors").toEqual([]);

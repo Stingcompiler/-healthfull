@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { bookTarget, centerTasks, sitePage, stickyBar, summarizeHours, type CenterTaskInput } from "./center-tasks";
+import {
+  bookTarget,
+  centerTasks,
+  patientBookingPage,
+  sitePage,
+  stickyBar,
+  summarizeHours,
+  type CenterTaskInput,
+} from "./center-tasks";
 
 const base: CenterTaskInput = {
   onlineBooking: false,
@@ -104,5 +112,20 @@ describe("sitePage", () => {
     expect(sitePage("/portal/sign-in")).toBeNull();
     expect(sitePage("/portal/appointments/new")).toBeNull();
     expect(sitePage("/portal/bookings")).toBeNull();
+  });
+});
+
+describe("patientBookingPage", () => {
+  it("knows the signed-in booking and reschedule screens", () => {
+    expect(patientBookingPage("/portal/appointments/new")).toBe(true);
+    expect(patientBookingPage("/portal/appointments/new/")).toBe(true);
+    expect(patientBookingPage("/portal/appointments/12/reschedule")).toBe(true);
+  });
+
+  it("leaves the list, the guest pages and other screens alone", () => {
+    expect(patientBookingPage("/portal/appointments")).toBe(false);
+    expect(patientBookingPage("/portal/appointments/x/reschedule")).toBe(false);
+    expect(patientBookingPage("/portal/book")).toBe(false);
+    expect(patientBookingPage("/portal/home")).toBe(false);
   });
 });
