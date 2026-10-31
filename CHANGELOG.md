@@ -15,6 +15,7 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ### Fixed
 - Booking stepper words overlapped on phones (`/portal/book`, 320 to 414 wide, Arabic and English): each step now has its own column, names wrap under their marks from md, and phones show the marks with the open step's name and "Step x of n" on their own line (D-0024). New e2e check `expectStepLabelsApart` (painted text boxes never intersect or spill) in the guest and portal booking specs and the responsive matrix.
+- Reduced motion started a transition on every style change: the global `prefers-reduced-motion` rule set `transition-duration: 0.01ms` on every element, whose `transition-property` defaults to `all`, so a focus ring or the FAQ chevron still transitioned for a frame (the center page e2e "reduced motion keeps everything still" failed about 19 runs in 20). Transitions now take 0s and never start (also on `::details-content`); animations keep 0.01ms so `animationend` still fires. The e2e names any running animation or transition when it fails.
 
 ## [0.9.0-rc.1] - 2026-10-30
 First release candidate for the pilot center: phases 0-8 of FEATURES, the pre-trial inspection fixes and the public site work order (phases 0-6). Deployed on the vendor's OVH host as image tag `v29-041e5a5`.

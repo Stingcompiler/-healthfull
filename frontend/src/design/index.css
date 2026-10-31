@@ -164,14 +164,27 @@
     opacity: 1;
   }
 
+  /*
+   * Reduced motion: animations end at once (0.01ms, so `animationend` still fires for Radix
+   * presence), and transitions never start. A 0.01ms transition-duration would not do: every
+   * element's transition-property defaults to `all`, so a non-zero duration here would give
+   * every element a transition on every style change (a focus ring, an open accordion chevron).
+   */
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,
     ::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
       scroll-behavior: auto !important;
+    }
+
+    /* Its own rule: a browser without ::details-content drops only this one. */
+    ::details-content {
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
     }
   }
 }
