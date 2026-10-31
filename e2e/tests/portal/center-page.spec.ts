@@ -857,13 +857,18 @@ test.describe("@portal center page", () => {
     await page.keyboard.press("Enter");
     await expect(item).toHaveAttribute("open", "");
     await expect(item).toContainText(FULL.faq[0]?.answer_en ?? "");
-    // Nothing animates or lifts under reduced motion.
-    const animated = await page.evaluate(
-      () =>
-        document.getAnimations().filter((a) => a.playState === "running")
-          .length,
+    // Nothing animates or lifts under reduced motion: no animation or transition is running,
+    // even for the frame right after the FAQ opens (a 0.01ms transition would still show here).
+    const animated = await page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((a) => a.playState === "running")
+        .map((a) => {
+          const target = (a.effect as KeyframeEffect | null)?.target;
+          return `${a.constructor.name} on <${target?.tagName.toLowerCase() ?? "?"} class="${target?.getAttribute("class") ?? ""}">`;
+        }),
     );
-    expect(animated).toBe(0);
+    expect(animated).toEqual([]);
     const card = page.getByTestId("center-book");
     await card.hover();
     expect(await card.evaluate((el) => getComputedStyle(el).transform)).toBe(

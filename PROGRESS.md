@@ -898,3 +898,10 @@ cut on 2026-10-30 (CHANGELOG, git tag `v0.9.0-rc.1`); the demo deployment was re
   `portal booking` and responsive rows `portal-book*`, `portal-reschedule`, `portal-guest-book*`,
   `portal-appointments` 101 passed; `public-site switches` 12 passed.
 - [x] Patient booking in the guest booking's design; stepper overlap fixed.
+- 2026-10-31: flaky center page e2e fixed on `fix/center-faq-flaky`: "the FAQ opens like an accordion, and reduced
+  motion keeps everything still" failed 19 of 20 runs on main. Cause: not a spinner but CSS transitions (FAQ chevron,
+  summary focus ring): the global reduced-motion rule set `transition-duration: 0.01ms` on every element, and the
+  default `transition-property: all` turned that into a transition on every style change, still `running` in the
+  frame the test sampled. Product fix in `design/index.css`: transitions 0s (and on `::details-content`), animations
+  keep 0.01ms. Assertion unchanged in intent; it now lists what runs. Results: spec `--repeat-each=20` 1/20 before,
+  20/20 after, `--repeat-each=50` 50/50; `make check` green; `@portal center page` e2e set (see PR).
