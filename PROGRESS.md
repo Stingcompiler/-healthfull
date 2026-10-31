@@ -904,4 +904,5 @@ cut on 2026-10-30 (CHANGELOG, git tag `v0.9.0-rc.1`); the demo deployment was re
   default `transition-property: all` turned that into a transition on every style change, still `running` in the
   frame the test sampled. Product fix in `design/index.css`: transitions 0s (and on `::details-content`), animations
   keep 0.01ms. Assertion unchanged in intent; it now lists what runs. Results: spec `--repeat-each=20` 1/20 before,
-  20/20 after, `--repeat-each=50` 50/50; `make check` green; `@portal center page` e2e set (see PR).
+  20/20 after, `--repeat-each=50` 50/50; `make check` green (backend 2761 passed, frontend 702 passed);
+  `@portal center page` e2e 68 passed.
