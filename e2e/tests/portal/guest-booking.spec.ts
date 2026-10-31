@@ -18,6 +18,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { ANONYMOUS_STATE } from "../../fixtures/state";
 import {
   expectNoHorizontalScroll,
+  expectStepLabelsApart,
   setPrefs,
   snap,
   tr,
@@ -222,6 +223,45 @@ test.describe("@guest-booking", () => {
     await expect(page.getByTestId("guest-sign-in")).toBeVisible();
     expect(logged.errors(), "console errors / page errors").toEqual([]);
     await page.context().close();
+  });
+
+  test("the stepper's words never collide on phones and tablets, in both languages and with larger text (D-0024)", async ({
+    browser,
+  }) => {
+    for (const lang of ["ar", "en"] as const) {
+      for (const width of [320, 375, 390, 414, 768]) {
+        const page = await phonePage(browser, width);
+        await setPrefs(page, { theme: "light", lang });
+        await page.goto("/portal/book");
+        await expect(page.getByTestId("book-doctor").first()).toBeVisible();
+        await page.evaluate(() => document.fonts.ready.then(() => undefined));
+        await expectStepLabelsApart(page, '[data-testid="guest-step"]');
+        await expectNoHorizontalScroll(page);
+        if (width < 768) {
+          // Phones: marks only, and the open step's name with "Step 1 of 4" on its own line.
+          await expect(page.getByTestId("guest-step-phone")).toContainText(
+            tr(lang, "portal:guest.steps.slot"),
+          );
+        }
+        if (width === 375 && lang === "en") {
+          await snap(page, "patient-booking-unify-guest-stepper");
+        }
+        // The longest open-step name ("Your name and phone"), then larger text (a phone's font
+        // size setting scales the rem-based layout).
+        await chooseSlot(page);
+        await page.getByTestId("guest-next-contact").click();
+        await expect(
+          page.getByTestId("guest-step").locator('[aria-current="step"]'),
+        ).toContainText(tr(lang, "portal:guest.steps.contact"));
+        await expectStepLabelsApart(page, '[data-testid="guest-step"]');
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = "150%";
+        });
+        await expectStepLabelsApart(page, '[data-testid="guest-step"]');
+        await expectNoHorizontalScroll(page);
+        await page.context().close();
+      }
+    }
   });
 
   test("a lost answer is sent again with the same Idempotency-Key and gives the same booking", async ({

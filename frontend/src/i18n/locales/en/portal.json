@@ -109,7 +109,13 @@
     "rescheduleDescription": "Your current appointment: {{date}} at {{time}}. Choose a new free time; the old one is released.",
     "confirmMove": "Move to this time",
     "earlierDays": "Earlier days",
-    "laterDays": "Later days"
+    "laterDays": "Later days",
+    "steps": {
+      "slot": "Doctor and time",
+      "review": "Check and confirm"
+    },
+    "reviewHint": "Check the doctor, the day and the time before you confirm.",
+    "currentAppointment": "Current appointment"
   },
   "results": {
     "title": "Lab results",

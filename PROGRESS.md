@@ -884,3 +884,17 @@ cut on 2026-10-30 (CHANGELOG, git tag `v0.9.0-rc.1`); the demo deployment was re
   (backend 2761 passed, frontend 698 passed, lint/types/lint-ui/tokens/api drift clean); e2e `guest-booking`,
   `switches`, `center-page` 88 passed; responsive rows `portal-guest-book*` 36 passed.
 - [x] Guest booking pages redesign (stepper, summary, website frame).
+- 2026-10-31: patient booking unified with the guest booking on `feat/patient-booking-unify` (owner requests; D-0024):
+  (1) fix: the stepper's words overlapped on phones (`/portal/book`, 320-414, ar and en; the open step's name was
+  `nowrap` in a squeezed flex item). One `Stepper` (`components/BookingParts.tsx`, was `GuestParts.tsx`): a column
+  per step, names wrap under their marks from md, phones show marks plus the open step's name and "Step x of n" on
+  their own line. New e2e check `expectStepLabelsApart` (painted text never intersects or spills; verified to fail
+  on the old stepper) in `guest-booking` (320/375/390/414/768, ar/en, 150% text), `booking` and the responsive
+  matrix. (2) `/portal/appointments/new` and `/portal/appointments/{id}/reschedule` use `SiteSlotChooser`, a
+  two-step stepper (doctor and time, check and confirm), a sticky summary beside the step from lg (screen widens
+  from lg only, `patientBookingPage()`), and the glass action bar above the phone tab bar; still in the portal's
+  signed-in shell. Old `SlotChooser` removed. Same calls, errors, notice and redirect. Results: `make check` green
+  (backend 2761 passed, frontend 702 passed, lint/types/lint-ui/tokens/api drift clean); e2e `guest-booking`,
+  `portal booking` and responsive rows `portal-book*`, `portal-reschedule`, `portal-guest-book*`,
+  `portal-appointments` 101 passed; `public-site switches` 12 passed.
+- [x] Patient booking in the guest booking's design; stepper overlap fixed.

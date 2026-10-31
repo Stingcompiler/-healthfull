@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { usePortalMe } from "./api";
 import { CenterFooter } from "./components/CenterFooter";
 import { NoticesBell } from "./components/NoticesBell";
-import { sitePage } from "./lib/center-tasks";
+import { patientBookingPage, sitePage } from "./lib/center-tasks";
 import { useSignOut } from "./lib/session";
 
 /**
@@ -59,7 +59,12 @@ export function PortalLayout({ children }: { children?: ReactNode } = {}) {
   const pageKind = sitePage(path);
   const isCenter = pageKind === "center";
   const isSite = pageKind !== null;
-  const width = isSite ? "max-w-[75rem] md:px-6 lg:px-8" : "max-w-md md:max-w-2xl";
+  // The signed-in booking screens (D-0024) widen from lg only, for the step beside its summary.
+  const width = isSite
+    ? "max-w-[75rem] md:px-6 lg:px-8"
+    : patientBookingPage(path)
+      ? "max-w-md md:max-w-2xl lg:max-w-5xl"
+      : "max-w-md md:max-w-2xl";
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg" data-density="comfortable">
